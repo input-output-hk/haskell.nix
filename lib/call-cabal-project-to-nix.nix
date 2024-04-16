@@ -333,6 +333,54 @@ let
     '';
   };
 
+  ghc-pkgs = {
+    Cabal.depends = ["Cabal-syntax" "array" "base" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "process" "text" "time" "transformers" "unix"];
+    Cabal-syntax.depends = ["array" "base" "binary" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "text" "time" "transformers" "unix"];
+    array.depends = ["base"];
+    base.depends = ["ghc-bignum" "ghc-prim" "rts"];
+    binary.depends = ["array" "base" "bytestring" "containers"];
+    bytestring.depends = ["base" "deepseq" "ghc-prim" "template-haskell"];
+    containers.depends = ["array" "base" "deepseq" "template-haskell"];
+    deepseq.depends = ["array" "base" "ghc-prim"];
+    directory.depends = ["base" "filepath" "time" "unix"];
+    exceptions.depends = ["base" "mtl" "stm" "template-haskell" "transformers"];
+    filepath.depends = ["base" "bytestring" "deepseq" "exceptions" "template-haskell"];
+    ghc.depends = ["array" "base" "binary" "bytestring" "containers" "deepseq" "directory" "exceptions" "filepath" "ghc-boot" "ghc-heap" "ghci" "hpc" "process" "semaphore-compat" "stm" "template-haskell" "time" "transformers" "unix"];
+    ghc-bignum.depends = ["ghc-prim"];
+    ghc-boot.depends = ["base" "binary" "bytestring" "containers" "deepseq" "directory" "filepath" "ghc-boot-th" "unix"];
+    ghc-boot-th.depends = ["base"];
+    ghc-compact.depends = ["base" "bytestring" "ghc-prim"];
+    ghc-heap.depends = ["base" "containers" "ghc-prim" "rts"];
+    ghc-prim.depends = ["rts"];
+    ghci.depends = ["array" "base" "binary" "bytestring" "containers" "deepseq" "filepath" "ghc-boot" "ghc-heap" "ghc-prim" "rts" "template-haskell" "transformers" "unix"];
+    haskeline.depends = ["base" "bytestring" "containers" "directory" "exceptions" "filepath" "process" "stm" "terminfo" "transformers" "unix"];
+    hpc.depends = ["base" "containers" "deepseq" "directory" "filepath" "time"];
+    integer-gmp.depends = ["base" "ghc-bignum" "ghc-prim"];
+    mtl.depends = ["base" "transformers"];
+    parsec.depends = ["base" "bytestring" "mtl" "text"];
+    pretty.depends = ["base" "deepseq" "ghc-prim"];
+    process.depends = ["base" "deepseq" "directory" "filepath" "unix"];
+    rts.depends = [];
+    semaphore-compat.depends = ["base" "exceptions" "unix"];
+    stm.depends = ["array" "base"];
+    template-haskell.depends = ["base" "ghc-boot-th" "ghc-prim" "pretty"];
+    terminfo.depends = ["base"];
+    text.depends = ["array" "base" "binary" "bytestring" "deepseq" "ghc-prim" "template-haskell"];
+    time.depends = ["base" "deepseq"];
+    transformers.depends = ["base"];
+    unix.depends = ["base" "bytestring" "filepath" "time"];
+    xhtml.depends = ["base"];
+
+    ghc.version = ghc.version;
+    ghc-boot.version = ghc.version;
+    ghc-boot-th.version = ghc.version;
+    ghc-heap.version = ghc.version;
+    ghci.version = ghc.version;
+  } // pkgs.lib.optionalAttrs (builtins.compareVersions ghc.version "9.2" >= 0) {
+    system-cxx-std-lib.depends = [];
+    system-cxx-std-lib.version = "1.0";
+  };
+
   # Dummy `ghc-pkg` that uses the captured output
   dummy-ghc-pkg = evalPackages.writeTextFile {
     name = "dummy-pkg-" + ghc.name;
@@ -350,34 +398,59 @@ let
           ;;
       ''}
         'dump --global -v0')
-          ${builtins.concatStringsSep ''
-              echo '---'
-            '' (builtins.map (name: ''
-              echo "name: ${name}"
-              if [ -f ${ghcSrc}/libraries/${name}/${name}.cabal ]; then
-                grep '^version:' ${ghcSrc}/libraries/${name}/${name}.cabal
-              else
-                grep '^version:' ${ghcSrc}/libraries/${name}/${name}.cabal.in
+          PKGS=""
+          ${pkgs.lib.concatStrings
+            (builtins.map (name: let varname = x: builtins.replaceStrings ["-"] ["_"] x; in ''
+              DEPS_${varname name}="${builtins.concatStringsSep " " ghc-pkgs.${name}.depends}"
+              ${if ghc-pkgs.${name} ? version
+                then ''
+                  VER_${varname name}="${ghc-pkgs.${name}.version}"
+                  PKGS+=" ${name}"
+                  LAST_PKG="${name}"
+                ''
+                else ''
+                  if [ -f ${ghcSrc}/libraries/${name}/${name}.cabal ]; then
+                    VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/libraries/${name}/${name}.cabal | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
+                    PKGS+=" ${name}"
+                    LAST_PKG="${name}"
+                  elif [ -f ${ghcSrc}/libraries/Cabal/${name}/${name}.cabal ]; then
+                    VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/libraries/Cabal/${name}/${name}.cabal | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
+                    PKGS+=" ${name}"
+                  elif [ -f ${ghcSrc}/libraries/${name}/${name}/${name}.cabal ]; then
+                    VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/libraries/${name}/${name}/${name}.cabal | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
+                    PKGS+=" ${name}"
+                  elif [ -f ${ghcSrc}/${name}/${name}.cabal ]; then
+                    VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/${name}/${name}.cabal | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
+                    PKGS+=" ${name}"
+                  elif [ -f ${ghcSrc}/${name}/${name}.cabal.in ]; then
+                    VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/${name}/${name}.cabal.in | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
+                    PKGS+=" ${name}"
+                  elif [ -f ${ghcSrc}/libraries/${name}/${name}.cabal.in ]; then
+                    VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/libraries/${name}/${name}.cabal.in | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
+                    PKGS+=" ${name}"
+                    LAST_PKG="${name}"
+                  fi
+                ''
+              }
+            '') (builtins.attrNames ghc-pkgs))
+          }
+          for pkg in $PKGS; do
+            varname="$(echo $pkg | tr "-" "_")"
+            ver="VER_$varname"
+            deps="DEPS_$varname"
+            echo "name: $pkg"
+            echo "version: ''${!ver}"
+            echo "depends:"
+            for dep in ''${!deps}; do
+              ver_dep="VER_$(echo $dep | tr "-" "_")"
+              if [[ "''${!ver_dep}" != "" ]]; then
+                echo "  $dep-''${!ver_dep}"
               fi
-            '') (["base" "ghc-prim" "template-haskell" "integer-gmp"]
-              ++ pkgs.lib.optional (builtins.compareVersions ghc.version "9.0" >= 0) "ghc-bignum"))}
-          echo '---'
-          echo "name: ghc"
-          echo "version: ${ghc.version}"
-          echo '---'
-          echo "name: ghc-boot"
-          echo "version: ${ghc.version}"
-          echo '---'
-          echo "name: ghc-boot-th"
-          echo "version: ${ghc.version}"
-          echo '---'
-          echo "name: ghci"
-          echo "version: ${ghc.version}"
-          ${pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.2" >= 0) ''
-            echo '---'
-            echo "name: system-cxx-std-lib"
-            echo "version: 1.0"
-          ''}
+            done
+            if [[ "$pkg" != "$LAST_PKG" ]]; then
+              echo '---'
+            fi
+          done
           ;;
         *)
           echo "Unknown argument '$*'. " >&2
