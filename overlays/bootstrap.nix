@@ -1163,6 +1163,7 @@ in {
                     isHaskellNixCompiler = true;
                     enableShared = false;
                     inherit (booted-ghcjs) configured-src bundled-ghcjs project;
+                    raw-src = booted-ghcjs.configured-src;
                     inherit booted-ghcjs buildGHC;
                     extraConfigureFlags = [
                         "--ghcjs"
@@ -1197,6 +1198,7 @@ in {
                     isHaskellNixCompiler = true;
                     enableShared = false;
                     inherit (booted-ghcjs) configured-src bundled-ghcjs project;
+                    raw-src = booted-ghcjs.configured-src;
                     inherit booted-ghcjs buildGHC;
                     extraConfigureFlags = [
                         "--ghcjs"
@@ -1231,6 +1233,7 @@ in {
                     isHaskellNixCompiler = true;
                     enableShared = false;
                     inherit (booted-ghcjs) configured-src bundled-ghcjs project;
+                    raw-src = booted-ghcjs.configured-src;
                     inherit booted-ghcjs buildGHC;
                     extraConfigureFlags = [
                         "--ghcjs"
@@ -1265,6 +1268,7 @@ in {
                     isHaskellNixCompiler = true;
                     enableShared = false;
                     inherit (booted-ghcjs) configured-src bundled-ghcjs project;
+                    raw-src = booted-ghcjs.configured-src;
                     inherit booted-ghcjs buildGHC;
                     extraConfigureFlags = [
                         "--ghcjs"
@@ -1299,6 +1303,7 @@ in {
                     isHaskellNixCompiler = true;
                     enableShared = false;
                     inherit (booted-ghcjs) configured-src bundled-ghcjs project;
+                    raw-src = booted-ghcjs.configured-src;
                     inherit booted-ghcjs buildGHC;
                     extraConfigureFlags = [
                         "--ghcjs"
