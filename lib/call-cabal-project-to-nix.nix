@@ -334,12 +334,20 @@ let
   };
 
   ghc-pkgs = {
-    # GHC 9.8
-    # Cabal.depends = ["Cabal-syntax" "array" "base" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "process" "text" "time" "transformers" "unix"];
-    # Cabal-syntax.depends = ["array" "base" "binary" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "text" "time" "transformers" "unix"];
-    # GHC 9.10
-    # Cabal.depends = ["Cabal-syntax" "array" "base" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "process" "time" "transformers" "unix"];
-    # Cabal-syntax.depends = ["array" "base" "binary" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "text" "time" "transformers"];
+    # This list was derived from the output of:
+    # for a in $(ghc-pkg list | tr '\n' ' ' | sed -e 's|  *| |g' -e 's|^[^ ]*||' -e 's|-[0-9][^ ]*||g' -e 's| (| |'); do ghc-pkg field $a depends | tr '\n' ' ' | sed -e 's|  *| |g' -e 's|^depends: ||' -e 's|-[0-9][^ ]*||g' -e 's| *$||' -e 's| |" "|g' -e "s|^|    $a.depends = [\"|" -e 's|$|"];|'; echo; done
+    # If a package is not included in the GHC source it will be left out.
+    # Include conditional code if:
+    # * A dependency is removed
+    # * A dependency to an already existing package is added
+    # Cabal.depends =
+    #   if builtins.compareVersions ghc.version "9.10" >= 0
+    #     then ["Cabal-syntax" "array" "base" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "process" "time" "transformers" "unix"]
+    #     else ["Cabal-syntax" "array" "base" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "process" "text" "time" "transformers" "unix"];
+    # Cabal-syntax.depends =
+    #   if builtins.compareVersions ghc.version "9.10" >= 0
+    #     then ["array" "base" "binary" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "text" "time" "transformers"]
+    #     else ["array" "base" "binary" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "text" "time" "transformers" "unix"];
     array.depends = ["base"];
     base.depends =
       if builtins.compareVersions ghc.version "9.10" >= 0
