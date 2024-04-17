@@ -35,6 +35,7 @@ let
         drvs' = [ 
           hsPkgs.cabal-install.components.exes.cabal 
           hsPkgs.hpack.components.exes.hpack 
+          hsPkgs.Cabal-syntax-json.components.exes.cabal2json 
         ] ++ strippedNixToolsComponents;
       };
 
