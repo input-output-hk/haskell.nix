@@ -339,8 +339,8 @@ let
     array.depends = ["base"];
     base.depends = ["ghc-bignum" "ghc-prim" "rts"];
     binary.depends = ["array" "base" "bytestring" "containers"];
-    bytestring.depends = ["base" "deepseq" "ghc-prim" "template-haskell"];
-    containers.depends = ["array" "base" "deepseq" "template-haskell"];
+    # bytestring.depends = ["base" "deepseq" "ghc-prim" "template-haskell"];
+    # containers.depends = ["array" "base" "deepseq" "template-haskell"];
     deepseq.depends = ["array" "base" "ghc-prim"];
     directory.depends = ["base" "filepath" "time" "unix"];
     exceptions.depends = ["base" "mtl" "stm" "template-haskell" "transformers"];
@@ -357,7 +357,7 @@ let
     hpc.depends = ["base" "containers" "deepseq" "directory" "filepath" "time"];
     integer-gmp.depends = ["base" "ghc-bignum" "ghc-prim"];
     mtl.depends = ["base" "transformers"];
-    parsec.depends = ["base" "bytestring" "mtl" "text"];
+    # parsec.depends = ["base" "bytestring" "mtl" "text"];
     pretty.depends = ["base" "deepseq" "ghc-prim"];
     process.depends = ["base" "deepseq" "directory" "filepath" "unix"];
     rts.depends = [];
@@ -365,7 +365,7 @@ let
     stm.depends = ["array" "base"];
     template-haskell.depends = ["base" "ghc-boot-th" "ghc-prim" "pretty"];
     terminfo.depends = ["base"];
-    text.depends = ["array" "base" "binary" "bytestring" "deepseq" "ghc-prim" "template-haskell"];
+    # text.depends = ["array" "base" "binary" "bytestring" "deepseq" "ghc-prim" "template-haskell"];
     time.depends = ["base" "deepseq"];
     transformers.depends = ["base"];
     unix.depends = ["base" "bytestring" "filepath" "time"];
@@ -410,7 +410,7 @@ let
                 ''
                 else ''
                   if [ -f ${ghcSrc}/libraries/${name}/${name}.cabal ]; then
-                    VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/libraries/${name}/${name}.cabal | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
+                    VER_${varname name}=$(cat ${ghcSrc}/libraries/${name}/${name}.cabal | tr "\n" "\r" | sed -E -e 's/.*\r[Vv]ersion:( |\r|\t)*([0-9.]*).*/\2/')
                     PKGS+=" ${name}"
                     LAST_PKG="${name}"
                   elif [ -f ${ghcSrc}/libraries/Cabal/${name}/${name}.cabal ]; then
