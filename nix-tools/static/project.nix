@@ -56,6 +56,9 @@ let
     packages.nix-tools.ghcOptions = [
       "-L${pkgs.lib.getLib pkgs.static-gmp}/lib"
     ];
+    packages.Cabal-syntax-json.ghcOptions = [
+      "-L${pkgs.lib.getLib pkgs.static-gmp}/lib"
+    ];
   };
 
 
