@@ -353,7 +353,7 @@ let
       if builtins.compareVersions ghc.version "9.10" >= 0
         then ["ghc-internal" "ghc-prim"]
         else ["ghc-bignum" "ghc-prim" "rts"];
-    binary.depends = ["array" "base" "bytestring" "containers"];
+    # binary.depends = ["array" "base" "bytestring" "containers"];
     # bytestring.depends = ["base" "deepseq" "ghc-prim" "template-haskell"];
     # containers.depends = ["array" "base" "deepseq" "template-haskell"];
     deepseq.depends = ["array" "base" "ghc-prim"];
