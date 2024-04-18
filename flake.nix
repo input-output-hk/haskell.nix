@@ -97,6 +97,7 @@
     let
       callFlake = import flake-compat;
 
+      ifdLevel = 0;
       compiler = "ghc928";
       config = import ./config.nix;
 
@@ -208,7 +209,7 @@
         stripAttrsForHydra (filterDerivations (
           # This is awkward.
           import ./ci.nix {
-            inherit system;
+            inherit ifdLevel system;
             haskellNix = self;
           })));
 
@@ -238,19 +239,18 @@
       hydraJobs = forEachSystem (system:
         let
           # Include hydraJobs from nix-tools subflake.
-          # NOTE: These derivations do not depend on the haskell.nix in ./. but
-          # on the version of haskell.nix locked in the subflake. They are
-          # evaluated within their own flake and independently of anything
-          # else. Here we only expose them in the main flake.
           nix-tools-hydraJobs =
             let cf = callFlake {
               inherit system;
               pkgs = self.legacyPackages.${system};
               src = ./nix-tools;
+              override-inputs.haskellNix = self;
             };
             in cf.defaultNix.hydraJobs;
         in
-        self.allJobs.${system} // { nix-tools = nix-tools-hydraJobs.${system} or {}; }
+        self.allJobs.${system}
+          // lib.optionalAttrs (ifdLevel > 2)
+            { nix-tools = nix-tools-hydraJobs.${system} or {}; }
       );
 
       devShells = forEachSystemPkgs (pkgs:
@@ -285,7 +285,7 @@
       );
     }; in with (import nixpkgs { system = "x86_64-linux"; });
           traceHydraJobs (lib.recursiveUpdate flake {
-            hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
+            hydraJobs.nix-tools = pkgs.releaseTools.aggregate (lib.optionalAttrs (ifdLevel > 2) {
               name = "nix-tools";
               constituents = [
                 "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
@@ -298,7 +298,7 @@
                 "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64-no-ifd"
                 (writeText "gitrev" (self.rev or "0000000000000000000000000000000000000000"))
               ];
-            };
+            });
           });
 
   # --- Flake Local Nix Configuration ----------------------------
