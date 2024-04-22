@@ -239,12 +239,15 @@
       hydraJobs = forEachSystem (system:
         let
           # Include hydraJobs from nix-tools subflake.
+          # NOTE: These derivations do not depend on the haskell.nix in ./. but
+          # on the version of haskell.nix locked in the subflake. They are
+          # evaluated within their own flake and independently of anything
+          # else. Here we only expose them in the main flake.
           nix-tools-hydraJobs =
             let cf = callFlake {
               inherit system;
               pkgs = self.legacyPackages.${system};
               src = ./nix-tools;
-              override-inputs.haskellNix = self;
             };
             in cf.defaultNix.hydraJobs;
         in
