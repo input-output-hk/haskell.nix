@@ -29,7 +29,7 @@ library
                      , Stack2nix.External.Resolve
                      , Stack2nix.Project
                      , Stack2nix.Stack
-  build-depends:       base          >= 4      && <4.18
+  build-depends:       base          >= 4      && <4.20
                      , Cabal         >= 3.10.3 && <3.11
                      , Cabal-syntax  >= 3.10   && <3.11
                      , aeson         >= 2.0    && <2.3
@@ -46,7 +46,7 @@ library
 -- Needs https://github.com/input-output-hk/iohk-nix/commit/6a8c29117eff36ce975e02e01efc8b25d93fcb90#diff-6fb0c6517b547a8baf082d5d2d604842
 -- to work with the data-dir issues when building components.
 -- This commit is included since 0.6.5.
-                     , hnix          >= 0.6.5 && <0.17
+                     , hnix          >= 0.6.5 && <0.18
                      , hpack
                      , http-client
                      , http-client-tls

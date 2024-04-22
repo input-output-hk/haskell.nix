@@ -1,6 +1,6 @@
 # 'supportedSystems' restricts the set of systems that we will evaluate for. Useful when you're evaluating
 # on a machine with e.g. no way to build the Darwin IFDs you need!
-{ ifdLevel ? 3
+{ ifdLevel # This is passed in from flake.nix
 , checkMaterialization ? false
 , system ? builtins.currentSystem
 , evalSystem ? builtins.currentSystem or "x86_64-linux"

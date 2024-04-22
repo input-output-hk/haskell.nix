@@ -97,6 +97,7 @@
     let
       callFlake = import flake-compat;
 
+      ifdLevel = 3;
       compiler = "ghc928";
       config = import ./config.nix;
 
@@ -208,7 +209,7 @@
         stripAttrsForHydra (filterDerivations (
           # This is awkward.
           import ./ci.nix {
-            inherit system;
+            inherit ifdLevel system;
             haskellNix = self;
           })));
 
@@ -250,7 +251,9 @@
             };
             in cf.defaultNix.hydraJobs;
         in
-        self.allJobs.${system} // { nix-tools = nix-tools-hydraJobs.${system} or {}; }
+        self.allJobs.${system}
+          // lib.optionalAttrs (ifdLevel > 2)
+            { nix-tools = nix-tools-hydraJobs.${system} or {}; }
       );
 
       devShells = forEachSystemPkgs (pkgs:
@@ -284,7 +287,7 @@
                 "ghc921" "ghc922" "ghc923"])
       );
     }; in with (import nixpkgs { system = "x86_64-linux"; });
-          traceHydraJobs (lib.recursiveUpdate flake {
+          traceHydraJobs (lib.recursiveUpdate flake (lib.optionalAttrs (ifdLevel > 2) {
             hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
               name = "nix-tools";
               constituents = [
@@ -299,7 +302,7 @@
                 (writeText "gitrev" (self.rev or "0000000000000000000000000000000000000000"))
               ];
             };
-          });
+          }));
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {

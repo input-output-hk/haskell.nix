@@ -40,6 +40,9 @@ let
       plan-to-nix.dontStrip = false;
       stack-repos.dontStrip = false;
     };
+    packages.cabal-install.components.exes.cabal.dontStrip = false;
+    packages.hpack.components.exes.hpack.dontStrip = false;
+    packages.Cabal-syntax-json.components.exes.cabal2json.dontStrip = false;
   };
 
 
@@ -51,6 +54,9 @@ let
       "-L${pkgs.lib.getLib pkgs.static-gmp}/lib"
     ];
     packages.nix-tools.ghcOptions = [
+      "-L${pkgs.lib.getLib pkgs.static-gmp}/lib"
+    ];
+    packages.Cabal-syntax-json.ghcOptions = [
       "-L${pkgs.lib.getLib pkgs.static-gmp}/lib"
     ];
   };
