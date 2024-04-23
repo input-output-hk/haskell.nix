@@ -181,9 +181,7 @@ in rec {
               inherit subDir;
               includeSiblings = true;
             } // { srcForCabal2Nix = ghc.passthru.configured-src + "/${subDir}"; }
-            else if builtins.elem subDir ["libraries/ghc-heap" "utils/remote-iserv" "libraries/ghci" "libraries/template-haskell" "utils/iserv" "libraries/ghc-prim" "libraries/libiserv" "utils/iserv-proxy"]
-              then "${ghc.passthru.configured-src}/${subDir}"
-            else "${ghc.passthru.raw-src}/${subDir}";
+            else "${ghc.passthru.configured-src}/${subDir}";
         nix = callCabal2Nix ghcName "${ghcName}-${pkgName}" src;
       }) (ghc-extra-pkgs ghc.version))
     final.buildPackages.haskell-nix.compiler;
