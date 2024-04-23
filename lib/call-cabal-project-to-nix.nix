@@ -357,10 +357,10 @@ let
     # bytestring.depends = ["base" "deepseq" "ghc-prim" "template-haskell"];
     # containers.depends = ["array" "base" "deepseq" "template-haskell"];
     deepseq.depends = ["array" "base" "ghc-prim"];
-    directory.depends = ["base" "filepath" "os-string" "time" "unix"];
+    directory.depends = ["base" "filepath" "os-string" "time" "unix" "Win32"];
     exceptions.depends = ["base" "mtl" "stm" "template-haskell" "transformers"];
     filepath.depends = ["base" "bytestring" "deepseq" "exceptions" "os-string" "template-haskell"];
-    ghc.depends = ["array" "base" "binary" "bytestring" "containers" "deepseq" "directory" "exceptions" "filepath" "ghc-boot" "ghc-heap" "ghci" "hpc" "process" "semaphore-compat" "stm" "template-haskell" "terminfo" "time" "transformers" "unix"];
+    ghc.depends = ["array" "base" "binary" "bytestring" "containers" "deepseq" "directory" "exceptions" "filepath" "ghc-boot" "ghc-heap" "ghci" "hpc" "process" "semaphore-compat" "stm" "template-haskell" "terminfo" "time" "transformers" "unix" "Win32"];
     ghc-bignum.depends = ["ghc-prim"];
     ghc-boot.depends = ["base" "binary" "bytestring" "containers" "deepseq" "directory" "filepath" "ghc-boot-th" "ghc-platform" "unix"];
     ghc-boot-th.depends = ["base"];
@@ -372,23 +372,22 @@ let
     ghc-prim.depends = ["rts"];
     ghc-toolchain.depends = ["base" "directory" "filepath" "ghc-platform" "process" "text" "transformers"];
     ghci.depends = ["array" "base" "binary" "bytestring" "containers" "deepseq" "filepath" "ghc-boot" "ghc-heap" "ghc-prim" "rts" "template-haskell" "transformers" "unix"];
-    haskeline.depends = ["base" "bytestring" "containers" "directory" "exceptions" "filepath" "process" "stm" "terminfo" "transformers" "unix"];
+    haskeline.depends = ["base" "bytestring" "containers" "directory" "exceptions" "filepath" "process" "stm" "terminfo" "transformers" "unix" "Win32"];
     hpc.depends = ["base" "containers" "deepseq" "directory" "filepath" "time"];
     integer-gmp.depends = ["base" "ghc-bignum" "ghc-internal" "ghc-prim"];
     mtl.depends = ["base" "transformers"];
     os-string.depends = ["base" "bytestring" "deepseq" "exceptions" "template-haskell"];
     # parsec.depends = ["base" "bytestring" "mtl" "text"];
     pretty.depends = ["base" "deepseq" "ghc-prim"];
-    process.depends = ["base" "deepseq" "directory" "filepath" "unix"];
+    process.depends = ["base" "deepseq" "directory" "filepath" "unix" "Win32"];
     rts.depends = [];
-    semaphore-compat.depends = ["base" "exceptions" "unix"];
+    semaphore-compat.depends = ["base" "exceptions" "unix" "Win32"];
     stm.depends = ["array" "base"];
     template-haskell.depends = ["base" "ghc-boot-th" "ghc-prim" "pretty"];
     terminfo.depends = ["base"];
     # text.depends = ["array" "base" "binary" "bytestring" "deepseq" "ghc-prim" "template-haskell"];
-    time.depends = ["base" "deepseq"];
+    time.depends = ["base" "deepseq" "Win32"];
     transformers.depends = ["base"];
-    unix.depends = ["base" "bytestring" "filepath" "os-string" "time"];
     xhtml.depends = ["base"];
 
     ghc.version = ghc.version;
@@ -396,7 +395,10 @@ let
     ghc-boot-th.version = ghc.version;
     ghc-heap.version = ghc.version;
     ghci.version = ghc.version;
-  } // pkgs.lib.optionalAttrs (builtins.compareVersions ghc.version "9.2" >= 0) {
+  } // (if pkgs.stdenv.targetPlatform.isWindows
+    then { Win32.depends = ["base" "filepath"]; }
+    else { unix.depends = ["base" "bytestring" "filepath" "os-string" "time"]; }
+  ) // pkgs.lib.optionalAttrs (builtins.compareVersions ghc.version "9.2" >= 0) {
     system-cxx-std-lib.depends = [];
     system-cxx-std-lib.version = "1.0";
   };
