@@ -360,7 +360,7 @@ let
     directory.depends = ["base" "filepath" "os-string" "time" "unix"];
     exceptions.depends = ["base" "mtl" "stm" "template-haskell" "transformers"];
     filepath.depends = ["base" "bytestring" "deepseq" "exceptions" "os-string" "template-haskell"];
-    ghc.depends = ["array" "base" "binary" "bytestring" "containers" "deepseq" "directory" "exceptions" "filepath" "ghc-boot" "ghc-heap" "ghci" "hpc" "process" "semaphore-compat" "stm" "template-haskell" "time" "transformers" "unix"];
+    ghc.depends = ["array" "base" "binary" "bytestring" "containers" "deepseq" "directory" "exceptions" "filepath" "ghc-boot" "ghc-heap" "ghci" "hpc" "process" "semaphore-compat" "stm" "template-haskell" "terminfo" "time" "transformers" "unix"];
     ghc-bignum.depends = ["ghc-prim"];
     ghc-boot.depends = ["base" "binary" "bytestring" "containers" "deepseq" "directory" "filepath" "ghc-boot-th" "ghc-platform" "unix"];
     ghc-boot-th.depends = ["base"];
