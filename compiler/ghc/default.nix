@@ -246,10 +246,20 @@ let
           then "ghc928"
           else "ghc962";
     in
-    buildPackages.haskell-nix.tool compiler-nix-name "hadrian" {
+    buildPackages.pinned-haskell-nix.tool compiler-nix-name "hadrian" {
       compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
       # Verions of hadrian that comes with 9.6 depends on `time`
+      materialized =
+        if builtins.compareVersions ghc-version "9.4" < 0
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc92
+        else if builtins.compareVersions ghc-version "9.6" < 0
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc94
+        else if builtins.compareVersions ghc-version "9.8" < 0
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc96
+        else if builtins.compareVersions ghc-version "9.9" < 0
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc98
+        else ../../materialized/${compiler-nix-name}/hadrian-ghc99;
       modules = [{
         # Apply the patches in a way that does not require using something
         # like `srcOnly`. The problem with `pkgs.srcOnly` was that it had to run
