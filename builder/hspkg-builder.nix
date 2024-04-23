@@ -26,7 +26,7 @@ let
     }."${compiler-nix-name}/${name}" or null;
   src =
     if bundledSrc != null
-      then ghc.raw-src + bundledSrc
+      then ghc.configured-src + bundledSrc
     else pkg.src;
 
   cabalFile = if package-description-override == null || bundledSrc != null then null else package-description-override;
