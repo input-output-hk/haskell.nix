@@ -337,7 +337,7 @@ let
                 then "ArchX86_64"
               else if pkgs.stdenv.targetPlatform.isAarch64
                 then "ArchAArch64"
-              else if pkgs.stdenv.targetPlatform.isJavsScript
+              else if pkgs.stdenv.targetPlatform.isJavaScript
                 then "ArchJavaScript"
               else throw "Unknown target arch ${pkgs.stdenv.targetPlatform.config}"
           }")'
