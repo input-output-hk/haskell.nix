@@ -328,7 +328,7 @@ let
                 then "OSDarwin"
               else if pkgs.stdenv.targetPlatform.isWindows
                 then "OSMinGW32"
-              else if pkgs.stdenv.targetPlatform.isGHcjs
+              else if pkgs.stdenv.targetPlatform.isGhcjs
                 then "OSGhcjs"
               else throw "Unknown target os ${pkgs.stdenv.targetPlatform.config}"
             }")'
