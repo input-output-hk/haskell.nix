@@ -290,6 +290,8 @@ let
 
   ghcSrc = ghc.raw-src or ghc.buildGHC.raw-src;
 
+  fixPlatformString = x: builtins.replaceStrings ["-linux-gnu"] ["-linux"] x;
+
   # Dummy `ghc` that uses the captured output
   dummy-ghc = evalPackages.writeTextFile {
     name = "dummy-" + ghc.name;
@@ -319,7 +321,31 @@ let
           echo "$out/dumby-db"
           ;;
         --info*)
-          echo '[("Build platform","${pkgs.stdenv.buildPlatform.config}"),("Host platform","${pkgs.stdenv.hostPlatform.config}"),("Target platform","${pkgs.stdenv.targetPlatform.config}")]'
+          echo '[("target os", "${
+              if pkgs.stdenv.targetPlatform.isLinux
+                then "OSLinux"
+              else if pkgs.stdenv.targetPlatform.isDarwin
+                then "OSDarwin"
+              else if pkgs.stdenv.targetPlatform.isWindows
+                then "OSMinGW32"
+              else if pkgs.stdenv.targetPlatform.isGHcjs
+                then "OSGhcjs"
+              else throw "Unknown target os ${pkgs.stdenv.targetPlatform.config}"
+            }")'
+          echo ',("target arch","${
+              if pkgs.stdenv.targetPlatform.isx86_64
+                then "ArchX86_64"
+              else if pkgs.stdenv.targetPlatform.isAarch64
+                then "ArchAArch64"
+              else if pkgs.stdenv.targetPlatform.isJavsScript
+                then "ArchJavaScript"
+              else throw "Unknown target arch ${pkgs.stdenv.targetPlatform.config}"
+          }")'
+          echo ',("target platform string","${fixPlatformString pkgs.stdenv.targetPlatform.config}")'
+          echo ',("Build platform","${fixPlatformString pkgs.stdenv.buildPlatform.config}")'
+          echo ',("Host platform","${fixPlatformString pkgs.stdenv.hostPlatform.config}")'
+          echo ',("Target platform","${fixPlatformString pkgs.stdenv.targetPlatform.config}")'
+          echo ']'
           ;;
         --print-libdir*)
           echo $out/ghc/libdir
