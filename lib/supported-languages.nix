@@ -275,7 +275,7 @@ evalPackages.writeTextFile {
         NoTypeAbstractions
     ''}TypeApplications
     NoTypeApplications
-    ${pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.6" <0) ''
+    ${pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.6" >=0) ''
         TypeData
         NoTypeData
     ''}TypeInType
