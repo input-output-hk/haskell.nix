@@ -10,6 +10,9 @@ if impl(ghc > 9.9)
 if impl(ghc <8.11)
   constraints: os-string < 2.0
 
+if os(osx) && impl(ghc <8.11)
+  constraints: text -simdutf
+
 -- This prevents hsc2hs from causing old versions of packages from being added to plan.json
 allow-newer: hsc2hs:*
 
