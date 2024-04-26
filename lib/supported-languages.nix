@@ -142,7 +142,7 @@ evalPackages.writeTextFile {
         NoLinearTypes
     '' + pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.10" >=0) ''
         ListTuplePuns
-		NoListTuplePuns
+        NoListTuplePuns
     ''}MagicHash
     NoMagicHash
     MonadComprehensions
@@ -243,7 +243,7 @@ evalPackages.writeTextFile {
     NoRelaxedPolyRec
     ${pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.10" >=0) ''
         RequiredTypeArguments
-		NoRequiredTypeArguments
+        NoRequiredTypeArguments
     ''}RoleAnnotations
     NoRoleAnnotations
     ScopedTypeVariables
