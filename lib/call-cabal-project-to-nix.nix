@@ -379,9 +379,9 @@ let
       if builtins.compareVersions ghc.version "9.10" >= 0
         then ["ghc-internal" "ghc-prim"]
         else ["ghc-bignum" "ghc-prim" "rts"];
-    # binary.depends = ["array" "base" "bytestring" "containers"];
-    # bytestring.depends = ["base" "deepseq" "ghc-prim" "template-haskell"];
-    # containers.depends = ["array" "base" "deepseq" "template-haskell"];
+    binary.depends = ["array" "base" "bytestring" "containers"];
+    bytestring.depends = ["base" "deepseq" "ghc-prim" "template-haskell"];
+    containers.depends = ["array" "base" "deepseq" "template-haskell"];
     deepseq.depends = ["array" "base" "ghc-prim"];
     directory.depends = ["base" "filepath" "os-string" "time" "unix" "Win32"];
     exceptions.depends = ["base" "mtl" "stm" "template-haskell" "transformers"];
@@ -403,7 +403,7 @@ let
     integer-gmp.depends = ["base" "ghc-bignum" "ghc-internal" "ghc-prim"];
     mtl.depends = ["base" "transformers"];
     os-string.depends = ["base" "bytestring" "deepseq" "exceptions" "template-haskell"];
-    # parsec.depends = ["base" "bytestring" "mtl" "text"];
+    parsec.depends = ["base" "bytestring" "mtl" "text"];
     pretty.depends = ["base" "deepseq" "ghc-prim"];
     process.depends = ["base" "deepseq" "directory" "filepath" "unix" "Win32"];
     rts.depends = [];
@@ -411,7 +411,7 @@ let
     stm.depends = ["array" "base"];
     template-haskell.depends = ["base" "ghc-boot-th" "ghc-prim" "pretty"];
     terminfo.depends = ["base"];
-    # text.depends = ["array" "base" "binary" "bytestring" "deepseq" "ghc-prim" "template-haskell"];
+    text.depends = ["array" "base" "binary" "bytestring" "deepseq" "ghc-prim" "template-haskell"];
     time.depends = ["base" "deepseq" "Win32"];
     transformers.depends = ["base"];
     xhtml.depends = ["base"];
@@ -453,33 +453,27 @@ let
               ${if ghc-pkgs.${name} ? version
                 then ''
                   VER_${varname name}="${ghc-pkgs.${name}.version}"
-                  PKGS+=" ${name}"
-                  LAST_PKG="${name}"
                 ''
                 else ''
                   if [ -f ${ghcSrc}/libraries/${name}/${name}.cabal ]; then
                     VER_${varname name}=$(cat ${ghcSrc}/libraries/${name}/${name}.cabal | tr "\n" "\r" | sed -E -e 's/.*\r[Vv]ersion:( |\r|\t)*([0-9.]*).*/\2/')
-                    PKGS+=" ${name}"
-                    LAST_PKG="${name}"
                   elif [ -f ${ghcSrc}/libraries/Cabal/${name}/${name}.cabal ]; then
                     VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/libraries/Cabal/${name}/${name}.cabal | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
-                    PKGS+=" ${name}"
                   elif [ -f ${ghcSrc}/libraries/${name}/${name}/${name}.cabal ]; then
                     VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/libraries/${name}/${name}/${name}.cabal | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
-                    PKGS+=" ${name}"
                   elif [ -f ${ghcSrc}/${name}/${name}.cabal ]; then
                     VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/${name}/${name}.cabal | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
-                    PKGS+=" ${name}"
                   elif [ -f ${ghcSrc}/${name}/${name}.cabal.in ]; then
                     VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/${name}/${name}.cabal.in | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
-                    PKGS+=" ${name}"
                   elif [ -f ${ghcSrc}/libraries/${name}/${name}.cabal.in ]; then
                     VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/libraries/${name}/${name}.cabal.in | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
-                    PKGS+=" ${name}"
-                    LAST_PKG="${name}"
                   fi
                 ''
               }
+              if [[ ! "${pkgs.lib.concatStringsSep " " (builtins.attrNames pkgs.haskell-nix.hackage.${name})}" =~ "$VER_${varname name}" ]]; then
+                PKGS+=" ${name}"
+                LAST_PKG="${name}"
+              fi
             '') (builtins.attrNames ghc-pkgs))
           }
           for pkg in $PKGS; do
