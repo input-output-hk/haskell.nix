@@ -470,7 +470,7 @@ let
                   fi
                 ''
               }
-              if [[ ! "${pkgs.lib.concatStringsSep " " (builtins.attrNames pkgs.haskell-nix.hackage.${name})}" =~ "$VER_${varname name}" ]]; then
+              if [[ ! "${pkgs.lib.concatStringsSep " " (builtins.attrNames pkgs.haskell-nix.hackage.${name} or {})}" =~ "$VER_${varname name}" ]]; then
                 PKGS+=" ${name}"
                 LAST_PKG="${name}"
               fi
