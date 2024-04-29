@@ -359,76 +359,117 @@ let
     '';
   };
 
-  ghc-pkgs = {
-    # This list was derived from the output of:
-    # for a in $(ghc-pkg list | tr '\n' ' ' | sed -e 's|  *| |g' -e 's|^[^ ]*||' -e 's|-[0-9][^ ]*||g' -e 's| (| |'); do ghc-pkg field $a depends | tr '\n' ' ' | sed -e 's|  *| |g' -e 's|^depends: ||' -e 's|-[0-9][^ ]*||g' -e 's| *$||' -e 's| |" "|g' -e "s|^|    $a.depends = [\"|" -e 's|$|"];|'; echo; done
-    # If a package is not included in the GHC source it will be left out.
-    # Include conditional code if:
-    # * A dependency is removed
-    # * A dependency to an already existing package is added
-    # Cabal.depends =
-    #   if builtins.compareVersions ghc.version "9.10" >= 0
-    #     then ["Cabal-syntax" "array" "base" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "process" "time" "transformers" "unix"]
-    #     else ["Cabal-syntax" "array" "base" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "process" "text" "time" "transformers" "unix"];
-    # Cabal-syntax.depends =
-    #   if builtins.compareVersions ghc.version "9.10" >= 0
-    #     then ["array" "base" "binary" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "text" "time" "transformers"]
-    #     else ["array" "base" "binary" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "text" "time" "transformers" "unix"];
-    array.depends = ["base"];
-    base.depends =
-      if builtins.compareVersions ghc.version "9.10" >= 0
-        then ["ghc-internal" "ghc-prim"]
-        else ["ghc-bignum" "ghc-prim" "rts"];
-    binary.depends = ["array" "base" "bytestring" "containers"];
-    bytestring.depends = ["base" "deepseq" "ghc-prim" "template-haskell"];
-    containers.depends = ["array" "base" "deepseq" "template-haskell"];
-    deepseq.depends = ["array" "base" "ghc-prim"];
-    directory.depends = ["base" "filepath" "os-string" "time" "unix" "Win32"];
-    exceptions.depends = ["base" "mtl" "stm" "template-haskell" "transformers"];
-    filepath.depends = ["base" "bytestring" "deepseq" "exceptions" "os-string" "template-haskell"];
-    ghc.depends = ["array" "base" "binary" "bytestring" "containers" "deepseq" "directory" "exceptions" "filepath" "ghc-boot" "ghc-heap" "ghci" "hpc" "process" "semaphore-compat" "stm" "template-haskell" "terminfo" "time" "transformers" "unix" "Win32"];
-    ghc-bignum.depends = ["ghc-prim"];
-    ghc-boot.depends = ["base" "binary" "bytestring" "containers" "deepseq" "directory" "filepath" "ghc-boot-th" "ghc-platform" "unix"];
-    ghc-boot-th.depends = ["base"];
-    ghc-compact.depends = ["base" "bytestring" "ghc-prim"];
-    ghc-experimental.depends = ["base" "ghc-internal" "ghc-prim"];
-    ghc-heap.depends = ["base" "containers" "ghc-internal" "ghc-prim" "rts"];
-    ghc-internal.depends = ["ghc-bignum" "ghc-prim" "rts"];
-    ghc-platform.depends = ["base"];
-    ghc-prim.depends = ["rts"];
-    ghc-toolchain.depends = ["base" "directory" "filepath" "ghc-platform" "process" "text" "transformers"];
-    ghci.depends = ["array" "base" "binary" "bytestring" "containers" "deepseq" "filepath" "ghc-boot" "ghc-heap" "ghc-prim" "rts" "template-haskell" "transformers" "unix"];
-    haskeline.depends = ["base" "bytestring" "containers" "directory" "exceptions" "filepath" "process" "stm" "terminfo" "transformers" "unix" "Win32"];
-    hpc.depends = ["base" "containers" "deepseq" "directory" "filepath" "time"];
-    integer-gmp.depends = ["base" "ghc-bignum" "ghc-internal" "ghc-prim"];
-    mtl.depends = ["base" "transformers"];
-    os-string.depends = ["base" "bytestring" "deepseq" "exceptions" "template-haskell"];
-    parsec.depends = ["base" "bytestring" "mtl" "text"];
-    pretty.depends = ["base" "deepseq" "ghc-prim"];
-    process.depends = ["base" "deepseq" "directory" "filepath" "unix" "Win32"];
-    rts.depends = [];
-    semaphore-compat.depends = ["base" "exceptions" "unix" "Win32"];
-    stm.depends = ["array" "base"];
-    template-haskell.depends = ["base" "ghc-boot-th" "ghc-prim" "pretty"];
-    terminfo.depends = ["base"];
-    text.depends = ["array" "base" "binary" "bytestring" "deepseq" "ghc-prim" "template-haskell"];
-    time.depends = ["base" "deepseq" "Win32"];
-    transformers.depends = ["base"];
-    xhtml.depends = ["base"];
+  ghc-pkgs = [
+    "Cabal"
+    "Cabal-syntax"
+    "array"
+    "base"
+    "binary"
+    "bytestring"
+    "containers"
+    "deepseq"
+    "directory"
+    "exceptions"
+    "filepath"
+    "ghc"
+    "ghc-bignum"
+    "ghc-boot"
+    "ghc-boot-th"
+    "ghc-compact"
+    "ghc-experimental"
+    "ghc-heap"
+    "ghc-internal"
+    "ghc-platform"
+    "ghc-prim"
+    "ghc-toolchain"
+    "ghci"
+    "haskeline"
+    "hpc"
+    "integer-gmp"
+    "mtl"
+    "os-string"
+    "parsec"
+    "pretty"
+    "process"
+    "rts"
+    "semaphore-compat"
+    "stm"
+    "template-haskell"
+    "terminfo"
+    "text"
+    "time"
+    "transformers"
+    "xhtml"
+  ] ++ (if pkgs.stdenv.targetPlatform.isWindows
+    then [ "Win32" ]
+    else [ "unix" ]
+  );
 
-    ghc.version = ghc.version;
-    ghc-boot.version = ghc.version;
-    ghc-boot-th.version = ghc.version;
-    ghc-heap.version = ghc.version;
-    ghci.version = ghc.version;
-  } // (if pkgs.stdenv.targetPlatform.isWindows
-    then { Win32.depends = ["base" "filepath"]; }
-    else { unix.depends = ["base" "bytestring" "filepath" "os-string" "time"]; }
-  ) // pkgs.lib.optionalAttrs (builtins.compareVersions ghc.version "9.2" >= 0) {
-    system-cxx-std-lib.depends = [];
-    system-cxx-std-lib.version = "1.0";
-  };
-
+  dummy-ghc-pkg-dump = evalPackages.runCommand "dummy-ghc-pkg-dump" {
+      nativeBuildInputs = [
+        evalPackages.haskell-nix.nix-tools-unchecked.exes.cabal2json
+        evalPackages.jq
+      ];
+    } (let varname = x: builtins.replaceStrings ["-"] ["_"] x; in ''
+          PKGS=""
+          ${pkgs.lib.concatStrings
+            (builtins.map (name: ''
+              cabal_file=""
+              if [ -f ${ghcSrc}/libraries/${name}/${name}.cabal ]; then
+                cabal_file=${ghcSrc}/libraries/${name}/${name}.cabal
+              elif [ -f ${ghcSrc}/libraries/Cabal/${name}/${name}.cabal ]; then
+                cabal_file=${ghcSrc}/libraries/Cabal/${name}/${name}.cabal
+              elif [ -f ${ghcSrc}/libraries/${name}/${name}/${name}.cabal ]; then
+                cabal_file=${ghcSrc}/libraries/${name}/${name}/${name}.cabal
+              elif [ -f ${ghcSrc}/compiler/${name}.cabal ]; then
+                cabal_file=${ghcSrc}/compiler/${name}.cabal
+              elif [ -f ${ghcSrc}/compiler/${name}.cabal.in ]; then
+                cabal_file=${ghcSrc}/compiler/${name}.cabal.in
+              elif [ -f ${ghcSrc}/libraries/${name}/${name}.cabal.in ]; then
+                cabal_file=${ghcSrc}/libraries/${name}/${name}.cabal.in
+              fi
+              if [[ "$cabal_file" != "" ]]; then
+                fixed_cabal_file=$(mktemp)
+                cat $cabal_file | sed -e 's/@ProjectVersionMunged@/${ghc.version}/g' -e 's/default: *@[A-Za-z0-9]*@/default: False/g' > $fixed_cabal_file
+                json_cabal_file=$(mktemp)
+                cabal2json $fixed_cabal_file > $json_cabal_file
+                EXPOSED_MODULES_${varname name}="$(jq -r '.library."exposed-modules"[]|select(type=="array")[]' $json_cabal_file | tr '\n' ' ')"
+                DEPS_${varname name}="$(jq -r '.library."build-depends"[]|select(type=="array")[]' $json_cabal_file | sed 's/^\([A-Za-z0-9-]*\).*$/\1/g' | tr '\n' ' ')"
+                VER_${varname name}="$(jq -r '.version' $json_cabal_file)"
+                PKGS+=" ${name}"
+                LAST_PKG="${name}"
+              fi
+            '') ghc-pkgs)
+          }
+          ${ # There is not .cabal file for system-cxx-std-lib
+            pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.2" >= 0) (
+              let name="system-cxx-std-lib"; in ''
+                EXPOSED_MODULES_${varname name}=""
+                DEPS_${varname name}=""
+                VER_${varname name}="1.0"
+                PKGS+=" ${name}"
+                LAST_PKG="${name}"
+              '')}
+          for pkg in $PKGS; do
+            varname="$(echo $pkg | tr "-" "_")"
+            ver="VER_$varname"
+            exposed_mods="EXPOSED_MODULES_$varname"
+            deps="DEPS_$varname"
+            echo "name: $pkg" >> $out
+            echo "version: ''${!ver}" >> $out
+            echo "exposed-modules: ''${!exposed_mods}" >> $out
+            echo "depends:" >> $out
+            for dep in ''${!deps}; do
+              ver_dep="VER_$(echo $dep | tr "-" "_")"
+              if [[ "''${!ver_dep}" != "" ]]; then
+                echo "  $dep-''${!ver_dep}" >> $out
+              fi
+            done
+            if [[ "$pkg" != "$LAST_PKG" ]]; then
+              echo '---' >> $out
+            fi
+          done
+        '');
   # Dummy `ghc-pkg` that uses the captured output
   dummy-ghc-pkg = evalPackages.writeTextFile {
     name = "dummy-pkg-" + ghc.name;
@@ -446,53 +487,7 @@ let
           ;;
       ''}
         'dump --global -v0')
-          PKGS=""
-          ${pkgs.lib.concatStrings
-            (builtins.map (name: let varname = x: builtins.replaceStrings ["-"] ["_"] x; in ''
-              DEPS_${varname name}="${builtins.concatStringsSep " " ghc-pkgs.${name}.depends}"
-              ${if ghc-pkgs.${name} ? version
-                then ''
-                  VER_${varname name}="${ghc-pkgs.${name}.version}"
-                ''
-                else ''
-                  if [ -f ${ghcSrc}/libraries/${name}/${name}.cabal ]; then
-                    VER_${varname name}=$(cat ${ghcSrc}/libraries/${name}/${name}.cabal | tr "\n" "\r" | sed -E -e 's/.*\r[Vv]ersion:( |\r|\t)*([0-9.]*).*/\2/')
-                  elif [ -f ${ghcSrc}/libraries/Cabal/${name}/${name}.cabal ]; then
-                    VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/libraries/Cabal/${name}/${name}.cabal | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
-                  elif [ -f ${ghcSrc}/libraries/${name}/${name}/${name}.cabal ]; then
-                    VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/libraries/${name}/${name}/${name}.cabal | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
-                  elif [ -f ${ghcSrc}/${name}/${name}.cabal ]; then
-                    VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/${name}/${name}.cabal | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
-                  elif [ -f ${ghcSrc}/${name}/${name}.cabal.in ]; then
-                    VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/${name}/${name}.cabal.in | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
-                  elif [ -f ${ghcSrc}/libraries/${name}/${name}.cabal.in ]; then
-                    VER_${varname name}=$(grep -i '^version:' ${ghcSrc}/libraries/${name}/${name}.cabal.in | sed 's|^[Vv]ersion:[ \t]*\(.*\)$|\1|')
-                  fi
-                ''
-              }
-              if [[ ! "${pkgs.lib.concatStringsSep " " (builtins.attrNames pkgs.haskell-nix.hackage.${name} or {})}" =~ "$VER_${varname name}" ]]; then
-                PKGS+=" ${name}"
-                LAST_PKG="${name}"
-              fi
-            '') (builtins.attrNames ghc-pkgs))
-          }
-          for pkg in $PKGS; do
-            varname="$(echo $pkg | tr "-" "_")"
-            ver="VER_$varname"
-            deps="DEPS_$varname"
-            echo "name: $pkg"
-            echo "version: ''${!ver}"
-            echo "depends:"
-            for dep in ''${!deps}; do
-              ver_dep="VER_$(echo $dep | tr "-" "_")"
-              if [[ "''${!ver_dep}" != "" ]]; then
-                echo "  $dep-''${!ver_dep}"
-              fi
-            done
-            if [[ "$pkg" != "$LAST_PKG" ]]; then
-              echo '---'
-            fi
-          done
+          cat ${dummy-ghc-pkg-dump}
           ;;
         *)
           echo "Unknown argument '$*'. " >&2
