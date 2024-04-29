@@ -7,12 +7,6 @@ if impl(ghc>=9.8)
 if impl(ghc > 9.9)
   allow-newer: *:containers
 
-if impl(ghc <8.11)
-  constraints: os-string < 2.0
-
-if os(osx) && impl(ghc <8.11)
-  constraints: text -simdutf
-
 -- This prevents hsc2hs from causing old versions of packages from being added to plan.json
 allow-newer: hsc2hs:*
 
@@ -37,10 +31,10 @@ if !impl(ghc>=9.10) && !os(ghcjs)
   active-repositories: hackage.haskell.org
 
 if impl(ghc>=9.10) && !os(ghcjs)
-  active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org
+  active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override
 
 if !impl(ghc>=9.10) && os(ghcjs)
   active-repositories: hackage.haskell.org, ghcjs-overlay:override
 
 if impl(ghc>=9.10) && os(ghcjs)
-  active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org, ghcjs-overlay:override
+  active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override, ghcjs-overlay:override
