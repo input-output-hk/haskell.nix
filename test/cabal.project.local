@@ -31,10 +31,10 @@ if !impl(ghc>=9.10) && !os(ghcjs)
   active-repositories: hackage.haskell.org
 
 if impl(ghc>=9.10) && !os(ghcjs)
-  active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override
+  active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org
 
 if !impl(ghc>=9.10) && os(ghcjs)
   active-repositories: hackage.haskell.org, ghcjs-overlay:override
 
 if impl(ghc>=9.10) && os(ghcjs)
-  active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override, ghcjs-overlay:override
+  active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org, ghcjs-overlay:override
