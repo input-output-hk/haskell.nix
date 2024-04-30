@@ -4,9 +4,6 @@ let
     name = "${name}-package.nix";
     src = src.srcForCabal2Nix or src;
     nativeBuildInputs = [
-      # It is not safe to check the nix-tools materialization here
-      # as we would need to run this code to do so leading to
-      # infinite recursion (so using nix-tools-unchecked).
       final.buildPackages.haskell-nix.nix-tools-unchecked
     ];
     phases = [ "unpackPhase" "buildPhase" ];
@@ -20,41 +17,6 @@ let
       cabal-to-nix *.cabal > $out
     '';
   };
-
-  # Combines multiple derivations into one to make them
-  # easier to materialize.
-  # Using `cp -Lr` here follows the symlinks and prevents
-  # `access to path is forbidden in restricted mode`
-  # errors on hydra when the materialized files are not present.
-  combineFiles = name: ext: files:
-    let links = final.linkFarm name
-      (final.lib.mapAttrsToList (name: path: {
-        name = name + ext;
-        inherit path;
-      }) files);
-    in final.buildPackages.runCommand "${name}${ext}" {} ''
-      cp -Lr ${links} $out
-      chmod -R +w $out
-    '';
-
-  # Combine the all the boot package nix files for a given ghc
-  # into a single derivation and materialize it.
-  combineAndMaterialize = unchecked: materialized-dir: ghcName: bootPackages:
-      (final.haskell-nix.materialize ({
-          materialized =
-            if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.8" < 0
-              then materialized-dir + "/ghc-boot-packages-nix/${ghcName +
-                # The 3434.patch we apply to fix linking on arm systems changes ghc-prim.cabal
-                # so it needs its own materialization.
-                final.lib.optionalString final.stdenv.targetPlatform.isAarch64 "-aarch64"
-                # GHCJS bytestring and libiserv versions differs
-                + final.lib.optionalString final.stdenv.hostPlatform.isGhcjs "-ghcjs"
-              }"
-              else null;
-        } // final.lib.optionalAttrs unchecked {
-          checkMaterialization = false;
-        }) (combineFiles "${ghcName}-boot-packages-nix" ".nix" (builtins.mapAttrs
-          (_: srcAndNix: srcAndNix.nix) bootPackages)));
 
   # Import the nix and src.
   importSrcAndNix = srcAndNix:
@@ -137,7 +99,6 @@ let
 # as part of patches we applied to the GHC tree.
 
 in rec {
-  inherit combineAndMaterialize;
   ghc-boot-packages-src-and-nix = builtins.mapAttrs
     (ghcName: ghc: builtins.mapAttrs
       (pkgName: subDir: rec {
@@ -188,27 +149,14 @@ in rec {
 
   # All the ghc boot package nix files for each ghc.
   ghc-boot-packages-nix = builtins.mapAttrs
-    (combineAndMaterialize false ../materialized)
-      ghc-boot-packages-src-and-nix;
-
-  ghc-boot-packages-nix-unchecked = builtins.mapAttrs
-    (combineAndMaterialize true ../materialized)
+    (_: x: builtins.mapAttrs (_: pkg: pkg.nix) x)
       ghc-boot-packages-src-and-nix;
 
   # The import nix results for each ghc boot package for each ghc.
   ghc-boot-packages = builtins.mapAttrs
     (ghcName: value: builtins.mapAttrs
       (pkgName: srcAndNix: importSrcAndNix {
-        inherit (srcAndNix) src;
-        nix = final.ghc-boot-packages-nix.${ghcName} + "/${pkgName}.nix";
-      }) value)
-        ghc-boot-packages-src-and-nix;
-
-  ghc-boot-packages-unchecked = builtins.mapAttrs
-    (ghcName: value: builtins.mapAttrs
-      (pkgName: srcAndNix: importSrcAndNix {
-        inherit (srcAndNix) src;
-        nix = final.ghc-boot-packages-nix-unchecked.${ghcName} + "/${pkgName}.nix";
+        inherit (srcAndNix) src nix;
       }) value)
         ghc-boot-packages-src-and-nix;
 
@@ -256,11 +204,7 @@ in rec {
       cabalProjectLocal = null;
       cabalProjectFreeze = null;
       index-state = final.haskell-nix.internalHackageIndexState;
-      # Where to look for materialization files
-      materialized =
-        if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.8" < 0
-          then ../materialized/ghc-extra-projects + "/${ghc-extra-projects-type proj.ghc}/${ghcName}"
-          else null;
+      materialized = null;
       compiler-nix-name = ghcName;
       configureArgs = "--disable-tests --disable-benchmarks --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
       modules = [{

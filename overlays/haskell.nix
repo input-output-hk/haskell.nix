@@ -165,9 +165,7 @@ final: prev: {
               mkPkgSet {
                 inherit pkg-def;
                 pkg-def-extras = [ plan-pkgs.extras
-                                   # Using the -unchecked version here to avoid infinite
-                                   # recursion issues when checkMaterialization = true
-                                   final.ghc-boot-packages-unchecked.${compiler-nix-name'}
+                                   final.ghc-boot-packages.${compiler-nix-name'}
                                  ]
                              ++ pkg-def-extras;
                 # set doExactConfig = true, as we trust cabals resolution for
@@ -1113,7 +1111,7 @@ final: prev: {
             boot-hscolour = final.buildPackages.haskell-nix.bootstrap.packages.hscolour;
             ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name};
             ghc-boot-packages-nix = final.recurseIntoAttrs
-              final.ghc-boot-packages-nix.${compiler-nix-name};
+              (builtins.mapAttrs (_: x: final.recurseIntoAttrs x) final.ghc-boot-packages-nix.${compiler-nix-name});
             } // final.lib.optionalAttrs (__compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.4" <0) {
               # Only needed for older GHC versions (see iserv-proxy-exes)
               ghc-extra-projects-nix = final.ghc-extra-projects.${compiler-nix-name}.plan-nix;
