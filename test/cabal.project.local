@@ -18,7 +18,7 @@ repository head.hackage.ghc.haskell.org
      f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
      26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
      7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
-  --sha256: sha256-h/vbKTUdGVdkt2ogJer2d+gRuHkayiblQ7oFRqpj14c=
+  --sha256: sha256-dx4WtCafVcu1+IlaK1ABcqQ1UummqTN8HRo3svRdTOE=
 
 repository ghcjs-overlay
   url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/ed91ac93832fdfc50471ab8df13b8174e91b35ed
@@ -31,10 +31,10 @@ if !impl(ghc>=9.10) && !os(ghcjs)
   active-repositories: hackage.haskell.org
 
 if impl(ghc>=9.10) && !os(ghcjs)
-  active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override
+  active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org
 
 if !impl(ghc>=9.10) && os(ghcjs)
   active-repositories: hackage.haskell.org, ghcjs-overlay:override
 
 if impl(ghc>=9.10) && os(ghcjs)
-  active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override, ghcjs-overlay:override
+  active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org, ghcjs-overlay:override
