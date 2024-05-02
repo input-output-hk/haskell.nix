@@ -1061,22 +1061,11 @@ final: prev: {
                     apply = x: x ++ [ "ghci" "exceptions" "stm" "libiserv" ];
                   };
                 }];
-              } // (if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.1" < 0
-                then {
-                  materialized =../materialized/iserv-proxy + "/${
-                    if pkgs.stdenv.hostPlatform.isWindows
-                      then "windows"
-                      else if pkgs.stdenv.hostPlatform.isGhcjs
-                        then "ghcjs"
-                          else if pkgs.haskell-nix.haskellLib.isCrossHost
-                            then "cross"
-                            else "default"}/${compiler-nix-name}";
-                }
-                else {
+              } // final.lib.optionalAttrs (builtins.compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.10" >= 0) {
                   cabalProjectLocal = ''
                     allow-newer: *:base, *:bytestring
                   '';
-                }))).hsPkgs.iserv-proxy.components.exes;
+                })).hsPkgs.iserv-proxy.components.exes;
             in {
               # We need the proxy for the build system and the interpreter for the target
               inherit (exes final.pkgsBuildBuild) iserv-proxy;
