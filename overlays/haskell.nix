@@ -165,7 +165,9 @@ final: prev: {
               mkPkgSet {
                 inherit pkg-def;
                 pkg-def-extras = [ plan-pkgs.extras
-                                   final.ghc-boot-packages.${compiler-nix-name'}
+                                   # Using the -unchecked version here to avoid infinite
+                                   # recursion issues when checkMaterialization = true
+                                   final.ghc-boot-packages-unchecked.${compiler-nix-name'}
                                  ]
                              ++ pkg-def-extras;
                 # set doExactConfig = true, as we trust cabals resolution for
@@ -1061,11 +1063,22 @@ final: prev: {
                     apply = x: x ++ [ "ghci" "exceptions" "stm" "libiserv" ];
                   };
                 }];
-              } // final.lib.optionalAttrs (builtins.compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.10" >= 0) {
+              } // (if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.9" < 0
+                then {
+                  materialized =../materialized/iserv-proxy + "/${
+                    if pkgs.stdenv.hostPlatform.isWindows
+                      then "windows"
+                      else if pkgs.stdenv.hostPlatform.isGhcjs
+                        then "ghcjs"
+                          else if pkgs.haskell-nix.haskellLib.isCrossHost
+                            then "cross"
+                            else "default"}/${compiler-nix-name}";
+                }
+                else {
                   cabalProjectLocal = ''
                     allow-newer: *:base, *:bytestring
                   '';
-                })).hsPkgs.iserv-proxy.components.exes;
+                }))).hsPkgs.iserv-proxy.components.exes;
             in {
               # We need the proxy for the build system and the interpreter for the target
               inherit (exes final.pkgsBuildBuild) iserv-proxy;
@@ -1100,7 +1113,7 @@ final: prev: {
             boot-hscolour = final.buildPackages.haskell-nix.bootstrap.packages.hscolour;
             ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name};
             ghc-boot-packages-nix = final.recurseIntoAttrs
-              (builtins.mapAttrs (_: x: final.recurseIntoAttrs x) final.ghc-boot-packages-nix.${compiler-nix-name});
+              final.ghc-boot-packages-nix.${compiler-nix-name};
             } // final.lib.optionalAttrs (__compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.4" <0) {
               # Only needed for older GHC versions (see iserv-proxy-exes)
               ghc-extra-projects-nix = final.ghc-extra-projects.${compiler-nix-name}.plan-nix;
