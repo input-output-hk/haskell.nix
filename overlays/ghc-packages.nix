@@ -42,7 +42,7 @@ let
   combineAndMaterialize = unchecked: materialized-dir: ghcName: bootPackages:
       (final.haskell-nix.materialize ({
           materialized =
-            if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.8" < 0
+            if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.9" < 0
               then materialized-dir + "/ghc-boot-packages-nix/${ghcName +
                 # The 3434.patch we apply to fix linking on arm systems changes ghc-prim.cabal
                 # so it needs its own materialization.
