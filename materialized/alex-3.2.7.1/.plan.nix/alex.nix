@@ -83,10 +83,10 @@
         "tests/issue_119.x"
         "tests/issue_141.x"
         "tests/issue_197.x"
-        ];
+      ];
       extraTmpFiles = [];
       extraDocFiles = [];
-      };
+    };
     components = {
       exes = {
         "alex" = {
@@ -95,7 +95,7 @@
             (hsPkgs."array" or (errorHandler.buildDepError "array"))
             (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
             (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
-            ];
+          ];
           buildable = true;
           modules = [
             "AbsSyn"
@@ -119,23 +119,23 @@
             "Data/Ranged/Boundaries"
             "Data/Ranged/RangedSet"
             "Data/Ranged/Ranges"
-            ];
+          ];
           hsSourceDirs = [ "src" ];
           mainPath = [ "Main.hs" ];
-          };
         };
+      };
       tests = {
         "tests" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."process" or (errorHandler.buildDepError "process"))
-            ];
+          ];
           build-tools = [
             (hsPkgs.buildPackages.alex.components.exes.alex or (pkgs.buildPackages.alex or (errorHandler.buildToolDepError "alex:alex")))
-            ];
+          ];
           buildable = true;
           mainPath = [ "test.hs" ];
-          };
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../.; }

@@ -26,10 +26,10 @@
       licenseFiles = [];
       dataDir = ".";
       dataFiles = [];
-      extraSrcFiles = [];
+      extraSrcFiles = [ "cbits/symbols.aarch64-musl.h" ];
       extraTmpFiles = [];
       extraDocFiles = [];
-      };
+    };
     components = {
       "library" = {
         depends = [
@@ -43,12 +43,11 @@
           (hsPkgs."network" or (errorHandler.buildDepError "network"))
           (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
           (hsPkgs."ghci" or (errorHandler.buildDepError "ghci"))
-          (hsPkgs."libiserv" or (errorHandler.buildDepError "libiserv"))
-          ];
+        ] ++ pkgs.lib.optional (compiler.isGhc && compiler.version.lt "9.8") (hsPkgs."libiserv" or (errorHandler.buildDepError "libiserv"));
         buildable = true;
         modules = [ "IServ/Remote/Message" "IServ/Remote/Interpreter" ];
         hsSourceDirs = [ "src" ];
-        };
+      };
       exes = {
         "iserv-proxy" = {
           depends = [
@@ -59,20 +58,24 @@
             (hsPkgs."network" or (errorHandler.buildDepError "network"))
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
             (hsPkgs."ghci" or (errorHandler.buildDepError "ghci"))
-            (hsPkgs."libiserv" or (errorHandler.buildDepError "libiserv"))
             (hsPkgs."iserv-proxy" or (errorHandler.buildDepError "iserv-proxy"))
-            ];
+          ] ++ pkgs.lib.optional (compiler.isGhc && compiler.version.lt "9.8") (hsPkgs."libiserv" or (errorHandler.buildDepError "libiserv"));
           buildable = true;
-          mainPath = [ "Main.hs" ];
-          };
+          mainPath = [
+            "Main.hs"
+          ] ++ pkgs.lib.optional (compiler.isGhc && compiler.version.lt "9.8") "";
+        };
         "iserv-proxy-interpreter" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."iserv-proxy" or (errorHandler.buildDepError "iserv-proxy"))
-            ];
+          ];
           buildable = true;
-          mainPath = [ "Interpreter.hs" ];
-          };
+          cSources = pkgs.lib.optional (system.isLinux && system.isAarch64) "cbits/symbols.aarch64-musl.c";
+          mainPath = [
+            "Interpreter.hs"
+          ] ++ pkgs.lib.optional (system.isLinux && system.isAarch64) "";
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../.; }
