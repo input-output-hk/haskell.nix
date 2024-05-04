@@ -386,6 +386,7 @@ let
     "haskeline"
     "hpc"
     "integer-gmp"
+    "libiserv"
     "mtl"
     "os-string"
     "parsec"

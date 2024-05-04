@@ -13,7 +13,7 @@
       terminfo = true;
       dynamic-system-linker = true;
       build-tool-depends = true;
-      };
+    };
     package = {
       specVersion = "2.2";
       identifier = { name = "ghc"; version = "9.4.1"; };
@@ -32,8 +32,8 @@
         (hsPkgs.buildPackages.directory or (pkgs.buildPackages.directory or (errorHandler.setupDepError "directory")))
         (hsPkgs.buildPackages.process or (pkgs.buildPackages.process or (errorHandler.setupDepError "process")))
         (hsPkgs.buildPackages.filepath or (pkgs.buildPackages.filepath or (errorHandler.setupDepError "filepath")))
-        ];
-      };
+      ];
+    };
     components = {
       "library" = {
         depends = [
@@ -55,18 +55,18 @@
           (hsPkgs."ghc-boot" or (errorHandler.buildDepError "ghc-boot"))
           (hsPkgs."ghc-heap" or (errorHandler.buildDepError "ghc-heap"))
           (hsPkgs."ghci" or (errorHandler.buildDepError "ghci"))
-          ] ++ (if system.isWindows
+        ] ++ (if system.isWindows
           then [ (hsPkgs."Win32" or (errorHandler.buildDepError "Win32")) ]
           else [
             (hsPkgs."unix" or (errorHandler.buildDepError "unix"))
-            ] ++ (pkgs.lib).optional (flags.terminfo) (hsPkgs."terminfo" or (errorHandler.buildDepError "terminfo")));
-        build-tools = (pkgs.lib).optionals (flags.build-tool-depends) [
+          ] ++ pkgs.lib.optional (flags.terminfo) (hsPkgs."terminfo" or (errorHandler.buildDepError "terminfo")));
+        build-tools = pkgs.lib.optionals (flags.build-tool-depends) [
           (hsPkgs.buildPackages.alex.components.exes.alex or (pkgs.buildPackages.alex or (errorHandler.buildToolDepError "alex:alex")))
           (hsPkgs.buildPackages.happy.components.exes.happy or (pkgs.buildPackages.happy or (errorHandler.buildToolDepError "happy:happy")))
           (hsPkgs.buildPackages.genprimopcode.components.exes.genprimopcode or (pkgs.buildPackages.genprimopcode or (errorHandler.buildToolDepError "genprimopcode:genprimopcode")))
           (hsPkgs.buildPackages.deriveConstants.components.exes.deriveConstants or (pkgs.buildPackages.deriveConstants or (errorHandler.buildToolDepError "deriveConstants:deriveConstants")))
-          ];
+        ];
         buildable = true;
-        };
       };
-    } // rec { src = (pkgs.lib).mkDefault ./.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ./.; }

@@ -29,7 +29,7 @@
       extraSrcFiles = [ "README.md" "bash-completion/cabal" "changelog" ];
       extraTmpFiles = [];
       extraDocFiles = [];
-      };
+    };
     components = {
       "library" = {
         depends = (([
@@ -66,18 +66,18 @@
           (hsPkgs."regex-base" or (errorHandler.buildDepError "regex-base"))
           (hsPkgs."regex-posix" or (errorHandler.buildDepError "regex-posix"))
           (hsPkgs."safe-exceptions" or (errorHandler.buildDepError "safe-exceptions"))
-          ] ++ (pkgs.lib).optionals (flags.native-dns) (if system.isWindows
+        ] ++ pkgs.lib.optionals (flags.native-dns) (if system.isWindows
           then [ (hsPkgs."windns" or (errorHandler.buildDepError "windns")) ]
           else [
             (hsPkgs."resolv" or (errorHandler.buildDepError "resolv"))
-            ])) ++ (if system.isWindows
+          ])) ++ (if system.isWindows
           then [
             (hsPkgs."Win32" or (errorHandler.buildDepError "Win32"))
             (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
-            ]
+          ]
           else [
             (hsPkgs."unix" or (errorHandler.buildDepError "unix"))
-            ])) ++ (pkgs.lib).optional (flags.lukko) (hsPkgs."lukko" or (errorHandler.buildDepError "lukko"));
+          ])) ++ pkgs.lib.optional (flags.lukko) (hsPkgs."lukko" or (errorHandler.buildDepError "lukko"));
         buildable = true;
         modules = [
           "Distribution/Deprecated/ParseUtils"
@@ -211,9 +211,9 @@
           "Distribution/Client/VCS"
           "Distribution/Client/Version"
           "Distribution/Client/Win32SelfUpgrade"
-          ];
+        ];
         hsSourceDirs = [ "src" ];
-        };
+      };
       exes = {
         "cabal" = {
           depends = [
@@ -223,15 +223,15 @@
             (hsPkgs."cabal-install" or (errorHandler.buildDepError "cabal-install"))
             (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
-            ];
-          libs = (pkgs.lib).optional (system.isAix) (pkgs."bsd" or (errorHandler.sysDepError "bsd"));
+          ];
+          libs = pkgs.lib.optional (system.isAix) (pkgs."bsd" or (errorHandler.sysDepError "bsd"));
           buildable = true;
           hsSourceDirs = [ "main" ];
           mainPath = (([
             "Main.hs"
-            ] ++ (pkgs.lib).optional (compiler.isGhc && (compiler.version).lt "8.8") "") ++ (pkgs.lib).optional (compiler.isGhc && (compiler.version).ge "8.10") "") ++ (pkgs.lib).optional (system.isAix) "";
-          };
+          ] ++ pkgs.lib.optional (compiler.isGhc && compiler.version.lt "8.8") "") ++ pkgs.lib.optional (compiler.isGhc && compiler.version.ge "8.10") "") ++ pkgs.lib.optional (system.isAix) "";
         };
+      };
       tests = {
         "unit-tests" = {
           depends = [
@@ -259,7 +259,7 @@
             (hsPkgs."tasty-hunit" or (errorHandler.buildDepError "tasty-hunit"))
             (hsPkgs."tree-diff" or (errorHandler.buildDepError "tree-diff"))
             (hsPkgs."QuickCheck" or (errorHandler.buildDepError "QuickCheck"))
-            ];
+          ];
           buildable = true;
           modules = [
             "UnitTests/Distribution/Client/ArbitraryInstances"
@@ -296,10 +296,10 @@
             "UnitTests/Distribution/Solver/Types/OptionalStanza"
             "UnitTests/Options"
             "UnitTests/TempTestDir"
-            ];
+          ];
           hsSourceDirs = [ "tests" ];
           mainPath = [ "UnitTests.hs" ];
-          };
+        };
         "mem-use-tests" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
@@ -310,17 +310,17 @@
             (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
             (hsPkgs."tasty" or (errorHandler.buildDepError "tasty"))
             (hsPkgs."tasty-hunit" or (errorHandler.buildDepError "tasty-hunit"))
-            ];
+          ];
           buildable = true;
           modules = [
             "UnitTests/Distribution/Solver/Modular/DSL"
             "UnitTests/Distribution/Solver/Modular/DSL/TestCaseUtils"
             "UnitTests/Distribution/Solver/Modular/MemoryUsage"
             "UnitTests/Options"
-            ];
+          ];
           hsSourceDirs = [ "tests" ];
           mainPath = [ "MemoryUsageTests.hs" ];
-          };
+        };
         "integration-tests2" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
@@ -335,11 +335,11 @@
             (hsPkgs."tasty" or (errorHandler.buildDepError "tasty"))
             (hsPkgs."tasty-hunit" or (errorHandler.buildDepError "tasty-hunit"))
             (hsPkgs."tagged" or (errorHandler.buildDepError "tagged"))
-            ];
+          ];
           buildable = true;
           hsSourceDirs = [ "tests" ];
           mainPath = [ "IntegrationTests2.hs" ];
-          };
+        };
         "long-tests" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
@@ -363,7 +363,7 @@
             (hsPkgs."tasty-quickcheck" or (errorHandler.buildDepError "tasty-quickcheck"))
             (hsPkgs."QuickCheck" or (errorHandler.buildDepError "QuickCheck"))
             (hsPkgs."pretty-show" or (errorHandler.buildDepError "pretty-show"))
-            ];
+          ];
           buildable = true;
           modules = [
             "UnitTests/Distribution/Client/ArbitraryInstances"
@@ -376,10 +376,10 @@
             "UnitTests/Distribution/Solver/Modular/QuickCheck/Utils"
             "UnitTests/Options"
             "UnitTests/TempTestDir"
-            ];
+          ];
           hsSourceDirs = [ "tests" ];
           mainPath = [ "LongTests.hs" ];
-          };
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../.; }
