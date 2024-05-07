@@ -442,7 +442,7 @@ let
               fi
             '') ghc-pkgs)
           }
-          ${ # There is not .cabal file for system-cxx-std-lib
+          ${ # There is no .cabal file for system-cxx-std-lib
             pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.2" >= 0) (
               let name="system-cxx-std-lib"; in ''
                 EXPOSED_MODULES_${varname name}=""
@@ -450,7 +450,19 @@ let
                 VER_${varname name}="1.0"
                 PKGS+=" ${name}"
                 LAST_PKG="${name}"
-              '')}
+              '')
+            # ghcjs packages (before the ghc JS backend). TODO remove this when GHC 8.10 support is dropped
+            + pkgs.lib.optionalString (pkgs.stdenv.targetPlatform.isGhcjs && builtins.compareVersions ghc.version "9" < 0) ''
+                EXPOSED_MODULES_${varname "ghcjs-prim"}="GHCJS.Prim GHCJS.Prim.Internal GHCJS.Prim.Internal.Build"
+                DEPS_${varname "ghcjs-prim"}="base ghc-prim"
+                VER_${varname "ghcjs-prim"}="0.1.1.0"
+                EXPOSED_MODULES_${varname "ghcjs-th"}="GHCJS.Prim.TH.Eval GHCJS.Prim.TH.Types"
+                DEPS_${varname "ghcjs-th"}="base binary bytestring containers ghc-prim ghci template-haskell"
+                VER_${varname "ghcjs-th"}="0.1.0.0"
+                PKGS+=" ghcjs-prim ghcjs-th"
+                LAST_PKG="ghcjs-th"
+              ''
+          }
           for pkg in $PKGS; do
             varname="$(echo $pkg | tr "-" "_")"
             ver="VER_$varname"
