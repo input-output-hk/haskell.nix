@@ -1,1 +1,3 @@
 packages: pkg
+
+allow-newer: Cabal:time, Cabal-syntax:time
