@@ -19,7 +19,7 @@
       stage2 = true;
       stage3 = false;
       terminfo = true;
-      };
+    };
     package = {
       specVersion = "2.4";
       identifier = { name = "ghcjs"; version = "8.10.7"; };
@@ -71,10 +71,10 @@
         "ghc/driver/utils/cwrapper.h"
         "ghc/driver/utils/getLocation.h"
         "utils/wrapper/getline.h"
-        ];
+      ];
       extraTmpFiles = [];
       extraDocFiles = [];
-      };
+    };
     components = {
       "library" = {
         depends = [
@@ -134,14 +134,14 @@
           (hsPkgs."ghc-boot-th" or (errorHandler.buildDepError "ghc-boot-th"))
           (hsPkgs."ghc-heap" or (errorHandler.buildDepError "ghc-heap"))
           (hsPkgs."ghci" or (errorHandler.buildDepError "ghci"))
-          ] ++ (if system.isWindows
+        ] ++ (if system.isWindows
           then [ (hsPkgs."Win32" or (errorHandler.buildDepError "Win32")) ]
           else [
             (hsPkgs."unix" or (errorHandler.buildDepError "unix"))
-            ] ++ (pkgs.lib).optional (flags.terminfo) (hsPkgs."terminfo" or (errorHandler.buildDepError "terminfo")));
+          ] ++ pkgs.lib.optional (flags.terminfo) (hsPkgs."terminfo" or (errorHandler.buildDepError "terminfo")));
         build-tools = [
           (hsPkgs.buildPackages.happy.components.exes.happy or (pkgs.buildPackages.happy or (errorHandler.buildToolDepError "happy:happy")))
-          ];
+        ];
         buildable = true;
         modules = [
           "Paths_ghcjs"
@@ -668,11 +668,11 @@
           "Linker"
           "RtClosureInspect"
           "GHCi"
-          ];
+        ];
         cSources = [
           "ghc/compiler/parser/cutils.c"
           "ghc/compiler/cbits/genSym.c"
-          ];
+        ];
         hsSourceDirs = [
           "lib/ghcjs-th"
           "src"
@@ -701,7 +701,7 @@
           "ghc/compiler/typecheck"
           "ghc/compiler/types"
           "ghc/compiler/utils"
-          ] ++ (if system.isWindows
+        ] ++ (if system.isWindows
           then [ "src-platform/windows" ]
           else [ "src-platform/unix" ]);
         includeDirs = [
@@ -709,18 +709,18 @@
           "ghc/compiler/parser"
           "ghc/compiler/utils"
           "lib/ghc/includes"
-          ];
-        };
+        ];
+      };
       exes = {
         "ghcjs" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."ghcjs" or (errorHandler.buildDepError "ghcjs"))
-            ];
+          ];
           buildable = true;
           hsSourceDirs = [ "src-bin" ];
           mainPath = [ "Main.hs" ];
-          };
+        };
         "ghcjs-pkg" = {
           depends = [
             (hsPkgs."ghcjs" or (errorHandler.buildDepError "ghcjs"))
@@ -733,17 +733,17 @@
             (hsPkgs."binary" or (errorHandler.buildDepError "binary"))
             (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
             (hsPkgs."ghc-boot" or (errorHandler.buildDepError "ghc-boot"))
-            ] ++ (pkgs.lib).optionals (!system.isWindows) [
+          ] ++ pkgs.lib.optionals (!system.isWindows) [
             (hsPkgs."unix" or (errorHandler.buildDepError "unix"))
             (hsPkgs."terminfo" or (errorHandler.buildDepError "terminfo"))
-            ];
+          ];
           buildable = if flags.compiler-only then false else true;
-          cSources = (pkgs.lib).optional (system.isWindows) "cbits/CRT_noglob.c";
+          cSources = pkgs.lib.optional (system.isWindows) "cbits/CRT_noglob.c";
           hsSourceDirs = [ "src-bin" ];
           mainPath = (([
             "Pkg.hs"
-            ] ++ (pkgs.lib).optional (flags.compiler-only) "") ++ (pkgs.lib).optional (!system.isWindows) "") ++ (pkgs.lib).optional (system.isWindows) "";
-          };
+          ] ++ pkgs.lib.optional (flags.compiler-only) "") ++ pkgs.lib.optional (!system.isWindows) "") ++ pkgs.lib.optional (system.isWindows) "";
+        };
         "ghcjs-boot" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
@@ -766,24 +766,24 @@
             (hsPkgs."time" or (errorHandler.buildDepError "time"))
             (hsPkgs."unix-compat" or (errorHandler.buildDepError "unix-compat"))
             (hsPkgs."executable-path" or (errorHandler.buildDepError "executable-path"))
-            ];
+          ];
           buildable = true;
           hsSourceDirs = [ "src-bin" ];
-          mainPath = [ "Boot.hs" ] ++ (pkgs.lib).optional (system.isWindows) "";
-          };
+          mainPath = [ "Boot.hs" ] ++ pkgs.lib.optional (system.isWindows) "";
+        };
         "private-ghcjs-run" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
             (hsPkgs."process" or (errorHandler.buildDepError "process"))
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
-            ];
+          ];
           buildable = if flags.compiler-only then false else true;
           hsSourceDirs = [ "src-bin" ];
           mainPath = ([
             "Run.hs"
-            ] ++ (pkgs.lib).optional (flags.compiler-only) "") ++ (pkgs.lib).optional (system.isWindows) "";
-          };
+          ] ++ pkgs.lib.optional (flags.compiler-only) "") ++ pkgs.lib.optional (system.isWindows) "";
+        };
         "private-ghcjs-wrapper" = {
           buildable = if flags.compiler-only || !system.isWindows
             then false
@@ -792,18 +792,18 @@
             "ghc/driver/utils/getLocation.c"
             "ghc/driver/utils/cwrapper.c"
             "utils/wrapper/getline.c"
-            ];
+          ];
           hsSourceDirs = [ "utils/wrapper" ];
           includeDirs = [ "ghc/driver/utils" ];
           includes = [
             "ghc/driver/utils/cwrapper.h"
             "ghc/driver/utils/getLocation.h"
             "utils/wrapper/getline.h"
-            ];
+          ];
           mainPath = [
             "wrapper.c"
-            ] ++ (pkgs.lib).optional (flags.compiler-only || !system.isWindows) "";
-          };
+          ] ++ pkgs.lib.optional (flags.compiler-only || !system.isWindows) "";
+        };
         "private-ghcjs-unlit" = {
           buildable = if flags.compiler-only then false else true;
           cSources = [ "ghc/utils/unlit/fs.c" ];
@@ -811,8 +811,8 @@
           includes = [ "ghc/utils/unlit/fs.h" ];
           mainPath = [
             "unlit.c"
-            ] ++ (pkgs.lib).optional (flags.compiler-only) "";
-          };
+          ] ++ pkgs.lib.optional (flags.compiler-only) "";
+        };
         "private-ghcjs-touchy" = {
           buildable = if flags.compiler-only || !system.isWindows
             then false
@@ -820,8 +820,8 @@
           hsSourceDirs = [ "ghc/utils/touchy" ];
           mainPath = [
             "touchy.c"
-            ] ++ (pkgs.lib).optional (flags.compiler-only || !system.isWindows) "";
-          };
+          ] ++ pkgs.lib.optional (flags.compiler-only || !system.isWindows) "";
+        };
         "private-ghcjs-hsc2hs" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
@@ -829,7 +829,7 @@
             (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
             (hsPkgs."process" or (errorHandler.buildDepError "process"))
-            ] ++ (pkgs.lib).optional (system.isWindows) (hsPkgs."process" or (errorHandler.buildDepError "process"));
+          ] ++ pkgs.lib.optional (system.isWindows) (hsPkgs."process" or (errorHandler.buildDepError "process"));
           buildable = if flags.compiler-only then false else true;
           modules = [
             "C"
@@ -843,16 +843,16 @@
             "Compat/ResponseFile"
             "Compat/TempFile"
             "Paths_ghcjs"
-            ];
+          ];
           hsSourceDirs = [ "ghc/utils/hsc2hs" ];
           mainPath = ([
             "Main.hs"
-            ] ++ (pkgs.lib).optional (flags.compiler-only) "") ++ (pkgs.lib).optional (system.isWindows) "";
-          };
+          ] ++ pkgs.lib.optional (flags.compiler-only) "") ++ pkgs.lib.optional (system.isWindows) "";
+        };
         "haddock" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
-            ] ++ (pkgs.lib).optionals true [
+          ] ++ pkgs.lib.optionals true [
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
             (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
             (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
@@ -866,9 +866,9 @@
             (hsPkgs."parsec" or (errorHandler.buildDepError "parsec"))
             (hsPkgs."text" or (errorHandler.buildDepError "text"))
             (hsPkgs."transformers" or (errorHandler.buildDepError "transformers"))
-            ];
+          ];
           buildable = if flags.compiler-only then false else true;
-          modules = (pkgs.lib).optionals true [
+          modules = pkgs.lib.optionals true [
             "CompatPrelude"
             "Documentation/Haddock/Parser"
             "Documentation/Haddock/Parser/Monad"
@@ -917,15 +917,15 @@
             "Haddock/Syb"
             "Haddock/Convert"
             "Paths_ghcjs"
-            ];
-          hsSourceDirs = [ "src-bin" ] ++ (pkgs.lib).optionals true [
+          ];
+          hsSourceDirs = [ "src-bin" ] ++ pkgs.lib.optionals true [
             "ghc/utils/haddock/haddock-api/src"
             "ghc/utils/haddock/haddock-library/src"
-            ];
+          ];
           mainPath = ([
             "HaddockDriver.hs"
-            ] ++ (pkgs.lib).optional (flags.compiler-only) "") ++ (pkgs.lib).optional true "";
-          };
+          ] ++ pkgs.lib.optional (flags.compiler-only) "") ++ pkgs.lib.optional true "";
+        };
         "ghcjs-dumparchive" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
@@ -933,14 +933,14 @@
             (hsPkgs."ghcjs" or (errorHandler.buildDepError "ghcjs"))
             (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
-            ];
+          ];
           buildable = if flags.compiler-only then false else true;
           hsSourceDirs = [ "utils" ];
           mainPath = ([
             "dumpArchive.hs"
-            ] ++ (pkgs.lib).optional (flags.compiler-only) "") ++ (pkgs.lib).optional (system.isWindows) "";
-          };
+          ] ++ pkgs.lib.optional (flags.compiler-only) "") ++ pkgs.lib.optional (system.isWindows) "";
         };
+      };
       tests = {
         "test" = {
           depends = [
@@ -974,12 +974,12 @@
             (hsPkgs."websockets" or (errorHandler.buildDepError "websockets"))
             (hsPkgs."webdriver" or (errorHandler.buildDepError "webdriver"))
             (hsPkgs."lifted-base" or (errorHandler.buildDepError "lifted-base"))
-            ];
+          ];
           buildable = true;
           modules = [ "Server" "Client" "Types" ];
           hsSourceDirs = [ "test" ];
           mainPath = [ "TestRunner.hs" ];
-          };
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../.; }

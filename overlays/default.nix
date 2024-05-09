@@ -85,7 +85,6 @@ let
     ghcjs = import ./ghcjs.nix;
     cabalPkgConfig = import ./cabal-pkg-config.nix;
     cacheCompilerDeps = import ./cache-compiler-deps.nix;
-    dummy-ghc-data = import ./dummy-ghc-data.nix;
     fetch-source = import ./fetch-source.nix;
   };
 
@@ -125,7 +124,6 @@ let
     hydra
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
-    dummy-ghc-data
     cacheCompilerDeps
     fetch-source
   ];

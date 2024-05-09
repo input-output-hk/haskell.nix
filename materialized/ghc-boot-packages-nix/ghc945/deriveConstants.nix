@@ -21,7 +21,7 @@
       synopsis = "Derive header files containing various constants for the GHC build process";
       description = "This utility is responsible for generating a number of C header files\nneeded during the GHC build process. See @rts/include/ghc.mk@ in the GHC\nbuild system for details.";
       buildType = "Simple";
-      };
+    };
     components = {
       exes = {
         "deriveConstants" = {
@@ -31,9 +31,9 @@
             (hsPkgs."process" or (errorHandler.buildDepError "process"))
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
             (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
-            ];
+          ];
           buildable = true;
-          };
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ./.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ./.; }

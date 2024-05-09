@@ -2,7 +2,7 @@ final: _prev:
 let
   callCabal2Nix = _compiler-nix-name: name: src: final.buildPackages.stdenv.mkDerivation {
     name = "${name}-package.nix";
-    inherit src;
+    src = src.srcForCabal2Nix or src;
     nativeBuildInputs = [
       # It is not safe to check the nix-tools materialization here
       # as we would need to run this code to do so leading to
@@ -42,7 +42,7 @@ let
   combineAndMaterialize = unchecked: materialized-dir: ghcName: bootPackages:
       (final.haskell-nix.materialize ({
           materialized =
-            if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.8" < 0
+            if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.9" < 0
               then materialized-dir + "/ghc-boot-packages-nix/${ghcName +
                 # The 3434.patch we apply to fix linking on arm systems changes ghc-prim.cabal
                 # so it needs its own materialization.
@@ -151,7 +151,7 @@ in rec {
               mkdir $out
               lndir -silent ${ghc.passthru.configured-src}/${subDir} $out
               lndir -silent ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC $out/GHC
-            '')
+            '') // { srcForCabal2Nix = ghc.passthru.configured-src + "/${subDir}"; }
           else if subDir == "compiler"
             then final.haskell-nix.haskellLib.cleanSourceWith {
               src = nix24srcFix (final.buildPackages.runCommand "ghc-src" { nativeBuildInputs = [final.buildPackages.xorg.lndir]; } ''
@@ -180,7 +180,7 @@ in rec {
               '');
               inherit subDir;
               includeSiblings = true;
-            }
+            } // { srcForCabal2Nix = ghc.passthru.configured-src + "/${subDir}"; }
             else "${ghc.passthru.configured-src}/${subDir}";
         nix = callCabal2Nix ghcName "${ghcName}-${pkgName}" src;
       }) (ghc-extra-pkgs ghc.version))
@@ -258,7 +258,7 @@ in rec {
       index-state = final.haskell-nix.internalHackageIndexState;
       # Where to look for materialization files
       materialized =
-        if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.8" < 0
+        if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.9" < 0
           then ../materialized/ghc-extra-projects + "/${ghc-extra-projects-type proj.ghc}/${ghcName}"
           else null;
       compiler-nix-name = ghcName;

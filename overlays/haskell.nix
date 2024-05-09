@@ -1063,7 +1063,7 @@ final: prev: {
                     apply = x: x ++ [ "ghci" "exceptions" "stm" "libiserv" ];
                   };
                 }];
-              } // (if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.1" < 0
+              } // (if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.9" < 0
                 then {
                   materialized =../materialized/iserv-proxy + "/${
                     if pkgs.stdenv.hostPlatform.isWindows
