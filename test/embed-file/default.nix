@@ -7,7 +7,10 @@ let
   project = project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "embed-file";
-    # cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    cabalProjectLocal = builtins.readFile ../cabal.project.local
+      + lib.optionalString (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64) ''
+        constraints: text -simdutf
+    '';
   };
 
   packages = project.hsPkgs;
