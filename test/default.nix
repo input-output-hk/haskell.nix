@@ -221,6 +221,7 @@ let
     cabal-project-nix-path = callTest ./cabal-project-nix-path {};
     plugin = callTest ./plugin {};
     supported-languages = callTest ./supported-langauges {};
+    embed-file = callTest ./embed-file {};
     unit = unitTests;
   };
 
