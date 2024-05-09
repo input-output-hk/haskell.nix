@@ -8,5 +8,8 @@ import System.Exit (exitFailure)
 import Data.FileEmbed (embedFile, makeRelativeToProject)
 
 main :: IO ()
-main =
-  unless ($(makeRelativeToProject "app/test.txt" >>= embedFile) == encodeUtf8 (T.pack "Hello World")) exitFailure
+main = do
+  let test = $(makeRelativeToProject "app/test.txt" >>= embedFile)
+  unless (test == encodeUtf8 (T.pack "Hello World\n")) $ do
+    putStrLn $ "Embedded content was : " <> show test
+    exitFailure
