@@ -290,7 +290,7 @@ let
 
   ghcSrc = ghc.raw-src or ghc.buildGHC.raw-src;
 
-  fixPlatformString = x: builtins.replaceStrings ["-linux-gnu"] ["-linux"] x;
+  platformString = p: with p.parsed; "${cpu.name}-${vendor.name}-${kernel.name}";
 
   # Dummy `ghc` that uses the captured output
   dummy-ghc = evalPackages.writeTextFile {
@@ -341,10 +341,10 @@ let
                 then "ArchJavaScript"
               else throw "Unknown target arch ${pkgs.stdenv.targetPlatform.config}"
           }")'
-          echo ',("target platform string","${fixPlatformString pkgs.stdenv.targetPlatform.config}")'
-          echo ',("Build platform","${fixPlatformString pkgs.stdenv.buildPlatform.config}")'
-          echo ',("Host platform","${fixPlatformString pkgs.stdenv.hostPlatform.config}")'
-          echo ',("Target platform","${fixPlatformString pkgs.stdenv.targetPlatform.config}")'
+          echo ',("target platform string","${platformString pkgs.stdenv.targetPlatform}")'
+          echo ',("Build platform","${platformString pkgs.stdenv.buildPlatform}")'
+          echo ',("Host platform","${platformString pkgs.stdenv.hostPlatform}")'
+          echo ',("Target platform","${platformString pkgs.stdenv.targetPlatform}")'
           echo ']'
           ;;
         --print-libdir*)
