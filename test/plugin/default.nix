@@ -21,7 +21,7 @@ in recurseIntoAttrs {
 
   # Not sure why this breaks for ghc 8.10.7
   meta.disabled = compiler-nix-name == "ghc8107"
-    || builtins.elem compiler-nix-name [ "ghc910020240430" "ghc91120240504" ]
+    || builtins.elem compiler-nix-name [ "ghc9101" "ghc91120240504" ]
     || stdenv.hostPlatform.isMusl
     || stdenv.hostPlatform.isGhcjs
     || stdenv.hostPlatform.isWindows
