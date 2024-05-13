@@ -17,6 +17,9 @@ in {
     compiler-nix-name = mkOption {
       type = str;
       description = "The name of the ghc compiler to use eg. \"ghc884\"";
+      # Map short version names to the latest GHC version.
+      # TODO: perhaps combine this with the `latestVer` mapping in `overlays/boostrap.nix`.
+      apply = name: pkgs.haskell-nix.resolve-compiler-name name;
     };
     compilerSelection = mkOption {
       type = unspecified;
