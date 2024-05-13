@@ -28,7 +28,7 @@ in rec {
     pkgs.recurseIntoAttrs ({
       cabal-latest = tool compiler-nix-name "cabal" ({
         inherit evalPackages;
-      } // pkgs.lib.optionalAttrs (ghcFromTo "9.11" "9.12") {
+      } // pkgs.lib.optionalAttrs (ghcFromTo "9.10" "9.12") {
         cabalProjectLocal = builtins.readFile ./test/cabal.project.local;
       });
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0) {
