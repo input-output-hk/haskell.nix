@@ -238,11 +238,11 @@ final: prev: {
           })
         ];
 
-        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, nix-tools, ... }:
+        dotCabal = { index-state, sha256, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, nix-tools, ... }:
             let
               # NOTE: root-keys: aaa is because key-threshold: 0 does not seem to be enough by itself
               bootstrapIndexTarball = name: index: final.runCommand "cabal-bootstrap-index-tarball-${name}" {
-                nativeBuildInputs = [ cabal-install ] ++ cabal-issue-8352-workaround;
+                nativeBuildInputs = [ nix-tools.exes.cabal ] ++ cabal-issue-8352-workaround;
               } ''
                 HOME=$(mktemp -d)
                 mkdir -p $HOME/.cabal/packages/${name}
@@ -412,7 +412,7 @@ final: prev: {
               # -----------------------+---------------+------------+
               #
               final.runCommand "dot-cabal" {
-                nativeBuildInputs = [ cabal-install final.xorg.lndir ] ++ cabal-issue-8352-workaround;
+                nativeBuildInputs = [ nix-tools.exes.cabal final.xorg.lndir ] ++ cabal-issue-8352-workaround;
               } ''
                 # prepopulate hackage
                 mkdir -p $out/packages/hackage.haskell.org
@@ -1063,7 +1063,7 @@ final: prev: {
                     apply = x: x ++ [ "ghci" "exceptions" "stm" "libiserv" ];
                   };
                 }];
-              } // (if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.1" < 0
+              } // (if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.9" < 0
                 then {
                   materialized =../materialized/iserv-proxy + "/${
                     if pkgs.stdenv.hostPlatform.isWindows
@@ -1119,12 +1119,7 @@ final: prev: {
               ghc-extra-projects-nix = final.ghc-extra-projects.${compiler-nix-name}.plan-nix;
           }) // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
-            nix-tools = final.buildPackages.haskell-nix.nix-tools;
-            nix-tools-unchecked = final.buildPackages.haskell-nix.nix-tools-unchecked;
-            # This is the setup using the prefered Cabal library.
-            default-setup = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.defaultSetupFor "some-package";
-            # This is the one used when that one is not allowed.
-            setup-cabal-from-ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.defaultSetup.useCabalFromGHC;
+            nix-tools-unchecked = final.pkgsBuildBuild.haskell-nix.nix-tools-unchecked;
           } // final.lib.optionalAttrs (ifdLevel > 1
             && final.haskell-nix.haskellLib.isCrossHost
             # GHCJS builds its own template haskell runner.

@@ -35,10 +35,11 @@ let
 
   setup = if package.buildType == "Simple"
     then
-      # Don't try to build default setup with DWARF enabled
-      let defaultSetup = ghc.defaultSetupFor package.identifier.name // {
-        dwarf = defaultSetup;
-      }; in defaultSetup
+      if stdenv.targetPlatform.isGhcjs # TODO probably should be hostPlatform, but only HsColour used to build ghc will change (updating will require rebuilding all the ghcjs versions)
+        then
+          buildPackages.haskell-nix.nix-tools-unchecked.exes.default-setup-ghcjs // { exeName = "default-setup-ghcjs"; }
+        else
+          buildPackages.haskell-nix.nix-tools-unchecked.exes.default-setup // { exeName = "default-setup"; }
     else setup-builder ({
       component = components.setup // {
         depends = config.setup-depends ++ components.setup.depends ++ package.setup-depends;
@@ -46,7 +47,7 @@ let
         pkgconfig = if components ? library then components.library.pkgconfig or [] else [];
       };
       inherit package name src flags patches defaultSetupSrc;
-      inherit (pkg) preUnpack postUnpack;
+      inherit (pkg) preUnpack postUnpack prePatch postPatch;
     } // lib.optionalAttrs (package.buildType != "Custom") {
       nonReinstallablePkgs = ["base" "Cabal"];
     });

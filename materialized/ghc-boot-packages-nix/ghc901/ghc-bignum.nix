@@ -21,17 +21,17 @@
       synopsis = "GHC BigNum library";
       description = "This package provides the low-level implementation of the standard\n'BigNat', 'Natural' and 'Integer' types.";
       buildType = "Configure";
-      };
+    };
     components = {
       "library" = {
         depends = [
           (hsPkgs."ghc-prim" or (errorHandler.buildDepError "ghc-prim"))
-          ];
+        ];
         buildable = (if !flags.native && !flags.gmp && !flags.ffi
           then false
           else true) && (if flags.native && (flags.gmp || flags.ffi)
           then false
           else true) && (if flags.gmp && flags.ffi then false else true);
-        };
       };
-    } // rec { src = (pkgs.lib).mkDefault ./.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ./.; }

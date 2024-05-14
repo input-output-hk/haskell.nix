@@ -70,11 +70,10 @@ let
   # These defaults are here rather than in modules/cabal-project.nix to make them
   # lazy enough to avoid infinite recursion issues.
   # Using null as the default also improves performance as they are not forced by the
-  # nix module system for `nix-tools-unchecked` and `cabal-install-unchecked`.
+  # nix module system for `nix-tools-unchecked`.
   nix-tools = if args.nix-tools or null != null
     then args.nix-tools
     else evalPackages.haskell-nix.nix-tools-unchecked;
-  cabal-install = nix-tools.exes.cabal;
   forName = pkgs.lib.optionalString (name != null) (" for " + name);
   nameAndSuffix = suffix: if name == null then suffix else name + "-" + suffix;
 
@@ -230,9 +229,23 @@ let
       sourceRepoPackageResult = pkgs.haskell-nix.haskellLib.parseSourceRepositoryPackages
         cabalProjectFileName sha256map source-repo-override projectFile;
 
-      # Parse the `repository` blocks
-      repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
-        evalPackages cabalProjectFileName sha256map inputMap cabal-install nix-tools sourceRepoPackageResult.otherText;
+      sourceRepoFixedProjectFile =
+        sourceRepoPackageResult.initialText +
+        pkgs.lib.strings.concatMapStrings (block:
+            if block ? sourceRepo
+              then
+                let
+                  f = fetchPackageRepo evalPackages.fetchgit block.sourceRepo;
+                in ''
+
+                  ${block.indentation}source-repository-package
+                  ${block.indentation}  type: git
+                  ${block.indentation}  location: file://${f.location}
+                  ${block.indentation}  subdir: ${builtins.concatStringsSep " " f.subdirs}
+                  ${block.indentation}  tag: ${f.tag}
+                '' + block.followingText
+              else block.followingText
+          ) sourceRepoPackageResult.sourceRepos;
 
       # we need the repository content twice:
       # * at eval time (below to build the fixed project file)
@@ -243,28 +256,19 @@ let
       #   on the target system would use, so that the derivation is unaffected
       #   and, say, a linux release build job can identify the derivation
       #   as built by a darwin builder, and fetch it from a cache
-      sourceReposEval = builtins.map (fetchPackageRepo evalPackages.fetchgit) sourceRepoPackageResult.sourceRepos;
-      sourceReposBuild = builtins.map (x: (fetchPackageRepo pkgs.fetchgit x).fetched) sourceRepoPackageResult.sourceRepos;
+      sourceReposEval = builtins.map (x: (fetchPackageRepo evalPackages.fetchgit x.sourceRepo)) sourceRepoPackageResult.sourceRepos;
+      sourceReposBuild = builtins.map (x: (fetchPackageRepo pkgs.fetchgit x.sourceRepo).fetched) sourceRepoPackageResult.sourceRepos;
+
+      # Parse the `repository` blocks
+      repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
+        evalPackages cabalProjectFileName sha256map inputMap nix-tools sourceRepoFixedProjectFile;
     in {
       sourceRepos = sourceReposBuild;
       inherit (repoResult) repos extra-hackages;
       makeFixedProjectFile = ''
-        cp -f ${evalPackages.writeText "cabal.project" sourceRepoPackageResult.otherText} ./cabal.project
-      '' +
-        pkgs.lib.optionalString (builtins.length sourceReposEval != 0) (''
+        cp -f ${evalPackages.writeText "cabal.project" sourceRepoFixedProjectFile} ./cabal.project
         chmod +w -R ./cabal.project
-        # The newline here is important in case cabal.project does not have one at the end
-        echo >> ./cabal.project
-      '' +
-        # Add replacement `source-repository-package` blocks pointing to the minimal git repos
-        ( pkgs.lib.strings.concatMapStrings (f: ''
-              echo "source-repository-package" >> ./cabal.project
-              echo "  type: git" >> ./cabal.project
-              echo "  location: file://${f.location}" >> ./cabal.project
-              echo "  subdir: ${builtins.concatStringsSep " " f.subdirs}" >> ./cabal.project
-              echo "  tag: ${f.tag}" >> ./cabal.project
-            '') sourceReposEval
-        ));
+      '';
       # This will be used to replace refernces to the minimal git repos with just the index
       # of the repo.  The index will be used in lib/import-and-filter-project.nix to
       # lookup the correct repository in `sourceReposBuild`.  This avoids having
@@ -284,7 +288,9 @@ let
 
   fixedProject = replaceSourceRepos rawCabalProject;
 
-  inherit (ghc) dummy-ghc-data;
+  ghcSrc = ghc.raw-src or ghc.buildGHC.raw-src;
+
+  platformString = p: with p.parsed; "${cpu.name}-${vendor.name}-${kernel.name}";
 
   # Dummy `ghc` that uses the captured output
   dummy-ghc = evalPackages.writeTextFile {
@@ -295,30 +301,54 @@ let
       #!${evalPackages.runtimeShell}
       case "$*" in
         --version*)
-          cat ${dummy-ghc-data}/ghc/version
+          echo "The Glorious Glasgow Haskell Compilation System, version ${ghc.version}"
           ;;
         --numeric-version*)
-          cat ${dummy-ghc-data}/ghc/numeric-version
+          echo "${ghc.version}"
           ;;
       ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
         --numeric-ghc-version*)
-          cat ${dummy-ghc-data}/ghc/numeric-ghc-version
+          echo "${ghc.version}"
           ;;
         --numeric-ghcjs-version*)
-          cat ${dummy-ghc-data}/ghc/numeric-ghcjs-version
+          echo "${ghc.version}"
           ;;
       ''}
         --supported-languages*)
-          cat ${dummy-ghc-data}/ghc/supported-languages
+          cat ${import ./supported-languages.nix { inherit pkgs evalPackages ghc; }}
           ;;
         --print-global-package-db*)
           echo "$out/dumby-db"
           ;;
         --info*)
-          cat ${dummy-ghc-data}/ghc/info
+          echo '[("target os", "${
+              if pkgs.stdenv.targetPlatform.isLinux
+                then "OSLinux"
+              else if pkgs.stdenv.targetPlatform.isDarwin
+                then "OSDarwin"
+              else if pkgs.stdenv.targetPlatform.isWindows
+                then "OSMinGW32"
+              else if pkgs.stdenv.targetPlatform.isGhcjs
+                then "OSGhcjs"
+              else throw "Unknown target os ${pkgs.stdenv.targetPlatform.config}"
+            }")'
+          echo ',("target arch","${
+              if pkgs.stdenv.targetPlatform.isx86_64
+                then "ArchX86_64"
+              else if pkgs.stdenv.targetPlatform.isAarch64
+                then "ArchAArch64"
+              else if pkgs.stdenv.targetPlatform.isJavaScript
+                then "ArchJavaScript"
+              else throw "Unknown target arch ${pkgs.stdenv.targetPlatform.config}"
+          }")'
+          echo ',("target platform string","${platformString pkgs.stdenv.targetPlatform}")'
+          echo ',("Build platform","${platformString pkgs.stdenv.buildPlatform}")'
+          echo ',("Host platform","${platformString pkgs.stdenv.hostPlatform}")'
+          echo ',("Target platform","${platformString pkgs.stdenv.targetPlatform}")'
+          echo ']'
           ;;
         --print-libdir*)
-          echo ${dummy-ghc-data}/ghc/libdir
+          echo $out/ghc/libdir
           ;;
         *)
           echo "Unknown argument '$*'" >&2
@@ -329,6 +359,130 @@ let
     '';
   };
 
+  ghc-pkgs = [
+    "Cabal"
+    "Cabal-syntax"
+    "array"
+    "base"
+    "binary"
+    "bytestring"
+    "containers"
+    "deepseq"
+    "directory"
+    "exceptions"
+    "filepath"
+    "ghc"
+    "ghc-bignum"
+    "ghc-boot"
+    "ghc-boot-th"
+    "ghc-compact"
+    "ghc-experimental"
+    "ghc-heap"
+    "ghc-internal"
+    "ghc-platform"
+    "ghc-prim"
+    "ghc-toolchain"
+    "ghci"
+    "haskeline"
+    "hpc"
+    "integer-gmp"
+    "libiserv"
+    "mtl"
+    "os-string"
+    "parsec"
+    "pretty"
+    "process"
+    "rts"
+    "semaphore-compat"
+    "stm"
+    "template-haskell"
+    "terminfo"
+    "text"
+    "time"
+    "transformers"
+    "xhtml"
+  ] ++ (if pkgs.stdenv.targetPlatform.isWindows
+    then [ "Win32" ]
+    else [ "unix" ]
+  );
+
+  dummy-ghc-pkg-dump = evalPackages.runCommand "dummy-ghc-pkg-dump" {
+      nativeBuildInputs = [
+        evalPackages.haskell-nix.nix-tools-unchecked.exes.cabal2json
+        evalPackages.jq
+      ];
+    } (let varname = x: builtins.replaceStrings ["-"] ["_"] x; in ''
+          PKGS=""
+          ${pkgs.lib.concatStrings
+            (builtins.map (name: ''
+              cabal_file=""
+              if [ -f ${ghcSrc}/libraries/${name}/${name}.cabal ]; then
+                cabal_file=${ghcSrc}/libraries/${name}/${name}.cabal
+              elif [ -f ${ghcSrc}/libraries/Cabal/${name}/${name}.cabal ]; then
+                cabal_file=${ghcSrc}/libraries/Cabal/${name}/${name}.cabal
+              elif [ -f ${ghcSrc}/libraries/${name}/${name}/${name}.cabal ]; then
+                cabal_file=${ghcSrc}/libraries/${name}/${name}/${name}.cabal
+              elif [ -f ${ghcSrc}/compiler/${name}.cabal ]; then
+                cabal_file=${ghcSrc}/compiler/${name}.cabal
+              elif [ -f ${ghcSrc}/compiler/${name}.cabal.in ]; then
+                cabal_file=${ghcSrc}/compiler/${name}.cabal.in
+              elif [ -f ${ghcSrc}/libraries/${name}/${name}.cabal.in ]; then
+                cabal_file=${ghcSrc}/libraries/${name}/${name}.cabal.in
+              fi
+              if [[ "$cabal_file" != "" ]]; then
+                fixed_cabal_file=$(mktemp)
+                cat $cabal_file | sed -e 's/@ProjectVersionMunged@/${ghc.version}/g' -e 's/default: *@[A-Za-z0-9]*@/default: False/g' -e 's/@Suffix@//g' > $fixed_cabal_file
+                json_cabal_file=$(mktemp)
+                cabal2json $fixed_cabal_file > $json_cabal_file
+                EXPOSED_MODULES_${varname name}="$(jq -r '.library."exposed-modules"[]|select(type=="array")[]' $json_cabal_file | tr '\n' ' ')"
+                DEPS_${varname name}="$(jq -r '.library."build-depends"[]|select(type=="array")[],select(type=="object").then[]' $json_cabal_file | sed 's/^\([A-Za-z0-9-]*\).*$/\1/g' | sort -u | tr '\n' ' ')"
+                VER_${varname name}="$(jq -r '.version' $json_cabal_file)"
+                PKGS+=" ${name}"
+                LAST_PKG="${name}"
+              fi
+            '') ghc-pkgs)
+          }
+          ${ # There is no .cabal file for system-cxx-std-lib
+            pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.2" >= 0) (
+              let name="system-cxx-std-lib"; in ''
+                EXPOSED_MODULES_${varname name}=""
+                DEPS_${varname name}=""
+                VER_${varname name}="1.0"
+                PKGS+=" ${name}"
+                LAST_PKG="${name}"
+              '')
+            # ghcjs packages (before the ghc JS backend). TODO remove this when GHC 8.10 support is dropped
+            + pkgs.lib.optionalString (pkgs.stdenv.targetPlatform.isGhcjs && builtins.compareVersions ghc.version "9" < 0) ''
+                EXPOSED_MODULES_${varname "ghcjs-prim"}="GHCJS.Prim GHCJS.Prim.Internal GHCJS.Prim.Internal.Build"
+                DEPS_${varname "ghcjs-prim"}="base ghc-prim"
+                VER_${varname "ghcjs-prim"}="0.1.1.0"
+                EXPOSED_MODULES_${varname "ghcjs-th"}="GHCJS.Prim.TH.Eval GHCJS.Prim.TH.Types"
+                DEPS_${varname "ghcjs-th"}="base binary bytestring containers ghc-prim ghci template-haskell"
+                VER_${varname "ghcjs-th"}="0.1.0.0"
+                PKGS+=" ghcjs-prim ghcjs-th"
+                LAST_PKG="ghcjs-th"
+              ''
+          }
+          for pkg in $PKGS; do
+            varname="$(echo $pkg | tr "-" "_")"
+            ver="VER_$varname"
+            exposed_mods="EXPOSED_MODULES_$varname"
+            deps="DEPS_$varname"
+            echo "name: $pkg" >> $out
+            echo "version: ''${!ver}" >> $out
+            echo "exposed-modules: ''${!exposed_mods}" >> $out
+            echo "depends:" >> $out
+            for dep in ''${!deps}; do
+              ver_dep="VER_$(echo $dep | tr "-" "_")"
+              if [[ "''${!ver_dep}" != "" ]]; then
+                echo "  $dep-''${!ver_dep}" >> $out
+              fi
+            done
+            if [[ "$pkg" != "$LAST_PKG" ]]; then
+              echo '---' >> $out
+            fi
+          done
+        '');
   # Dummy `ghc-pkg` that uses the captured output
   dummy-ghc-pkg = evalPackages.writeTextFile {
     name = "dummy-pkg-" + ghc.name;
@@ -338,15 +492,15 @@ let
       #!${evalPackages.runtimeShell}
       case "$*" in
         --version)
-          cat ${dummy-ghc-data}/ghc-pkg/version
+          echo "GHC package manager version ${ghc.version}"
           ;;
       ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
         --numeric-ghcjs-version)
-          cat ${dummy-ghc-data}/ghc-pkg/numeric-ghcjs-version
+          echo "${ghc.version}"
           ;;
       ''}
         'dump --global -v0')
-          cat ${dummy-ghc-data}/ghc-pkg/dump-global
+          cat ${dummy-ghc-pkg-dump}
           ;;
         *)
           echo "Unknown argument '$*'. " >&2
@@ -446,7 +600,7 @@ let
       # some packages that will be excluded by `index-state-max`
       # which is used by cabal (cached-index-state >= index-state-max).
       dotCabal {
-        inherit cabal-install nix-tools extra-hackage-tarballs;
+        inherit nix-tools extra-hackage-tarballs;
         extra-hackage-repos = fixedProject.repos;
         index-state = cached-index-state;
         sha256 = index-sha256-found;

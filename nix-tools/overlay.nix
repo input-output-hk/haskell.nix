@@ -1,17 +1,13 @@
 final: _prev:
 
 let
-  compiler-nix-name = "ghc8107";
+  compiler-nix-name = "ghc96";
 
   nix-tools = nix-tools-set {
-    materialized = ./materialized;
     nix-tools = nix-tools-unchecked;
   };
 
-  nix-tools-unchecked = nix-tools-set {
-    materialized = ./materialized;
-    checkMaterialization = false;
-  };
+  nix-tools-unchecked = nix-tools-set {};
 
   nix-tools-set = args:
     let
@@ -22,7 +18,7 @@ let
             src = ./.;
 
             compiler-nix-name = final.lib.mkDefault compiler-nix-name;
-            compilerSelection = p: p.haskell.compiler;
+            # compilerSelection = p: p.haskell.compiler;
 
             # tests need to fetch hackage
             configureArgs = final.lib.mkDefault "--disable-tests";
@@ -45,6 +41,8 @@ let
         inherit (project.hsPkgs.nix-tools.components.exes)
           cabal-name
           cabal-to-nix
+          default-setup
+          default-setup-ghcjs
           hackage-to-nix
           hashes-to-nix
           lts-to-nix
@@ -56,6 +54,9 @@ let
 
         inherit (project.hsPkgs.hpack.components.exes)
           hpack;
+
+        inherit (project.hsPkgs.Cabal-syntax-json.components.exes)
+          cabal2json;
       };
 
       warning = final.lib.mapAttrs

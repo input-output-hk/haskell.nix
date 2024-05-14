@@ -94,32 +94,32 @@ let
 
   # Parse a source-repository-package and return data of `type: git` repositories
   # See tests/unit.nix for examples of input and output.
-  parseSourceRepositoryPackageBlock = cabalProjectFileName: sha256map: block:
+  parseSourceRepositoryPackageBlock = cabalProjectFileName: sha256map: source-repo-override: indentation: block:
     let
-      x = span (pkgs.lib.strings.hasPrefix " ") (pkgs.lib.splitString "\n" block);
+      x = span (pkgs.lib.strings.hasPrefix (indentation + " ")) (pkgs.lib.splitString "\n" block);
       attrs = parseBlockLines x.fst;
+      overrideSourceRepo = sourceRepo: (source-repo-override.${sourceRepo.url} or (pkgs.lib.id)) sourceRepo;
     in
       if attrs."type" or "" != "git"
         then {
-          sourceRepo = [];
-          otherText = "\nsource-repository-package\n" + block;
+          followingText = "\n" + indentation + "source-repository-package\n" + block;
         }
         else {
-          sourceRepo = extractSourceRepoPackageData cabalProjectFileName sha256map attrs;
-          otherText = pkgs.lib.strings.concatStringsSep "\n" x.snd;
+          inherit indentation;
+          sourceRepo = overrideSourceRepo (extractSourceRepoPackageData cabalProjectFileName sha256map attrs);
+          followingText = pkgs.lib.strings.concatStringsSep "\n" x.snd;
         };
 
   parseSourceRepositoryPackages = cabalProjectFileName: sha256map: source-repo-override: projectFile:
     let
-      blocks = pkgs.lib.splitString "\nsource-repository-package\n" ("\n" + projectFile);
-      initialText = pkgs.lib.lists.take 1 blocks;
-      repoBlocks = builtins.map (parseSourceRepositoryPackageBlock cabalProjectFileName sha256map) (pkgs.lib.lists.drop 1 blocks);
-      overrideSourceRepo = sourceRepo: (source-repo-override.${sourceRepo.url} or (pkgs.lib.id)) sourceRepo;
+      splitResult = builtins.split "\n( *)source-repository-package\n" ("\n" + projectFile);
+      # Construct a list of strings with just the indentation amounts for each map
+      indentations = builtins.concatLists (builtins.filter builtins.isList splitResult);
+      blocks = builtins.filter builtins.isString (pkgs.lib.lists.drop 1 splitResult);
     in {
-      sourceRepos = pkgs.lib.lists.map (block: overrideSourceRepo block.sourceRepo) repoBlocks;
-      otherText = pkgs.lib.strings.concatStringsSep "\n" (
-        initialText
-        ++ (builtins.map (x: x.otherText) repoBlocks));
+      initialText = builtins.head splitResult;
+      sourceRepos = pkgs.lib.zipListsWith (parseSourceRepositoryPackageBlock cabalProjectFileName sha256map source-repo-override)
+        indentations blocks;
     };
 
   # Parse and replace repository
@@ -128,7 +128,7 @@ let
   # This works because `cabal configure` does not include any of the `/nix/sore/`
   # paths in the `plan.json` (so materialized plan-nix will still work as expeced).
   # See tests/unit.nix for examples of input and output.
-  parseRepositoryBlock = evalPackages: _cabalProjectFileName: sha256map: inputMap: cabal-install: nix-tools: block:
+  parseRepositoryBlock = evalPackages: _cabalProjectFileName: sha256map: inputMap: nix-tools: block:
     let
       lines = pkgs.lib.splitString "\n" block;
       # The first line will contain the repository name.
@@ -138,14 +138,20 @@ let
         if sha256map != null
           then sha256map.${attrs.url} or null
           else null);
+      # Find store directory strings and include them in the string context
+      addContext = s:
+        let storeDirMatch = builtins.match ".*(${builtins.storeDir}/[^/]+).*" s;
+        in if storeDirMatch == null
+          then s
+          else builtins.appendContext s { ${builtins.head storeDirMatch} = { path = true; }; };
     in rec {
       # This is `some-name` from the `repository some-name` line in the `cabal.project` file.
-      name = __head lines;
+      name = builtins.unsafeDiscardStringContext (__head lines);
       # The $HOME/.cabal/packages/${name} after running `cabal v2-update` to download the repository
       repoContents = if inputMap ? ${attrs.url}
         # If there is an input use it to make `file:` url and create a suitable `.cabal/packages/${name}` directory
         then evalPackages.runCommand name ({
-          nativeBuildInputs = [ cabal-install ] ++ evalPackages.haskell-nix.cabal-issue-8352-workaround;
+          nativeBuildInputs = [ nix-tools.exes.cabal ] ++ evalPackages.haskell-nix.cabal-issue-8352-workaround;
           preferLocalBuild = true;
         }) ''
             HOME=$(mktemp -d)
@@ -161,7 +167,7 @@ let
             cp -r $HOME/.cabal/packages/${name} $out
         ''
         else evalPackages.runCommand name ({
-          nativeBuildInputs = [ cabal-install evalPackages.curl nix-tools ] ++ evalPackages.haskell-nix.cabal-issue-8352-workaround;
+          nativeBuildInputs = [ nix-tools.exes.cabal evalPackages.curl ] ++ evalPackages.haskell-nix.cabal-issue-8352-workaround;
           LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
           LANG = "en_US.UTF-8";
           preferLocalBuild = true;
@@ -174,7 +180,7 @@ let
             mkdir -p $HOME/.cabal/packages/${name}
             cat <<EOF > $HOME/.cabal/config
             repository ${name}
-              url: ${attrs.url}
+              url: ${addContext attrs.url}
               ${pkgs.lib.optionalString (attrs ? secure) "secure: ${attrs.secure}"}
               ${pkgs.lib.optionalString (attrs ? root-keys) "root-keys: ${attrs.root-keys}"}
               ${pkgs.lib.optionalString (attrs ? key-threshold) "key-threshold: ${attrs.key-threshold}"}
@@ -186,7 +192,7 @@ let
       # Output of hackage-to-nix
       hackage = import (
         evalPackages.runCommand ("hackage-to-nix-" + name) {
-          nativeBuildInputs = [ cabal-install evalPackages.curl nix-tools ];
+          nativeBuildInputs = [ nix-tools.exes.hackage-to-nix ];
           LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
           LANG = "en_US.UTF-8";
           preferLocalBuild = true;
@@ -195,19 +201,14 @@ let
           hackage-to-nix $out ${repoContents}/01-index.tar ${attrs.url}
         '');
       # Directory to `lndir` when constructing a suitable $HOME/.cabal dir
-      repo = {
-        # Strings used as attrset keys can't have contet. This can cause problems if the cabal.project file has antiquoted strings
-        # in it. Discarding the context here works, and because 'name' is used elsewhere, we don't actually lose the string content,
-        # which can matter!
-        ${builtins.unsafeDiscardStringContext name} = repoContents;
-      };
+      repo.${name} = repoContents;
     };
 
-  parseRepositories = evalPackages: cabalProjectFileName: sha256map: inputMap: cabal-install: nix-tools: projectFile:
+  parseRepositories = evalPackages: cabalProjectFileName: sha256map: inputMap: nix-tools: projectFile:
     let
       # This will leave the name of repository in the first line of each block
       blocks = pkgs.lib.splitString "\nrepository " ("\n" + projectFile);
-      repoBlocks = builtins.map (parseRepositoryBlock evalPackages cabalProjectFileName sha256map inputMap cabal-install nix-tools) (pkgs.lib.lists.drop 1 blocks);
+      repoBlocks = builtins.map (parseRepositoryBlock evalPackages cabalProjectFileName sha256map inputMap nix-tools) (pkgs.lib.lists.drop 1 blocks);
     in {
       extra-hackages = pkgs.lib.lists.map (block: block.hackage) repoBlocks;
       repos = pkgs.lib.lists.foldl' (x: block: x // block.repo) {} repoBlocks;

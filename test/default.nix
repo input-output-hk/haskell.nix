@@ -54,7 +54,7 @@ let
         else val
       );
 
-  util = import ./util.nix { cabal-install = pkgs.buildPackages.haskell-nix.cabal-install.${compiler-nix-name}; };
+  util = import ./util.nix { cabal-install = pkgs.buildPackages.haskell-nix.nix-tools-unchecked.exes.cabal; };
 
   # Map the values in an association list over the withIfdInputs function.
   #
@@ -220,6 +220,7 @@ let
     annotations = callTest ./annotations { inherit util; };
     cabal-project-nix-path = callTest ./cabal-project-nix-path {};
     plugin = callTest ./plugin {};
+    supported-languages = callTest ./supported-langauges {};
     unit = unitTests;
   };
 

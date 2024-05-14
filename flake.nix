@@ -14,11 +14,11 @@
     # And later it breaks in th-dll due to some change in the windows libs. We should probably
     # drop unsable.
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs?rev=47585496bcb13fb72e4a90daeea2f434e2501998"; }; # nixpkgs-unstable };
-    ghc98X = {
+    ghc910X = {
       flake = false;
-      url = "git+https://gitlab.haskell.org/ghc/ghc?ref=ghc-9.8&submodules=1";
+      url = "git+https://gitlab.haskell.org/ghc/ghc?ref=ghc-9.10&submodules=1";
     };
-    ghc99 = {
+    ghc911 = {
       flake = false;
       url = "git+https://gitlab.haskell.org/ghc/ghc?submodules=1";
     };
@@ -30,6 +30,8 @@
     "hls-2.4" = { url = "github:haskell/haskell-language-server/2.4.0.1"; flake = false; };
     "hls-2.5" = { url = "github:haskell/haskell-language-server/2.5.0.0"; flake = false; };
     "hls-2.6" = { url = "github:haskell/haskell-language-server/2.6.0.0"; flake = false; };
+    "hls-2.7" = { url = "github:haskell/haskell-language-server/2.7.0.0"; flake = false; };
+    "hls-2.8" = { url = "github:haskell/haskell-language-server/2.8.0.0"; flake = false; };
     hydra.url = "hydra";
     hackage = {
       url = "github:input-output-hk/hackage.nix";
@@ -37,10 +39,6 @@
     };
     stackage = {
       url = "github:input-output-hk/stackage.nix";
-      flake = false;
-    };
-    nix-tools-static = {
-      url = "github:input-output-hk/haskell-nix-example/nix";
       flake = false;
     };
     cabal-32 = {
@@ -100,6 +98,7 @@
     let
       callFlake = import flake-compat;
 
+      ifdLevel = 3;
       compiler = "ghc928";
       config = import ./config.nix;
 
@@ -135,7 +134,7 @@
         stripAttrsForHydra
         filterDerivations;
 
-    in traceHydraJobs ({
+      flake = {
       inherit config;
       overlay = self.overlays.combined;
       overlays = import ./overlays { sources = inputs; };
@@ -211,7 +210,7 @@
         stripAttrsForHydra (filterDerivations (
           # This is awkward.
           import ./ci.nix {
-            inherit system;
+            inherit ifdLevel system;
             haskellNix = self;
           })));
 
@@ -250,14 +249,12 @@
               inherit system;
               pkgs = self.legacyPackages.${system};
               src = ./nix-tools;
-              override-inputs = {
-                # Avoid downloading another `hackage.nix`.
-                inherit (inputs) hackage;
-              };
             };
             in cf.defaultNix.hydraJobs;
         in
-        self.allJobs.${system} // { nix-tools = nix-tools-hydraJobs.${system} or {}; }
+        self.allJobs.${system}
+          // lib.optionalAttrs (ifdLevel > 2)
+            { nix-tools = nix-tools-hydraJobs.${system} or {}; }
       );
 
       devShells = forEachSystemPkgs (pkgs:
@@ -290,7 +287,23 @@
                 "ghc901"
                 "ghc921" "ghc922" "ghc923"])
       );
-    });
+    }; in with (import nixpkgs { system = "x86_64-linux"; });
+          traceHydraJobs (lib.recursiveUpdate flake (lib.optionalAttrs (ifdLevel > 2) {
+            hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
+              name = "nix-tools";
+              constituents = [
+                "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
+                "x86_64-darwin.nix-tools.static.zipped.nix-tools-static"
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static"
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
+                "aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+                "x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static-no-ifd"
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64-no-ifd"
+                (writeText "gitrev" (self.rev or "0000000000000000000000000000000000000000"))
+              ];
+            };
+          }));
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {

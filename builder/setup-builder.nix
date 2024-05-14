@@ -3,7 +3,7 @@
 let self =
 { component, package, name, src, enableDWARF ? false, flags ? {}, revision ? null, patches ? [], defaultSetupSrc
 , preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
-, prePatch ? null, postPatch ? null
+, prePatch ? component.prePatch, postPatch ? component.postPatch
 , preBuild ? component.preBuild , postBuild ? component.postBuild
 , preInstall ? component.preInstall , postInstall ? component.postInstall
 , cleanSrc ? haskellLib.cleanCabalComponent package component "setup" src
@@ -24,9 +24,22 @@ let
     inherit fullName flags component enableDWARF nonReinstallablePkgs;
   };
   hooks = haskellLib.optionalHooks {
+    prePatch =
+        # If the package is in a sub directory `cd` there first.
+        # In some cases the `cleanSrc.subDir` will be empty and the `.cabal`
+        # file will be in the root of `src` (`cleanSrc.root`).  This
+        # will happen when:
+        #   * the .cabal file is in the projects `src.origSrc or src`
+        #   * the package src was overridden with a value that does not
+        #     include an `origSubDir`
+        (lib.optionalString (cleanSrc'.subDir != "") ''
+            cd ${lib.removePrefix "/" cleanSrc'.subDir}
+          ''
+        ) + lib.optionalString (prePatch != null) "\n${prePatch}";
+
     inherit
       preUnpack postUnpack
-      prePatch postPatch
+      postPatch
       preBuild postBuild
       preInstall postInstall
       ;
@@ -64,6 +77,7 @@ let
         cleanSrc = cleanSrc';
         dwarf = self (drvArgs // { enableDWARF = true; });
         smallAddressSpace = self (drvArgs // { smallAddressSpace = true; });
+        exeName = "Setup";
       };
 
       meta = {
@@ -109,14 +123,12 @@ let
         diff ./Setup $out/bin/Setup
       '';
     }
-    // (lib.optionalAttrs (cleanSrc'.subDir != "") {
-      prePatch =
-        # If the package is in a sub directory `cd` there first
-        ''
-          cd ${lib.removePrefix "/" cleanSrc'.subDir}
-        '';
-    })
-    // (lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; } else p) patches; })
+    // lib.optionalAttrs (patches != []) {
+      patches = map (p:
+        if builtins.isFunction p
+          then p { inherit (package.identifier) version; }
+          else p) patches;
+    }
     // hooks
   );
 in drv; in self

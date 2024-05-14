@@ -31,7 +31,7 @@ let
         static-nix-tools =
           let
             # TODO replace once haskell-nix-examples nix-tools is in haskell.nix
-            zipFile = (import final.haskell-nix.sources.nix-tools-static final).${final.system};
+            zipFile = (import ../nix-tools-static.nix final).${final.system};
             tarball = final.runCommand "nix-tools" {
               nativeBuildInputs = [ final.unzip ];
             } ''
@@ -77,7 +77,6 @@ let
     armv6l-linux = import ./armv6l-linux.nix;
     musl = import ./musl.nix;
     android = import ./android.nix;
-    sphinx = import ./sphinx.nix;
     tools = import ./tools.nix;
     emscripten = import ./emscripten.nix;
     nix-prefetch-git-minimal = import ./nix-prefetch-git-minimal.nix;
@@ -86,8 +85,6 @@ let
     ghcjs = import ./ghcjs.nix;
     cabalPkgConfig = import ./cabal-pkg-config.nix;
     cacheCompilerDeps = import ./cache-compiler-deps.nix;
-    default-setup = import ./default-setup.nix;
-    dummy-ghc-data = import ./dummy-ghc-data.nix;
     fetch-source = import ./fetch-source.nix;
   };
 
@@ -127,10 +124,7 @@ let
     hydra
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
-    sphinx
-    dummy-ghc-data
     cacheCompilerDeps
-    default-setup
     fetch-source
   ];
   combined = builtins.foldl' composeExtensions (_: _: { }) ordered;

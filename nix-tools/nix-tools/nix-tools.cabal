@@ -29,10 +29,10 @@ library
                      , Stack2nix.External.Resolve
                      , Stack2nix.Project
                      , Stack2nix.Stack
-  build-depends:       base          >= 4    && <4.18
-                     , Cabal         >= 3.10 && <3.11
-                     , Cabal-syntax  >= 3.10 && <3.11
-                     , aeson         >= 2.0  && <2.3
+  build-depends:       base          >= 4      && <4.20
+                     , Cabal         >= 3.10.3 && <3.11
+                     , Cabal-syntax  >= 3.10   && <3.11
+                     , aeson         >= 2.0    && <2.3
                      , aeson-pretty
                      , base16-bytestring
                      , bytestring
@@ -46,7 +46,7 @@ library
 -- Needs https://github.com/input-output-hk/iohk-nix/commit/6a8c29117eff36ce975e02e01efc8b25d93fcb90#diff-6fb0c6517b547a8baf082d5d2d604842
 -- to work with the data-dir issues when building components.
 -- This commit is included since 0.6.5.
-                     , hnix          >= 0.6.5 && <0.17
+                     , hnix          >= 0.6.5 && <0.18
                      , hpack
                      , http-client
                      , http-client-tls
@@ -224,7 +224,25 @@ executable make-install-plan
                      , plan2nix
   default-language:    Haskell2010
 
-test-suite tests
+executable default-setup
+  import:              warnings
+  main-is:             Setup.hs
+  build-depends:       base
+                     , Cabal
+  hs-source-dirs:      setup
+  default-language:    Haskell2010
+
+executable default-setup-ghcjs
+  import:              warnings
+  main-is:             Setup.hs
+  build-depends:       base
+                     , Cabal
+                     , directory
+                     , filepath
+  hs-source-dirs:      setup-ghcjs
+  default-language:    Haskell2010
+
+etest-suite tests
   import:              warnings
   main-is:             Tests.hs
   build-depends:       base

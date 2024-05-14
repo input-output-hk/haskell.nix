@@ -29,7 +29,7 @@
       extraSrcFiles = [];
       extraTmpFiles = [];
       extraDocFiles = [];
-      };
+    };
     components = {
       exes = {
         "iserv-proxy" = {
@@ -45,11 +45,11 @@
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
             (hsPkgs."ghci" or (errorHandler.buildDepError "ghci"))
             (hsPkgs."libiserv" or (errorHandler.buildDepError "libiserv"))
-            ];
+          ];
           buildable = true;
           hsSourceDirs = [ "src" ];
           mainPath = [ "Main.hs" ];
-          };
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../utils/iserv-proxy; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../utils/iserv-proxy; }

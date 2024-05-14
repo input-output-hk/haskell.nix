@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, dwarfdump }:
+{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages, dwarfdump }:
 
 with lib;
 
@@ -32,8 +32,14 @@ in recurseIntoAttrs {
 
       # fixme:
       printf "checking whether executable included DWARF debug info... " >& 2
-      (${dwarfdump}/bin/dwarfdump $exe || true) | grep -c 'libraries/base/[A-Za-z0-9/]*\.hs'
-      (${dwarfdump}/bin/dwarfdump $exe || true) | grep -c '\/Main\.hs'
+      ${if builtins.compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.9" >0
+        then ''
+          (${dwarfdump}/bin/dwarfdump $exe || true) | grep -c 'libraries/ghc-internal/[A-Za-z0-9/]*\.hs'
+        ''
+        else ''
+          (${dwarfdump}/bin/dwarfdump $exe || true) | grep -c 'libraries/base/[A-Za-z0-9/]*\.hs'
+        ''}
+      (${dwarfdump}/bin/dwarfdump $exe || true) | grep -c '/Main\.hs'
 
       touch $out
     '';
