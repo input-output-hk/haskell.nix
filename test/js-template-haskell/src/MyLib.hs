@@ -1,8 +1,9 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module MyLib (someFunc) where
+module MyLib (someUri) where
 
 import URI.ByteString.QQ
 
-someFunc :: IO ()
-someFunc = putStrLn $ show [uri|https://www.example.com/|]
+someUri :: String
+someUri = show [uri|https://www.example.com/|]
+

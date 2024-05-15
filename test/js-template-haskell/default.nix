@@ -7,12 +7,6 @@ let
   project = project' {
     inherit compiler-nix-name;
     src = testSrc "js-template-haskell";
-    modules = [
-      # Fix node: createProcess: posix_spawnp: does not exist (No such file or directory)
-      # ({ pkgs,... }: {
-      #   packages.js-template-haskell.components.library.build-tools = [ pkgs.pkgsBuildHost.nodejs ];
-      # })
-    ];
   };
 
   packages = project.hsPkgs;
@@ -24,4 +18,5 @@ in recurseIntoAttrs {
 
   build = packages.js-template-haskell.components.library;
   build-profiled = packages.js-template-haskell.components.library.profiled;
+  check = packages.js-template-haskell.checks.test;
 }
