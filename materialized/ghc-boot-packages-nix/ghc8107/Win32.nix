@@ -21,14 +21,14 @@
       synopsis = "A binding to Windows Win32 API.";
       description = "This library contains direct bindings to the Windows Win32 APIs for Haskell.";
       buildType = "Simple";
-      };
+    };
     components = {
       "library" = {
         depends = [
           (hsPkgs."base" or (errorHandler.buildDepError "base"))
           (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
           (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
-          ] ++ (pkgs.lib).optional (!system.isWindows) (hsPkgs."unbuildable" or (errorHandler.buildDepError "unbuildable"));
+        ] ++ pkgs.lib.optional (!system.isWindows) (hsPkgs."unbuildable" or (errorHandler.buildDepError "unbuildable"));
         libs = [
           (pkgs."user32" or (errorHandler.sysDepError "user32"))
           (pkgs."gdi32" or (errorHandler.sysDepError "gdi32"))
@@ -39,8 +39,8 @@
           (pkgs."shlwapi" or (errorHandler.sysDepError "shlwapi"))
           (pkgs."msimg32" or (errorHandler.sysDepError "msimg32"))
           (pkgs."imm32" or (errorHandler.sysDepError "imm32"))
-          ];
+        ];
         buildable = if !system.isWindows then false else true;
-        };
       };
-    } // rec { src = (pkgs.lib).mkDefault ./.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ./.; }
