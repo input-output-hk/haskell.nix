@@ -19,3 +19,6 @@ test-suite test
   type: exitcode-stdio-1.0
   main-is: test/Main.hs
   build-depends: base, js-template-haskell
+  if arch(javascript) && impl(ghc >=9.10.1)
+    ghc-options: -ddisable-js-c-sources
+
