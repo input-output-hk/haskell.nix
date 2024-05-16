@@ -16,11 +16,11 @@ in recurseIntoAttrs {
     inherit (project) plan-nix;
   };
 
-  meta.disable = haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64;
+  meta.disabled = haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64;
 
   build = packages.js-template-haskell.components.library;
   check = packages.js-template-haskell.checks.test;
 } // optionalAttrs (!stdenv.hostPlatform.isGhcjs) {
   build-profiled = packages.js-template-haskell.components.library.profiled;
-  check = packages.js-template-haskell.checks.test.profiled;
+  check-profiled = packages.js-template-haskell.checks.test.profiled;
 }
