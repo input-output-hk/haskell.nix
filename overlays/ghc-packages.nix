@@ -73,7 +73,7 @@ let
       iserv        = "utils/iserv";
     } // final.lib.optionalAttrs ((!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "9.6" < 0) && builtins.compareVersions ghcVersion "9.8" < 0) {
       libiserv     = "libraries/libiserv";
-    } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs) {
+    } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "9" > 0) {
       ghc          = "compiler";
       ghc-boot     = "libraries/ghc-boot";
     } // (

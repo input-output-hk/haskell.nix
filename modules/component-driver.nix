@@ -24,7 +24,7 @@ in
 
   options.reinstallableLibGhc = lib.mkOption {
     type = lib.types.bool;
-    default = true;
+    default = !pkgs.stdenv.hostPlatform.isGhcjs;
     description = "Is lib:ghc reinstallable?";
   };
   options.setup-depends = lib.mkOption {
