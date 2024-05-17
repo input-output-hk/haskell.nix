@@ -221,6 +221,7 @@ let
     cabal-project-nix-path = callTest ./cabal-project-nix-path {};
     plugin = callTest ./plugin {};
     supported-languages = callTest ./supported-langauges {};
+    js-template-haskell = callTest ./js-template-haskell {};
     unit = unitTests;
   };
 
