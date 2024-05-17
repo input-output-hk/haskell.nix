@@ -16,7 +16,7 @@ in recurseIntoAttrs {
     inherit (project) plan-nix;
   };
 
-  meta.disabled = haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64;
+  meta.disabled = stdenv.buildPlatform != stdenv.hostPlatform && stdenv.hostPlatform.isAarch64;
 
   build = packages.js-template-haskell.components.library;
   check = packages.js-template-haskell.checks.test;
