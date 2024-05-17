@@ -31,11 +31,13 @@ let
 
   cabalFile = if package-description-override == null || bundledSrc != null then null else package-description-override;
 
-  defaultSetupSrc = if stdenv.hostPlatform.isGhcjs then ./Setup.ghcjs.hs else ./Setup.hs;
+  # New GHC JS backend run emcc itself without the need for custom Setup.hs
+  oldGhcjs = stdenv.hostPlatform.isGhcjs && builtins.compareVersions ghc.version "9.10" < 0;
+  defaultSetupSrc = if oldGhcjs then ./Setup.ghcjs.hs else ./Setup.hs;
 
   setup = if package.buildType == "Simple"
     then
-      if stdenv.targetPlatform.isGhcjs # TODO probably should be hostPlatform, but only HsColour used to build ghc will change (updating will require rebuilding all the ghcjs versions)
+      if oldGhcjs
         then
           buildPackages.haskell-nix.nix-tools-unchecked.exes.default-setup-ghcjs // { exeName = "default-setup-ghcjs"; }
         else

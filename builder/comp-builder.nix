@@ -418,7 +418,8 @@ let
 
     nativeBuildInputs =
       [ghc buildPackages.removeReferencesTo]
-      ++ executableToolDepends;
+      ++ executableToolDepends
+      ++ (lib.optional stdenv.hostPlatform.isGhcjs buildPackages.nodejs);
 
     outputs = ["out"]
       ++ (lib.optional keepConfigFiles "configFiles")
