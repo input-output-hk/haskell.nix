@@ -73,9 +73,9 @@ let self =
     ( stdenv.targetPlatform.isLinux
       # don't use gold on android.
       && !stdenv.targetPlatform.isAndroid
-      # don't use gold with GHC's NCG with musl. Still seems to be
+      # don't use gold with with musl. Still seems to be
       # affected by 22266.
-      && !(!useLLVM && stdenv.targetPlatform.isMusl))
+      && !stdenv.targetPlatform.isMusl)
 
 , ghc-version ? src-spec.version
 , ghc-version-date ? null
