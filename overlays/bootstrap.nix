@@ -278,6 +278,7 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "9.9" && (final.stdenv.targetPlatform.isAndroid && final.stdenv.targetPlatform.is32bit || final.stdenv.targetPlatform.isMusl)) ./patches/ghc/ghc-9.6-missing-symbols-deadbeef.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-linker-pool-allocator.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch
+                ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-linker-pool-allocator-3.patch
 
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.8" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-0001-Refactor-IServ.hs.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch
