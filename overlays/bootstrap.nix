@@ -1,7 +1,7 @@
 final: prev:
 let
     buildBootstrapper.compilerNixName = "ghc8107";
-    latestVer = {
+    latestVerMap = {
       "8.4" = "8.4.4";
       "8.6" = "8.6.5";
       "8.8" = "8.8.4";
@@ -13,6 +13,7 @@ let
       "9.8" = "9.8.2";
       "9.10" = "9.10.1";
     };
+    latestVersions = map versionToNixName (builtins.attrValues latestVerMap);
     gitInputs = {
       ghc911 = "9.11";
     };
@@ -22,22 +23,16 @@ let
         versionToNixName "${v}.${builtins.substring 0 8 final.haskell-nix.sources.${source-name}.lastModifiedDate}")
           gitInputs //
       builtins.listToAttrs (map (v:
-        { name = versionToNixName v; value = versionToNixName latestVer.${v}; })
-          (builtins.attrNames latestVer));
+        { name = versionToNixName v; value = versionToNixName latestVerMap.${v}; })
+          (builtins.attrNames latestVerMap));
     traceWarnOld = v: x:
       let
         bootstrapGhc = final.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
       in
       if builtins.compareVersions x.src-spec.version bootstrapGhc.version < 0 then
           throw "Desired GHC (${x.src-spec.version}) is older than the bootstrap GHC (${bootstrapGhc.version}) for this platform (${final.stdenv.targetPlatform.config})."
-      # There is no binary for aarch64-linux ghc 8.8.4 so don't warn about 8.8.3 not being the latest version
-      else if x.src-spec.version == "8.8.3" && (final.stdenv.targetPlatform.isAarch64 || final.stdenv.buildPlatform.isAarch64)
-        then x
-      else if builtins.compareVersions x.src-spec.version latestVer.${v} < 0
-        then builtins.trace
-          "WARNING: ${x.src-spec.version} is out of date, consider using ${latestVer.${v}}." x
       else x;
-    errorOldGhcjs = v: up: throw "ghcjs ${v} is no longer supported by haskell.nix. Consider using ${latestVer.${up}}";
+    errorOldGhcjs = v: up: throw "ghcjs ${v} is no longer supported by haskell.nix. Consider using ${latestVerMap.${up}}";
 in {
   haskell-nix = prev.haskell-nix // {
     # This can be used to map a compiler-nix-name from a shorter form.
@@ -45,7 +40,13 @@ in {
     #   "ghc810" -> "ghc8107"
     #   "ghc99" -> "ghc9920230909" (uses last modified date of the git repo)
     inherit compilerNameMap;
-    resolve-compiler-name = name: final.haskell-nix.compilerNameMap.${name} or name;
+    resolve-compiler-name = name: old-compiler-warning:
+      let result = final.haskell-nix.compilerNameMap.${name} or name;
+      in
+        if old-compiler-warning && !builtins.elem result latestVersions
+          then builtins.trace
+            "WARNING: ${result} is out of date, consider using upgrading." result
+          else result;
     # Use this to disable the existing haskell infra structure for testing purposes
     compiler =
         let bootPkgs = {

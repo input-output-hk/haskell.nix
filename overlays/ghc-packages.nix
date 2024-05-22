@@ -137,19 +137,16 @@ in rec {
     (ghcName: ghc: builtins.mapAttrs
       (pkgName: subDir: rec {
         src =
-          # TODO remove once nix >=2.4 is widely adopted (will trigger rebuilds of everything).
-          # See https://github.com/input-output-hk/haskell.nix/issues/1459
-          let nix24srcFix = src: src // { filterPath = { path, ... }: path; };
           # Add in the generated files needed by ghc-boot
-          in if subDir == "libraries/ghc-boot"
-            then nix24srcFix (final.buildPackages.runCommand "ghc-boot-src" { nativeBuildInputs = [final.buildPackages.xorg.lndir]; } ''
+          if subDir == "libraries/ghc-boot"
+            then (final.buildPackages.runCommand "ghc-boot-src" { nativeBuildInputs = [final.buildPackages.xorg.lndir]; } ''
               mkdir $out
               lndir -silent ${ghc.passthru.configured-src}/${subDir} $out
               lndir -silent ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC $out/GHC
             '') // { srcForCabal2Nix = ghc.passthru.configured-src + "/${subDir}"; }
           else if subDir == "compiler"
             then final.haskell-nix.haskellLib.cleanSourceWith {
-              src = nix24srcFix (final.buildPackages.runCommand "ghc-src" { nativeBuildInputs = [final.buildPackages.xorg.lndir]; } ''
+              src = (final.buildPackages.runCommand "ghc-src" { nativeBuildInputs = [final.buildPackages.xorg.lndir]; } ''
                 mkdir $out
                 lndir -silent ${ghc.passthru.configured-src} $out
                 if [[ -f ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC/Version.hs ]]; then
