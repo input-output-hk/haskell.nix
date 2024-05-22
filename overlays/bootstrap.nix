@@ -279,7 +279,7 @@ in {
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.11" && final.stdenv.targetPlatform.isMusl && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-9.6-linker-pool-allocator.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.11" && final.stdenv.targetPlatform.isMusl && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch
 
-                ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.11" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-0001-Refactor-IServ.hs.patch
+                ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.8" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-0001-Refactor-IServ.hs.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.11" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.11" && final.stdenv.targetPlatform.isMusl && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-9.6-0003-Better-pool-alignment.-We-still-hardcode-section-ali.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.11" && final.stdenv.targetPlatform.isMusl && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-9.6-0007-fixup-Better-pool-alignment.-We-still-hardcode-secti.patch
