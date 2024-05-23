@@ -13,7 +13,6 @@ let
       "9.8" = "9.8.2";
       "9.10" = "9.10.1";
     };
-    latestVersions = map versionToNixName (builtins.attrValues latestVerMap);
     gitInputs = {
       ghc911 = "9.11";
     };
