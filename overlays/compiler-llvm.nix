@@ -9,7 +9,7 @@ final: prev: {
     compiler = prev.haskell-nix.compiler //
       builtins.listToAttrs (final.lib.mapAttrsToList (name: ghc: {
         name = name + "llvm";
-        value = ghc.override { useLLVM = true; };
+        value = ghc.override { useLLVM = true; } // { inherit (ghc) latestVersion; };
       }) prev.haskell-nix.compiler);
   };
 }
