@@ -427,8 +427,8 @@ in {
                 inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86;
-                buildLlvmPackages = final.buildPackages.llvmPackages_9;
-                llvmPackages = final.llvmPackages_9;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
 
                 src-spec = rec {
                     version = "8.10.1";
@@ -449,8 +449,8 @@ in {
                 inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86;
-                buildLlvmPackages = final.buildPackages.llvmPackages_9;
-                llvmPackages = final.llvmPackages_9;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
 
                 src-spec = rec {
                     version = "8.10.2";
@@ -471,8 +471,8 @@ in {
                 inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86;
-                buildLlvmPackages = final.buildPackages.llvmPackages_9;
-                llvmPackages = final.llvmPackages_9;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
 
                 src-spec = rec {
                     version = "8.10.3";
@@ -493,8 +493,8 @@ in {
                 inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86;
-                buildLlvmPackages = final.buildPackages.llvmPackages_9;
-                llvmPackages = final.llvmPackages_9;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
 
                 src-spec = rec {
                     version = "8.10.4";
@@ -515,8 +515,8 @@ in {
                 inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86;
-                buildLlvmPackages = final.buildPackages.llvmPackages_9;
-                llvmPackages = final.llvmPackages_9;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
 
                 src-spec = rec {
                     version = "8.10.5";
@@ -537,8 +537,8 @@ in {
                 inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86;
-                buildLlvmPackages = final.buildPackages.llvmPackages_9;
-                llvmPackages = final.llvmPackages_9;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
 
                 src-spec = rec {
                     version = "8.10.6";
@@ -581,8 +581,8 @@ in {
                 inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86;
-                buildLlvmPackages = final.buildPackages.llvmPackages_9;
-                llvmPackages = final.llvmPackages_9;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
 
                 src-spec = rec {
                     version = "9.0.1";
@@ -603,8 +603,8 @@ in {
                 inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86;
-                buildLlvmPackages = final.buildPackages.llvmPackages_9;
-                llvmPackages = final.llvmPackages_9;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
 
                 src-spec = rec {
                     version = "9.0.2";
