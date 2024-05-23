@@ -99,7 +99,9 @@ let
               (compilerSelection pkgs)."${compiler-nix-name}";
 
 in let
-  ghc = ghc';
+  ghc = if ghc' ? latestVersion
+    then __trace "WARNING: ${ghc'.version} is out of date, consider using upgrading to ${ghc'.latestVersion}." ghc'
+    else ghc';
   subDir' = src.origSubDir or "";
   subDir = pkgs.lib.strings.removePrefix "/" subDir';
 
