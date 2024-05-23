@@ -67,8 +67,15 @@ let self =
 , useLdGold ?
     # might be better check to see if cc is clang/llvm?
     # use gold as the linker on linux to improve link times
-    # do not use it on musl due to a ld.gold bug. See: <https://sourceware.org/bugzilla/show_bug.cgi?id=22266>.
-    (stdenv.targetPlatform.isLinux && !stdenv.targetPlatform.isAndroid && !stdenv.targetPlatform.isMusl)
+    # do not use ld.gold 2.3 with musl due to a ld.gold bug.
+    # See: <https://sourceware.org/bugzilla/show_bug.cgi?id=22266>.
+    # Note that this bug was resolved in 2017.
+    ( stdenv.targetPlatform.isLinux
+      # don't use gold on android.
+      && !stdenv.targetPlatform.isAndroid
+      # don't use gold with with musl. Still seems to be
+      # affected by 22266.
+      && !stdenv.targetPlatform.isMusl)
 
 , ghc-version ? src-spec.version
 , ghc-version-date ? null
@@ -314,6 +321,11 @@ let
       # `-fexternal-dynamic-refs` causes `undefined reference` errors when building GHC cross compiler for windows
       + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64 && !targetPlatform.isWindows)
         " '*.*.ghc.*.opts += -fexternal-dynamic-refs'"
+      # The fact that we need to set this here is pretty idiotic. GHC should figure this out on it's own.
+      # Either have a runtime flag/setting to disable it or if dlopen fails, remember that it failed and
+      # fall back to non-dynamic. We only have dynamic linker with musl if host and target arch match.
+      + lib.optionalString (targetPlatform.isAndroid || (targetPlatform.isMusl && haskell-nix.haskellLib.isCrossTarget))
+        " '*.ghc.cabal.configure.opts += --flags=-dynamic-system-linker'"
       # The following is required if we build on aarch64-darwin for aarch64-iOS. Otherwise older
       # iPhones/iPads/... won't understand the compiled code, as the compiler will emit LDSETALH
       # + lib.optionalString (targetPlatform.???) "'*.rts.ghc.c.opts += -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc'"

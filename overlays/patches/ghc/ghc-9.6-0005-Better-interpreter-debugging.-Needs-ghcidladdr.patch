@@ -1,0 +1,181 @@
+From 8e978b309dad28cc70e5383d59fb4af67d359239 Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Wed, 21 Feb 2024 03:08:11 +0000
+Subject: [PATCH 5/7] Better interpreter debugging. Needs ghcidladdr!
+
+---
+ rts/Interpreter.c | 134 ++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 129 insertions(+), 5 deletions(-)
+
+diff --git a/rts/Interpreter.c b/rts/Interpreter.c
+index eb3e23b..eb74e5b 100644
+--- a/rts/Interpreter.c
++++ b/rts/Interpreter.c
+@@ -30,6 +30,14 @@
+ #include <errno.h>
+ #endif
+ 
++#include <dlfcn.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <elf.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <sys/mman.h>
++
+ // When building the RTS in the non-dyn way on Windows, we don't
+ //      want declspec(__dllimport__) on the front of function prototypes
+ //      from libffi.
+@@ -303,9 +311,125 @@ static StgWord app_ptrs_itbl[] = {
+ HsStablePtr rts_breakpoint_io_action; // points to the IO action which is executed on a breakpoint
+                                       // it is set in compiler/GHC.hs:runStmt
+ 
++void getExecutablePath(char *buffer, size_t buflen);
++
++void getExecutablePath(char *buffer, size_t buflen) {
++    ssize_t len = readlink("/proc/self/exe", buffer, buflen - 1);
++    if (len != -1) {
++        buffer[len] = '\0'; // Null-terminate the path
++    } else {
++        perror("readlink");
++    }
++}
++
++size_t n_symbols = 0;
++Elf64_Sym* symtab = NULL;
++char *strtab = NULL;
++
++void readSymTable(char *path);
++void readSymTable(char *path) {
++    // only read it once. We will _never_ change the running
++    // executable, so we can safely cache the symbol table.
++    if(symtab != NULL) {
++        return;
++    }
++    int fd = open(path, O_RDONLY);
++    if (fd == -1) {
++        perror("Failed to open file");
++        return;
++    }
++
++    Elf64_Ehdr ehdr;
++    if (read(fd, &ehdr, sizeof(Elf64_Ehdr)) != sizeof(Elf64_Ehdr)) {
++        perror("Failed to read ELF header");
++        close(fd);
++        return;
++    }
++    if (lseek(fd, ehdr.e_shoff, SEEK_SET) < 0) {
++        perror("Failed to seek to section header table");
++        close(fd);
++        return;
++    }
++    Elf64_Shdr shdr;
++    for(int i = 0; i < ehdr.e_shnum; i++) {
++        // skip the section header string table
++        if(i == ehdr.e_shstrndx) {
++            continue;
++        }
++        lseek(fd, ehdr.e_shoff + ehdr.e_shentsize * i, SEEK_SET);
++        if(read(fd, &shdr, sizeof(Elf64_Shdr)) != sizeof(Elf64_Shdr)) {
++            perror("Failed to read section header table");
++            close(fd);
++            return;
++        }
++        if (shdr.sh_type == SHT_SYMTAB) {
++            printf("Found symtab index %d\n", i);
++            symtab = (Elf64_Sym*)calloc(1, shdr.sh_size);
++            lseek(fd, shdr.sh_offset, SEEK_SET);
++            if(read(fd, symtab, shdr.sh_size) != shdr.sh_size) {
++                perror("Failed to read symtab");
++                close(fd);
++                return;
++            }
++            n_symbols = shdr.sh_size / sizeof(Elf64_Sym);
++        } else if (shdr.sh_type == SHT_STRTAB) {
++            ASSERT(strtab == NULL);
++            printf("Found strtab index %d\n", i);
++            strtab = (char*)calloc(1, shdr.sh_size);
++            lseek(fd, shdr.sh_offset, SEEK_SET);
++            if(read(fd, strtab, shdr.sh_size) != shdr.sh_size) {
++                perror("Failed to read symtab");
++                close(fd);
++                return;
++            }
++        }
++    }
++    close(fd);
++}
++uint64_t offset = 0xffffffffffffffff;
++int mydladdr(void *_addr, Dl_info *_info);
++int mydladdr(void *_addr, Dl_info *_info) {
++    if(symtab == NULL || strtab == NULL) {
++        printf("%p, %p\n", strtab, symtab);
++        return 0;
++    }
++    if(offset == 0xffffffffffffffff) {
++        printf("Trying to find the offset for mydladdr in %ld symbosl\n", n_symbols);
++        for(size_t i = 0; i < n_symbols; i++) {
++            Elf64_Sym sym = symtab[i];
++            if(strncmp("mydladdr", &strtab[sym.st_name], 8) == 0) {
++                offset = (uint64_t)&mydladdr - sym.st_value;
++                printf("Found offset: %p - %p => %lu\n", &mydladdr, sym.st_value, offset);
++                break;
++            }
++        }
++    }
++    for(size_t i = 0; i < n_symbols; i++) {
++        Elf64_Sym sym = symtab[i];
++        // skip non-global symbols
++        if(ELF32_ST_BIND(sym.st_info) != STB_GLOBAL) {
++            continue;
++        }
++        if(sym.st_value <= ((uint64_t)_addr-offset) && ((uint64_t)_addr-offset) <= sym.st_value + sym.st_size) {
++            _info->dli_sname = &strtab[sym.st_name];
++            _info->dli_saddr = (void*)(sym.st_value + offset);
++            _info->dli_fname = "xxx";
++            _info->dli_fbase = NULL;
++            return 1;
++        }
++    }
++    return 0; // not implemented yet.
++}
++
++
+ Capability *
+ interpretBCO (Capability* cap)
+ {
++    // if we are debugging, we want to read the symbol table.
++    IF_DEBUG(interpreter,
++        char file[512];
++        getExecutablePath(file, sizeof(file));
++        readSymTable(file); );
+     // Use of register here is primarily to make it clear to compilers
+     // that these entities are non-aliasable.
+     register void *Sp;     // local state -- stack pointer
+@@ -890,7 +1014,7 @@ do_apply:
+         default:
+         defer_apply_to_sched:
+             IF_DEBUG(interpreter,
+-                     debugBelch("Cannot apply compiled function; yielding to scheduler\n"));
++                     debugBelch("Cannot apply compiled function at addr %p; SP: %p, %d; yielding to scheduler\n", obj, Sp, get_itbl(obj)->type));
+             Sp_subW(2);
+             SpW(1) = (W_)tagged_obj;
+             SpW(0) = (W_)&stg_enter_info;
+@@ -1057,10 +1181,10 @@ run_BCO:
+                  //}
+                  debugBelch("Sp = %p   pc = %-4d ", Sp, bciPtr);
+                  disInstr(bco,bciPtr);
+-                 if (0) { int i;
+-                 debugBelch("\n");
+-                 for (i = 8; i >= 0; i--) {
+-                     debugBelch("%d  %p\n", i, (void *) SpW(i));
++                 if (1) { int i;
++                 Dl_info info;
++                 for (i = 0; i < 9; i++) {
++                     debugBelch("[Sp+%d] (%p) = %14p -- %s\n", i, Sp_plusW(i), (void *) SpW(i), mydladdr(SpW(i), &info) ? info.dli_sname : (ghcidladdr(SpW(i), &info) ? info.dli_sname : "???"));
+                  }
+                  debugBelch("\n");
+                  }
+-- 
+2.33.0
+
