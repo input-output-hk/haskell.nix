@@ -29,9 +29,9 @@ let
       let
         bootstrapGhc = final.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
       in
-      if builtins.compareVersions x.src-spec.version bootstrapGhc.version < 0 then
-          throw "Desired GHC (${x.src-spec.version}) is older than the bootstrap GHC (${bootstrapGhc.version}) for this platform (${final.stdenv.targetPlatform.config})."
-      else x;
+      if builtins.compareVersions x.version bootstrapGhc.version < 0 then
+          throw "Desired GHC (${x.version}) is older than the bootstrap GHC (${bootstrapGhc.version}) for this platform (${final.stdenv.targetPlatform.config})."
+      else x // final.lib.optionalAttrs (x.version != latestVerMap.${v}) { latestVersion = latestVerMap.${v}; };
     errorOldGhcjs = v: up: throw "ghcjs ${v} is no longer supported by haskell.nix. Consider using ${latestVerMap.${up}}";
 in {
   haskell-nix = prev.haskell-nix // {
@@ -40,13 +40,7 @@ in {
     #   "ghc810" -> "ghc8107"
     #   "ghc99" -> "ghc9920230909" (uses last modified date of the git repo)
     inherit compilerNameMap;
-    resolve-compiler-name = name: old-compiler-warning:
-      let result = final.haskell-nix.compilerNameMap.${name} or name;
-      in
-        if old-compiler-warning && !builtins.elem result latestVersions
-          then builtins.trace
-            "WARNING: ${result} is out of date, consider using upgrading." result
-          else result;
+    resolve-compiler-name = name: final.haskell-nix.compilerNameMap.${name} or name;
     # Use this to disable the existing haskell infra structure for testing purposes
     compiler =
         let bootPkgs = {
@@ -285,7 +279,7 @@ in {
                 ++ fromUntil "9.10" "9.12" ./patches/ghc/ghc-9.10-merge-objects.patch
                 ;
         in ({
-            ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
+            ghc865 = traceWarnOld "8.6" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc865; };
 
                 bootPkgs = bootPkgs // {
@@ -310,7 +304,7 @@ in {
                 ghc-patches = ghc-patches "8.6.5"
                             ++ [ D5123-patch haddock-900-patch ];
             });
-            ghc881 = final.callPackage ../compiler/ghc (traceWarnOld "8.8" {
+            ghc881 = traceWarnOld "8.8" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc881; };
 
                 bootPkgs = bootPkgs // {
@@ -332,7 +326,7 @@ in {
 
                 ghc-patches = ghc-patches "8.8.1";
             });
-            ghc882 = final.callPackage ../compiler/ghc (traceWarnOld "8.8" {
+            ghc882 = traceWarnOld "8.8" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc882; };
 
                 bootPkgs = bootPkgs // {
@@ -354,7 +348,7 @@ in {
 
                 ghc-patches = ghc-patches "8.8.2";
             });
-            ghc883 = final.callPackage ../compiler/ghc (traceWarnOld "8.8" {
+            ghc883 = traceWarnOld "8.8" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc883; };
 
                 bootPkgs = bootPkgs // {
@@ -376,7 +370,7 @@ in {
 
                 ghc-patches = ghc-patches "8.8.3";
             });
-            ghc884 = final.callPackage ../compiler/ghc (traceWarnOld "8.8" {
+            ghc884 = traceWarnOld "8.8" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc884; };
 
                 bootPkgs = bootPkgs // {
@@ -398,7 +392,7 @@ in {
 
                 ghc-patches = ghc-patches "8.8.4";
             });
-            ghc8101 = final.callPackage ../compiler/ghc (traceWarnOld "8.10" {
+            ghc8101 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8101; };
 
                 bootPkgs = bootPkgs // {
@@ -420,7 +414,7 @@ in {
 
                 ghc-patches = ghc-patches "8.10.1";
             });
-            ghc8102 = final.callPackage ../compiler/ghc (traceWarnOld "8.10" {
+            ghc8102 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102; };
 
                 bootPkgs = bootPkgs // {
@@ -442,7 +436,7 @@ in {
 
                 ghc-patches = ghc-patches "8.10.2";
             });
-            ghc8103 = final.callPackage ../compiler/ghc (traceWarnOld "8.10" {
+            ghc8103 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8103; };
 
                 bootPkgs = bootPkgs // {
@@ -464,7 +458,7 @@ in {
 
                 ghc-patches = ghc-patches "8.10.3";
             });
-            ghc8104 = final.callPackage ../compiler/ghc (traceWarnOld "8.10" {
+            ghc8104 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8104; };
 
                 bootPkgs = bootPkgs // {
@@ -486,7 +480,7 @@ in {
 
                 ghc-patches = ghc-patches "8.10.4";
             });
-            ghc8105 = final.callPackage ../compiler/ghc (traceWarnOld "8.10" {
+            ghc8105 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8105; };
 
                 bootPkgs = bootPkgs // {
@@ -508,7 +502,7 @@ in {
 
                 ghc-patches = ghc-patches "8.10.5";
             });
-            ghc8106 = final.callPackage ../compiler/ghc (traceWarnOld "8.10" {
+            ghc8106 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8106; };
 
                 bootPkgs = bootPkgs // {
@@ -530,7 +524,7 @@ in {
 
                 ghc-patches = ghc-patches "8.10.6";
             });
-            ghc8107 = final.callPackage ../compiler/ghc (traceWarnOld "8.10" {
+            ghc8107 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8107; };
 
                 bootPkgs = bootPkgs // {
@@ -552,7 +546,7 @@ in {
 
                 ghc-patches = ghc-patches "8.10.7";
             });
-            ghc901 = final.callPackage ../compiler/ghc (traceWarnOld "9.0" {
+            ghc901 = traceWarnOld "9.0" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc901; };
 
                 bootPkgs = bootPkgs // {
@@ -574,7 +568,7 @@ in {
 
                 ghc-patches = ghc-patches "9.0.1";
             });
-            ghc902 = final.callPackage ../compiler/ghc (traceWarnOld "9.0" {
+            ghc902 = traceWarnOld "9.0" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc902; };
 
                 bootPkgs = bootPkgs // {
@@ -596,7 +590,7 @@ in {
 
                 ghc-patches = ghc-patches "9.0.2";
             });
-            ghc921 = final.callPackage ../compiler/ghc (traceWarnOld "9.2" {
+            ghc921 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc921; };
 
                 bootPkgs = bootPkgs // {
@@ -615,7 +609,7 @@ in {
 
                 ghc-patches = ghc-patches "9.2.1";
             });
-            ghc922 = final.callPackage ../compiler/ghc (traceWarnOld "9.2" {
+            ghc922 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc922; };
 
                 bootPkgs = bootPkgs // {
@@ -634,7 +628,7 @@ in {
 
                 ghc-patches = ghc-patches "9.2.2";
             });
-            ghc923 = final.callPackage ../compiler/ghc (traceWarnOld "9.2" {
+            ghc923 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc923; };
 
                 bootPkgs = bootPkgs // {
@@ -653,7 +647,7 @@ in {
 
                 ghc-patches = ghc-patches "9.2.3";
             });
-            ghc924 = final.callPackage ../compiler/ghc (traceWarnOld "9.2" {
+            ghc924 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc924; };
 
                 bootPkgs = bootPkgs // {
@@ -672,7 +666,7 @@ in {
 
                 ghc-patches = ghc-patches "9.2.4";
             });
-            ghc925 = final.callPackage ../compiler/ghc (traceWarnOld "9.2" {
+            ghc925 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc925; };
 
                 bootPkgs = bootPkgs // {
@@ -691,7 +685,7 @@ in {
 
                 ghc-patches = ghc-patches "9.2.5";
             });
-            ghc926 = final.callPackage ../compiler/ghc (traceWarnOld "9.2" {
+            ghc926 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc926; };
 
                 bootPkgs = bootPkgs // {
@@ -710,7 +704,7 @@ in {
 
                 ghc-patches = ghc-patches "9.2.6";
             });
-            ghc927 = final.callPackage ../compiler/ghc (traceWarnOld "9.2" {
+            ghc927 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc927; };
 
                 bootPkgs = bootPkgs // {
@@ -729,7 +723,7 @@ in {
 
                 ghc-patches = ghc-patches "9.2.7";
             });
-            ghc928 = final.callPackage ../compiler/ghc (traceWarnOld "9.2" {
+            ghc928 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc928; };
 
                 bootPkgs = bootPkgs // {
@@ -748,7 +742,7 @@ in {
 
                 ghc-patches = ghc-patches "9.2.8";
             });
-            ghc941 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
+            ghc941 = traceWarnOld "9.4" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc941; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -771,7 +765,7 @@ in {
 
                 ghc-patches = ghc-patches "9.4.1";
             });
-            ghc942 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
+            ghc942 = traceWarnOld "9.4" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc942; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -794,7 +788,7 @@ in {
 
                 ghc-patches = ghc-patches "9.4.2";
             });
-            ghc943 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
+            ghc943 = traceWarnOld "9.4" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc943; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -817,7 +811,7 @@ in {
 
                 ghc-patches = ghc-patches "9.4.3";
             });
-            ghc944 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
+            ghc944 = traceWarnOld "9.4" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc944; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -840,7 +834,7 @@ in {
 
                 ghc-patches = ghc-patches "9.4.4";
             });
-            ghc945 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
+            ghc945 = traceWarnOld "9.4" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc945; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -863,7 +857,7 @@ in {
 
                 ghc-patches = ghc-patches "9.4.5";
             });
-            ghc947 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
+            ghc947 = traceWarnOld "9.4" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc947; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -887,7 +881,7 @@ in {
 
                 ghc-patches = ghc-patches "9.4.7";
             });
-            ghc948 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
+            ghc948 = traceWarnOld "9.4" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc948; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -912,7 +906,7 @@ in {
 
                 ghc-patches = ghc-patches "9.4.8";
             });
-            ghc96020230302 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
+            ghc96020230302 = traceWarnOld "9.6" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc96020230302; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -936,7 +930,7 @@ in {
 
                 ghc-patches = ghc-patches "9.6.1";
             });
-            ghc961 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
+            ghc961 = traceWarnOld "9.6" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc961; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -963,7 +957,7 @@ in {
 
                 ghc-patches = ghc-patches "9.6.1";
             });
-            ghc962 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
+            ghc962 = traceWarnOld "9.6" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc962; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -990,7 +984,7 @@ in {
 
                 ghc-patches = ghc-patches "9.6.2";
             });
-            ghc963 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
+            ghc963 = traceWarnOld "9.6" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc963; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -1017,7 +1011,7 @@ in {
 
                 ghc-patches = ghc-patches "9.6.3";
             });
-            ghc964 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
+            ghc964 = traceWarnOld "9.6" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc964; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -1044,7 +1038,7 @@ in {
 
                 ghc-patches = ghc-patches "9.6.4";
             });
-            ghc965 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
+            ghc965 = traceWarnOld "9.6" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc965; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -1071,7 +1065,7 @@ in {
 
                 ghc-patches = ghc-patches "9.6.5";
             });
-            ghc981 = final.callPackage ../compiler/ghc (traceWarnOld "9.8" {
+            ghc981 = traceWarnOld "9.8" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc981; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -1098,7 +1092,7 @@ in {
 
                 ghc-patches = ghc-patches "9.8.1";
             });
-            ghc982 = final.callPackage ../compiler/ghc (traceWarnOld "9.8" {
+            ghc982 = traceWarnOld "9.8" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc982; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -1125,7 +1119,7 @@ in {
 
                 ghc-patches = ghc-patches "9.8.2";
             });
-            ghc9101 = final.callPackage ../compiler/ghc (traceWarnOld "9.10" {
+            ghc9101 = traceWarnOld "9.10" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9101; };
 
                 bootPkgs = bootPkgsGhc94 // {

@@ -47,7 +47,7 @@
 
   compilerNixNames = nixpkgsName: nixpkgs: builtins.listToAttrs (
     (lib.mapAttrsToList (compiler-nix-name: runTests: {
-      name = nixpkgs.haskell-nix.resolve-compiler-name compiler-nix-name true;
+      name = nixpkgs.haskell-nix.resolve-compiler-name compiler-nix-name;
       value = { inherit runTests; };
     }) (
       # GHC version to cache and whether to run the tests against them.
