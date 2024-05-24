@@ -264,12 +264,13 @@ let
           then ../../materialized/${compiler-nix-name}/hadrian-ghc92
         else if builtins.compareVersions ghc-version "9.6" < 0
           then ../../materialized/${compiler-nix-name}/hadrian-ghc94
-        else if builtins.compareVersions ghc-version "9.8" < 0
+        else if builtins.compareVersions ghc-version "9.7" < 0
           then ../../materialized/${compiler-nix-name}/hadrian-ghc96
         else if builtins.compareVersions ghc-version "9.9" < 0
           then ../../materialized/${compiler-nix-name}/hadrian-ghc98
-        else ../../materialized/${compiler-nix-name}/hadrian-ghc99;
-      checkMaterialization = true;
+        else if builtins.compareVersions ghc-version "9.11" < 0
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc910
+        else null;
       modules = [{
         reinstallableLibGhc = false;
         # Apply the patches in a way that does not require using something
