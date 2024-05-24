@@ -95,7 +95,7 @@
     let
       callFlake = import flake-compat;
 
-      ifdLevel = 2;
+      ifdLevel = 0;
       compiler = "ghc928";
       config = import ./config.nix;
 
