@@ -19,7 +19,7 @@
         hashable.flags.random-initial-seed = false;
         hashable.flags.integer-gmp = true;
         heaps.revision = import ./cabal-files/heaps.nix;
-        Cabal-syntax.revision = import ./cabal-files/Cabal-syntax.nix;
+        Cabal-syntax.revision = hackage.Cabal-syntax."3.10.1.0".revisions.default;
         process.revision = hackage.process."1.6.17.0".revisions.default;
         primitive.revision = import ./cabal-files/primitive.nix;
         stm.revision = hackage.stm."2.5.1.0".revisions.default;
@@ -45,7 +45,7 @@
         shake.flags.portable = false;
         random.revision = import ./cabal-files/random.nix;
         bytestring.revision = hackage.bytestring."0.11.5.3".revisions.default;
-        Cabal.revision = import ./cabal-files/Cabal.nix;
+        Cabal.revision = hackage.Cabal."3.10.1.0".revisions.default;
         directory.revision = hackage.directory."1.3.8.1".revisions.default;
         js-flot.revision = import ./cabal-files/js-flot.nix;
         cryptohash-sha256.revision = import ./cabal-files/cryptohash-sha256.nix;
@@ -69,10 +69,12 @@
           "containers" = "0.6.7";
           "ghc-prim" = "0.10.0";
           "mtl" = "2.3.1";
+          "Cabal" = "3.10.1.0";
           "ghc-boot-th" = "9.6.4";
           "base" = "4.18.2.0";
           "time" = "1.12.2";
           "stm" = "2.5.1.0";
+          "Cabal-syntax" = "3.10.1.0";
           "ghc-bignum" = "1.3";
           "directory" = "1.3.8.1";
           "template-haskell" = "2.20.0.0";
@@ -88,11 +90,19 @@
       };
     };
   extras = hackage:
-    { packages = { hadrian = ./.plan.nix/hadrian.nix; }; };
+    {
+      packages = {
+        ghc-toolchain = ./.plan.nix/ghc-toolchain.nix;
+        ghc-platform = ./.plan.nix/ghc-platform.nix;
+        hadrian = ./.plan.nix/hadrian.nix;
+      };
+    };
   modules = [
     ({ lib, ... }:
       {
         packages = {
+          "ghc-toolchain" = { flags = {}; };
+          "ghc-platform" = { flags = {}; };
           "hadrian" = {
             flags = {
               "threaded" = lib.mkOverride 900 true;
@@ -119,12 +129,14 @@
           "extra".components.library.planned = lib.mkOverride 900 true;
           "transformers".components.library.planned = lib.mkOverride 900 true;
           "parsec".components.library.planned = lib.mkOverride 900 true;
+          "ghc-toolchain".components.library.planned = lib.mkOverride 900 true;
           "system-cxx-std-lib".components.library.planned = lib.mkOverride 900 true;
           "hashable".components.library.planned = lib.mkOverride 900 true;
           "primitive".components.library.planned = lib.mkOverride 900 true;
           "Cabal-syntax".components.library.planned = lib.mkOverride 900 true;
           "QuickCheck".components.library.planned = lib.mkOverride 900 true;
           "js-jquery".components.library.planned = lib.mkOverride 900 true;
+          "ghc-platform".components.library.planned = lib.mkOverride 900 true;
           "mtl".components.library.planned = lib.mkOverride 900 true;
           "containers".components.library.planned = lib.mkOverride 900 true;
           "ghc-prim".components.library.planned = lib.mkOverride 900 true;

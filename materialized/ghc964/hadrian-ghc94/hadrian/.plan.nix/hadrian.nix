@@ -41,15 +41,12 @@
             (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
             (hsPkgs."extra" or (errorHandler.buildDepError "extra"))
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
-            (hsPkgs."time" or (errorHandler.buildDepError "time"))
             (hsPkgs."mtl" or (errorHandler.buildDepError "mtl"))
             (hsPkgs."parsec" or (errorHandler.buildDepError "parsec"))
             (hsPkgs."shake" or (errorHandler.buildDepError "shake"))
             (hsPkgs."transformers" or (errorHandler.buildDepError "transformers"))
             (hsPkgs."unordered-containers" or (errorHandler.buildDepError "unordered-containers"))
             (hsPkgs."text" or (errorHandler.buildDepError "text"))
-            (hsPkgs."cryptohash-sha256" or (errorHandler.buildDepError "cryptohash-sha256"))
-            (hsPkgs."base16-bytestring" or (errorHandler.buildDepError "base16-bytestring"))
           ] ++ pkgs.lib.optional (flags.selftest) (hsPkgs."QuickCheck" or (errorHandler.buildDepError "QuickCheck"));
           buildable = true;
           modules = [
@@ -72,7 +69,6 @@
             "Hadrian/BuildPath"
             "Hadrian/Expression"
             "Hadrian/Haskell/Cabal"
-            "Hadrian/Haskell/Hash"
             "Hadrian/Haskell/Cabal/Type"
             "Hadrian/Haskell/Cabal/Parse"
             "Hadrian/Oracles/ArgsHash"
@@ -119,7 +115,6 @@
             "Settings/Builders/Cc"
             "Settings/Builders/Configure"
             "Settings/Builders/DeriveConstants"
-            "Settings/Builders/GenApply"
             "Settings/Builders/GenPrimopCode"
             "Settings/Builders/Ghc"
             "Settings/Builders/GhcPkg"

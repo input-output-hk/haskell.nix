@@ -50,6 +50,8 @@
             (hsPkgs."text" or (errorHandler.buildDepError "text"))
             (hsPkgs."cryptohash-sha256" or (errorHandler.buildDepError "cryptohash-sha256"))
             (hsPkgs."base16-bytestring" or (errorHandler.buildDepError "base16-bytestring"))
+            (hsPkgs."ghc-platform" or (errorHandler.buildDepError "ghc-platform"))
+            (hsPkgs."ghc-toolchain" or (errorHandler.buildDepError "ghc-toolchain"))
           ] ++ pkgs.lib.optional (flags.selftest) (hsPkgs."QuickCheck" or (errorHandler.buildDepError "QuickCheck"));
           buildable = true;
           modules = [
@@ -95,6 +97,7 @@
             "Rules/BinaryDist"
             "Rules/CabalReinstall"
             "Rules/Clean"
+            "Rules/Codes"
             "Rules/Compile"
             "Rules/Dependencies"
             "Rules/Docspec"
