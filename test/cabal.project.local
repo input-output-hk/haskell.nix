@@ -30,12 +30,13 @@ repository ghcjs-overlay
 
 -- This is needed because nixpkgs has 1.0.19, and libsodium has
 -- too tight bounds <1.0.18.
-if !os(ghcjs)
-  source-repository-package
-    type: git
-    location: https://github.com/hamishmack/hs-libsodium.git
-    tag: c094f210f3bd34d97204451ea57855a5d17e2086
-    --sha256: sha256-6iCKvdLdjwg2jcoWMEj3qcFTvKe3P4BYxgKeXY3QwRM=
+-- TODO put this back in if hackage is still not updated when we update nixpkgs-unstable
+--if !os(ghcjs)
+--  source-repository-package
+--    type: git
+--    location: https://github.com/hamishmack/hs-libsodium.git
+--    tag: c094f210f3bd34d97204451ea57855a5d17e2086
+--    --sha256: sha256-6iCKvdLdjwg2jcoWMEj3qcFTvKe3P4BYxgKeXY3QwRM=
 
 if !impl(ghc>=9.10) && !os(ghcjs)
   active-repositories: hackage.haskell.org
