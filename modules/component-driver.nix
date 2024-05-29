@@ -10,6 +10,11 @@ let
 in
 
 {
+  # Packages in that are `pre-existing` in the cabal plan
+  options.preExistingPkgs = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+    default = [];
+  };
   # This has a slightly modified option type. We will *overwrite* any previous
   # setting of nonRelocatablePkgs, instead of merging them.  Otherwise you
   # have no chance of removing packages retroactively.  We might improve this
