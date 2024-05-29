@@ -62,6 +62,30 @@
       };
     };
   modules = [
+    {
+      preExistingPkgs = [
+        "ghc-prim"
+        "transformers"
+        "time"
+        "base"
+        "unix"
+        "ghc-boot-th"
+        "pretty"
+        "template-haskell"
+        "ghci"
+        "ghc-heap"
+        "deepseq"
+        "ghc-boot"
+        "integer-gmp"
+        "containers"
+        "array"
+        "bytestring"
+        "directory"
+        "ghc-bignum"
+        "binary"
+        "filepath"
+      ];
+    }
     ({ lib, ... }:
       {
         packages = {
