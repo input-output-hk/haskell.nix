@@ -58,7 +58,9 @@ in
   #
   # without reinstallable-lib:ghc, this is significantly larger.
 
-  config.nonReinstallablePkgs =
+  config.nonReinstallablePkgs = if config.preExistingPkgs != []
+    then ["rts"] ++ config.preExistingPkgs
+    else
     [ "rts" "ghc-prim" "integer-gmp" "integer-simple" "base"
       "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
       # ghcjs custom packages
