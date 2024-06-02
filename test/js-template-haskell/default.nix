@@ -7,6 +7,10 @@ let
   project = project' {
     inherit compiler-nix-name;
     src = testSrc "js-template-haskell";
+    cabalProjectLocal = ''
+      if arch(javascript)
+        extra-packages: ghci
+    '';
   };
 
   packages = project.hsPkgs;
