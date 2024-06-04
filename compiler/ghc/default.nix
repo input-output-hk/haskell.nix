@@ -274,6 +274,7 @@ let
           then ../../materialized/${compiler-nix-name}/hadrian-ghc98
         else ../../materialized/${compiler-nix-name}/hadrian-ghc99;
       modules = [{
+        reinstallableLibGhc = false;
         # Apply the patches in a way that does not require using something
         # like `srcOnly`. The problem with `pkgs.srcOnly` was that it had to run
         # on a platform at eval time.

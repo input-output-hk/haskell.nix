@@ -26,6 +26,12 @@ in
       merge = _loc: defs: lib.last (lib.getValues defs);
     };
   };
+
+  options.reinstallableLibGhc = lib.mkOption {
+    type = lib.types.bool;
+    default = !pkgs.stdenv.hostPlatform.isGhcjs;
+    description = "Is lib:ghc reinstallable?";
+  };
   options.setup-depends = lib.mkOption {
     type = lib.types.listOf lib.types.unspecified;
     default = [];
@@ -52,10 +58,42 @@ in
   #
   # without reinstallable-lib:ghc, this is significantly larger.
 
-  config.nonReinstallablePkgs =
-    ["rts"] ++ config.preExistingPkgs
-      ++ lib.optionals (builtins.compareVersions config.compiler.version "8.11" < 0 && pkgs.stdenv.hostPlatform.isGhcjs) [
-        "ghcjs-prim" "ghcjs-th"];
+  config.nonReinstallablePkgs = if config.preExistingPkgs != []
+   then ["rts"] ++ config.preExistingPkgs
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "8.11" < 0 && pkgs.stdenv.hostPlatform.isGhcjs) [
+      "ghcjs-prim" "ghcjs-th"]
+   else
+    [ "rts" "ghc-prim" "integer-gmp" "integer-simple" "base"
+      "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
+      # ghcjs custom packages
+      "ghcjs-prim" "ghcjs-th"
+    ]
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "8.11" >= 0) [
+      "ghc-bignum"]
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "9.1" >= 0) [
+      "system-cxx-std-lib"]
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "9.9" >= 0) [
+      "ghc-internal"]
+    ++ lib.optionals (!config.reinstallableLibGhc) ([
+      "ghc-boot"
+      "ghc" "Cabal" "Win32" "array" "binary" "bytestring" "containers"
+      "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
+      # "ghci" "haskeline"
+      "hpc"
+      "mtl" "parsec" "process" "text" "time" "transformers"
+      "unix" "xhtml" "terminfo"
+    ]
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "8.11" >= 0) [
+      # stm and exceptions are needed by the GHC package since 9.0.1
+      "stm" "exceptions"]
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "9.8.1" >= 0) [
+      "semaphore-compat"]
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "9.9" >= 0) [
+      "os-string"]
+    )
+    ++ lib.optionals (!config.reinstallableLibGhc || __elem config.compiler.nix-name ["ghc865"]) [
+      "ghc-heap"
+    ];
 
   options.bootPkgs = lib.mkOption {
     type = lib.types.listOf lib.types.str;
@@ -64,7 +102,7 @@ in
   config.bootPkgs =  [
       "rts" "ghc-boot-th"
       "ghcjs-prim"
-   ] ++ lib.optional (builtins.elem "ghc" config.preExistingPkgs) "ghc"
+   ] ++ lib.optional (!config.reinstallableLibGhc) "ghc"
     ++ lib.optionals (
       !__elem config.compiler.nix-name ["ghc865" "ghc881" "ghc882" "ghc883" "ghc884" "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc8107"]) [
       "ghc-bignum" ]

@@ -1484,6 +1484,7 @@ in {
                 version = "3.2.4";
                 inherit ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
+                modules = [{ reinstallableLibGhc = false; }];
                 nix-tools = config.evalPackages.haskell-nix.nix-tools;
             } // args);
             alex = final.haskell-nix.bootstrap.packages.alex-tool {};
@@ -1494,6 +1495,7 @@ in {
                 evalPackages = pkgs.buildPackages;
                 inherit version ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-${version}";
+                modules = [{ reinstallableLibGhc = false; }];
                 nix-tools = config.evalPackages.haskell-nix.nix-tools;
               } // args);
             happy = final.haskell-nix.bootstrap.packages.happy-tool {};
@@ -1510,6 +1512,7 @@ in {
                 version = "1.24.4";
                 inherit ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/hscolour";
+                modules = [{ reinstallableLibGhc = false; }];
                 nix-tools = config.evalPackages.haskell-nix.nix-tools;
             } // args)).getComponent "exe:HsColour";
             hscolour = final.haskell-nix.bootstrap.packages.hscolour-tool {};
