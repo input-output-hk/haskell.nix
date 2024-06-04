@@ -9,7 +9,8 @@ let
     src = testSrc "js-template-haskell";
     cabalProjectLocal = ''
       if arch(javascript)
-        extra-packages: ghci
+        if impl(ghc>9)
+          extra-packages: ghci
     '';
   };
 
