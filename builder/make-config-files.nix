@@ -160,7 +160,7 @@ let
         fi
       ''}
     done
-    for p in ${lib.concatStringsSep " " (lib.remove "ghc" nonReinstallablePkgs')}; do
+    for p in ${lib.concatStringsSep " " nonReinstallablePkgs'}; do
       if [ -e $ghcDeps/envDeps/$p ]; then
         cat $ghcDeps/envDeps/$p >> $configFiles/ghc-environment
       fi

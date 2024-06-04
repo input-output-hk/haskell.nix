@@ -47,4 +47,5 @@ data Package = Package
   , packageFlags :: HashMap VarName Bool
   , packageSrc :: Maybe PkgSrc
   , packageHasDescriptionOverride :: Bool
+  , packagePreExisting :: Bool
   } deriving (Show)

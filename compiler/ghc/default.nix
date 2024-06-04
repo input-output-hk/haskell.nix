@@ -262,10 +262,16 @@ let
       materialized =
         if builtins.compareVersions ghc-version "9.4" < 0
           then ../../materialized/${compiler-nix-name}/hadrian-ghc92
+        else if builtins.compareVersions ghc-version "9.4.8" < 0
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc947
         else if builtins.compareVersions ghc-version "9.6" < 0
           then ../../materialized/${compiler-nix-name}/hadrian-ghc94
-        else if builtins.compareVersions ghc-version "9.7" < 0
+        else if builtins.compareVersions ghc-version "9.6.5" < 0
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc964
+        else if builtins.compareVersions ghc-version "9.8" < 0
           then ../../materialized/${compiler-nix-name}/hadrian-ghc96
+        else if builtins.compareVersions ghc-version "9.8.2" < 0
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc981
         else if builtins.compareVersions ghc-version "9.9" < 0
           then ../../materialized/${compiler-nix-name}/hadrian-ghc98
         else if builtins.compareVersions ghc-version "9.11" < 0
