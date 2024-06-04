@@ -29,7 +29,7 @@
       extraSrcFiles = [];
       extraTmpFiles = [];
       extraDocFiles = [];
-      };
+    };
     components = {
       exes = {
         "iserv" = {
@@ -42,13 +42,13 @@
             (hsPkgs."deepseq" or (errorHandler.buildDepError "deepseq"))
             (hsPkgs."ghci" or (errorHandler.buildDepError "ghci"))
             (hsPkgs."libiserv" or (errorHandler.buildDepError "libiserv"))
-            ] ++ (pkgs.lib).optional (!system.isWindows) (hsPkgs."unix" or (errorHandler.buildDepError "unix"));
+          ] ++ pkgs.lib.optional (!system.isWindows) (hsPkgs."unix" or (errorHandler.buildDepError "unix"));
           buildable = true;
           cSources = [ "cbits/iservmain.c" ];
           hsSourceDirs = [ "src" ];
           includeDirs = [ "." ];
           mainPath = [ "Main.hs" ] ++ [ "" ];
-          };
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../utils/iserv; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../utils/iserv; }

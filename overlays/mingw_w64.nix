@@ -53,10 +53,10 @@ let
         # Not sure why this `unset` helps.  It might avoids some kind of overflow issue.  We see `wine` fail to start when building `cardano-wallet-cli` test `unit`.
         unset pkgsHostTargetAsString
         unset LINK_DLL_FOLDERS
-        WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 $REMOTE_ISERV/${interpreter.exeName} tmp $PORT $ISERV_ARGS &
+        WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 $REMOTE_ISERV/${interpreter.exeName} tmp $PORT --no-load-call $ISERV_ARGS &
         (>&2 echo "---| ${interpreter.exeName} should have started on $PORT")
         RISERV_PID="$!"
-        ISERV_TARGET=WINE ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT" $PROXY_ARGS
+        ISERV_TARGET=WINE ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT" --no-load-call $PROXY_ARGS
         (>&2 echo "---> killing ${interpreter.exeName}...")
         kill $RISERV_PID
       '';

@@ -29,7 +29,7 @@
       extraSrcFiles = [];
       extraTmpFiles = [];
       extraDocFiles = [];
-      };
+    };
     components = {
       "library" = {
         depends = [
@@ -40,7 +40,7 @@
           (hsPkgs."transformers" or (errorHandler.buildDepError "transformers"))
           (hsPkgs."text" or (errorHandler.buildDepError "text"))
           (hsPkgs."ghc-platform" or (errorHandler.buildDepError "ghc-platform"))
-          ];
+        ];
         buildable = true;
         modules = [
           "GHC/Toolchain"
@@ -63,8 +63,8 @@
           "GHC/Toolchain/Tools/Readelf"
           "GHC/Toolchain/Tools/MergeObjs"
           "GHC/Toolchain/Utils"
-          ];
+        ];
         hsSourceDirs = [ "src" ];
-        };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../../utils/ghc-toolchain; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../../utils/ghc-toolchain; }

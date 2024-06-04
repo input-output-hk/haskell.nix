@@ -7,6 +7,13 @@ let
   project = project' {
     inherit compiler-nix-name;
     src = testSrc "js-template-haskell";
+    cabalProjectLocal = ''
+      if arch(javascript)
+        extra-packages: ghci
+      else
+        -- This fixes windows profiled builds
+        constraints: text source
+    '';
   };
 
   packages = project.hsPkgs;
