@@ -211,6 +211,7 @@ let
     githash = haskell-nix.callPackage ./githash { inherit compiler-nix-name evalPackages; testSrc = testSrcWithGitDir; };
     c-ffi = callTest ./c-ffi { inherit util; };
     th-dlls = callTest ./th-dlls { inherit util; };
+    th-dlls-minimal = callTest ./th-dlls-minimal { inherit util; };
     external-static-plugin = callTest ./external-static-plugin {};
     exe-dlls = callTest ./exe-dlls { inherit util; };
     exe-lib-dlls = callTest ./exe-lib-dlls { inherit util; };
