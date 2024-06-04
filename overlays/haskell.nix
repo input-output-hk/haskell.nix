@@ -1053,14 +1053,10 @@ final: prev: {
                 index-state = final.haskell-nix.internalHackageIndexState;
                 modules = [{
                   config = {
-                    reinstallableLibGhc = false;
                     # Prevent the iserve-proxy-interpreter from depending on itself
                     # by disabling the `--ghc-option` normally passed to `setupBuildFlags`
                     # when cross compiling.
                     setupBuildFlags = final.lib.mkForce [];
-                  };
-                  options.nonReinstallablePkgs = pkgs.lib.mkOption {
-                    apply = x: x ++ [ "ghci" "exceptions" "stm" "libiserv" ];
                   };
                 }];
               } // (if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.9" < 0
