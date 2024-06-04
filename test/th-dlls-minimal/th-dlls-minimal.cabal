@@ -1,0 +1,21 @@
+cabal-version:       >=1.10
+name:                th-dlls-minimal
+version:             0.1.0.0
+license:             PublicDomain
+author:              Hamish Mackenzie
+maintainer:          Hamish.K.Mackenzie@gmail.com
+build-type:          Simple
+
+library
+  build-depends:       base
+                     , template-haskell
+                     , test-lib
+  exposed-modules:     Lib
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+
+executable just-template-haskell
+  build-depends:       base, template-haskell
+  hs-source-dirs:      apps
+  default-language:    Haskell2010
+  main-is:             Main.hs
