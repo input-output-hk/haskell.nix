@@ -85,7 +85,7 @@
        )) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (
-      && (__match ".*llvm" compiler-nix-name == null)
+         (__match ".*llvm" compiler-nix-name == null)
       && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884"])
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
