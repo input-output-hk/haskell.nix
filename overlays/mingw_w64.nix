@@ -20,7 +20,7 @@ let
         if enableProfiling
           then iserv-proxy-interpreter.override { inherit enableProfiling; }
           else iserv-proxy-interpreter;
-      no-load-call = lib.optionalString (interpreter.exeName == "remote-iserv") "--no-load-call";
+      no-load-call = lib.optionalString (interpreter.exeName != "remote-iserv.exe") "--no-load-call";
     in
       writeShellScriptBin ("iserv-wrapper" + lib.optionalString enableProfiling "-prof") ''
         set -euo pipefail
