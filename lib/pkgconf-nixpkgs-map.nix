@@ -2167,7 +2167,7 @@ pkgs:
     "gdkmm-3.0" = [ "gtkmm3" ];
     "gtkmm-3.0" = [ "gtkmm3" ];
     "gtkmm-4.0" = [ "gtkmm4" ];
-    "libgtkpod-1.1.0" = [ "gtkpod" ];
+#    "libgtkpod-1.1.0" = [ "gtkpod" ];
 #    "gtksourceview-3.0" = [ "gtksourceview" ];
     "gtksourceview-3.0" = [ "gtksourceview3" ];
     "gtksourceview-4" = [ "gtksourceview4" ];
