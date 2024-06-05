@@ -56,11 +56,7 @@
       # cabal-install and nix-tools plans.  When removing a ghc version
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
-      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2305") {
-        ghc810 = false;
-        ghc90 = false;
-        ghc92 = false;
-      } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2311") {
+      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2311") {
         ghc94 = false;
         ghc96 = false;
         ghc98 = false;
@@ -88,7 +84,7 @@
        || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"])
        )) {
     inherit (lib.systems.examples) ghcjs;
-  } // lib.optionalAttrs (nixpkgsName != "unstable"
+  } // lib.optionalAttrs (
       && (__match ".*llvm" compiler-nix-name == null)
       && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884"])
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
