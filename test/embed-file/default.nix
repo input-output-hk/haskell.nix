@@ -16,7 +16,14 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs rec {
-  meta.disabled = stdenv.hostPlatform.isGhcjs;
+  meta.disabled = stdenv.hostPlatform.isGhcjs
+    # Could not load 'filezmembedzm0zi0zi16zi0zmL8bqDH6rAX64X4nLQOoPcy_DataziFileEmbed_makeRelativeToProject_closure', dependency unresolved. See top entry above.
+    || (builtins.elem compiler-nix-name ["ghc928"] && !haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl)
+    # /build/source-test-embed-file-root-test-embed-file-exe-embed-file-root/test/embed-file/app: getDirectoryContents:openDirStream: invalid argument (Invalid argument)
+    || (builtins.elem compiler-nix-name ["ghc928"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl)
+    # Failed to lookup symbol: __aarch64_swp8_acq_rel
+    || (builtins.elem compiler-nix-name ["ghc947" "ghc948"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
+    ;
 
   ifdInputs = {
     inherit (project) plan-nix;
