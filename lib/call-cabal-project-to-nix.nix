@@ -434,7 +434,22 @@ let
                 cat $cabal_file | sed -e 's/@ProjectVersionMunged@/${ghc.version}/g' -e 's/default: *@[A-Za-z0-9]*@/default: False/g' -e 's/@Suffix@//g' > $fixed_cabal_file
                 json_cabal_file=$(mktemp)
                 cabal2json $fixed_cabal_file > $json_cabal_file
-                EXPOSED_MODULES_${varname name}="$(jq -r '.library."exposed-modules"[]|select(type=="array")[]' $json_cabal_file | tr '\n' ' ')"
+
+                exposed_modules="$(jq -r '.library."exposed-modules"[]|select(type=="array")[]' $json_cabal_file)"
+                reexported_modules="$(jq -r '.library."reexported-modules"//[]|.[]|select(type=="array")[]' $json_cabal_file)"
+
+                # FIXME This is a bandaid. Rather than doing this, conditionals should be interpreted.
+                ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isGhcjs ''
+                exposed_modules+=" $(jq -r '.library."exposed-modules"[]|select(type=="object" and .if.arch == "javascript")|.then[]' $json_cabal_file)"
+                ''}
+                ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
+                exposed_modules+=" $(jq -r '.library."exposed-modules"[]|select(type=="object" and .if.os == "windows")|.then[]' $json_cabal_file)"
+                ''}
+                ${pkgs.lib.optionalString (!pkgs.stdenv.targetPlatform.isWindows) ''
+                exposed_modules+=" $(jq -r '.library."exposed-modules"[]|select(type=="object" and .if.not.os == "windows")|.then[]' $json_cabal_file)"
+                ''}
+
+                EXPOSED_MODULES_${varname name}="$(tr '\n' ' ' <<< "$exposed_modules $reexported_modules")"
                 DEPS_${varname name}="$(jq -r '.library."build-depends"[]|select(type=="array")[],select(type=="object").then[]' $json_cabal_file | sed 's/^\([A-Za-z0-9-]*\).*$/\1/g' | sort -u | tr '\n' ' ')"
                 VER_${varname name}="$(jq -r '.version' $json_cabal_file)"
                 PKGS+=" ${name}"
