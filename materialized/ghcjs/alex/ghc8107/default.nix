@@ -35,6 +35,21 @@
   extras = hackage:
     { packages = { alex = ./.plan.nix/alex.nix; }; };
   modules = [
+    {
+      preExistingPkgs = [
+        "ghc-prim"
+        "time"
+        "base"
+        "unix"
+        "deepseq"
+        "integer-gmp"
+        "containers"
+        "array"
+        "bytestring"
+        "directory"
+        "filepath"
+      ];
+    }
     ({ lib, ... }:
       {
         packages = {

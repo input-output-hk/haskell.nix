@@ -63,7 +63,6 @@ let
   # The packages in GHC source and the locations of them
   ghc-extra-pkgs = ghcVersion: {
       base         = "libraries/base";
-      bytestring   = "libraries/bytestring";
       ghci         = "libraries/ghci";
       ghc-heap     = "libraries/ghc-heap";
       ghc-prim     = "libraries/ghc-prim";
@@ -71,17 +70,14 @@ let
       integer-gmp  = "libraries/integer-gmp";
       template-haskell = "libraries/template-haskell";
       iserv        = "utils/iserv";
+      ghc-boot     = "libraries/ghc-boot";
     } // final.lib.optionalAttrs ((!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "9.6" < 0) && builtins.compareVersions ghcVersion "9.8" < 0) {
       libiserv     = "libraries/libiserv";
     } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "9" > 0) {
       ghc          = "compiler";
-      ghc-boot     = "libraries/ghc-boot";
     } // (
       if builtins.compareVersions ghcVersion "9.4" < 0
         then {
-          # The version of `Win32` that comes with ghc 9.4 (2.12.0.0) is older
-          # than the one in hackage.  Including it causes `cabal configure` to fail.
-          Win32        = "libraries/Win32";
           # As of GHC 9.4 this has been split out of the GHC repo and
           # is now in the iserv-proxy flake input
           iserv-proxy  = "utils/iserv-proxy";
@@ -95,11 +91,6 @@ let
       remote-iserv = "utils/remote-iserv";
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.0.1" >= 0) {
       ghc-bignum   = "libraries/ghc-bignum";
-    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.2.1" >= 0) {
-      deepseq      = "libraries/deepseq";
-      pretty       = "libraries/pretty";
-    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.8" >= 0) {
-      parsec       = "libraries/parsec";
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.9" >= 0) {
       ghc-platform = "libraries/ghc-platform";
       ghc-internal = "libraries/ghc-internal";

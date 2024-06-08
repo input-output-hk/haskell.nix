@@ -29,6 +29,18 @@
   extras = hackage:
     { packages = { happy = ./.plan.nix/happy.nix; }; };
   modules = [
+    {
+      preExistingPkgs = [
+        "ghc-prim"
+        "transformers"
+        "base"
+        "mtl"
+        "deepseq"
+        "integer-gmp"
+        "containers"
+        "array"
+      ];
+    }
     ({ lib, ... }:
       {
         packages = {

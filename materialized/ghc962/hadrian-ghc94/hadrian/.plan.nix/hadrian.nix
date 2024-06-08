@@ -29,7 +29,7 @@
       extraSrcFiles = [];
       extraTmpFiles = [];
       extraDocFiles = [ "README.md" ];
-      };
+    };
     components = {
       exes = {
         "hadrian" = {
@@ -47,7 +47,7 @@
             (hsPkgs."transformers" or (errorHandler.buildDepError "transformers"))
             (hsPkgs."unordered-containers" or (errorHandler.buildDepError "unordered-containers"))
             (hsPkgs."text" or (errorHandler.buildDepError "text"))
-            ] ++ (pkgs.lib).optional (flags.selftest) (hsPkgs."QuickCheck" or (errorHandler.buildDepError "QuickCheck"));
+          ] ++ pkgs.lib.optional (flags.selftest) (hsPkgs."QuickCheck" or (errorHandler.buildDepError "QuickCheck"));
           buildable = true;
           modules = [
             "Base"
@@ -126,6 +126,7 @@
             "Settings/Builders/Ld"
             "Settings/Builders/Make"
             "Settings/Builders/MergeObjects"
+            "Settings/Builders/SplitSections"
             "Settings/Builders/RunTest"
             "Settings/Builders/Win32Tarballs"
             "Settings/Builders/Xelatex"
@@ -149,12 +150,12 @@
             "Utilities"
             "Way"
             "Way/Type"
-            ] ++ (pkgs.lib).optional (flags.selftest) "Rules/Selftest";
+          ] ++ pkgs.lib.optional (flags.selftest) "Rules/Selftest";
           hsSourceDirs = [ "." "src" ];
           mainPath = ([
             "Main.hs"
-            ] ++ (pkgs.lib).optional (flags.threaded) "") ++ (pkgs.lib).optional (flags.selftest) "";
-          };
+          ] ++ pkgs.lib.optional (flags.threaded) "") ++ pkgs.lib.optional (flags.selftest) "";
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../.; }
