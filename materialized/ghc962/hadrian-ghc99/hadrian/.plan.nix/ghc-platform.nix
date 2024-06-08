@@ -29,13 +29,13 @@
       extraSrcFiles = [];
       extraTmpFiles = [];
       extraDocFiles = [ "CHANGELOG.md" ];
-      };
+    };
     components = {
       "library" = {
         depends = [ (hsPkgs."base" or (errorHandler.buildDepError "base")) ];
         buildable = true;
         modules = [ "GHC/Platform/ArchOS" ];
         hsSourceDirs = [ "src" ];
-        };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../../libraries/ghc-platform; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../../libraries/ghc-platform; }

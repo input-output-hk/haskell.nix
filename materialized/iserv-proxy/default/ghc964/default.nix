@@ -65,6 +65,34 @@
   extras = hackage:
     { packages = { iserv-proxy = ./.plan.nix/iserv-proxy.nix; }; };
   modules = [
+    {
+      preExistingPkgs = [
+        "ghc-prim"
+        "libiserv"
+        "transformers"
+        "time"
+        "base"
+        "unix"
+        "ghc-boot-th"
+        "mtl"
+        "pretty"
+        "process"
+        "stm"
+        "template-haskell"
+        "ghci"
+        "exceptions"
+        "ghc-heap"
+        "deepseq"
+        "ghc-boot"
+        "containers"
+        "array"
+        "bytestring"
+        "directory"
+        "ghc-bignum"
+        "binary"
+        "filepath"
+      ];
+    }
     ({ lib, ... }:
       { packages = { "iserv-proxy" = { flags = {}; }; }; })
     ({ lib, ... }:
