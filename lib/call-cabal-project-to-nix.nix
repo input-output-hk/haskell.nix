@@ -99,7 +99,9 @@ let
               (compilerSelection pkgs)."${compiler-nix-name}";
 
 in let
-  ghc = ghc';
+  ghc = if ghc' ? latestVersion
+    then __trace "WARNING: ${ghc'.version} is out of date, consider using upgrading to ${ghc'.latestVersion}." ghc'
+    else ghc';
   subDir' = src.origSubDir or "";
   subDir = pkgs.lib.strings.removePrefix "/" subDir';
 
@@ -361,7 +363,6 @@ let
 
   ghc-pkgs = [
     "Cabal"
-    "Cabal-syntax"
     "array"
     "base"
     "binary"
@@ -369,38 +370,42 @@ let
     "containers"
     "deepseq"
     "directory"
-    "exceptions"
     "filepath"
-    "ghc"
-    "ghc-bignum"
     "ghc-boot"
     "ghc-boot-th"
     "ghc-compact"
-    "ghc-experimental"
     "ghc-heap"
-    "ghc-internal"
-    "ghc-platform"
     "ghc-prim"
-    "ghc-toolchain"
     "ghci"
-    "haskeline"
-    "hpc"
     "integer-gmp"
-    "libiserv"
     "mtl"
-    "os-string"
     "parsec"
     "pretty"
     "process"
     "rts"
-    "semaphore-compat"
-    "stm"
     "template-haskell"
-    "terminfo"
     "text"
     "time"
     "transformers"
+  ] ++ pkgs.lib.optionals (!pkgs.stdenv.targetPlatform.isGhcjs || builtins.compareVersions ghc.version "9.0" > 0) [
+    # GHCJS 8.10 does not have these
+    "Cabal-syntax"
+    "exceptions"
+    "ghc"
+    "ghc-bignum"
+    "ghc-experimental"
+    "ghc-internal"
+    "ghc-platform"
+    "ghc-toolchain"
+    "haskeline"
+    "hpc"
+    "libiserv"
+    "os-string"
+    "semaphore-compat"
+    "stm"
     "xhtml"
+  ] ++ pkgs.lib.optionals (!pkgs.stdenv.targetPlatform.isGhcjs) [
+    "terminfo"
   ] ++ (if pkgs.stdenv.targetPlatform.isWindows
     then [ "Win32" ]
     else [ "unix" ]
@@ -434,7 +439,22 @@ let
                 cat $cabal_file | sed -e 's/@ProjectVersionMunged@/${ghc.version}/g' -e 's/default: *@[A-Za-z0-9]*@/default: False/g' -e 's/@Suffix@//g' > $fixed_cabal_file
                 json_cabal_file=$(mktemp)
                 cabal2json $fixed_cabal_file > $json_cabal_file
-                EXPOSED_MODULES_${varname name}="$(jq -r '.library."exposed-modules"[]|select(type=="array")[]' $json_cabal_file | tr '\n' ' ')"
+
+                exposed_modules="$(jq -r '.library."exposed-modules"[]|select(type=="array")[]' $json_cabal_file)"
+                reexported_modules="$(jq -r '.library."reexported-modules"//[]|.[]|select(type=="array")[]' $json_cabal_file)"
+
+                # FIXME This is a bandaid. Rather than doing this, conditionals should be interpreted.
+                ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isGhcjs ''
+                exposed_modules+=" $(jq -r '.library."exposed-modules"[]|select(type=="object" and .if.arch == "javascript")|.then[]' $json_cabal_file)"
+                ''}
+                ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
+                exposed_modules+=" $(jq -r '.library."exposed-modules"[]|select(type=="object" and .if.os == "windows")|.then[]' $json_cabal_file)"
+                ''}
+                ${pkgs.lib.optionalString (!pkgs.stdenv.targetPlatform.isWindows) ''
+                exposed_modules+=" $(jq -r '.library."exposed-modules"[]|select(type=="object" and .if.not.os == "windows")|.then[]' $json_cabal_file)"
+                ''}
+
+                EXPOSED_MODULES_${varname name}="$(tr '\n' ' ' <<< "$exposed_modules $reexported_modules")"
                 DEPS_${varname name}="$(jq -r '.library."build-depends"[]|select(type=="array")[],select(type=="object").then[]' $json_cabal_file | sed 's/^\([A-Za-z0-9-]*\).*$/\1/g' | sort -u | tr '\n' ' ')"
                 VER_${varname name}="$(jq -r '.version' $json_cabal_file)"
                 PKGS+=" ${name}"

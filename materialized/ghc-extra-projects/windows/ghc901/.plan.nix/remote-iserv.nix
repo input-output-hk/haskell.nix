@@ -29,18 +29,18 @@
       extraSrcFiles = [];
       extraTmpFiles = [];
       extraDocFiles = [];
-      };
+    };
     components = {
       exes = {
         "remote-iserv" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."libiserv" or (errorHandler.buildDepError "libiserv"))
-            ];
+          ];
           buildable = true;
           hsSourceDirs = [ "src" ];
           mainPath = [ "Cli.hs" ];
-          };
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../utils/remote-iserv; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../utils/remote-iserv; }

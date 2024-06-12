@@ -1,0 +1,33 @@
+From 320b0783de5155b18f1ed68dff2be52e75c3377a Mon Sep 17 00:00:00 2001
+From: Sylvain Henry <sylvain@haskus.fr>
+Date: Wed, 15 Nov 2023 16:06:23 +0100
+Subject: [PATCH] Retain CAFs in the interpreter
+
+iserv-proxy-interpreter dynamically loads libraries. It must retain CAFs
+to avoid issues like:
+
+> iserv-proxy-interpreter.exe:internal error:Evaluated a CAF that was GC'd!
+
+ghc-lib uses a hacky keepCAFsForGHCi.c file; iserv still uses a custom
+hs-main C file. We use -fkeep-cafs as it has the same effect.
+---
+ iserv-proxy.cabal | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/iserv-proxy.cabal b/iserv-proxy.cabal
+index 7179864..39e5cc6 100644
+--- a/iserv-proxy.cabal
++++ b/iserv-proxy.cabal
+@@ -99,6 +99,9 @@ Executable iserv-proxy
+ Executable iserv-proxy-interpreter
+    Default-Language: Haskell2010
+    Main-Is: Interpreter.hs
++   -- We need to pass -fkeep-cafs to ensure that the interpreter retains CAFs
++   -- Iserv and GHC do something similar.
++   ghc-options: -fkeep-cafs
+    Build-Depends: base       >= 4   && < 5,
+                   iserv-proxy
+ 
+-- 
+GitLab
+
