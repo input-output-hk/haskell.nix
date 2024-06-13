@@ -10,6 +10,10 @@ let
     cabalProjectLocal = builtins.readFile ../cabal.project.local;
     modules = [
      ({pkgs, ...}: {
+      packages.th-dlls-minimal.components.library.preBuild = ''
+        export ISERV_ARGS=-v
+        export PROSY_ARGS=-v
+      '';
       packages.test-lib.components.library.libs = mkForce [
         (pkgs.stdenv.mkDerivation {
           name = "test-clib";
