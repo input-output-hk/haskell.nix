@@ -254,9 +254,12 @@ in {
                 # This patch will make windows stop emitting absolute relocations. This is one way in which binutils 2.36+ (with ASLR enabled), will just choke on the
                 # assembly we generate because it's always absolute (32bit) addressing modes.
                 # GHC from 9.6+ seems to have https://gitlab.haskell.org/ghc/ghc/-/merge_requests/7449, which should fix this as well.
-                ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && (final.stdenv.targetPlatform.isWindows)) ./patches/ghc/windows-pseudo-pic-8.10.patch
-                ++ final.lib.optional (versionAtLeast "9.0" && versionLessThan "9.2" && (final.stdenv.targetPlatform.isWindows)) ./patches/ghc/windows-pseudo-pic.patch
-                ++ final.lib.optional (versionAtLeast "9.2" && versionLessThan "9.4" && (final.stdenv.targetPlatform.isWindows)) ./patches/ghc/windows-pseudo-pic-9.2.patch
+                ++ onWindows (until "9.0" ./patches/ghc/windows-pseudo-pic-8.10.patch)
+                ++ onWindows (fromUntil "9.0" "9.2" ./patches/ghc/windows-pseudo-pic.patch)
+                ++ onWindows (fromUntil "9.2" "9.4" ./patches/ghc/windows-pseudo-pic-9.2.patch)
+
+                # Fix issue loading windows dll using `.dll.a` file
+                ++ onWindows (fromUntil "9.10" "9.1" ./patches/ghc/ghc-9.10-windows-dll-dependent-symbol-type-fix.patch)
                 ;
         in ({
             ghc8107 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
