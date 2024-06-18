@@ -61,18 +61,6 @@ in {
             };
             sphinx = final.buildPackages.sphinx;
 
-            D5123-patch = final.fetchpatch rec { # https://phabricator.haskell.org/D5123
-                url = "http://tarballs.nixos.org/sha256/${sha256}";
-                name = "D5123.diff";
-                sha256 = "0nhqwdamf2y4gbwqxcgjxs0kqx23w9gv5kj0zv6450dq19rji82n";
-            };
-            haddock-900-patch = final.fetchpatch { # https://github.com/haskell/haddock/issues/900
-                url = "https://patch-diff.githubusercontent.com/raw/haskell/haddock/pull/983.diff";
-                name = "loadpluginsinmodules.diff";
-                sha256 = "0bvvv0zsfq2581zsir97zfkggc1kkircbbajc2fz3b169ycpbha1";
-                extraPrefix = "utils/haddock/";
-                stripLen = 1;
-            };
             ghc-patches = version: let
                 # Returns true iff this derivation's version is strictly older than ver.
                 versionLessThan = ver: builtins.compareVersions ver version == 1;
