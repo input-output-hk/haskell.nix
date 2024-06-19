@@ -1,4 +1,4 @@
-if impl(ghc>=9.11)
+if impl(ghc>=9.10.1)
   -- allow newer packages, that are bound to be newer due to
   -- being shipped with a newer compiler.  If you extend this
   -- be very careful to only extend it for absolutely necessary packages
