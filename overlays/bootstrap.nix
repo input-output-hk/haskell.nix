@@ -259,7 +259,7 @@ in {
                 ++ onWindows (fromUntil "9.2" "9.4" ./patches/ghc/windows-pseudo-pic-9.2.patch)
 
                 # Fix issue loading windows dll using `.dll.a` file
-                ++ onWindows (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.10-windows-dll-dependent-symbol-type-fix.patch)
+                ++ onWindows (fromUntil "9.4" "9.12" ./patches/ghc/ghc-9.10-windows-dll-dependent-symbol-type-fix.patch)
                 ;
         in ({
             ghc8107 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
