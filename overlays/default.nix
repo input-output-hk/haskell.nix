@@ -28,10 +28,10 @@ let
         # pointing back to the same static-nix-tools derivation. This allows
         # downstram derivation to keep using `nix-tools.exes.make-install-plan`
         # as shown above.
-        static-nix-tools =
+        static-nix-tools' = pins:
           let
             # TODO replace once haskell-nix-examples nix-tools is in haskell.nix
-            zipFile = (import ../nix-tools-static.nix final).${final.system};
+            zipFile = (import pins final).${final.system};
             tarball = final.runCommand "nix-tools" {
               nativeBuildInputs = [ final.unzip ];
             } ''
@@ -43,6 +43,9 @@ let
           in
             # add the missing exes attributes to the tarball derivation
             tarball // { exes = final.lib.genAttrs nix-tools-provided-exes (_: tarball); };
+
+        static-nix-tools = static-nix-tools' ../nix-tools-static.nix;
+        static-nix-tools-for-default-setup = static-nix-tools' ../nix-tools-static-for-default-setup.nix;
 
         # Version of nix-tools built with a pinned version of haskell.nix.
         pinned-nix-tools-lib = (import (final.haskell-nix.sources.flake-compat) {
@@ -60,7 +63,11 @@ let
           prev.haskell-nix // {
             inherit (nix-tools-pkgs) nix-tools nix-tools-set;
             # either nix-tools from its overlay or from the tarball.
-            nix-tools-unchecked = static-nix-tools;
+            nix-tools-unchecked = static-nix-tools// {
+              exes =  static-nix-tools.exes // {
+                inherit (static-nix-tools-for-default-setup.exes) default-setup default-setup-ghcjs;
+              };
+            };
           };
         # For use building hadrian.  This way updating anything that modifies the
         # way hadrian is built will not cause a GHC rebuild.

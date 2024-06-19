@@ -1,15 +1,18 @@
-if impl(ghc>=9.8)
+if impl(ghc>=9.10.1)
   -- allow newer packages, that are bound to be newer due to
   -- being shipped with a newer compiler.  If you extend this
   -- be very careful to only extend it for absolutely necessary packages
   -- otherwise we risk running into broken build-plans down the line.
   allow-newer: *:base, *:template-haskell, *:bytestring, *:text, *:ghc-prim, *:deepseq, *:Cabal
-if impl(ghc > 9.9)
+if impl(ghc > 9.11)
   allow-newer: *:containers
   constraints: base-compat >=0.14.0, aeson >=2.2.1.0
 
 -- This prevents hsc2hs from causing old versions of packages from being added to plan.json
 allow-newer: hsc2hs:*
+
+if impl(ghc >=9.10.1)
+  extra-packages: process
 
 repository head.hackage.ghc.haskell.org
   url: https://ghc.gitlab.haskell.org/head.hackage/
@@ -28,14 +31,14 @@ repository ghcjs-overlay
   key-threshold: 0
   --sha256: sha256-+Eq62mUAS6rl0PYC5U0D3fH3P5tpnH/Y5qftZMgL7OM=
 
-if !impl(ghc>=9.10) && !os(ghcjs)
+if !impl(ghc>=9.11) && !os(ghcjs)
   active-repositories: hackage.haskell.org
 
-if impl(ghc>=9.10) && !os(ghcjs)
+if impl(ghc>=9.11) && !os(ghcjs)
   active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org
 
-if !impl(ghc>=9.10) && os(ghcjs)
+if !impl(ghc>=9.11) && os(ghcjs)
   active-repositories: hackage.haskell.org, ghcjs-overlay:override
 
-if impl(ghc>=9.10) && os(ghcjs)
+if impl(ghc>=9.11) && os(ghcjs)
   active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org, ghcjs-overlay:override
