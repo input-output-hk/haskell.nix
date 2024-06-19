@@ -62,3 +62,25 @@ in the 32bit slots.
 This was fixed in GHC upstream in https://gitlab.haskell.org/ghc/ghc/-/merge_requests/7449,
 while the patch in haskell.nix is a bit more pedestrian and just sets PIC on windows to
 always be on, and then uses the PIC pipeline.
+
+--------------------------------------------------------------------------------
+2024-06-18 x86_64-linux.unstable.ghc9101.ucrt64.tests.th-dlls-minimal.build
+
+0024:err:seh:call_stack_handlers invalid frame 00007FFFFF68EF18 (0000000000022000-0000000000220000)
+0024:err:seh:NtRaiseException Exception frame is not in stack limits => unable to dispatch exception.
+iserv-proxy: {handle: <socket: 11>}: GHCi.Message.remoteCall: end of file
+
+This is due to GHC mislinking GNU import libraries (dll.a). What happens is that
+GHC ends up creating GOT entries for function calls instead of PLT entries. The
+loader/linker in GHC for Windows has logic to lazy load .dll's as referenced. For
+this symbols get a dependency symbol attached, this could be a symbol indicating
+the DLL that needs to be loaded. While walking the dependencies to find the dll to
+load (or in some cases just the dependent symbol, not the dll), we override the
+symbol type with the one of the dependent symbol.  This however means we'll
+override the type of a symbol with the DATA type each time the symbol leads to a
+dllInstance to be loaded. Subsequently we end up creating a GOT entry instead of
+a PLT entry for the symbol, irrepsective of the original symbol being a code or
+data symbol. If code symbols end up getting GOT stubs, we see the above crash as
+the control flow jumps to the location of the stub, and instead of a PLT/jump
+island just lands in the address of the target symbol, which is in most cases
+non-sensical machine code.
