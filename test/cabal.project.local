@@ -22,14 +22,14 @@ repository head.hackage.ghc.haskell.org
      f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
      26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
      7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
-  --sha256: sha256-dx4WtCafVcu1+IlaK1ABcqQ1UummqTN8HRo3svRdTOE=
+  --sha256: sha256-tSeUf84LWny6LAIKCV18rJxdWS2UCfM7UeYViJ/f9JU=
 
 repository ghcjs-overlay
-  url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/ed91ac93832fdfc50471ab8df13b8174e91b35ed
+  url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/8ef1977ba226b9dea0a5f43824c2e3507280d306
   secure: True
   root-keys:
   key-threshold: 0
-  --sha256: sha256-+Eq62mUAS6rl0PYC5U0D3fH3P5tpnH/Y5qftZMgL7OM=
+  --sha256: sha256-jcOUSw6rtBdLXx5/yx1EMKaYfvVWJgpTVe567jA81Ls=
 
 if !impl(ghc>=9.11) && !os(ghcjs)
   active-repositories: hackage.haskell.org
