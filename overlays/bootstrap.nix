@@ -314,7 +314,7 @@ in {
             ghc921 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc921; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
@@ -331,7 +331,7 @@ in {
             ghc922 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc922; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
@@ -348,7 +348,7 @@ in {
             ghc923 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc923; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
@@ -365,7 +365,7 @@ in {
             ghc924 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc924; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
@@ -382,7 +382,7 @@ in {
             ghc925 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc925; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
@@ -399,7 +399,7 @@ in {
             ghc926 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc926; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
@@ -416,7 +416,7 @@ in {
             ghc927 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc927; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
@@ -433,7 +433,7 @@ in {
             ghc928 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc928; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
