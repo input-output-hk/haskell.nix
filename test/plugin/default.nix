@@ -6,10 +6,9 @@ let
   project = project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "plugin";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
-    modules = [{
-      reinstallableLibGhc = builtins.compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.1" < 0;
-    }];
+    cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
+      allow-newer: polysemy-plugin:containers, polysemy:containers
+    '';
   };
 
   packages = project.hsPkgs;
@@ -21,7 +20,7 @@ in recurseIntoAttrs {
 
   # Not sure why this breaks for ghc 8.10.7
   meta.disabled = compiler-nix-name == "ghc8107"
-    || builtins.elem compiler-nix-name [ "ghc9101" "ghc91120240504" ]
+    || builtins.elem compiler-nix-name [ "ghc9101x" "ghc91120240620" ]
     || stdenv.hostPlatform.isMusl
     || stdenv.hostPlatform.isGhcjs
     || stdenv.hostPlatform.isWindows
