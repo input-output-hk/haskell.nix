@@ -1,11 +1,11 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, ... }:
+{ stdenv, lib, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
 let
   project = project' {
-    inherit compiler-nix-name;
+    inherit compiler-nix-name evalPackages;
     src = testSrc "js-template-haskell";
     cabalProjectLocal = ''
       if arch(javascript)
