@@ -1,0 +1,30 @@
+{
+  "nodes": {
+    "ghc963": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1695290340,
+        "narHash": "sha256-gLL0M4BdI+G/wJABtETDUnHKKaYkYzGd6ns+Rgqlj6Q=",
+        "ref": "ghc-9.6.3-iog",
+        "rev": "6819b70a7739205a75f0b4fefcfcc9fdab39cab9",
+        "revCount": 60904,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/stable-haskell/ghc"
+      },
+      "original": {
+        "ref": "ghc-9.6.3-iog",
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/stable-haskell/ghc"
+      }
+    },
+    "root": {
+      "inputs": {
+        "ghc963": "ghc963"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

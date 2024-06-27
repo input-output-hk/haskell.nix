@@ -13,10 +13,14 @@ in recurseIntoAttrs {
 
     buildCommand = ''
       expected=$(mktemp)
-      ${ghc}/bin/${ghc.targetPrefix}ghc --supported-languages >$expected
+      dummy=$(mktemp)
+      ${ghc}/bin/${ghc.targetPrefix}ghc --supported-languages | sort >$expected
+      sort ${supported-langauges} > $dummy
 
-      echo 'diff -u $expected ${supported-langauges}'
-      diff -u $expected ${supported-langauges}
+      echo 'Expected `${ghc}/bin/${ghc.targetPrefix}ghc --supported-languages | sort`'
+      echo 'The calculated by lib/supported-languages.nix `sort ${supported-langauges}`'
+      echo 'diff -u $dummy $expected'
+      diff -u $dummy $expected
 
       touch $out
     '';

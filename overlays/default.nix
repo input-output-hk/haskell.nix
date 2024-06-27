@@ -93,6 +93,7 @@ let
     cabalPkgConfig = import ./cabal-pkg-config.nix;
     cacheCompilerDeps = import ./cache-compiler-deps.nix;
     fetch-source = import ./fetch-source.nix;
+    lazy-inputs = import ../lazy-inputs;
   };
 
   composeExtensions = f: g: final: prev:
@@ -133,6 +134,7 @@ let
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
     cacheCompilerDeps
     fetch-source
+    lazy-inputs
   ];
   combined = builtins.foldl' composeExtensions (_: _: { }) ordered;
 in overlays // { inherit combined; }

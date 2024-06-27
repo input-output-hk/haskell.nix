@@ -1,0 +1,30 @@
+{
+  "nodes": {
+    "ghc8107": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1629288802,
+        "narHash": "sha256-WZcENDag6EclLpnuUryuw9HgZRNa66cIRpUSbWXEaFs=",
+        "ref": "ghc-8.10.7-iog",
+        "rev": "1f02b7430b2fbab403d7ffdde9cfd006e884678e",
+        "revCount": 55240,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/stable-haskell/ghc"
+      },
+      "original": {
+        "ref": "ghc-8.10.7-iog",
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/stable-haskell/ghc"
+      }
+    },
+    "root": {
+      "inputs": {
+        "ghc8107": "ghc8107"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
