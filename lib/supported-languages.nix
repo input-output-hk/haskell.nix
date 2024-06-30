@@ -305,5 +305,8 @@ evalPackages.writeTextFile {
     NoUnliftedNewtypes
     ViewPatterns
     NoViewPatterns
-    '';
+    ${pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.11" >=0) ''
+      OrPatterns
+      NoOrPatterns
+    ''}'';
 }

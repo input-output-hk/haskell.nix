@@ -79,6 +79,13 @@ writeDoc file doc =
      hPutDoc handle doc
      hClose handle
 
+-- PackageKey is used when selecting which version is the most recent
+-- when to deduplicate the plan.
+-- By including PackageType as well as version we can select the
+-- NonPreExisting version of the package if the versions match.
+data PackageType = PreExisting | NotPreExisting deriving (Eq, Ord)
+data PackageKey = PackageKey Version PackageType deriving (Eq, Ord)
+
 plan2nix :: Args -> Plan -> IO NExpr
 plan2nix args Plan { packages, extras, components, compilerVersion, compilerPackages } = do
   -- TODO: this is an aweful hack and expects plan-to-nix to be
@@ -260,12 +267,18 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
   filterInstallPlan :: (Value -> Maybe b) -> HashMap Text b
   filterInstallPlan f = fmap snd .
     -- If the same package occurs more than once, choose the latest
-    Map.fromListWith (\a b -> if parseVersion (fst a) > parseVersion (fst b) then a else b)
-      $ mapMaybe (\pkg -> (,) (pkg ^. key "pkg-name" . _String) . (pkg ^. key "pkg-version" . _String,) <$> f pkg)
+    Map.fromListWith (\a b -> if fst a > fst b then a else b)
+      $ mapMaybe (\pkg -> (,) (pkg ^. key "pkg-name" . _String) . (getPackageKey pkg,) <$> f pkg)
       $ Vector.toList (plan ^. key "install-plan" . _Array)
 
   parseVersion :: Text -> Version
   parseVersion s = fromMaybe (error $ "Unable to parse version " <> show s) . simpleParsec $ Text.unpack s
+
+  getPackageKey :: Value -> PackageKey
+  getPackageKey pkg = PackageKey (parseVersion (pkg ^. key "pkg-version" . _String)) (
+    if pkg ^. key "type" . _String == "pre-existing"
+      then PreExisting
+      else NotPreExisting)
 
   -- Set of components that are included in the plan.
   components :: HashSet Text

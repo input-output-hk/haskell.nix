@@ -125,7 +125,7 @@ in {
                 ++ until              "9.0"    ./patches/ghc/dont-mark-evacuate_large-as-inline.patch
                 ++ onWindows (fromUntil "9.4.1"  "9.4.5"  ./patches/ghc/ghc-9.4-hadrian-win-cross.patch)
                 ++ onWindows (fromUntil "9.4.7"  "9.4.9"  ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
-                ++ onWindows (fromUntil "9.6.3"  "9.12"   ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
+                ++ onWindows (fromUntil "9.6.3"  "9.11"   ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
                 # support R_X86_64_PC64 (ELF constant 24) - IMAGE_REL_AMD64_SREL32 (PE constant 14), which seems to appear with 9.6 more frequently, and
                 # results in "unhandled PEi386 relocation type 14".
                 ++ onWindows (fromUntil "9.4.1"  "9.12"   ./patches/ghc/win-reloc-x86_64-pc64.patch)
@@ -143,12 +143,12 @@ in {
                   ++ onWindows (fromUntil "9.9"    "9.9.20231203" ./patches/ghc/no-ucrt-9.9.patch)
                 )
                 ++ onWindows (fromUntil "9.4.7"  "9.5"    ./patches/ghc/revert-289547580b6f2808ee123f106c3118b716486d5b.patch)
-                ++ onWindows (fromUntil "9.6.3"  "9.12"   ./patches/ghc/revert-289547580b6f2808ee123f106c3118b716486d5b.patch)
+                ++ onWindows (fromUntil "9.6.3"  "9.11"   ./patches/ghc/revert-289547580b6f2808ee123f106c3118b716486d5b.patch)
                 # the following is needed for cardano-prelude as it uses closure_sizeW :-/
-                ++ onWindows (fromUntil "9.4"    "9.12"   ./patches/ghc/win-add-closure_sizeW-to-rtssyms.patch)
+                ++ onWindows (fromUntil "9.4"    "9.11"   ./patches/ghc/win-add-closure_sizeW-to-rtssyms.patch)
                 ++ onWindows (until              "9.0"    ./patches/ghc/ghc-8.10-win-add-tzset-to-rtssyms.patch)
                 ++ onWindows (fromUntil "9.0"    "9.3"    ./patches/ghc/ghc-9.2-win-add-tzset-to-rtssyms.patch)
-                ++ onWindows (fromUntil "9.4"    "9.12"   ./patches/ghc/win-add-tzset-to-rtssyms.patch)
+                ++ onWindows (fromUntil "9.4"    "9.11"   ./patches/ghc/win-add-tzset-to-rtssyms.patch)
                 ++ onWindows (fromUntil "9.4.1"  "9.4.7"  ./patches/ghc/win-linker-no-null-deref.patch)
                 ++ onWindows (fromUntil "9.4.7"  "9.4.8"  ./patches/ghc/win-linker-no-null-deref-9.6.patch)
                 ++ onWindows (fromUntil "9.4.1"  "9.6"    ./patches/ghc/ghc-9.4-drop-mingwex-from-base.patch)
@@ -248,7 +248,7 @@ in {
                 ++ onWindowsOrMusl (fromUntil "9.8.2"  "9.11" ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch)
                 ++ fromUntil "9.9"  "9.12" ./patches/ghc/ghc-9.9-Cabal-3.11.patch
                 ++ fromUntil "9.8"  "9.9"  ./patches/ghc/ghc-9.8-text-upper-bound.patch
-                ++ fromUntil "9.10" "9.12" ./patches/ghc/ghc-9.10-containers-upper-bound.patch
+                ++ fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.10-containers-upper-bound.patch
                 ++ fromUntil "9.10" "9.12" ./patches/ghc/ghc-9.10-merge-objects.patch
 
                 # This patch will make windows stop emitting absolute relocations. This is one way in which binutils 2.36+ (with ASLR enabled), will just choke on the
@@ -276,11 +276,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "8.10.7";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "179ws2q0dinl1a39wm9j37xzwm84zfz3c5543vz8v479khigdvp3";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc8107;
+                src-spec.version = "8.10.7";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "8.10.7";
             });
@@ -298,11 +296,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.0.1";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "1y9mi9bq76z04hmggavrn8jwi1gx92bm3zhx6z69ypq6wha068x5";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc901;
+                src-spec.version = "9.0.1";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.0.1";
             });
@@ -320,18 +316,16 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.0.2";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "15wii8can2r3dcl6jjmd50h2jvn7rlmn05zb74d2scj6cfwl43hl";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc902;
+                src-spec.version = "9.0.2";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.0.2";
             });
             ghc921 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc921; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
@@ -339,18 +333,16 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.2.1";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-9EQBL5ehNtmUD3fN/wP9pI+UdeLtD+yWbE01xN9V90Y=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc921;
+                src-spec.version = "9.2.1";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.2.1";
             });
             ghc922 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc922; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
@@ -358,18 +350,16 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.2.2";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-kCRjpMxu5Hmvk1i5+LLuMjewPpNKHqZbbR/PPg10nqY=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc922;
+                src-spec.version = "9.2.2";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.2.2";
             });
             ghc923 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc923; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
@@ -377,18 +367,16 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.2.3";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-UOzcK+8BPlGPmmKhUkXX2w5ECdc3xDsc6nMG/YLhZp4=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc923;
+                src-spec.version = "9.2.3";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.2.3";
             });
             ghc924 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc924; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
@@ -396,18 +384,16 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.2.4";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-FSE4iAZKDsTncj0HXzG4emeM4IUXc9WLRO96o96ZZFg=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc924;
+                src-spec.version = "9.2.4";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.2.4";
             });
             ghc925 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc925; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
@@ -415,18 +401,16 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.2.5";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-BgZ5fRs44tiO4iQ/OOxrmhqpPptXjpXw3pqcCkFEAhw=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc925;
+                src-spec.version = "9.2.5";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.2.5";
             });
             ghc926 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc926; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
@@ -434,18 +418,16 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.2.6";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-elTPA5itSItO0hnhXR0eZMC2h2xDoFZFUN0R8FQNcwU=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc926;
+                src-spec.version = "9.2.6";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.2.6";
             });
             ghc927 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc927; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
@@ -453,18 +435,16 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.2.7";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-olNWehe3NKTA3Q/6KW0zwqW1pUp335iIBqKh4cp+iLg=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc927;
+                src-spec.version = "9.2.7";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.2.7";
             });
             ghc928 = traceWarnOld "9.2" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc928; };
 
-                bootPkgs = bootPkgs // {
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
@@ -472,11 +452,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.2.8";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-XxPReGv0/RL0tF+qN6vttbs/NtXlj32lMH6L/oilZ6E=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc928;
+                src-spec.version = "9.2.8";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.2.8";
             });
@@ -495,11 +473,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.4.1";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-y/7UZAvfAl4zulVDPa+M32mPTgSZrnqADd5EqC5zluM=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc941;
+                src-spec.version = "9.4.1";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.4.1";
             });
@@ -518,11 +494,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.4.2";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-cifvO14VoNcLjxpDrsMoZ+KpsthXzA7VVq7tFy1Ns6U";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc942;
+                src-spec.version = "9.4.2";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.4.2";
             });
@@ -541,11 +515,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.4.3";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-6vY5SVNu3lDuORefIpnVCU65FS2HzG+yF1AGvJjokFo=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc943;
+                src-spec.version = "9.4.3";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.4.3";
             });
@@ -564,11 +536,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.4.4";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-6M7yWm3tFTHNp6kEiNDPtteAZX0WY22qWUML4DDNZ+I=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc944;
+                src-spec.version = "9.4.4";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.4.4";
             });
@@ -587,11 +557,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.4.5";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-YlbPnK9tbce2Edz7skffLVKOhao50ippjocOWlkOhgE=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc945;
+                src-spec.version = "9.4.5";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.4.5";
             });
@@ -611,11 +579,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.4.7";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-BndaUrTROsCe3G2rwpn9EeWdiIa7yuRQrzZ7ruJoTI8=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc947;
+                src-spec.version = "9.4.7";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.4.7";
             });
@@ -636,37 +602,11 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.4.8";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-C/QH62f+PjwksPTI3qjLY+B/Y8oPds8gWFZRQ1B6uF4=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc948;
+                src-spec.version = "9.4.8";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.4.8";
-            });
-            ghc96020230302 = traceWarnOld "9.6" (final.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc96020230302; };
-
-                bootPkgs = bootPkgsGhc94 // {
-                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc96020230302
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc962
-                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
-                          or final.buildPackages.buildPackages.haskell.compiler.ghc944
-                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
-                };
-                inherit sphinx;
-
-                buildLlvmPackages = final.buildPackages.llvmPackages_12;
-                llvmPackages = final.llvmPackages_12;
-
-                src-spec = rec {
-                    version = "9.6.0.20230302";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-Vlj/E1eoL/7PUsYCsareTGPRGEvLzYtjPcxsYaSmNvM=";
-                };
-
-                ghc-patches = ghc-patches "9.6.1";
             });
             ghc961 = traceWarnOld "9.6" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc961; };
@@ -687,11 +627,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.6.1";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-/lrJCcuLsIfiNd6X+mOv9HqK5lDvqjeiFA9HgOIfNMs=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc961;
+                src-spec.version = "9.6.1";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.6.1";
             });
@@ -714,11 +652,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.6.2";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-G1EMX4dTw7okhRcCxsnafYHcXkf+Pst685x8JhOr8XA=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc962;
+                src-spec.version = "9.6.2";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.6.2";
             });
@@ -741,11 +677,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.6.3";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-383me0qlUKC4oam7gQWDXcmZ+tY5fM4z1y/VXSHrd/U=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc963;
+                src-spec.version = "9.6.3";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.6.3";
             });
@@ -768,11 +702,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.6.4";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-EL8luLBxdP3ZhotcDFbBfA7x7ctiR7S4ZL6TNlG/1MA=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc964;
+                src-spec.version = "9.6.4";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.6.4";
             });
@@ -795,11 +727,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.6.5";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-h7OJkk+YwaJsIFEidXM4yNqzOtH89nD6oiYidCQyuTw=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc965;
+                src-spec.version = "9.6.5";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.6.5";
             });
@@ -822,11 +752,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.8.1";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-svjta39zN5epJDb0/24IilIJExScmpvpBGW0CtHyB1E=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc981;
+                src-spec.version = "9.8.1";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.8.1";
             });
@@ -849,11 +777,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.8.2";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-4vt6fddGEjfSLoNlqD7dnhp30uFdBF85RTloRah3gck=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc982;
+                src-spec.version = "9.8.2";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.8.2";
             });
@@ -878,11 +804,9 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec = rec {
-                    version = "9.10.1";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-vzhqMC1O4FR5H/1RdIkA8V1xdg/RmRV5ItEgzB+J4vc=";
-                };
+                src-spec.file = final.haskell-nix.sources.ghc9101;
+                src-spec.version = "9.10.1";
+                src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.10.1";
             });

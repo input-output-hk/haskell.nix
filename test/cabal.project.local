@@ -1,15 +1,18 @@
-if impl(ghc>=9.8)
+if impl(ghc>=9.10.1)
   -- allow newer packages, that are bound to be newer due to
   -- being shipped with a newer compiler.  If you extend this
   -- be very careful to only extend it for absolutely necessary packages
   -- otherwise we risk running into broken build-plans down the line.
   allow-newer: *:base, *:template-haskell, *:bytestring, *:text, *:ghc-prim, *:deepseq, *:Cabal
-if impl(ghc > 9.9)
+if impl(ghc > 9.11)
   allow-newer: *:containers
   constraints: base-compat >=0.14.0, aeson >=2.2.1.0
 
 -- This prevents hsc2hs from causing old versions of packages from being added to plan.json
 allow-newer: hsc2hs:*
+
+if impl(ghc >=9.10.1)
+  extra-packages: process
 
 repository head.hackage.ghc.haskell.org
   url: https://ghc.gitlab.haskell.org/head.hackage/
@@ -19,14 +22,14 @@ repository head.hackage.ghc.haskell.org
      f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
      26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
      7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
-  --sha256: sha256-tSeUf84LWny6LAIKCV18rJxdWS2UCfM7UeYViJ/f9JU=
+  --sha256: sha256-gDLkCAZPa4xALm37iKVjDVnmBj0CwNKT1qzY/xiiPOY=
 
 repository ghcjs-overlay
   url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/8ef1977ba226b9dea0a5f43824c2e3507280d306
   secure: True
   root-keys:
   key-threshold: 0
-  --sha256: sha256-jcOUSw6rtBdLXx5/yx1EMKaYfvVWJgpTVe567jA81Ls=
+  --sha256: sha256-jcOUSw6rtBdLXx5/yx1EMKaYfvVWJgpTVe567jA81Ls=<<<<<<< HEAD
 
 -- This is needed because nixpkgs has 1.0.19, and libsodium has
 -- too tight bounds <1.0.18.
@@ -37,14 +40,14 @@ if !os(ghcjs)
     tag: c094f210f3bd34d97204451ea57855a5d17e2086
     --sha256: sha256-6iCKvdLdjwg2jcoWMEj3qcFTvKe3P4BYxgKeXY3QwRM=
 
-if !impl(ghc>=9.10) && !os(ghcjs)
+if !impl(ghc>=9.11) && !os(ghcjs)
   active-repositories: hackage.haskell.org
 
-if impl(ghc>=9.10) && !os(ghcjs)
+if impl(ghc>=9.11) && !os(ghcjs)
   active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org
 
-if !impl(ghc>=9.10) && os(ghcjs)
+if !impl(ghc>=9.11) && os(ghcjs)
   active-repositories: hackage.haskell.org, ghcjs-overlay:override
 
-if impl(ghc>=9.10) && os(ghcjs)
+if impl(ghc>=9.11) && os(ghcjs)
   active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org, ghcjs-overlay:override
