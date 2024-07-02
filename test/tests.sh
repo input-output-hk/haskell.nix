@@ -96,11 +96,12 @@ fi
 
 if [ "$TESTS" == "multi-target" ] || [ "$TESTS" == "all" ]; then
   printf "*** Checking that a nix-shell works for a multi-target project...\n" >& 2
+  TEST_CABAL_DIR=$(mktemp -d)
   nix-shell $NIX_BUILD_ARGS \
       --pure ./default.nix \
       --argstr compiler-nix-name "$GHC" \
       -A cabal-simple.test-shell \
-      --run 'cd cabal-simple && CABAL_DIR=$(mktemp -d) cabal new-build'
+      --run "cd cabal-simple && CABAL_DIR=$TEST_CABAL_DIR cabal update && CABAL_DIR=$TEST_CABAL_DIR cabal build"
   echo >& 2
 fi
 
