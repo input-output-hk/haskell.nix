@@ -123,7 +123,7 @@ if [ "$TESTS" == "shellFor-multiple-package" ] || [ "$TESTS" == "all" ]; then
       --pure ./default.nix \
       --argstr compiler-nix-name $SHELL_FOR_GHC \
       -A shell-for.envPkga \
-      --run 'cd shell-for && CABAL_DIR=$(mktemp -d) cabal new-build --project=single.project all'
+      --run 'cd shell-for && CABAL_DIR=$(mktemp -d) cabal new-build --project-file=single.project all'
   echo >& 2
 fi
 
