@@ -1,0 +1,30 @@
+{
+  "nodes": {
+    "ghc921": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1635428734,
+        "narHash": "sha256-L2D8y3i2mnzbD3Ib7dM+EVbZGZSyoLd5i+Q8fE7HBME=",
+        "ref": "ghc-9.2.1-iog",
+        "rev": "82e6bf12786908ccda643dd1dceb42abcc97290c",
+        "revCount": 57665,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/stable-haskell/ghc"
+      },
+      "original": {
+        "ref": "ghc-9.2.1-iog",
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/stable-haskell/ghc"
+      }
+    },
+    "root": {
+      "inputs": {
+        "ghc921": "ghc921"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

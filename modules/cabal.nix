@@ -10,7 +10,7 @@ let
     isGhc = true;
     # this is partially a hack to support `impl(ghcjs)`.
     # We set GHC == true _and_ GHCJS == true.
-    isGhcjs = hostMap.os == "Ghcjs";
+    isGhcjs = hostMap.os == "Ghcjs" && (builtins.compareVersions config.compiler.version "9" < 0);
     # maybe we need something for asterius here
     # as well.
     version = lib.mapAttrs (_: f: v: f (builtins.compareVersions config.compiler.version v)) {
