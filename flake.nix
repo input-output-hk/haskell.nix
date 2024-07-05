@@ -10,6 +10,7 @@
     nixpkgs-2211 = { url = "github:NixOS/nixpkgs/nixpkgs-22.11-darwin"; };
     nixpkgs-2305 = { url = "github:NixOS/nixpkgs/nixpkgs-23.05-darwin"; };
     nixpkgs-2311 = { url = "github:NixOS/nixpkgs/nixpkgs-23.11-darwin"; };
+    nixpkgs-2405 = { url = "github:NixOS/nixpkgs/nixpkgs-24.05-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     flake-compat = { url = "github:input-output-hk/flake-compat/hkm/gitlab-fix"; flake = false; };
     "hls-1.10" = { url = "github:haskell/haskell-language-server/1.10.0.0"; flake = false; };
@@ -82,13 +83,14 @@
     , nixpkgs-2211
     , nixpkgs-2305
     , nixpkgs-2311
+    , nixpkgs-2405
     , flake-compat
     , ...
     }@inputs:
     let
       callFlake = import flake-compat;
 
-      ifdLevel = 1;
+      ifdLevel = 0;
       compiler = "ghc928";
       config = import ./config.nix;
 
