@@ -29,16 +29,7 @@ repository ghcjs-overlay
   secure: True
   root-keys:
   key-threshold: 0
-  --sha256: sha256-jcOUSw6rtBdLXx5/yx1EMKaYfvVWJgpTVe567jA81Ls=<<<<<<< HEAD
-
--- This is needed because nixpkgs has 1.0.19, and libsodium has
--- too tight bounds <1.0.18.
-if !os(ghcjs)
-  source-repository-package
-    type: git
-    location: https://github.com/hamishmack/hs-libsodium.git
-    tag: c094f210f3bd34d97204451ea57855a5d17e2086
-    --sha256: sha256-6iCKvdLdjwg2jcoWMEj3qcFTvKe3P4BYxgKeXY3QwRM=
+  --sha256: sha256-jcOUSw6rtBdLXx5/yx1EMKaYfvVWJgpTVe567jA81Ls=
 
 if !impl(ghc>=9.11) && !os(ghcjs)
   active-repositories: hackage.haskell.org

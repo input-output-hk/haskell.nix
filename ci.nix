@@ -30,10 +30,11 @@
     # set checkMaterialization as per top-level argument
     overlays = [
       haskellNix.overlay
-      (_final: prev: {
+      (final: prev: {
         haskell-nix = prev.haskell-nix // {
           inherit checkMaterialization;
         };
+        inherit (import inputs.nixpkgs-2311 { system = final.system; }) libsodium;
       })
     ];
     # Needed for dwarf tests
