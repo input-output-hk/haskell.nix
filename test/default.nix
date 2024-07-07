@@ -6,6 +6,11 @@
     config = haskellNix.nixpkgsArgs.config // {
       permittedInsecurePackages = ["libdwarf-20210528" "libdwarf-20181024" "dwarfdump-20181024"];
     };
+    overlays = haskellNix.nixpkgsArgs.overlays ++ [
+      (final: prev: {
+        libsodium = final.callPackage (haskellNix.sources.nixpkgs-2311 + "/pkgs/development/libraries/libsodium") {};
+      })
+    ];
   }
 , evalPackages ? import pkgs.path nixpkgsArgs
 , ifdLevel ? 1000
