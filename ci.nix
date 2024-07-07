@@ -34,7 +34,7 @@
         haskell-nix = prev.haskell-nix // {
           inherit checkMaterialization;
         };
-        inherit (import inputs.nixpkgs-2311 { system = final.system; }) libsodium;
+        libsodium = final.callPackage (inputs.nixpkgs-2311 + "/pkgs/development/libraries/libsodium") {};
       })
     ];
     # Needed for dwarf tests
