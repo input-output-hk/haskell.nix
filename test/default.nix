@@ -7,8 +7,13 @@
       permittedInsecurePackages = ["libdwarf-20210528" "libdwarf-20181024" "dwarfdump-20181024"];
     };
     overlays = haskellNix.nixpkgsArgs.overlays ++ [
-      (final: _prev: {
-        libsodium = final.callPackage (haskellNix.sources.nixpkgs-2311 + "/pkgs/development/libraries/libsodium") {};
+      (final: prev: {
+        haskell-nix = prev.haskell-nix // {
+          extraPkgconfigMappings = prev.haskell-nix.extraPkgconfigMappings or {} // {
+            "libsodium" = [ "libsodium-18" ];
+          };
+        };
+        libsodium-18 = final.callPackage (haskellNix.sources.nixpkgs-2311 + "/pkgs/development/libraries/libsodium") {};
       })
     ];
   }

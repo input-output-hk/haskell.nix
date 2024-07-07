@@ -33,8 +33,11 @@
       (final: prev: {
         haskell-nix = prev.haskell-nix // {
           inherit checkMaterialization;
+          extraPkgconfigMappings = prev.haskell-nix.extraPkgconfigMappings or {} // {
+            "libsodium" = [ "libsodium-18" ];
+          };
         };
-        libsodium = final.callPackage (inputs.nixpkgs-2311 + "/pkgs/development/libraries/libsodium") {};
+        libsodium-18 = final.callPackage (inputs.nixpkgs-2311 + "/pkgs/development/libraries/libsodium") {};
       })
     ];
     # Needed for dwarf tests
