@@ -1,0 +1,21 @@
+diff --git a/rts/linker/PEi386.c b/rts/linker/PEi386.c
+index 8622166..531ed4d 100644
+--- a/rts/linker/PEi386.c
++++ b/rts/linker/PEi386.c
+@@ -2076,10 +2076,13 @@
+         }
+         else if (pinfo && pinfo->owner && isSymbolImport (pinfo->owner, lbl))
+         {
+-            /* See Note [BFD import library].  */
+-            HINSTANCE dllInstance = (HINSTANCE)lookupDependentSymbol(pinfo->value, NULL);
+-            if (!dllInstance && pinfo->value)
++            // we only want to _update_ the type, if the dependent symbol is _not_ a dllInstance.
++            SymType depType = 0;
++            HINSTANCE dllInstance = (HINSTANCE)lookupDependentSymbol(pinfo->value, dependent, &depType);
++            if (!dllInstance && pinfo->value) {
++               *type = depType;
+                return pinfo->value;
++            }
+
+             if (!dllInstance)
+             {

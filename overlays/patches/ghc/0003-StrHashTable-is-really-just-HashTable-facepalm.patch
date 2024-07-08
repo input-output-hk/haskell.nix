@@ -1,0 +1,24 @@
+From 249cf8c13dbbab2a726e4665d8d5e6ddb3bbdd6f Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Thu, 20 Jun 2024 02:37:21 +0000
+Subject: [PATCH 03/12] StrHashTable is really just HashTable :facepalm:
+
+---
+ rts/Hash.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/rts/Hash.h b/rts/Hash.h
+index bb661bf..a015baa 100644
+--- a/rts/Hash.h
++++ b/rts/Hash.h
+@@ -11,6 +11,7 @@
+ #include "BeginPrivate.h"
+ 
+ typedef struct hashtable HashTable; /* abstract */
++typedef struct hashtable StrHashTable;
+ 
+ /* Hash table access where the keys are StgWords.
+  * Values are passed into the hash table and stored as `const void *` values,
+-- 
+2.33.0
+
