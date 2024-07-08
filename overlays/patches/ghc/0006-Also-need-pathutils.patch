@@ -1,0 +1,54 @@
+From 98c7edaad09568127ccc190a4cfd502349ee3ef0 Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Thu, 20 Jun 2024 02:47:13 +0000
+Subject: [PATCH 06/12] Also need pathutils.
+
+---
+ rts/PathUtils.h | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/rts/PathUtils.h b/rts/PathUtils.h
+index 0b35b21..df4ab3f 100644
+--- a/rts/PathUtils.h
++++ b/rts/PathUtils.h
+@@ -8,18 +8,20 @@
+ 
+ #pragma once
+ 
+-#include "BeginPrivate.h"
+-
+ // Use wchar_t for pathnames on Windows (#5697)
+ #if defined(mingw32_HOST_OS)
++#include "fs_rts.h"
++
+ #define pathcmp wcscmp
+ #define pathlen wcslen
+-#define pathopen __rts_fwopen
+-#define pathstat _wstat
++// N.B. Use the Win32-based file routines from utils/fs.
++#define pathopen FS(fwopen)
++#define pathstat FS(_wstat)
+ #define struct_stat struct _stat
+ #define open wopen
+ #define WSTR(s) L##s
+-#define pathprintf swprintf
++#define pathprintf snwprintf
++#define pathcopy wcscpy
+ #define pathsize sizeof(wchar_t)
+ #else
+ #define pathcmp strcmp
+@@ -30,8 +32,11 @@
+ #define WSTR(s) s
+ #define pathprintf snprintf
+ #define pathsize sizeof(char)
++#define pathcopy strcpy
+ #endif
+ 
++#include "BeginPrivate.h"
++
+ pathchar* pathdup(pathchar *path);
+ pathchar* pathdir(pathchar *path);
+ pathchar* mkPath(char* path);
+-- 
+2.33.0
+
