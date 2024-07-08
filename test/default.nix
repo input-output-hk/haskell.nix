@@ -13,7 +13,7 @@
             "libsodium" = [ "libsodium-18" ];
           };
         };
-        libsodium-18 = final.callPackage (haskellNix.sources.nixpkgs-2311 + "/pkgs/development/libraries/libsodium") {};
+        libsodium-18 = (final.callPackage (haskellNix.sources.nixpkgs-2311 + "/pkgs/development/libraries/libsodium") {}).overrideAttrs (_: { dontDisableStatic = true; });
       })
     ];
   }
