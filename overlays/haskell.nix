@@ -1035,14 +1035,6 @@ final: prev: {
         withInputs = final.recurseIntoAttrs;
 
         iserv-proxy-exes = __mapAttrs (compiler-nix-name: _ghc:
-          if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.4" <0
-            then {
-              inherit (final.buildPackages.ghc-extra-packages.${compiler-nix-name}.iserv-proxy.components.exes) iserv-proxy;
-              # remote-iserv however needs to come from the regular packages as it has to
-              # run on the target host.
-              iserv-proxy-interpreter = final.ghc-extra-packages.${compiler-nix-name}.remote-iserv.components.exes.remote-iserv;
-            }
-          else
             let
               exes = pkgs: (pkgs.haskell-nix.cabalProject' ({pkgs, ...}: {
                 name = "iserv-proxy";
@@ -1090,7 +1082,7 @@ final: prev: {
             inherit (final.buildPackages) nix;
           } // final.lib.optionalAttrs (final.stdenv.hostPlatform.libc == "glibc") {
             inherit (final) glibcLocales;
-          } // final.lib.optionalAttrs (ifdLevel > 0) ({
+          } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
             boot-alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;
             boot-happy = final.buildPackages.haskell-nix.bootstrap.packages.happy;
@@ -1098,10 +1090,7 @@ final: prev: {
             ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name};
             ghc-boot-packages-nix = final.recurseIntoAttrs
               final.ghc-boot-packages-nix.${compiler-nix-name};
-            } // final.lib.optionalAttrs (__compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.4" <0) {
-              # Only needed for older GHC versions (see iserv-proxy-exes)
-              ghc-extra-projects-nix = final.ghc-extra-projects.${compiler-nix-name}.plan-nix;
-          }) // final.lib.optionalAttrs (ifdLevel > 1) {
+          } // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             nix-tools-unchecked = final.pkgsBuildBuild.haskell-nix.nix-tools-unchecked;
           } // final.lib.optionalAttrs (ifdLevel > 1

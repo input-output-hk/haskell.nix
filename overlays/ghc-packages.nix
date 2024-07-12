@@ -75,18 +75,10 @@ let
       libiserv     = "libraries/libiserv";
     } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "9" > 0) {
       ghc          = "compiler";
-    } // (
-      if builtins.compareVersions ghcVersion "9.4" < 0
-        then {
-          # As of GHC 9.4 this has been split out of the GHC repo and
-          # is now in the iserv-proxy flake input
-          iserv-proxy  = "utils/iserv-proxy";
-        }
-        else {
-          genprimopcode = "utils/genprimopcode";
-          deriveConstants = "utils/deriveConstants";
-        }
-    ) // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "8.10.5" >= 0) {
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.4" >= 0) {
+      genprimopcode = "utils/genprimopcode";
+      deriveConstants = "utils/deriveConstants";
+    } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "8.10.5" >= 0) {
       # Not sure why, but this is missing from older ghcjs versions
       remote-iserv = "utils/remote-iserv";
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.0.1" >= 0) {

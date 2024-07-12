@@ -10,10 +10,8 @@
     nixpkgs-2211 = { url = "github:NixOS/nixpkgs/nixpkgs-22.11-darwin"; };
     nixpkgs-2305 = { url = "github:NixOS/nixpkgs/nixpkgs-23.05-darwin"; };
     nixpkgs-2311 = { url = "github:NixOS/nixpkgs/nixpkgs-23.11-darwin"; };
-    # The libsodium bump in 85c6e70b555fe892a049fa3d9dce000dc23a9562 breaks th-dll tests.
-    # And later it breaks in th-dll due to some change in the windows libs. We should probably
-    # drop unsable.
-    nixpkgs-unstable = { url = "github:NixOS/nixpkgs?rev=47585496bcb13fb72e4a90daeea2f434e2501998"; }; # nixpkgs-unstable };
+    nixpkgs-2405 = { url = "github:NixOS/nixpkgs/nixpkgs-24.05-darwin"; };
+    nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     flake-compat = { url = "github:input-output-hk/flake-compat/hkm/gitlab-fix"; flake = false; };
     "hls-1.10" = { url = "github:haskell/haskell-language-server/1.10.0.0"; flake = false; };
     "hls-2.0" = { url = "github:haskell/haskell-language-server/2.0.0.1"; flake = false; };
@@ -85,6 +83,7 @@
     , nixpkgs-2211
     , nixpkgs-2305
     , nixpkgs-2311
+    , nixpkgs-2405
     , flake-compat
     , ...
     }@inputs:

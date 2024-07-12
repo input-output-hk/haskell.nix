@@ -268,9 +268,14 @@ let
       sourceRepos = sourceReposBuild;
       inherit (repoResult) repos extra-hackages;
       makeFixedProjectFile = ''
+        HOME=$(mktemp -d)
         cp -f ${evalPackages.writeText "cabal.project" sourceRepoFixedProjectFile} ./cabal.project
         chmod +w -R ./cabal.project
-      '';
+      '' + pkgs.lib.strings.concatStrings (
+            map (f: ''
+              git config --global --add safe.directory ${f.location}/.git
+            '') sourceReposEval
+          );
       # This will be used to replace refernces to the minimal git repos with just the index
       # of the repo.  The index will be used in lib/import-and-filter-project.nix to
       # lookup the correct repository in `sourceReposBuild`.  This avoids having

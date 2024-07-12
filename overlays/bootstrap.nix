@@ -118,7 +118,7 @@ in {
                 ++ until              "9.0.2"  ./patches/ghc/MR6595-nonmoving-mutvar.patch  # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6595
                 ++ until              "9.2"    ./patches/ghc/ghc-8.10-global-unique-counters-in-rts.patch # backport of https://gitlab.haskell.org/ghc/ghc/-/commit/9a28680d2e23e7b25dd7254a439aea31dfae32d5
                 ++ fromUntil "9.2"    "9.4"    ./patches/ghc/ghc-9.2-global-unique-counters-in-rts.patch # backport of https://gitlab.haskell.org/ghc/ghc/-/commit/9a28680d2e23e7b25dd7254a439aea31dfae32d5
-                ++ until              "9.1"    ./patches/ghc/issue-18708.patch              # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6554
+                ++ until              "9.2"    ./patches/ghc/issue-18708.patch              # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6554
                 ++ fromUntil "9.2.2"  "9.4"    ./patches/ghc/ghc-9.2.2-fix-warnings-building-with-self.patch # https://gitlab.haskell.org/ghc/ghc/-/commit/c41c478eb9003eaa9fc8081a0039652448124f5d
                 ++ until              "9.6"    ./patches/ghc/ghc-hpc-response-files.patch   # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/8194
                 ++ fromUntil "9.2"    "9.12"   ./patches/ghc/sanity-check-find-file-name.patch
@@ -184,6 +184,7 @@ in {
                 ++ onCross   (until "9.4" ./patches/ghc/ghc-make-stage-1-lib-ghc.patch)
                 ++ onAarch64 (until "9.0" ./patches/ghc/ghc-8.10-better-symbol-addr-debug.patch)
                 ++ onAarch64 (until "9.0" ./patches/ghc/ghc-8.10-aarch64-handle-none-rela.patch)
+                ++ onWindows (until "9.0" ./patches/ghc/5b08e0c06e038448a63aa9bd7f163b23d824ba4b.patch)
                 ++ onAarch64 (from  "9.0" ./patches/ghc/ghc-9.0-better-symbol-addr-debug.patch)
                 ++ onAarch64 (from  "9.0" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
 
@@ -249,6 +250,16 @@ in {
                 ++ fromUntil "9.8"  "9.9"  ./patches/ghc/ghc-9.8-text-upper-bound.patch
                 ++ fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.10-containers-upper-bound.patch
                 ++ fromUntil "9.10" "9.12" ./patches/ghc/ghc-9.10-merge-objects.patch
+
+                # This patch will make windows stop emitting absolute relocations. This is one way in which binutils 2.36+ (with ASLR enabled), will just choke on the
+                # assembly we generate because it's always absolute (32bit) addressing modes.
+                # GHC from 9.6+ seems to have https://gitlab.haskell.org/ghc/ghc/-/merge_requests/7449, which should fix this as well.
+                ++ onWindows (until "9.0" ./patches/ghc/windows-pseudo-pic-8.10.patch)
+                ++ onWindows (fromUntil "9.0" "9.2" ./patches/ghc/windows-pseudo-pic.patch)
+                ++ onWindows (fromUntil "9.2" "9.4" ./patches/ghc/windows-pseudo-pic-9.2.patch)
+
+                # Fix issue loading windows dll using `.dll.a` file
+                ++ onWindows (fromUntil "9.4" "9.12" ./patches/ghc/ghc-9.10-windows-dll-dependent-symbol-type-fix.patch)
                 ;
         in ({
             ghc8107 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {

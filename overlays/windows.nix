@@ -22,33 +22,20 @@ final: prev:
     # TODO update stdenv.cc so that the wrapper adds -D_UCRT for libc=="ucrt"
     mingw_w64_pthreads = prev.windows.mingw_w64_pthreads.overrideAttrs { CPPFLAGS = "-D_UCRT"; };
   };
+} // prev.lib.optionalAttrs prev.stdenv.hostPlatform.isWindows {
+  # If we build libffi with high entropy, we keep running into
+  #
+  # > Mingw-w64 runtime failure:
+  # > 32 bit pseudo relocation at 0000000140117CE6 out of range, targeting 00006FFFFFF18160, yielding the value 00006FFEBFE00476.
+  #
+  # This however also means, pretty much all of our haskell packages will need to be built with this as well.
+  libffi = prev.libffi.overrideAttrs (_: {
+    LDFLAGS = "-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000";
+  });
 } // {
    libmpc = if !prev.stdenv.hostPlatform.isWindows then prev.libmpc else prev.libmpc.overrideAttrs (drv: {
      configureFlags = (drv.configureFlags or []) ++ [ "--enable-static --disable-shared" ];
    });
-
-   # This work around still seems to be needed for GHC <9.4 to build
-   # on windows, however it does not work on nixpkgs >= 23.11 and it breaks
-   # all windows builds (including GHC >9.4).  In particular `windows.mcfgthreads`
-   # fails to build.
-
-   # We are using the `glibc.version` to determine if the fix will work.
-   # `prev.lib.version` (the nixpkgs version) is not granular enough
-   # (all the unstable release leading up to 23.11 have the same version as 23.11)
-   # and the newer version of `glibc` in nixpkgs 23.11 might be the
-   # change that caused this to break.
-
-   # For now we have set it to be left out for nixpkgs >= 23.11
-   # This means if we want to cross compile for windows and
-   # use nixpkgs >= 23.11, we will need to use GHC >9.4.
-   
-   # GHC <9.4 does not work with binutils 2.38 from newer nixpkgs.
-   # GHC >=9.4 will use clang/llvm instead.
-   binutils-unwrapped =
-     if final.stdenv.targetPlatform.isWindows && builtins.compareVersions prev.pkgsBuildBuild.glibc.version "2.38" < 0
-       then (import prev.haskell-nix.sources.nixpkgs-2111 { inherit (prev) system; })
-         .pkgsCross.mingwW64.buildPackages.binutils-unwrapped
-       else prev.binutils-unwrapped;
 
    haskell-nix = prev.haskell-nix // ({
      defaultModules = prev.haskell-nix.defaultModules ++ [
