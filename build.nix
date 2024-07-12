@@ -26,7 +26,11 @@ in rec {
 
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs ({
-      cabal-latest = tool compiler-nix-name "cabal" { inherit evalPackages; };
+      cabal-latest = tool compiler-nix-name "cabal" ({
+        inherit evalPackages;
+      } // pkgs.lib.optionalAttrs (ghcFromTo "9.10" "9.12") {
+        cabalProjectLocal = builtins.readFile ./test/cabal.project.local;
+      });
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0) {
       hlint-latest = tool compiler-nix-name "hlint" {
         inherit evalPackages;
@@ -58,10 +62,10 @@ in rec {
         inherit evalPackages;
         src = pkgs.haskell-nix.sources."hls-2.2";
       };
-    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.8") {
-      "hls-26" = tool compiler-nix-name "haskell-language-server" {
+    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.11") {
+      "hls-29" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
-        src = pkgs.haskell-nix.sources."hls-2.6";
+        src = pkgs.haskell-nix.sources."hls-2.9";
       };
     })
   );

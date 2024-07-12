@@ -67,8 +67,15 @@ let self =
 , useLdGold ?
     # might be better check to see if cc is clang/llvm?
     # use gold as the linker on linux to improve link times
-    # do not use it on musl due to a ld.gold bug. See: <https://sourceware.org/bugzilla/show_bug.cgi?id=22266>.
-    (stdenv.targetPlatform.isLinux && !stdenv.targetPlatform.isAndroid && !stdenv.targetPlatform.isMusl)
+    # do not use ld.gold 2.3 with musl due to a ld.gold bug.
+    # See: <https://sourceware.org/bugzilla/show_bug.cgi?id=22266>.
+    # Note that this bug was resolved in 2017.
+    ( stdenv.targetPlatform.isLinux
+      # don't use gold on android.
+      && !stdenv.targetPlatform.isAndroid
+      # don't use gold with with musl. Still seems to be
+      # affected by 22266.
+      && !stdenv.targetPlatform.isMusl)
 
 , ghc-version ? src-spec.version
 , ghc-version-date ? null
@@ -244,23 +251,34 @@ let
       compiler-nix-name =
         if builtins.compareVersions ghc-version "9.4.7" < 0
           then "ghc928"
-          else "ghc962";
+        else if buildPackages.haskell.compiler ? ghc964
+          then "ghc964"
+        else "ghc962";
     in
-    buildPackages.pinned-haskell-nix.tool compiler-nix-name "hadrian" {
+    buildPackages.haskell-nix.tool compiler-nix-name "hadrian" {
       compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
       # Verions of hadrian that comes with 9.6 depends on `time`
       materialized =
         if builtins.compareVersions ghc-version "9.4" < 0
           then ../../materialized/${compiler-nix-name}/hadrian-ghc92
+        else if builtins.compareVersions ghc-version "9.4.8" < 0
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc947
         else if builtins.compareVersions ghc-version "9.6" < 0
           then ../../materialized/${compiler-nix-name}/hadrian-ghc94
+        else if builtins.compareVersions ghc-version "9.6.5" < 0
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc964
         else if builtins.compareVersions ghc-version "9.8" < 0
           then ../../materialized/${compiler-nix-name}/hadrian-ghc96
+        else if builtins.compareVersions ghc-version "9.8.2" < 0
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc981
         else if builtins.compareVersions ghc-version "9.9" < 0
           then ../../materialized/${compiler-nix-name}/hadrian-ghc98
-        else ../../materialized/${compiler-nix-name}/hadrian-ghc99;
+        else if builtins.compareVersions ghc-version "9.11" < 0
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc910
+        else null;
       modules = [{
+        reinstallableLibGhc = false;
         # Apply the patches in a way that does not require using something
         # like `srcOnly`. The problem with `pkgs.srcOnly` was that it had to run
         # on a platform at eval time.
@@ -314,6 +332,11 @@ let
       # `-fexternal-dynamic-refs` causes `undefined reference` errors when building GHC cross compiler for windows
       + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64 && !targetPlatform.isWindows)
         " '*.*.ghc.*.opts += -fexternal-dynamic-refs'"
+      # The fact that we need to set this here is pretty idiotic. GHC should figure this out on it's own.
+      # Either have a runtime flag/setting to disable it or if dlopen fails, remember that it failed and
+      # fall back to non-dynamic. We only have dynamic linker with musl if host and target arch match.
+      + lib.optionalString (targetPlatform.isAndroid || (targetPlatform.isMusl && haskell-nix.haskellLib.isCrossTarget))
+        " '*.ghc.cabal.configure.opts += --flags=-dynamic-system-linker'"
       # The following is required if we build on aarch64-darwin for aarch64-iOS. Otherwise older
       # iPhones/iPads/... won't understand the compiled code, as the compiler will emit LDSETALH
       # + lib.optionalString (targetPlatform.???) "'*.rts.ghc.c.opts += -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc'"
@@ -633,6 +656,17 @@ stdenv.mkDerivation (rec {
     # We could add `configured-src` as an output of the ghc derivation, but
     # having it as its own derivation means it can be accessed quickly without
     # building GHC.
+    raw-src = stdenv.mkDerivation {
+      name = name + "-raw-src";
+      inherit
+        version
+        patches
+        src;
+      installPhase = ''
+        cp -r . $out
+      '';
+      phases = [ "unpackPhase" "patchPhase" "installPhase"];
+    };
     configured-src = stdenv.mkDerivation ({
       name = name + "-configured-src";
       inherit
@@ -671,9 +705,14 @@ stdenv.mkDerivation (rec {
           ${hadrian}/bin/hadrian ${hadrianArgs} _build/stage0/compiler/build/$a
           cp _build/stage0/compiler/build/$a compiler/GHC/Builtin/$a
         done
-      '' + lib.optionalString stdenv.isDarwin ''
+      '' + lib.optionalString (stdenv.isDarwin && (__tryEval libcxxabi).success) ''
         substituteInPlace mk/system-cxx-std-lib-1.0.conf \
           --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+        find . -name 'system*.conf*'
+        cat mk/system-cxx-std-lib-1.0.conf
+      '' + lib.optionalString (stdenv.isDarwin && !(__tryEval libcxxabi).success) ''
+        substituteInPlace mk/system-cxx-std-lib-1.0.conf \
+          --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
         find . -name 'system*.conf*'
         cat mk/system-cxx-std-lib-1.0.conf
       '' + lib.optionalString (installStage1 && stdenv.targetPlatform.isMusl) ''
@@ -756,9 +795,14 @@ stdenv.mkDerivation (rec {
     export XATTR=$(mktemp -d)/nothing
   '';
 } // lib.optionalAttrs useHadrian {
-  postConfigure = lib.optionalString stdenv.isDarwin ''
+  postConfigure = lib.optionalString (stdenv.isDarwin && (__tryEval libcxxabi).success) ''
     substituteInPlace mk/system-cxx-std-lib-1.0.conf \
       --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+    find . -name 'system*.conf*'
+    cat mk/system-cxx-std-lib-1.0.conf
+  '' + lib.optionalString (stdenv.isDarwin && !(__tryEval libcxxabi).success) ''
+    substituteInPlace mk/system-cxx-std-lib-1.0.conf \
+      --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
     find . -name 'system*.conf*'
     cat mk/system-cxx-std-lib-1.0.conf
   '' + lib.optionalString (installStage1 && !haskell-nix.haskellLib.isCrossTarget && stdenv.targetPlatform.isMusl) ''
@@ -820,11 +864,17 @@ stdenv.mkDerivation (rec {
         ${hadrian}/bin/hadrian ${hadrianArgs} binary-dist-dir
         cd _build/bindist/ghc-*
         ./configure --prefix=$out ${lib.concatStringsSep " " configureFlags}
-        ${lib.optionalString stdenv.isDarwin ''
+        ${lib.optionalString (stdenv.isDarwin && (__tryEval libcxxabi).success) ''
           substituteInPlace mk/system-cxx-std-lib-1.0.conf \
             --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
           substituteInPlace lib/package.conf.d/system-cxx-std-lib-1.0.conf \
             --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+        ''}
+        ${lib.optionalString (stdenv.isDarwin && !(__tryEval libcxxabi).success) ''
+          substituteInPlace mk/system-cxx-std-lib-1.0.conf \
+            --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
+          substituteInPlace lib/package.conf.d/system-cxx-std-lib-1.0.conf \
+            --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
         ''}
         mkdir -p utils
         cp -r ../../../utils/completion utils

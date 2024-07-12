@@ -340,7 +340,19 @@ in {
 
   # Converts from a `compoent.depends` value to a library derivation.
   # In the case of sublibs the `depends` value should already be the derivation.
-  dependToLib = d: d.components.library or d;
+  dependToLib = d:
+    # Do simplify this to `d.components.library or d`, as that
+    # will not give a good error message if the `.library`
+    # is missing (happens if the package is unplanned,
+    # but has overrides).
+    # It would be nice to put an `assert` here, but there is
+    # currently no good way to get the name of the dependency
+    # when it is not in the plan.  The attribute path of
+    # `d` in the `nix` error should include the name
+    # eg. `packages.Cabal.components.library`.
+    if d ? components
+      then d.components.library
+      else d;
 
   projectOverlays = import ./project-overlays.nix {
     inherit lib haskellLib;
@@ -568,11 +580,6 @@ in {
 
   makeCompilerDeps = import ./make-compiler-deps.nix {
     inherit (pkgs.buildPackages.buildPackages) lib runCommand;
-  };
-
-  makeDummyGhcData = import ./make-dummy-ghc-data.nix {
-    inherit pkgs;
-    inherit (pkgs.buildPackages.buildPackages) runCommand;
   };
 
   # Here we try to figure out which qemu to use based on the host platform.

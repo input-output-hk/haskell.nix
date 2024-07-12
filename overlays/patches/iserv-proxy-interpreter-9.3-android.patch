@@ -1,0 +1,337 @@
+diff --git a/cbits/symbols.c b/cbits/symbols.c
+new file mode 100644
+index 0000000..d447895
+--- /dev/null
++++ b/cbits/symbols.c
+@@ -0,0 +1,318 @@
++#include <stddef.h>
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++#include <signal.h>
++#include <assert.h>
++#include <math.h>
++#include <errno.h>
++#include <unistd.h>
++#include <sys/stat.h>
++#include <sys/wait.h>
++#include <sys/epoll.h>
++// #include <sys/eventfd.h>
++// #include <fcntl.h> // this includes too many overloaded items.
++#include <string.h>
++#include <ctype.h>
++#include <wchar.h>
++#include <utime.h>
++#include <poll.h>
++#include <time.h>
++#include <dirent.h>
++#include <netdb.h>
++#include <pthread.h>
++#include <sys/mman.h>
++#include <sys/auxv.h>
++#include <sys/random.h>
++#include <arpa/inet.h>
++#include <sys/time.h>
++#include <sys/stat.h>
++#include <grp.h>
++#include <pwd.h>
++#include <sys/uio.h>
++
++// fnctl stubs, see above
++extern void open(void);
++extern void openat(void);
++extern void creat(void);
++extern void eventfd(void);
++extern void eventfd_write(void);
++
++extern void futimes(void);
++extern void lutimes(void);
++extern void statx(void);
++
++extern void __stack_chk_fail(void);
++extern void __vsprintf_chk(void);
++extern void __open_2(void);
++extern void __memcpy_chk(void);
++extern void __memset_chk(void);
++extern void __memmove_chk(void);
++// GCC stuff
++extern void __addtf3(void);
++extern void __divtf3(void);
++extern void __extenddftf2(void);
++extern void __fixtfsi(void);
++extern void __floatditf(void);
++extern void __floatsitf(void);
++extern void __getf2(void);
++extern void __gttf2(void);
++extern void __lttf2(void);
++extern void __multf3(void);
++extern void __subtf3(void);
++extern void __trunctfdf2(void);
++
++#define MISSING_FUN(f) void (f)(void) { printf("Unknown call to `%s'\n", #f); exit(1); }
++
++MISSING_FUN(c_format_unix_time)
++MISSING_FUN(c_format_unix_time_gmt)
++MISSING_FUN(c_parse_unix_time)
++MISSING_FUN(c_parse_unix_time_gmt)
++
++typedef void SymbolAddr;
++typedef char SymbolName;
++
++typedef enum _SymStrength {
++    STRENGTH_NORMAL,
++    STRENGTH_WEAK,
++    STRENGTH_STRONG,
++} SymStrength;
++
++typedef enum _SymType {
++    SYM_TYPE_CODE = 1 << 0, /* the symbol is a function and can be relocated via a jump island */
++    SYM_TYPE_DATA = 1 << 1, /* the symbol is data */
++    SYM_TYPE_INDIRECT_DATA = 1 << 2, /* see Note [_iob_func symbol] */
++    SYM_TYPE_DUP_DISCARD = 1 << 3, /* the symbol is a symbol in a BFD import library
++                                      however if a duplicate is found with a mismatching
++                                      SymType then discard this one.  */
++} SymType;
++
++typedef struct _RtsSymbolVal {
++    const SymbolName* lbl;
++    SymbolAddr* addr;
++    SymStrength strength;
++    SymType type;
++} RtsSymbolVal;
++
++#define SYM(x) { #x, (void*)(&x), STRENGTH_NORMAL, 1 }
++typedef mode_t (*umask_func_ptr_t)(mode_t);
++
++RtsSymbolVal my_iserv_syms[] = {
++    // arpa/inet.h
++    SYM(htons),
++    SYM(ntohs),
++    SYM(htonl),
++    SYM(ntohl),
++    // sys/random.h
++    SYM(getentropy),
++    SYM(getrandom),
++    // sys/auxv.h
++    SYM(getauxval),
++    // sys/mman.h
++    SYM(madvise),SYM(mlock),SYM(mmap),SYM(mprotect),SYM(munmap),
++    SYM(mremap),
++    SYM(munlock),
++    // select.h
++    SYM(__FD_SET_chk),
++    // sys/socket
++    SYM(accept),SYM(bind),SYM(connect),SYM(getsockopt),SYM(listen),
++    SYM(setsockopt),SYM(socket),SYM(getsockname),SYM(select),
++    SYM(getpeername),SYM(__cmsg_nxthdr),SYM(recv),SYM(recvfrom),
++    SYM(recvmsg),SYM(send),SYM(sendmsg),SYM(sendto),SYM(writev),
++    SYM(accept4),
++    // pthread.h
++    SYM(pthread_equal),SYM(pthread_getspecific),SYM(pthread_key_create),
++    SYM(pthread_key_delete),SYM(pthread_once),SYM(pthread_rwlock_destroy),
++    SYM(pthread_rwlock_init),SYM(pthread_rwlock_rdlock),SYM(pthread_rwlock_unlock),
++    SYM(pthread_rwlock_wrlock),SYM(pthread_self),SYM(pthread_setspecific),
++    SYM(pthread_create),SYM(pthread_join),SYM(pthread_mutex_destroy),
++    SYM(pthread_mutex_init),SYM(pthread_mutex_lock),SYM(pthread_mutex_trylock),
++    SYM(pthread_mutex_unlock),SYM(pthread_mutexattr_destroy),
++    SYM(pthread_mutexattr_init),SYM(pthread_mutexattr_settype),
++    // chk.h
++    SYM(__read_chk),SYM(__write_chk),
++    // netdb.h
++    SYM(freeaddrinfo),SYM(gai_strerror),SYM(getaddrinfo),SYM(getnameinfo),
++    SYM(gethostbyname),
++    // dirent.h
++    SYM(readdir_r),SYM(readdir),
++    SYM(opendir),SYM(closedir),
++    // time.h
++    SYM(clock),SYM(gmtime_r),
++    // sys/time.h
++    SYM(gettimeofday),SYM(clock_getres),SYM(clock_gettime),SYM(localtime_r),SYM(tzset),
++    // unistd.h
++    SYM(readlink),
++    SYM(rename),
++    SYM(rmdir),
++    SYM(chown),
++    SYM(realpath),
++    SYM(fchdir),
++    SYM(fdopendir),
++    SYM(rewinddir),
++    SYM(futimens),SYM(futimes),SYM(lutimes),
++    SYM(mknod),
++    SYM(lchown),
++    SYM(symlink),
++    SYM(endgrent),SYM(endpwent),
++    SYM(pathconf),
++    SYM(truncate),
++    SYM(utimensat),
++    SYM(statx),
++    SYM(seekdir),
++    SYM(telldir),
++    SYM(clearenv),
++    SYM(chdir),
++    SYM(sleep),
++    SYM(stdout),
++    SYM(strftime),
++    SYM(utimes),
++    SYM(setenv),
++    SYM(fpathconf),
++    SYM(exit),
++    SYM(environ),
++    SYM(ftruncate),
++    SYM(getenv),
++    SYM(putenv),
++    SYM(unsetenv),
++    SYM(read),
++    SYM(write),
++    SYM(isatty),
++    SYM(link),
++    SYM(pipe),
++    SYM(unlink),
++    SYM(execv),SYM(execve),SYM(execvp),SYM(execvpe),
++    SYM(syscall),SYM(sysconf),
++    // errno.h
++    SYM(__errno),
++    // math.h
++    SYM(sinhf), SYM(sinh), SYM(sinf), SYM(sin),
++    SYM(coshf), SYM(cosh), SYM(cosf), SYM(cos),
++    SYM(atanhf), SYM(atanh), SYM(atanf), SYM(atan),
++    SYM(asinhf), SYM(asinh), SYM(asinf), SYM(asin),
++    SYM(acoshf), SYM(acosh), SYM(acosf), SYM(acos),
++    SYM(log1pf), SYM(log1p), SYM(logf), SYM(log),
++    SYM(expm1f), SYM(expm1),
++    SYM(expf), SYM(exp),
++    SYM(ldexp),
++    SYM(powf), SYM(pow),
++    SYM(sqrtf), SYM(sqrt),
++    SYM(tanhf), SYM(tanh), SYM(tanf), SYM(tan),
++    // assert.h
++    SYM(__assert2),
++    // signal.h
++    SYM(signal),SYM(sigaction),
++    SYM(raise), SYM(sigaddset), SYM(sigemptyset), SYM(sigprocmask),
++    // sys/eventfd.h
++    SYM(eventfd), SYM(eventfd_write),
++    // sys/stat.h
++    SYM(fstat),
++    SYM(lstat),
++    SYM(stat),
++    SYM(chmod),
++    SYM(mkfifo),
++    // SYM(umask),
++    { "umask", (umask_func_ptr_t)(&umask), STRENGTH_NORMAL, 1 },
++    // sys/wait.h
++    SYM(waitpid),
++    // sym/epoll.h
++    SYM(epoll_create), SYM(epoll_ctl), SYM(epoll_wait),
++    // poll.h
++    SYM(poll),
++    // fcntl.h
++    SYM(open), SYM(creat), SYM(fcntl), SYM(ioctl),
++    SYM(openat),SYM(__open_2),
++    // string.h
++    SYM(strerror),
++    SYM(strcmp),
++    SYM(memchr),SYM(strcpy),SYM(strchr),SYM(strncpy),SYM(strrchr),
++    SYM(strcat),SYM(strncmp),SYM(strdup),
++    SYM(strtoul),SYM(strspn),SYM(strtol),SYM(strstr),SYM(strcspn),
++    SYM(__strncpy_chk2),SYM(__memcpy_chk),
++    // ctype.h
++    SYM(__ctype_get_mb_cur_max),
++    // wchar.h
++    SYM(mbrtowc), SYM(wcrtomb),
++    // stdlib.h
++    SYM(qsort),
++    // unistd.h
++    SYM(access), SYM(close), SYM(dup), SYM(dup2), SYM(fork), SYM(getpid),
++    SYM(lseek),
++    // utime.h
++    SYM(utime),SYM(time),
++    // ...
++    SYM(fileno),
++    SYM(__vsprintf_chk),
++    SYM(__strlen_chk),
++    SYM(__strchr_chk),
++    SYM(__memset_chk),
++    SYM(__memmove_chk),
++    SYM(__stack_chk_fail),
++    SYM(memmove),
++    SYM(memcmp),
++    SYM(memcpy),
++    SYM(memset),
++    SYM(stderr),
++    SYM(realloc),
++    SYM(calloc),
++    SYM(malloc),
++    SYM(free),
++    SYM(fprintf),
++    SYM(vfprintf),
++    SYM(fopen), SYM(fclose),
++    SYM(getegid),SYM(getgid),
++    SYM(getpwent),
++    SYM(getgrent),
++    SYM(getgroups),
++    SYM(getlogin),
++    SYM(getuid),
++    SYM(getgrgid_r),SYM(getgrnam_r),SYM(getpwnam_r),SYM(getpwuid_r),
++    SYM(setegid),SYM(seteuid),SYM(setgid),SYM(setgrent),SYM(setgroups),
++    SYM(setpwent),SYM(setuid),
++    SYM(fread),
++    SYM(abort),
++    SYM(strlen),
++    SYM(fwrite),
++    SYM(feof),
++    SYM(ferror),
++    SYM(fflush),
++    SYM(fgets),SYM(fputc),SYM(fputs),
++    SYM(fseek),SYM(ftell),
++    SYM(sscanf),
++    SYM(shutdown),
++    SYM(atoi),
++    SYM(stdin),
++    SYM(atexit),
++    SYM(usleep),
++    SYM(fchmod),
++    SYM(fchown),
++    SYM(fsync),
++    SYM(getcwd),
++    SYM(geteuid),
++    SYM(localtime),
++    SYM(lseek64),
++    SYM(mkdir),
++    SYM(mktime),
++    SYM(fdopen),
++    SYM(c_format_unix_time),
++    SYM(c_format_unix_time_gmt),
++    SYM(c_parse_unix_time),
++    SYM(c_parse_unix_time_gmt),
++    SYM(__addtf3),
++    SYM(__divtf3),
++    SYM(__extenddftf2),
++    SYM(__fixtfsi),
++    SYM(__floatditf),
++    SYM(__floatsitf),
++    SYM(__getf2),
++    SYM(__gttf2),
++    SYM(__lttf2),
++    SYM(__multf3),
++    SYM(__subtf3),
++    SYM(__trunctfdf2),
++    { 0, 0, STRENGTH_NORMAL, 1 } /* sentinel */
++};
++
++RtsSymbolVal* iserv_syms() {
++    return my_iserv_syms;
++}
+\ No newline at end of file
+diff --git a/iserv-proxy.cabal b/iserv-proxy.cabal
+index a0eeaeb..a146108 100644
+--- a/iserv-proxy.cabal
++++ b/iserv-proxy.cabal
+@@ -103,6 +103,7 @@ Executable iserv-proxy
+    -- We need to pass -fkeep-cafs to ensure that the interpreter retains CAFs
+    -- Iserv and GHC do something similar.
+    ghc-options: -fkeep-cafs
++   c-sources: cbits/symbols.c
+    Build-Depends: base       >= 4   && < 5,
+                   iserv-proxy
+

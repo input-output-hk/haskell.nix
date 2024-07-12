@@ -3427,23 +3427,10 @@ index 9b8b2e3fcb..769efb7fd6 100644
  -- | Tick scope identifier, allowing us to reason about what
  -- annotations in a Cmm block should scope over. We especially take
  -- care to allow optimisations to reorganise blocks without losing
-diff --git a/compiler/cmm/CmmParse.hs b/compiler/cmm/CmmParse.hs
+diff --git a/compiler/cmm/CmmParse.y b/compiler/cmm/CmmParse.y
 index e7527f8e50..454c0efd21 100644
---- a/compiler/cmm/CmmParse.hs
-+++ b/compiler/cmm/CmmParse.hs
-@@ -220,7 +220,7 @@ import GHC.StgToCmm.Closure
- import GHC.StgToCmm.Layout     hiding (ArgRep(..))
- import GHC.StgToCmm.Ticky
- import GHC.StgToCmm.Bind  ( emitBlackHoleCode, emitUpdateFrame )
--import CoreSyn          ( Tickish(SourceNote) )
-+import CoreSyn          ( GenTickish(SourceNote) )
- 
- import CmmOpt
- import MkGraph
-diff --git a/compiler/cmm/CmmParse.y.source b/compiler/cmm/CmmParse.y.source
-index e7527f8e50..454c0efd21 100644
---- a/compiler/cmm/CmmParse.y.source
-+++ b/compiler/cmm/CmmParse.y.source
+--- a/compiler/cmm/CmmParse.y
++++ b/compiler/cmm/CmmParse.y
 @@ -220,7 +220,7 @@ import GHC.StgToCmm.Closure
  import GHC.StgToCmm.Layout     hiding (ArgRep(..))
  import GHC.StgToCmm.Ticky

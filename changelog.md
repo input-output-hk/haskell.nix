@@ -1,6 +1,47 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Jun 5, 2024
+
+Haskell.nix now respects the `pre-existing` packages selected
+by the cabal planner.  The selection made by the planner
+is used to set `nonReinstallablePkgs`.
+
+Instead setting `nonReinstallablePkgs` and `reinstallableLibGhc`
+haskell.nix projects should add `constraints` to the cabal project.
+
+For instance to force the use of the `pre-exising` `text`
+package add:
+
+```
+  constraints: text installed
+```
+
+To make sure `text` is reinstalled use:
+
+```
+  constraints: text source
+```
+
+The `pre-existing` `ghc` will now be used by default as
+that is what `cabal` will choose (haskell.nix used to choose
+`reinstallableLibGhc=true` by default).
+
+To allow cabal to choose reinstalling `ghc` add:
+
+```
+  allow-boot-library-installs: True
+```
+
+To force cabal to choose reinstalling:
+
+```
+  constraints: ghc source
+  allow-boot-library-installs: True
+```
+
+It may also need `allow-newer: ghc:Cabal`
+
 ## Mar 27, 2023
 
 Haskell.nix will no longer parse the `cabal.project` file to

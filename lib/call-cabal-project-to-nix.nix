@@ -99,7 +99,9 @@ let
               (compilerSelection pkgs)."${compiler-nix-name}";
 
 in let
-  ghc = ghc';
+  ghc = if ghc' ? latestVersion
+    then __trace "WARNING: ${ghc'.version} is out of date, consider using upgrading to ${ghc'.latestVersion}." ghc'
+    else ghc';
   subDir' = src.origSubDir or "";
   subDir = pkgs.lib.strings.removePrefix "/" subDir';
 
@@ -266,9 +268,14 @@ let
       sourceRepos = sourceReposBuild;
       inherit (repoResult) repos extra-hackages;
       makeFixedProjectFile = ''
+        HOME=$(mktemp -d)
         cp -f ${evalPackages.writeText "cabal.project" sourceRepoFixedProjectFile} ./cabal.project
         chmod +w -R ./cabal.project
-      '';
+      '' + pkgs.lib.strings.concatStrings (
+            map (f: ''
+              git config --global --add safe.directory ${f.location}/.git
+            '') sourceReposEval
+          );
       # This will be used to replace refernces to the minimal git repos with just the index
       # of the repo.  The index will be used in lib/import-and-filter-project.nix to
       # lookup the correct repository in `sourceReposBuild`.  This avoids having
@@ -288,7 +295,9 @@ let
 
   fixedProject = replaceSourceRepos rawCabalProject;
 
-  inherit (ghc) dummy-ghc-data;
+  ghcSrc = ghc.raw-src or ghc.buildGHC.raw-src;
+
+  platformString = p: with p.parsed; "${cpu.name}-${vendor.name}-${kernel.name}";
 
   # Dummy `ghc` that uses the captured output
   dummy-ghc = evalPackages.writeTextFile {
@@ -299,30 +308,54 @@ let
       #!${evalPackages.runtimeShell}
       case "$*" in
         --version*)
-          cat ${dummy-ghc-data}/ghc/version
+          echo "The Glorious Glasgow Haskell Compilation System, version ${ghc.version}"
           ;;
         --numeric-version*)
-          cat ${dummy-ghc-data}/ghc/numeric-version
+          echo "${ghc.version}"
           ;;
       ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
         --numeric-ghc-version*)
-          cat ${dummy-ghc-data}/ghc/numeric-ghc-version
+          echo "${ghc.version}"
           ;;
         --numeric-ghcjs-version*)
-          cat ${dummy-ghc-data}/ghc/numeric-ghcjs-version
+          echo "${ghc.version}"
           ;;
       ''}
         --supported-languages*)
-          cat ${dummy-ghc-data}/ghc/supported-languages
+          cat ${import ./supported-languages.nix { inherit pkgs evalPackages ghc; }}
           ;;
         --print-global-package-db*)
           echo "$out/dumby-db"
           ;;
         --info*)
-          cat ${dummy-ghc-data}/ghc/info
+          echo '[("target os", "${
+              if pkgs.stdenv.targetPlatform.isLinux
+                then "OSLinux"
+              else if pkgs.stdenv.targetPlatform.isDarwin
+                then "OSDarwin"
+              else if pkgs.stdenv.targetPlatform.isWindows
+                then "OSMinGW32"
+              else if pkgs.stdenv.targetPlatform.isGhcjs
+                then "OSGhcjs"
+              else throw "Unknown target os ${pkgs.stdenv.targetPlatform.config}"
+            }")'
+          echo ',("target arch","${
+              if pkgs.stdenv.targetPlatform.isx86_64
+                then "ArchX86_64"
+              else if pkgs.stdenv.targetPlatform.isAarch64
+                then "ArchAArch64"
+              else if pkgs.stdenv.targetPlatform.isJavaScript
+                then "ArchJavaScript"
+              else throw "Unknown target arch ${pkgs.stdenv.targetPlatform.config}"
+          }")'
+          echo ',("target platform string","${platformString pkgs.stdenv.targetPlatform}")'
+          echo ',("Build platform","${platformString pkgs.stdenv.buildPlatform}")'
+          echo ',("Host platform","${platformString pkgs.stdenv.hostPlatform}")'
+          echo ',("Target platform","${platformString pkgs.stdenv.targetPlatform}")'
+          echo ']'
           ;;
         --print-libdir*)
-          echo ${dummy-ghc-data}/ghc/libdir
+          echo $out/ghc/libdir
           ;;
         *)
           echo "Unknown argument '$*'" >&2
@@ -333,6 +366,148 @@ let
     '';
   };
 
+  ghc-pkgs = [
+    "Cabal"
+    "array"
+    "base"
+    "binary"
+    "bytestring"
+    "containers"
+    "deepseq"
+    "directory"
+    "filepath"
+    "ghc-boot"
+    "ghc-boot-th"
+    "ghc-compact"
+    "ghc-heap"
+    "ghc-prim"
+    "ghci"
+    "integer-gmp"
+    "mtl"
+    "parsec"
+    "pretty"
+    "process"
+    "rts"
+    "template-haskell"
+    "text"
+    "time"
+    "transformers"
+  ] ++ pkgs.lib.optionals (!pkgs.stdenv.targetPlatform.isGhcjs || builtins.compareVersions ghc.version "9.0" > 0) [
+    # GHCJS 8.10 does not have these
+    "Cabal-syntax"
+    "exceptions"
+    "ghc"
+    "ghc-bignum"
+    "ghc-experimental"
+    "ghc-internal"
+    "ghc-platform"
+    "ghc-toolchain"
+    "haskeline"
+    "hpc"
+    "libiserv"
+    "os-string"
+    "semaphore-compat"
+    "stm"
+    "xhtml"
+  ] ++ pkgs.lib.optionals (!pkgs.stdenv.targetPlatform.isGhcjs) [
+    "terminfo"
+  ] ++ (if pkgs.stdenv.targetPlatform.isWindows
+    then [ "Win32" ]
+    else [ "unix" ]
+  );
+
+  dummy-ghc-pkg-dump = evalPackages.runCommand "dummy-ghc-pkg-dump" {
+      nativeBuildInputs = [
+        evalPackages.haskell-nix.nix-tools-unchecked.exes.cabal2json
+        evalPackages.jq
+      ];
+    } (let varname = x: builtins.replaceStrings ["-"] ["_"] x; in ''
+          PKGS=""
+          ${pkgs.lib.concatStrings
+            (builtins.map (name: ''
+              cabal_file=""
+              if [ -f ${ghcSrc}/libraries/${name}/${name}.cabal ]; then
+                cabal_file=${ghcSrc}/libraries/${name}/${name}.cabal
+              elif [ -f ${ghcSrc}/libraries/Cabal/${name}/${name}.cabal ]; then
+                cabal_file=${ghcSrc}/libraries/Cabal/${name}/${name}.cabal
+              elif [ -f ${ghcSrc}/libraries/${name}/${name}/${name}.cabal ]; then
+                cabal_file=${ghcSrc}/libraries/${name}/${name}/${name}.cabal
+              elif [ -f ${ghcSrc}/compiler/${name}.cabal ]; then
+                cabal_file=${ghcSrc}/compiler/${name}.cabal
+              elif [ -f ${ghcSrc}/compiler/${name}.cabal.in ]; then
+                cabal_file=${ghcSrc}/compiler/${name}.cabal.in
+              elif [ -f ${ghcSrc}/libraries/${name}/${name}.cabal.in ]; then
+                cabal_file=${ghcSrc}/libraries/${name}/${name}.cabal.in
+              fi
+              if [[ "$cabal_file" != "" ]]; then
+                fixed_cabal_file=$(mktemp)
+                cat $cabal_file | sed -e 's/@ProjectVersionMunged@/${ghc.version}/g' -e 's/default: *@[A-Za-z0-9]*@/default: False/g' -e 's/@Suffix@//g' > $fixed_cabal_file
+                json_cabal_file=$(mktemp)
+                cabal2json $fixed_cabal_file > $json_cabal_file
+
+                exposed_modules="$(jq -r '.library."exposed-modules"[]|select(type=="array")[]' $json_cabal_file)"
+                reexported_modules="$(jq -r '.library."reexported-modules"//[]|.[]|select(type=="array")[]' $json_cabal_file)"
+
+                # FIXME This is a bandaid. Rather than doing this, conditionals should be interpreted.
+                ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isGhcjs ''
+                exposed_modules+=" $(jq -r '.library."exposed-modules"[]|select(type=="object" and .if.arch == "javascript")|.then[]' $json_cabal_file)"
+                ''}
+                ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
+                exposed_modules+=" $(jq -r '.library."exposed-modules"[]|select(type=="object" and .if.os == "windows")|.then[]' $json_cabal_file)"
+                ''}
+                ${pkgs.lib.optionalString (!pkgs.stdenv.targetPlatform.isWindows) ''
+                exposed_modules+=" $(jq -r '.library."exposed-modules"[]|select(type=="object" and .if.not.os == "windows")|.then[]' $json_cabal_file)"
+                ''}
+
+                EXPOSED_MODULES_${varname name}="$(tr '\n' ' ' <<< "$exposed_modules $reexported_modules")"
+                DEPS_${varname name}="$(jq -r '.library."build-depends"[]|select(type=="array")[],select(type=="object" and .if.not.flag != "vendor-filepath").then[]' $json_cabal_file | sed 's/^\([A-Za-z0-9-]*\).*$/\1/g' | sort -u | tr '\n' ' ')"
+                VER_${varname name}="$(jq -r '.version' $json_cabal_file)"
+                PKGS+=" ${name}"
+                LAST_PKG="${name}"
+              fi
+            '') ghc-pkgs)
+          }
+          ${ # There is no .cabal file for system-cxx-std-lib
+            pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.2" >= 0) (
+              let name="system-cxx-std-lib"; in ''
+                EXPOSED_MODULES_${varname name}=""
+                DEPS_${varname name}=""
+                VER_${varname name}="1.0"
+                PKGS+=" ${name}"
+                LAST_PKG="${name}"
+              '')
+            # ghcjs packages (before the ghc JS backend). TODO remove this when GHC 8.10 support is dropped
+            + pkgs.lib.optionalString (pkgs.stdenv.targetPlatform.isGhcjs && builtins.compareVersions ghc.version "9" < 0) ''
+                EXPOSED_MODULES_${varname "ghcjs-prim"}="GHCJS.Prim GHCJS.Prim.Internal GHCJS.Prim.Internal.Build"
+                DEPS_${varname "ghcjs-prim"}="base ghc-prim"
+                VER_${varname "ghcjs-prim"}="0.1.1.0"
+                EXPOSED_MODULES_${varname "ghcjs-th"}="GHCJS.Prim.TH.Eval GHCJS.Prim.TH.Types"
+                DEPS_${varname "ghcjs-th"}="base binary bytestring containers ghc-prim ghci template-haskell"
+                VER_${varname "ghcjs-th"}="0.1.0.0"
+                PKGS+=" ghcjs-prim ghcjs-th"
+                LAST_PKG="ghcjs-th"
+              ''
+          }
+          for pkg in $PKGS; do
+            varname="$(echo $pkg | tr "-" "_")"
+            ver="VER_$varname"
+            exposed_mods="EXPOSED_MODULES_$varname"
+            deps="DEPS_$varname"
+            echo "name: $pkg" >> $out
+            echo "version: ''${!ver}" >> $out
+            echo "exposed-modules: ''${!exposed_mods}" >> $out
+            echo "depends:" >> $out
+            for dep in ''${!deps}; do
+              ver_dep="VER_$(echo $dep | tr "-" "_")"
+              if [[ "''${!ver_dep}" != "" ]]; then
+                echo "  $dep-''${!ver_dep}" >> $out
+              fi
+            done
+            if [[ "$pkg" != "$LAST_PKG" ]]; then
+              echo '---' >> $out
+            fi
+          done
+        '');
   # Dummy `ghc-pkg` that uses the captured output
   dummy-ghc-pkg = evalPackages.writeTextFile {
     name = "dummy-pkg-" + ghc.name;
@@ -342,15 +517,15 @@ let
       #!${evalPackages.runtimeShell}
       case "$*" in
         --version)
-          cat ${dummy-ghc-data}/ghc-pkg/version
+          echo "GHC package manager version ${ghc.version}"
           ;;
       ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
         --numeric-ghcjs-version)
-          cat ${dummy-ghc-data}/ghc-pkg/numeric-ghcjs-version
+          echo "${ghc.version}"
           ;;
       ''}
         'dump --global -v0')
-          cat ${dummy-ghc-data}/ghc-pkg/dump-global
+          cat ${dummy-ghc-pkg-dump}
           ;;
         *)
           echo "Unknown argument '$*'. " >&2

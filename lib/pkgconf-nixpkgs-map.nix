@@ -6,15 +6,15 @@ pkgs:
 
     # Only include derivations that exist in the current pkgs.
     # This allows us to use this mapping to be used in allPkgConfigWrapper.
-    # See ./overlas
+    # See ./overlays
     lookupAttrsIn = x: __mapAttrs (_pname: names:
-        # The first entry is should be used for the version by allPkgConfigWrapper
-        # so we need it to be present.
-        if __length names != 0 && x ? ${__head names}
-          then
-            pkgs.lib.concatMap (
-              name: if x ? ${name} then [ x.${name} ] else []) names
-          else []);
+      # The first entry is should be used for the version by allPkgConfigWrapper
+      # so we need it to be present.
+      with lib; optionals (__length names != 0 && x ? ${__head names})
+        (concatMap
+          (name: optionals (x ? ${name})
+            (let p = __tryEval (x.${name}); in optional p.success p.value))
+          names));
   in lookupAttrsIn pkgs ({
     # Based on https://github.com/NixOS/cabal2nix/blob/11c68fdc79461fb74fa1dfe2217c3709168ad752/src/Distribution/Nixpkgs/Haskell/FromCabal/Name.hs#L23
 
@@ -2167,7 +2167,7 @@ pkgs:
     "gdkmm-3.0" = [ "gtkmm3" ];
     "gtkmm-3.0" = [ "gtkmm3" ];
     "gtkmm-4.0" = [ "gtkmm4" ];
-    "libgtkpod-1.1.0" = [ "gtkpod" ];
+#    "libgtkpod-1.1.0" = [ "gtkpod" ];
 #    "gtksourceview-3.0" = [ "gtksourceview" ];
     "gtksourceview-3.0" = [ "gtksourceview3" ];
     "gtksourceview-4" = [ "gtksourceview4" ];

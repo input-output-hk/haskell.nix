@@ -2,6 +2,7 @@ packages:
   ./
 
 allow-newer: aeson:base, aeson:ghc-prim, aeson:template-haskell
+constraints: aeson >2
 
 source-repository-package
   type: git

@@ -79,13 +79,20 @@ writeDoc file doc =
      hPutDoc handle doc
      hClose handle
 
+-- PackageKey is used when selecting which version is the most recent
+-- when to deduplicate the plan.
+-- By including PackageType as well as version we can select the
+-- NonPreExisting version of the package if the versions match.
+data PackageType = PreExisting | NotPreExisting deriving (Eq, Ord)
+data PackageKey = PackageKey Version PackageType deriving (Eq, Ord)
+
 plan2nix :: Args -> Plan -> IO NExpr
 plan2nix args Plan { packages, extras, components, compilerVersion, compilerPackages } = do
   -- TODO: this is an aweful hack and expects plan-to-nix to be
   -- called from the toplevel project directory.
   cwd <- getCurrentDirectory
   extrasNix <- fmap (mkNonRecSet  . concat) . forM (Map.toList extras) $ \case
-    (_name, Just (Package v flags (Just (LocalPath folder)) False)) ->
+    (_name, Just (Package v flags (Just (LocalPath folder)) False _)) ->
       do cabalFiles <- findCabalFiles (argHpackUse args) folder
          forM cabalFiles $ \cabalFile ->
            let pkg = cabalFilePkgName cabalFile
@@ -95,7 +102,7 @@ plan2nix args Plan { packages, extras, components, compilerVersion, compilerPack
            in do createDirectoryIfMissing True (takeDirectory nixFile)
                  writeDoc nixFile . prettyNix =<< cabal2nix True (argDetailLevel args) src cabalFile
                  return $ fromString pkg $= mkPath False nix
-    (_name, Just (Package v flags (Just (DVCS (Git url rev) subdirs)) False)) ->
+    (_name, Just (Package v flags (Just (DVCS (Git url rev) subdirs)) False _)) ->
       fmap concat . forM subdirs $ \subdir ->
       do cacheHits <- liftIO $ cacheHits (argCacheFile args) url rev subdir
          case cacheHits of
@@ -109,11 +116,14 @@ plan2nix args Plan { packages, extras, components, compilerVersion, compilerPack
                return $ fromString pkg $= mkPath False nix
     _ -> return []
   let flags = concatMap (\case
-          (name, Just (Package _v f _hasDescriptionOverride _)) -> flags2nix name f
+          (name, Just (Package _v f _hasDescriptionOverride _ _)) -> flags2nix name f
           _ -> []) $ Map.toList extras
       -- Set the `planned` option for all components in the plan.
       planned = map (\name -> name <> ".planned" $=
         ("lib" @. "mkOverride" @@ mkInt 900 @@ mkBool True)) $ Set.toList components
+      preExisting = concatMap (\case
+          (name, Just (Package _ _ _ _ True)) -> [mkStr name]
+          _ -> []) $ Map.toList packages
 
   return $ mkNonRecSet [
     "pkgs" $= ("hackage" ==> mkNonRecSet
@@ -126,7 +136,10 @@ plan2nix args Plan { packages, extras, components, compilerVersion, compilerPack
       ])
     , "extras" $= ("hackage" ==> mkNonRecSet [ "packages" $= extrasNix ])
     , "modules" $= mkList [
-        mkParamset [("lib", Nothing)] True ==> mkNonRecSet [ "packages" $= mkNonRecSet flags ]
+        mkNonRecSet [
+          "preExistingPkgs" $= mkList preExisting
+        ]
+      , mkParamset [("lib", Nothing)] True ==> mkNonRecSet [ "packages" $= mkNonRecSet flags ]
       , mkParamset [("lib", Nothing)] True ==> mkNonRecSet [ "packages" $= mkNonRecSet planned ]
       ]
     ]
@@ -200,6 +213,7 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
           . KeyMap.toList $ KeyMap.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
       , packageSrc      = Nothing
       , packageHasDescriptionOverride = isJust (pkg ^? key "pkg-cabal-sha256")
+      , packagePreExisting = False
       }
 
     (_, "inplace") -> Just $ Package
@@ -208,6 +222,7 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
           . KeyMap.toList $ KeyMap.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
       , packageSrc      = Nothing
       , packageHasDescriptionOverride = isJust (pkg ^? key "pkg-cabal-sha256")
+      , packagePreExisting = False
       }
     -- Until we figure out how to force Cabal to reconfigure just about any package
     -- this here might be needed, so that we get the pre-existing packages as well.
@@ -220,6 +235,7 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
       , packageFlags    = Map.empty
       , packageSrc      = Nothing
       , packageHasDescriptionOverride = isJust (pkg ^? key "pkg-cabal-sha256") -- likely this is always false
+      , packagePreExisting = True
       }
     _ -> Nothing
 
@@ -251,12 +267,18 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
   filterInstallPlan :: (Value -> Maybe b) -> HashMap Text b
   filterInstallPlan f = fmap snd .
     -- If the same package occurs more than once, choose the latest
-    Map.fromListWith (\a b -> if parseVersion (fst a) > parseVersion (fst b) then a else b)
-      $ mapMaybe (\pkg -> (,) (pkg ^. key "pkg-name" . _String) . (pkg ^. key "pkg-version" . _String,) <$> f pkg)
+    Map.fromListWith (\a b -> if fst a > fst b then a else b)
+      $ mapMaybe (\pkg -> (,) (pkg ^. key "pkg-name" . _String) . (getPackageKey pkg,) <$> f pkg)
       $ Vector.toList (plan ^. key "install-plan" . _Array)
 
   parseVersion :: Text -> Version
   parseVersion s = fromMaybe (error $ "Unable to parse version " <> show s) . simpleParsec $ Text.unpack s
+
+  getPackageKey :: Value -> PackageKey
+  getPackageKey pkg = PackageKey (parseVersion (pkg ^. key "pkg-version" . _String)) (
+    if pkg ^. key "type" . _String == "pre-existing"
+      then PreExisting
+      else NotPreExisting)
 
   -- Set of components that are included in the plan.
   components :: HashSet Text

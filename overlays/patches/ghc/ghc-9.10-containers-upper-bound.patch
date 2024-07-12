@@ -1,0 +1,14 @@
+diff --git a/linters/lint-whitespace/lint-whitespace.cabal b/linters/lint-whitespace/lint-whitespace.cabal
+index e4fab0631e..4d8e6dd1cf 100644
+--- a/linters/lint-whitespace/lint-whitespace.cabal
++++ b/linters/lint-whitespace/lint-whitespace.cabal
+@@ -24,7 +24,7 @@ executable lint-whitespace
+     process
+       ^>= 1.6,
+     containers
+-      ^>= 0.6,
++      >=0.6 && <0.8,
+     base
+        >= 4.14 && < 5,
+     text
+

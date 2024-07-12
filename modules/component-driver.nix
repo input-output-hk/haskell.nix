@@ -10,6 +10,11 @@ let
 in
 
 {
+  # Packages in that are `pre-existing` in the cabal plan
+  options.preExistingPkgs = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+    default = [];
+  };
   # This has a slightly modified option type. We will *overwrite* any previous
   # setting of nonRelocatablePkgs, instead of merging them.  Otherwise you
   # have no chance of removing packages retroactively.  We might improve this
@@ -24,7 +29,7 @@ in
 
   options.reinstallableLibGhc = lib.mkOption {
     type = lib.types.bool;
-    default = true;
+    default = !pkgs.stdenv.hostPlatform.isGhcjs;
     description = "Is lib:ghc reinstallable?";
   };
   options.setup-depends = lib.mkOption {
@@ -53,7 +58,11 @@ in
   #
   # without reinstallable-lib:ghc, this is significantly larger.
 
-  config.nonReinstallablePkgs =
+  config.nonReinstallablePkgs = if config.preExistingPkgs != []
+   then ["rts"] ++ config.preExistingPkgs
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "8.11" < 0 && pkgs.stdenv.hostPlatform.isGhcjs) [
+      "ghcjs-prim" "ghcjs-th"]
+   else
     [ "rts" "ghc-prim" "integer-gmp" "integer-simple" "base"
       "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
       # ghcjs custom packages
