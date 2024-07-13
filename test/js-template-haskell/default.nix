@@ -10,9 +10,7 @@ let
     cabalProjectLocal = ''
       if arch(javascript)
         extra-packages: ghci
-      else
-        -- This fixes windows profiled builds
-        constraints: text source
+      constraints: text -simdutf, text source
     '';
   };
 

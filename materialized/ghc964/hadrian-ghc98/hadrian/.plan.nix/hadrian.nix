@@ -29,7 +29,7 @@
       extraSrcFiles = [];
       extraTmpFiles = [];
       extraDocFiles = [ "README.md" ];
-      };
+    };
     components = {
       exes = {
         "hadrian" = {
@@ -50,7 +50,7 @@
             (hsPkgs."text" or (errorHandler.buildDepError "text"))
             (hsPkgs."cryptohash-sha256" or (errorHandler.buildDepError "cryptohash-sha256"))
             (hsPkgs."base16-bytestring" or (errorHandler.buildDepError "base16-bytestring"))
-            ] ++ (pkgs.lib).optional (flags.selftest) (hsPkgs."QuickCheck" or (errorHandler.buildDepError "QuickCheck"));
+          ] ++ pkgs.lib.optional (flags.selftest) (hsPkgs."QuickCheck" or (errorHandler.buildDepError "QuickCheck"));
           buildable = true;
           modules = [
             "Base"
@@ -119,6 +119,7 @@
             "Settings/Builders/Cc"
             "Settings/Builders/Configure"
             "Settings/Builders/DeriveConstants"
+            "Settings/Builders/GenApply"
             "Settings/Builders/GenPrimopCode"
             "Settings/Builders/Ghc"
             "Settings/Builders/GhcPkg"
@@ -154,12 +155,12 @@
             "Utilities"
             "Way"
             "Way/Type"
-            ] ++ (pkgs.lib).optional (flags.selftest) "Rules/Selftest";
+          ] ++ pkgs.lib.optional (flags.selftest) "Rules/Selftest";
           hsSourceDirs = [ "." "src" ];
           mainPath = ([
             "Main.hs"
-            ] ++ (pkgs.lib).optional (flags.threaded) "") ++ (pkgs.lib).optional (flags.selftest) "";
-          };
+          ] ++ pkgs.lib.optional (flags.threaded) "") ++ pkgs.lib.optional (flags.selftest) "";
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../.; }

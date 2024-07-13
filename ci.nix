@@ -22,6 +22,7 @@
     "R2211" = inputs.nixpkgs-2211;
     "R2305" = inputs.nixpkgs-2305;
     "R2311" = inputs.nixpkgs-2311;
+    "R2405" = inputs.nixpkgs-2405;
     "unstable" = inputs.nixpkgs-unstable;
   };
 
@@ -29,10 +30,14 @@
     # set checkMaterialization as per top-level argument
     overlays = [
       haskellNix.overlay
-      (_final: prev: {
+      (final: prev: {
         haskell-nix = prev.haskell-nix // {
           inherit checkMaterialization;
+          extraPkgconfigMappings = prev.haskell-nix.extraPkgconfigMappings or {} // {
+            "libsodium" = [ "libsodium-18" ];
+          };
         };
+        libsodium-18 = (final.callPackage (inputs.nixpkgs-2311 + "/pkgs/development/libraries/libsodium") {}).overrideAttrs (_: { dontDisableStatic = true; });
       })
     ];
     # Needed for dwarf tests
@@ -56,7 +61,7 @@
       # cabal-install and nix-tools plans.  When removing a ghc version
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
-      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2311") {
+      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2405") {
         ghc94 = false;
         ghc96 = false;
         ghc98 = false;
@@ -120,8 +125,6 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
           ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name};
         } // pkgs.lib.optionalAttrs runTests {
           inherit (build) tests tools maintainer-scripts maintainer-script-cache;
-        } // pkgs.lib.optionalAttrs (ifdLevel >= 2) {
-          inherit (pkgs.haskell-nix.iserv-proxy-exes.${compiler-nix-name}) iserv-proxy;
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
           hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }).getComponent "exe:hello";
         });
