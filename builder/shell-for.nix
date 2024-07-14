@@ -142,21 +142,17 @@ let
       pname = p.identifier.name;
       haddockDir = p.haddockDir;
     };
-  in hoogleLocal ({
+  in hoogleLocal {
     packages = map docPackage (haskellLib.flatLibDepends component);
 
-    # Need to add hoogle to hsPkgs.
-    # inherit (hsPkgs) hoogle;
-  } // (
-    lib.optionalAttrs (args ? tools && args.tools ? hoogle) {
-      hoogle = pkgsBuildBuild.haskell-nix.hackage-tool (
-        haskellLib.versionOrModToMods args.tools.hoogle ++ [{
+    hoogle = pkgsBuildBuild.haskell-nix.hackage-tool (
+        lib.optionals (args ? tools && args.tools ? hoogle) (haskellLib.versionOrModToMods args.tools.hoogle)
+      ++ [{
           name = "hoogle";
           compiler-nix-name = compiler.nix-name;
           inherit evalPackages;
         }]);
-    }
-  ));
+    };
 
   mkDrvArgs = builtins.removeAttrs args ["packages" "components" "additional" "withHoogle" "tools"];
 in
