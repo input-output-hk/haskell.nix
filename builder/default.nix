@@ -64,13 +64,7 @@ let
       then pkgs.path
       else pkgs.haskell-nix.sources.nixpkgs-2205;
     nixpkgsHoogle = import (nixpkgs + /pkgs/development/haskell-modules/hoogle.nix);
-  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.tool "ghc928" "hoogle" {
-        inherit evalPackages;
-        version = "5.0.18.3";
-        # index-state = pkgs.haskell-nix.internalHackageIndexState;
-        index-state = "2023-06-05T00:00:00Z";
-      }
-    }:
+  in { packages ? [], hoogle }:
     let
       haskellPackages = {
         # For musl we can use haddock from the buildGHC
