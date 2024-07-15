@@ -227,14 +227,14 @@ jobs:
       - name: "Check that the haskell.nix roots do not require IFDs"
         run: nix build .#roots.x86_64-linux --accept-flake-config --option allow-import-from-derivation false
 
-  hydra-without-remote-builders:
+  hydra-without-remote-builders-ghc8107:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
       - name: "Check that evaluation of hydra jobs works without using remote builders for GHC 8.10.7"
         run: nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc8107-native --show-trace --builders ''
 
-  hydra-without-remote-builders:
+  hydra-without-remote-builders-ghc9101:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
