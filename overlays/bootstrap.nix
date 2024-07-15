@@ -911,7 +911,7 @@ in {
                     isHaskellNixCompiler = true;
                     enableShared = false;
                     inherit (booted-ghcjs) configured-src bundled-ghcjs project;
-                    raw-src = evalPackages: booted-ghcjs.configured-src;
+                    raw-src = _evalPackages: booted-ghcjs.configured-src;
                     inherit booted-ghcjs buildGHC;
                     extraConfigureFlags = [
                         "--ghcjs"
