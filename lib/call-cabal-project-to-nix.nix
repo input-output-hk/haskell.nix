@@ -295,7 +295,7 @@ let
 
   fixedProject = replaceSourceRepos rawCabalProject;
 
-  ghcSrc = ghc.raw-src or ghc.buildGHC.raw-src;
+  ghcSrc = (ghc.raw-src or ghc.buildGHC.raw-src) evalPackages;
 
   platformString = p: with p.parsed; "${cpu.name}-${vendor.name}-${kernel.name}";
 
