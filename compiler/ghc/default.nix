@@ -656,7 +656,7 @@ stdenv.mkDerivation (rec {
     # We could add `configured-src` as an output of the ghc derivation, but
     # having it as its own derivation means it can be accessed quickly without
     # building GHC.
-    raw-src = stdenv.mkDerivation {
+    raw-src = evalPackages: evalPackages.stdenv.mkDerivation {
       name = name + "-raw-src";
       inherit
         version
