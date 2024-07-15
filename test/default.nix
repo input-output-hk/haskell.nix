@@ -233,6 +233,7 @@ let
     plugin = callTest ./plugin {};
     supported-languages = callTest ./supported-langauges {};
     js-template-haskell = callTest ./js-template-haskell {};
+    src-loc = callTest ./src-loc { inherit util; };
     unit = unitTests;
   };
 
