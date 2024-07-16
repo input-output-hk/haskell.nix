@@ -42,7 +42,7 @@ let
   combineAndMaterialize = unchecked: materialized-dir: ghcName: bootPackages:
       (final.haskell-nix.materialize ({
           materialized =
-            if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.9" < 0
+            if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.11" < 0
               then materialized-dir + "/ghc-boot-packages-nix/${ghcName +
                 # The 3434.patch we apply to fix linking on arm systems changes ghc-prim.cabal
                 # so it needs its own materialization.
@@ -75,18 +75,10 @@ let
       libiserv     = "libraries/libiserv";
     } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "9" > 0) {
       ghc          = "compiler";
-    } // (
-      if builtins.compareVersions ghcVersion "9.4" < 0
-        then {
-          # As of GHC 9.4 this has been split out of the GHC repo and
-          # is now in the iserv-proxy flake input
-          iserv-proxy  = "utils/iserv-proxy";
-        }
-        else {
-          genprimopcode = "utils/genprimopcode";
-          deriveConstants = "utils/deriveConstants";
-        }
-    ) // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "8.10.5" >= 0) {
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.4" >= 0) {
+      genprimopcode = "utils/genprimopcode";
+      deriveConstants = "utils/deriveConstants";
+    } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "8.10.5" >= 0) {
       # Not sure why, but this is missing from older ghcjs versions
       remote-iserv = "utils/remote-iserv";
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.0.1" >= 0) {
@@ -244,7 +236,7 @@ in rec {
       index-state = final.haskell-nix.internalHackageIndexState;
       # Where to look for materialization files
       materialized =
-        if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.9" < 0
+        if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.11" < 0
           then ../materialized/ghc-extra-projects + "/${ghc-extra-projects-type proj.ghc}/${ghcName}"
           else null;
       compiler-nix-name = ghcName;

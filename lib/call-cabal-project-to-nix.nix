@@ -268,9 +268,14 @@ let
       sourceRepos = sourceReposBuild;
       inherit (repoResult) repos extra-hackages;
       makeFixedProjectFile = ''
+        HOME=$(mktemp -d)
         cp -f ${evalPackages.writeText "cabal.project" sourceRepoFixedProjectFile} ./cabal.project
         chmod +w -R ./cabal.project
-      '';
+      '' + pkgs.lib.strings.concatStrings (
+            map (f: ''
+              git config --global --add safe.directory ${f.location}/.git
+            '') sourceReposEval
+          );
       # This will be used to replace refernces to the minimal git repos with just the index
       # of the repo.  The index will be used in lib/import-and-filter-project.nix to
       # lookup the correct repository in `sourceReposBuild`.  This avoids having
@@ -290,7 +295,7 @@ let
 
   fixedProject = replaceSourceRepos rawCabalProject;
 
-  ghcSrc = ghc.raw-src or ghc.buildGHC.raw-src;
+  ghcSrc = (ghc.raw-src or ghc.buildGHC.raw-src) evalPackages;
 
   platformString = p: with p.parsed; "${cpu.name}-${vendor.name}-${kernel.name}";
 
@@ -455,7 +460,7 @@ let
                 ''}
 
                 EXPOSED_MODULES_${varname name}="$(tr '\n' ' ' <<< "$exposed_modules $reexported_modules")"
-                DEPS_${varname name}="$(jq -r '.library."build-depends"[]|select(type=="array")[],select(type=="object").then[]' $json_cabal_file | sed 's/^\([A-Za-z0-9-]*\).*$/\1/g' | sort -u | tr '\n' ' ')"
+                DEPS_${varname name}="$(jq -r '.library."build-depends"[]|select(type=="array")[],select(type=="object" and .if.not.flag != "vendor-filepath").then[]' $json_cabal_file | sed 's/^\([A-Za-z0-9-]*\).*$/\1/g' | sort -u | tr '\n' ' ')"
                 VER_${varname name}="$(jq -r '.version' $json_cabal_file)"
                 PKGS+=" ${name}"
                 LAST_PKG="${name}"

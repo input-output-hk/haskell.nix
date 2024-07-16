@@ -28,6 +28,7 @@ in {
       inherit ((callFlake { pkgs = final; src = ./ghc963; }).defaultNix) ghc963;
       inherit ((callFlake { pkgs = final; src = ./ghc964; }).defaultNix) ghc964;
       inherit ((callFlake { pkgs = final; src = ./ghc965; }).defaultNix) ghc965;
+      inherit ((callFlake { pkgs = final; src = ./ghc966; }).defaultNix) ghc966;
       inherit ((callFlake { pkgs = final; src = ./ghc981; }).defaultNix) ghc981;
       inherit ((callFlake { pkgs = final; src = ./ghc982; }).defaultNix) ghc982;
       inherit ((callFlake { pkgs = final; src = ./ghc9101; }).defaultNix) ghc9101;

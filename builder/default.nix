@@ -13,7 +13,7 @@
 #
 # tl;dr: the builder must not re-introduce any reference to the build plan.
 
-{ pkgs, buildPackages, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, nonReinstallablePkgs, hsPkgs, compiler }:
+{ pkgs, buildPackages, pkgsBuildBuild, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, nonReinstallablePkgs, hsPkgs, compiler }:
 
 let
   # Builds a single component of a package.
@@ -64,13 +64,7 @@ let
       then pkgs.path
       else pkgs.haskell-nix.sources.nixpkgs-2205;
     nixpkgsHoogle = import (nixpkgs + /pkgs/development/haskell-modules/hoogle.nix);
-  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.tool "ghc928" "hoogle" {
-        inherit evalPackages;
-        version = "5.0.18.3";
-        # index-state = pkgs.haskell-nix.internalHackageIndexState;
-        index-state = "2023-06-05T00:00:00Z";
-      }
-    }:
+  in { packages ? [], hoogle }:
     let
       haskellPackages = {
         # For musl we can use haddock from the buildGHC
@@ -85,7 +79,7 @@ let
 
   # Same as haskellPackages.shellFor in nixpkgs.
   shellFor = haskellLib.weakCallPackage pkgs ./shell-for.nix {
-    inherit hsPkgs ghcForComponent makeConfigFiles hoogleLocal haskellLib buildPackages evalPackages compiler;
+    inherit hsPkgs ghcForComponent makeConfigFiles hoogleLocal haskellLib pkgsBuildBuild evalPackages compiler;
     inherit (buildPackages) glibcLocales;
   };
 
