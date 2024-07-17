@@ -630,11 +630,11 @@
     "stackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1721089446,
-        "narHash": "sha256-NdRs4C7WMnknn6/4SXu6vdHgKCmtTosfTYr9V09LHOw=",
+        "lastModified": 1721176388,
+        "narHash": "sha256-dIOwYYlL84kumon0h2sa/WumKcGo2I2vmw046u8pEbE=",
         "owner": "input-output-hk",
         "repo": "stackage.nix",
-        "rev": "46c04eb7316da867666b465690122c87a3e32021",
+        "rev": "9073b2c74c1189a544998867ac374dea9772af4e",
         "type": "github"
       },
       "original": {
