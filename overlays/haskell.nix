@@ -659,7 +659,7 @@ final: prev: {
                 inherit (callProjectResults) projectNix sourceRepos src;
               };
               buildProject = if final.stdenv.hostPlatform != final.stdenv.buildPlatform
-                then final.buildPackages.haskell-nix.cabalProject' projectModule
+                then final.pkgsBuildBuild.haskell-nix.cabalProject' projectModule
                 else project;
               pkg-set = if plan-pkgs ? configurationError
                 then {
@@ -937,7 +937,7 @@ final: prev: {
                 cache = if config.cache != null then config.cache else generatedCache;
             in let
               buildProject = if final.stdenv.hostPlatform != final.stdenv.buildPlatform
-                then final.buildPackages.haskell-nix.stackProject' projectModule
+                then final.pkgsBuildBuild.haskell-nix.stackProject' projectModule
                 else project;
               pkg-set = mkStackPkgSet
                 { stack-pkgs = importAndFilterProject callProjectResults;
