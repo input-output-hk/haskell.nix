@@ -24,21 +24,21 @@
       setup-depends = [
         (hsPkgs.pkgsBuildBuild.base or (pkgs.pkgsBuildBuild.base or (errorHandler.setupDepError "base")))
         (hsPkgs.pkgsBuildBuild.Cabal or (pkgs.pkgsBuildBuild.Cabal or (errorHandler.setupDepError "Cabal")))
-        ];
-      };
+      ];
+    };
     components = {
       "library" = {
         depends = [ (hsPkgs."rts" or (errorHandler.buildDepError "rts")) ];
-        libs = (pkgs.lib).optionals (system.isWindows) [
+        libs = pkgs.lib.optionals (system.isWindows) [
           (pkgs."user32" or (errorHandler.sysDepError "user32"))
           (pkgs."mingw32" or (errorHandler.sysDepError "mingw32"))
           (pkgs."mingwex" or (errorHandler.sysDepError "mingwex"))
-          ] ++ (pkgs.lib).optionals (system.isLinux) [
+        ] ++ pkgs.lib.optionals (system.isLinux) [
           (pkgs."gcc" or (errorHandler.sysDepError "gcc"))
           (pkgs."c" or (errorHandler.sysDepError "c"))
           (pkgs."m" or (errorHandler.sysDepError "m"))
-          ];
+        ];
         buildable = true;
-        };
       };
-    } // rec { src = (pkgs.lib).mkDefault ./.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ./.; }
