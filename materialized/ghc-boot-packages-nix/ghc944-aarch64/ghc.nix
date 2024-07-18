@@ -27,11 +27,11 @@
       description = "GHC's functionality can be useful for more things than just\ncompiling Haskell programs. Important use cases are programs\nthat analyse (and perhaps transform) Haskell code. Others\ninclude loading Haskell code dynamically in a GHCi-like manner.\nFor this reason, a lot of GHC's functionality is made available\nthrough this package.\n\nSee <https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler>\nfor more information.";
       buildType = "Custom";
       setup-depends = [
-        (hsPkgs.buildPackages.base or (pkgs.buildPackages.base or (errorHandler.setupDepError "base")))
-        (hsPkgs.buildPackages.Cabal or (pkgs.buildPackages.Cabal or (errorHandler.setupDepError "Cabal")))
-        (hsPkgs.buildPackages.directory or (pkgs.buildPackages.directory or (errorHandler.setupDepError "directory")))
-        (hsPkgs.buildPackages.process or (pkgs.buildPackages.process or (errorHandler.setupDepError "process")))
-        (hsPkgs.buildPackages.filepath or (pkgs.buildPackages.filepath or (errorHandler.setupDepError "filepath")))
+        (hsPkgs.pkgsBuildBuild.base or (pkgs.pkgsBuildBuild.base or (errorHandler.setupDepError "base")))
+        (hsPkgs.pkgsBuildBuild.Cabal or (pkgs.pkgsBuildBuild.Cabal or (errorHandler.setupDepError "Cabal")))
+        (hsPkgs.pkgsBuildBuild.directory or (pkgs.pkgsBuildBuild.directory or (errorHandler.setupDepError "directory")))
+        (hsPkgs.pkgsBuildBuild.process or (pkgs.pkgsBuildBuild.process or (errorHandler.setupDepError "process")))
+        (hsPkgs.pkgsBuildBuild.filepath or (pkgs.pkgsBuildBuild.filepath or (errorHandler.setupDepError "filepath")))
         ];
       };
     components = {
@@ -61,10 +61,10 @@
             (hsPkgs."unix" or (errorHandler.buildDepError "unix"))
             ] ++ (pkgs.lib).optional (flags.terminfo) (hsPkgs."terminfo" or (errorHandler.buildDepError "terminfo")));
         build-tools = (pkgs.lib).optionals (flags.build-tool-depends) [
-          (hsPkgs.buildPackages.alex.components.exes.alex or (pkgs.buildPackages.alex or (errorHandler.buildToolDepError "alex:alex")))
-          (hsPkgs.buildPackages.happy.components.exes.happy or (pkgs.buildPackages.happy or (errorHandler.buildToolDepError "happy:happy")))
-          (hsPkgs.buildPackages.genprimopcode.components.exes.genprimopcode or (pkgs.buildPackages.genprimopcode or (errorHandler.buildToolDepError "genprimopcode:genprimopcode")))
-          (hsPkgs.buildPackages.deriveConstants.components.exes.deriveConstants or (pkgs.buildPackages.deriveConstants or (errorHandler.buildToolDepError "deriveConstants:deriveConstants")))
+          (hsPkgs.pkgsBuildBuild.alex.components.exes.alex or (pkgs.pkgsBuildBuild.alex or (errorHandler.buildToolDepError "alex:alex")))
+          (hsPkgs.pkgsBuildBuild.happy.components.exes.happy or (pkgs.pkgsBuildBuild.happy or (errorHandler.buildToolDepError "happy:happy")))
+          (hsPkgs.pkgsBuildBuild.genprimopcode.components.exes.genprimopcode or (pkgs.pkgsBuildBuild.genprimopcode or (errorHandler.buildToolDepError "genprimopcode:genprimopcode")))
+          (hsPkgs.pkgsBuildBuild.deriveConstants.components.exes.deriveConstants or (pkgs.pkgsBuildBuild.deriveConstants or (errorHandler.buildToolDepError "deriveConstants:deriveConstants")))
           ];
         buildable = true;
         };
