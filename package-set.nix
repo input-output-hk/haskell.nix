@@ -1,5 +1,5 @@
 let f = { hackage, pkgs, pkg-def, pkg-def-extras ? [], modules ? [] }: let
-  buildModules = f { inherit hackage pkg-def pkg-def-extras modules; pkgs = pkgs.buildPackages; };
+  buildModules = f { inherit hackage pkg-def pkg-def-extras modules; pkgs = pkgs.pkgsBuildBuild; };
 in pkgs.lib.evalModules {
   modules = modules ++ [
     ({ config, lib, ... }: {

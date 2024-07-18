@@ -66,7 +66,7 @@
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
           ] ++ pkgs.lib.optional (!system.isWindows) (hsPkgs."unix" or (errorHandler.buildDepError "unix"));
           build-tools = [
-            (hsPkgs.buildPackages.unzip.components.exes.unzip or (pkgs.buildPackages.unzip or (errorHandler.buildToolDepError "unzip:unzip")))
+            (hsPkgs.pkgsBuildBuild.unzip.components.exes.unzip or (pkgs.pkgsBuildBuild.unzip or (errorHandler.buildToolDepError "unzip:unzip")))
           ];
           buildable = true;
         };

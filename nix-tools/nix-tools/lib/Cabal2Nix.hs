@@ -403,14 +403,14 @@ instance ToNixExpr SetupDependency where
   toNix (SetupDependency pkgName' LMainLibName) =
       -- TODO once https://github.com/haskell-nix/hnix/issues/52
       -- is reolved use something like:
-      -- [nix| hsPkgs.buildPackages.$((pkgName)) or pkgs.buildPackages.$((pkgName)) ]
+      -- [nix| hsPkgs.pkgsBuildBuild.$((pkgName)) or pkgs.pkgsBuildBuild.$((pkgName)) ]
       selectOr (mkSym hsPkgs) buildPackagesDotName
         (selectOr (mkSym pkgs) buildPackagesDotName (mkSym errorHandler @. setupDepError @@ mkStr pkg))
     where
       pkg = fromString . show . pretty $ pkgName'
-      buildPackagesDotName = mkSelector "buildPackages" <> mkSelector pkg
+      buildPackagesDotName = mkSelector "pkgsBuildBuild" <> mkSelector pkg
   toNix (SetupDependency pkgName' (LSubLibName l)) = selectOr (mkSym hsPkgs) (
-             mkSelector "buildPackages"
+             mkSelector "pkgsBuildBuild"
           <> mkSelector (quoted pkg)
           <> mkSelector "components"
           <> mkSelector "sublibs"
@@ -423,12 +423,12 @@ instance ToNixExpr SetupDependency where
 instance ToNixExpr BuildToolDependency where
   toNix (BuildToolDependency pkgName' componentName') =
       selectOr (mkSym hsPkgs) (
-             mkSelector "buildPackages"
+             mkSelector "pkgsBuildBuild"
           <> mkSelector pkg
           <> mkSelector "components"
           <> mkSelector "exes"
           <> mkSelector componentName)
-        (selectOr (mkSym pkgs) (mkSelector "buildPackages" <> mkSelector componentName)
+        (selectOr (mkSym pkgs) (mkSelector "pkgsBuildBuild" <> mkSelector componentName)
           (mkSym errorHandler @. buildToolDepError @@ mkStr (pkg <> ":" <> componentName)))
     where
       pkg = fromString . show . pretty $ pkgName'
