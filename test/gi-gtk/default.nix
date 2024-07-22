@@ -13,7 +13,9 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs rec {
-  meta.disabled = stdenv.hostPlatform.isGhcjs;
+  meta.disabled = stdenv.hostPlatform.isGhcjs
+    # Gtk cross compilation seems to be broken in nixpkgs
+    stdenv.hostPlatform.isWindows;
 
   ifdInputs = {
     inherit (project) plan-nix;
