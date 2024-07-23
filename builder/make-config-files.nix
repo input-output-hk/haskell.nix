@@ -135,6 +135,11 @@ let
       export HASKELL_GI_GIR_SEARCH_PATH
       export HASKELL_GI_TYPELIB_SEARCH_PATH
 
+      # Make `pkg-config` work for haskell-gi setup executables
+      PKG_CONFIG_EXE=$(mktemp -d)
+      ln -s $(${pkgs.which}/bin/which $PKG_CONFIG) $PKG_CONFIG_EXE/pkg-config
+      export PATH=$PATH:$PKG_CONFIG_EXE
+
     ''}
     ${ # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
        # However in `cabal.config` `cabal` requires `global` to be first.
