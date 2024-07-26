@@ -7,7 +7,9 @@ let
   project = project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "gi-gtk";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
+      constraints: filepath source
+    '';
   };
 
   packages = project.hsPkgs;
@@ -17,7 +19,10 @@ in recurseIntoAttrs rec {
     # Gtk cross compilation seems to be broken in nixpkgs
     || stdenv.hostPlatform.isWindows
     # We can't make static libraries for Gtk
-    || stdenv.hostPlatform.isMusl;
+    || stdenv.hostPlatform.isMusl
+    # Older versions of GHC fail for aarch64 with
+    # error: incompatible pointer to integer conversion assigning to 'ffi_arg' (aka 'unsigned long') from 'HsPtr' (aka 'void *') [-Wint-conversion]
+    || builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc928" "ghc948"] && stdenv.hostPlatform.isAarch64;
 
   ifdInputs = {
     inherit (project) plan-nix;
