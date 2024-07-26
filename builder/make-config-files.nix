@@ -1,4 +1,4 @@
-{ pkgs, stdenv, lib, haskellLib, ghc, nonReinstallablePkgs, runCommand, writeText, writeScript }@defaults:
+{ stdenv, lib, haskellLib, ghc, nonReinstallablePkgs, runCommand, writeText, writeScript }@defaults:
 
 { identifier, component, fullName, flags ? {}, needsProfiling ? false, enableDWARF ? false, chooseDrv ? drv: drv, nonReinstallablePkgs ? defaults.nonReinstallablePkgs }:
 
@@ -121,26 +121,7 @@ let
         fi
       fi
     done
-    ${ # Help haskell.nix find .gir and .typelib files when compiling for musl
-    lib.optionalString stdenv.hostPlatform.isMusl ''
 
-      for l in "''${pkgsHostTarget[@]}"; do
-        if [ -d "$l/share/gir-1.0" ]; then
-          HASKELL_GI_GIR_SEARCH_PATH="''${HASKELL_GI_GIR_SEARCH_PATH:+''${HASKELL_GI_GIR_SEARCH_PATH}:}$l/share/gir-1.0"
-        fi
-        if [ -d "$l/lib/girepository-1.0" ]; then
-          HASKELL_GI_TYPELIB_SEARCH_PATH="''${HASKELL_GI_TYPELIB_SEARCH_PATH:+''${HASKELL_GI_TYPELIB_SEARCH_PATH}:}$l/lib/girepository-1.0"
-        fi
-      done
-      export HASKELL_GI_GIR_SEARCH_PATH
-      export HASKELL_GI_TYPELIB_SEARCH_PATH
-
-      # Make `pkg-config` work for haskell-gi setup executables
-      PKG_CONFIG_EXE=$(mktemp -d)
-      ln -s $(${pkgs.which}/bin/which $PKG_CONFIG) $PKG_CONFIG_EXE/pkg-config
-      export PATH=$PATH:$PKG_CONFIG_EXE
-
-    ''}
     ${ # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
        # However in `cabal.config` `cabal` requires `global` to be first.
       flagsAndConfig "package-db" ["clear"]

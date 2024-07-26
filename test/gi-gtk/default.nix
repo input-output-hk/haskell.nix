@@ -15,7 +15,9 @@ let
 in recurseIntoAttrs rec {
   meta.disabled = stdenv.hostPlatform.isGhcjs
     # Gtk cross compilation seems to be broken in nixpkgs
-    || stdenv.hostPlatform.isWindows;
+    || stdenv.hostPlatform.isWindows
+    # We can't make static libraries for Gtk
+    || stdenv.hostPlatform.isMusl;
 
   ifdInputs = {
     inherit (project) plan-nix;
