@@ -116,7 +116,8 @@ in
 
   config.hsPkgs =
     { inherit (builder) shellFor makeConfigFiles ghcWithPackages ghcWithHoogle;
-      buildPackages = buildModules.config.hsPkgs;
+      buildPackages = buildModules.config.hsPkgs; # TODO perhaps remove this
+      pkgsBuildBuild = buildModules.config.hsPkgs;
     } //
     lib.mapAttrs
       (_name: pkg: if pkg == null then null else builder.build-package config pkg)
