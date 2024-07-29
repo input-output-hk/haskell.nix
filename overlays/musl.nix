@@ -41,6 +41,15 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
 
   openssl = prev.openssl.override { static = true; };
 
+  # Cups and tracker pull in systemd
+  gtk4 = (prev.gtk4.override {
+    cupsSupport = false;
+    trackerSupport = false;
+    gst_all_1 = { gst-plugins-bad = null; gst-plugins-base = null; };
+  }).overrideAttrs (oldAttrs: {
+    mesonFlags = oldAttrs.mesonFlags ++ [ "-Dmedia-gstreamer=disabled" ];
+  });
+
   icu = (prev.icu.overrideAttrs (old: { configureFlags = old.configureFlags ++ [ "--enable-static" "--disable-shared" ]; }));
 
   # Fails on cross compile
