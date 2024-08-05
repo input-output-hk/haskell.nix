@@ -2,7 +2,7 @@ diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
 index 348e5ccc21..339d169c89 100644
 --- a/rts/RtsSymbols.c
 +++ b/rts/RtsSymbols.c
-@@ -149,7 +149,11 @@
+@@ -149,7 +149,12 @@
        RTS_WIN64_ONLY(SymI_HasProto_redirect(             \
           __imp___acrt_iob_func, __rts_iob_func, true))   \
        RTS_WIN32_ONLY(SymI_HasProto_redirect(             \
@@ -11,7 +11,8 @@ index 348e5ccc21..339d169c89 100644
 +      SymI_NeedsProto(_tzset)                            \
 +      /* ^^ This one needed for time, tzset deprecated */\
 +      SymI_NeedsProto(tzset)                             \
-+      /* ^^ This one needed for unix-time           */
++      SymI_HasProto(strtoll)                             \
++      /* ^^ These two are needed for unix-time         */
 
  #define RTS_MINGW_COMPAT_SYMBOLS                         \
        SymI_HasProto_deprecated(access)                   \
