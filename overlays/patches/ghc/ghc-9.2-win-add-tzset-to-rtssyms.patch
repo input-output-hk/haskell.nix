@@ -2,7 +2,7 @@ diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
 index 534f30cd4c..9ec7e3a1e4 100644
 --- a/rts/RtsSymbols.c
 +++ b/rts/RtsSymbols.c
-@@ -183,7 +183,11 @@ extern char **environ;
+@@ -183,7 +183,12 @@ extern char **environ;
        SymI_HasProto(__mingw_vsnwprintf)                  \
        /* ^^ Need to figure out why this is needed.  */   \
        SymI_HasProto(__mingw_vfprintf)                    \
@@ -11,7 +11,8 @@ index 534f30cd4c..9ec7e3a1e4 100644
 +      SymI_NeedsProto(_tzset)                            \
 +      /* ^^ This one needed for time, tzset deprecated */\
 +      SymI_NeedsProto(tzset)                             \
-+      /* ^^ This one needed for unix-time           */
++      SymI_HasProto(strtoll)                             \
++      /* ^^ These two are needed for unix-time         */
 
  #define RTS_MINGW_COMPAT_SYMBOLS                         \
        SymI_HasProto_deprecated(access)                   \
