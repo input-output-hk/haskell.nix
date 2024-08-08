@@ -70,7 +70,7 @@ in {
                 from = start: final.lib.optional (versionAtLeast start);
                 until = end: final.lib.optional (versionLessThan end);
                 always = final.lib.optional true;
-                onDarwin = final.lib.optionals final.stdenv.targetPlatform.isDarwin; 
+                onDarwin = final.lib.optionals final.stdenv.targetPlatform.isDarwin;
                 onMusl = final.lib.optionals final.stdenv.targetPlatform.isMusl;
                 onWindows = final.lib.optionals final.stdenv.targetPlatform.isWindows;
                 onWindowsOrMusl = final.lib.optionals (final.stdenv.targetPlatform.isWindows || final.stdenv.targetPlatform.isMusl);
@@ -260,6 +260,20 @@ in {
 
                 # Fix issue loading windows dll using `.dll.a` file
                 ++ onWindows (fromUntil "9.4" "9.12" ./patches/ghc/ghc-9.10-windows-dll-dependent-symbol-type-fix.patch)
+                ++ onWindows (fromUntil "8.10" "8.12" ./patches/ghc/ghc-9.2-windows-dll-dependent-symbol-type-fix.patch)
+                ++ onWindows (fromUntil "8.10" "8.12" ./patches/ghc/0001-Graft-9.10.1-linker-in.patch)
+                ++ onWindows (fromUntil "8.10" "8.12" ./patches/ghc/0002-Disable-ReportMemoryMap.patch)
+                ++ onWindows (fromUntil "8.10" "8.12" ./patches/ghc/0003-StrHashTable-is-really-just-HashTable-facepalm.patch)
+                ++ onWindows (fromUntil "8.10" "8.12" ./patches/ghc/0004-Add-includes-rts-Linker.h-as-well.patch)
+                ++ onWindows (fromUntil "8.10" "8.12" ./patches/ghc/0005-Also-need-RtsSymbols.h.patch)
+                ++ onWindows (fromUntil "8.10" "8.12" ./patches/ghc/0006-Also-need-pathutils.patch)
+                ++ onWindows (fromUntil "8.10" "8.12" ./patches/ghc/0007-Can-not-have-RtsSymbols.h-without-RtsSymbols.c.patch)
+                ++ onWindows (fromUntil "8.10" "8.12" ./patches/ghc/0008-Needs-linker_verbose-flag.patch)
+                ++ onWindows (fromUntil "8.10" "8.12" ./patches/ghc/0009-Drop-non-existing-RtsSymbols.patch)
+                # ++ onWindows (fromUntil "8.10" "8.12" ./patches/ghc/0010-One-more-debug-flag-L.patch)
+                ++ onWindows (fromUntil "8.10" "8.12" ./patches/ghc/0011-Add-ENVIRON-check.patch)
+                ++ onWindows (fromUntil "8.10" "8.12" ./patches/ghc/0012-fixup-HAVE_DECL_ENVIRON.patch)
+                ++ onWindows (fromUntil "8.10" "8.12" ./patches/ghc/0013-add-STG_NORETURN-to-Stg.h.patch)
                 ;
         in ({
             ghc8107 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {

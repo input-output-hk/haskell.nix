@@ -1,0 +1,89 @@
+From bac56a912333e4c20fdccc6bfc40bf4f0c9f77fc Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Thu, 20 Jun 2024 02:18:05 +0000
+Subject: [PATCH 02/12] Disable ReportMemoryMap
+
+---
+ rts/Linker.c          | 2 +-
+ rts/linker/M32Alloc.c | 6 +++---
+ rts/linker/MMap.c     | 6 +++---
+ 3 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/rts/Linker.c b/rts/Linker.c
+index 5b0f05a..540daa2 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -34,7 +34,7 @@
+ #include "linker/MMap.h"
+ #include "PathUtils.h"
+ #include "CheckUnload.h" // createOCSectionIndices
+-#include "ReportMemoryMap.h"
++// #include "ReportMemoryMap.h"
+ 
+ #if !defined(mingw32_HOST_OS) && defined(HAVE_SIGNAL_H)
+ #include "posix/Signals.h"
+diff --git a/rts/linker/M32Alloc.c b/rts/linker/M32Alloc.c
+index 17d3d12..1bed5d9 100644
+--- a/rts/linker/M32Alloc.c
++++ b/rts/linker/M32Alloc.c
+@@ -11,7 +11,7 @@
+ #include "RtsUtils.h"
+ #include "linker/M32Alloc.h"
+ #include "linker/MMap.h"
+-#include "ReportMemoryMap.h"
++// #include "ReportMemoryMap.h"
+ 
+ #include <inttypes.h>
+ #include <stdlib.h>
+@@ -326,7 +326,7 @@ m32_alloc_page(void)
+     const size_t map_sz = pgsz * M32_MAP_PAGES;
+     uint8_t *chunk = mmapAnonForLinker(map_sz);
+     if (! is_okay_address(chunk + map_sz)) {
+-      reportMemoryMap();
++      // reportMemoryMap();
+       barf("m32_alloc_page: failed to allocate pages within 4GB of program text (got %p)", chunk);
+     }
+     IF_DEBUG(sanity, memset(chunk, 0xaa, map_sz));
+@@ -492,7 +492,7 @@ m32_alloc(struct m32_allocator_t *alloc, size_t size, size_t alignment)
+           sysErrorBelch("m32_alloc: Failed to map pages for %zd bytes", size);
+           return NULL;
+       } else if (! is_okay_address(page)) {
+-          reportMemoryMap();
++          // reportMemoryMap();
+           barf("m32_alloc: warning: Allocation of %zd bytes resulted in pages above 4GB (%p)",
+                size, page);
+       }
+diff --git a/rts/linker/MMap.c b/rts/linker/MMap.c
+index 30abad1..843cf2c 100644
+--- a/rts/linker/MMap.c
++++ b/rts/linker/MMap.c
+@@ -3,7 +3,7 @@
+ #include "sm/OSMem.h"
+ #include "linker/MMap.h"
+ #include "Trace.h"
+-#include "ReportMemoryMap.h"
++// #include "ReportMemoryMap.h"
+ 
+ #if RTS_LINKER_USE_MMAP
+ #include <sys/mman.h>
+@@ -290,7 +290,7 @@ doMmap(void *map_addr, size_t bytes, int prot, uint32_t flags, int fd, int offse
+     void * result = mmap(map_addr, bytes, prot, flags, fd, offset);
+     if (result == MAP_FAILED) {
+         sysErrorBelch("mmap %zx bytes at %p", bytes, map_addr);
+-        reportMemoryMap();
++        // reportMemoryMap();
+         errorBelch("Try specifying an address with +RTS -xm<addr> -RTS");
+         return NULL;
+     }
+@@ -350,7 +350,7 @@ mmapInRegion (
+         } else if (wrapped) {
+             // We failed to find a suitable mapping
+             munmap(result, bytes);
+-            reportMemoryMap();
++            // reportMemoryMap();
+             errorBelch("mmapForLinker: failed to mmap() memory below 2Gb; "
+                        "asked for %zu bytes at %p. "
+                        "Try specifying an address with +RTS -xm<addr> -RTS",
+-- 
+2.33.0
+

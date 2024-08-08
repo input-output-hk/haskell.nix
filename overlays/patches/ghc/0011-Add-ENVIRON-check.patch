@@ -1,0 +1,54 @@
+From b88586d77f1774f1c5da37b8eea09c4a9d6de062 Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Thu, 20 Jun 2024 03:23:55 +0000
+Subject: [PATCH 11/12] Add ENVIRON check
+
+---
+ aclocal.m4   | 18 ++++++++++++++++++
+ configure.ac |  3 +++
+ 2 files changed, 21 insertions(+)
+
+diff --git a/aclocal.m4 b/aclocal.m4
+index 14adbfa..7ff7e8d 100644
+--- a/aclocal.m4
++++ b/aclocal.m4
+@@ -2713,4 +2713,22 @@ AC_DEFUN([FIND_PYTHON],[
+     AC_SUBST([PythonCmd])
+ ])
+ 
++# FP_CHECK_ENVIRON
++# -----------------
++AC_DEFUN([FP_CHECK_ENVIRON],
++[
++  dnl--------------------------------------------------------------------
++  dnl * Check whether the libc headers provide a declaration for the
++  dnl environ symbol. If not then we will provide one in RtsSymbols.c.
++  dnl See #20512, #20577, #20861.
++  dnl
++  dnl N.B. Windows declares environ in <stdlib.h>; most others declare it
++  dnl in <unistd.h>.
++  dnl--------------------------------------------------------------------
++  AC_CHECK_DECLS([environ], [], [], [
++    #include <stdlib.h>
++    #include <unistd.h>
++  ])
++])
++
+ # LocalWords:  fi
+diff --git a/configure.ac b/configure.ac
+index 6eac557..ead69d0 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -931,6 +931,9 @@ AC_CHECK_HEADERS([sys/cpuset.h], [], [],
+ #endif
+ ]])
+ 
++dnl ** check whether a declaration for `environ` is provided by libc.
++FP_CHECK_ENVIRO
++
+ dnl ** check if it is safe to include both <time.h> and <sys/time.h>
+ AC_HEADER_TIME
+ 
+-- 
+2.33.0
+
