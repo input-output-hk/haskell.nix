@@ -1,6 +1,7 @@
 { pkgs, runCommand, cacert, index-state-hashes, haskellLib }:
 { name          ? src.name or null # optional name for better error messages
 , src
+, materialized-dir ? ../materialized
 , compiler-nix-name    # The name of the ghc compiler to use eg. "ghc884"
 , index-state   ? null # Hackage index-state, eg. "2019-10-10T00:00:00Z"
 , index-sha256  ? null # The hash of the truncated hackage index-state
@@ -698,6 +699,7 @@ let
     find $out -type d -empty -delete
   '');
 in {
-  inherit plan-json index-state-max src;
+  projectNix = plan-json;
+  inherit index-state-max src;
   inherit (fixedProject) sourceRepos extra-hackages;
 }

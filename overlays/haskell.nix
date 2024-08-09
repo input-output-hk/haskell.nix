@@ -646,7 +646,7 @@ final: prev: {
               inherit (config) compiler-nix-name compilerSelection evalPackages;
               selectedCompiler = (compilerSelection final.buildPackages).${compiler-nix-name};
 
-              plan-json = builtins.fromJSON (builtins.readFile (callProjectResults.plan-json + "/plan.json"));
+              plan-json = builtins.fromJSON (builtins.readFile (callProjectResults.projectNix + "/plan.json"));
               by-id = final.lib.listToAttrs (map (x: { name = x.id; value = x; }) plan-json.install-plan);
               to-key = p: if p.type == "pre-existing"
                           then p.pkg-name
@@ -682,12 +682,11 @@ final: prev: {
                     };
                   };
               callProjectResults = callCabalProjectToNix config;
-              plan-pkgs = if !builtins.pathExists (callProjectResults.plan-json + "/plan.json")
+              plan-pkgs = if !builtins.pathExists (callProjectResults.projectNix + "/plan.json")
                 then
                   # TODO remove this once all the materialized files are updated
                   importAndFilterProject {
-                    projectNix = callProjectResults.plan-json;
-                    inherit (callProjectResults) sourceRepos src;
+                    inherit (callProjectResults) projectNix sourceRepos src;
                   }
                 else {
                   pkgs = (hackage: {
@@ -697,8 +696,8 @@ final: prev: {
                           name = to-key p;
                           value.revision =
                             {hsPkgs, ...}@args:
-                              let cabal2nix = (if builtins.pathExists (callProjectResults.plan-json + "/cabal-files/${p.pkg-name}.nix")
-                                then import (callProjectResults.plan-json + "/cabal-files/${p.pkg-name}.nix")
+                              let cabal2nix = (if builtins.pathExists (callProjectResults.projectNix + "/cabal-files/${p.pkg-name}.nix")
+                                then import (callProjectResults.projectNix + "/cabal-files/${p.pkg-name}.nix")
                                 else (((hackage.${p.pkg-name}).${p.pkg-version}).revisions).default) (args // { hsPkgs = {}; });
                               in cabal2nix // {
                                 flags = p.flags;
@@ -720,7 +719,7 @@ final: prev: {
                           name = to-key p;
                           value =
                             {hsPkgs, ...}@args:
-                              let cabal2nix = import (callProjectResults.plan-json + "/.plan.nix/${p.pkg-name}.nix") (args // { hsPkgs = {}; });
+                              let cabal2nix = import (callProjectResults.projectNix + "/.plan.nix/${p.pkg-name}.nix") (args // { hsPkgs = {}; });
                               in builtins.removeAttrs cabal2nix ["src"] // {
                                 flags = p.flags;
                                 components = getComponents cabal2nix.components hsPkgs p;
