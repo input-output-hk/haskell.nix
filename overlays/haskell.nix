@@ -713,7 +713,7 @@ final: prev: {
                       inherit (selectedCompiler) version;
                     };
                   });
-                  extras = (hackage: {
+                  extras = (_hackage: {
                     packages = final.lib.listToAttrs (
                       final.lib.concatMap (p:
                         final.lib.optional (p.type == "configured" && p.style == "local") {
