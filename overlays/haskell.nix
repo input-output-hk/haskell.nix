@@ -151,17 +151,8 @@ final: prev: {
                 pkg-def = excludeBootPackages compiler-nix-name plan-pkgs.pkgs;
                 patchesModule = ghcHackagePatches.${compiler-nix-name'} or {};
                 package.compiler-nix-name.version = (compilerSelection final.buildPackages).${compiler-nix-name'}.version;
-                plan.compiler-nix-name.version = (compilerSelection final.buildPackages).${(plan-pkgs.pkgs hackage).compiler.nix-name}.version;
                 withMsg = final.lib.assertMsg;
             in
-              # Check that the GHC version of the selected compiler matches the one of the plan
-              assert (withMsg
-                (package.compiler-nix-name.version
-                  == plan.compiler-nix-name.version)
-                ''
-                The compiler versions for the package (${package.compiler-nix-name.version}) and the plan (${plan.compiler-nix-name.version}) don't match.
-                       Make sure you didn't forget to update plan-sha256.''
-              );
               mkPkgSet {
                 inherit pkg-def;
                 pkg-def-extras = [ plan-pkgs.extras
@@ -653,11 +644,156 @@ final: prev: {
             { config, options, ... }:
             let
               inherit (config) compiler-nix-name compilerSelection evalPackages;
+              selectedCompiler = (compilerSelection final.buildPackages).${compiler-nix-name};
 
+              plan-json = builtins.fromJSON (builtins.readFile (callProjectResults.plan-json + "/plan.json"));
+              by-id = final.lib.listToAttrs (map (x: { name = x.id; value = x; }) plan-json.install-plan);
+              to-key = p: if p.type == "pre-existing"
+                          then p.pkg-name
+                          else p.id;
+              getComponents = cabal2nixComponents: hsPkgs: p:
+                let
+                  components = p.components or { ${p.component-name} = { inherit (p) depends exe-depends; }; };
+                  lookupDependency = hsPkgs: d:
+                    if by-id.${d}.component-name or "lib" == "lib"
+                      then hsPkgs.${to-key by-id.${d}}
+                      else hsPkgs.${to-key by-id.${d}}.components.sublibs.${final.lib.removePrefix "lib:" by-id.${d}.component-name};
+                  lookupExeDependency = d:
+                    hsPkgs.pkgsBuildBuild.${to-key by-id.${d}}.components.exes.${final.lib.removePrefix "exe:" by-id.${d}.component-name};
+                  componentsWithPrefix = collectionName: prefix:
+                    final.lib.listToAttrs (final.lib.concatLists (final.lib.mapAttrsToList (n: c:
+                      final.lib.optional (final.lib.hasPrefix "${prefix}:" n) (
+                        let
+                          name = final.lib.removePrefix "${prefix}:" n;
+                          value = (if cabal2nixComponents == null then {} else cabal2nixComponents.${collectionName}.${name}) // {
+                            buildable = true;
+                            depends = map (lookupDependency hsPkgs) c.depends;
+                            build-tools = map lookupExeDependency c.exe-depends;
+                          };
+                        in { inherit name value; }
+                      )) components));
+                in
+                  final.lib.mapAttrs componentsWithPrefix haskellLib.componentPrefix
+                  // final.lib.optionalAttrs (components ? lib) {
+                    library = (if cabal2nixComponents == null then {} else cabal2nixComponents.library) // {
+                      buildable = true;
+                      depends = map (lookupDependency hsPkgs) components.lib.depends;
+                      build-tools = map lookupExeDependency components.lib.exe-depends;
+                    };
+                  };
               callProjectResults = callCabalProjectToNix config;
-              plan-pkgs = importAndFilterProject {
-                inherit (callProjectResults) projectNix sourceRepos src;
-              };
+              plan-pkgs = if !builtins.pathExists (callProjectResults.plan-json + "/plan.json")
+                then
+                  # TODO remove this once all the materialized files are updated
+                  importAndFilterProject {
+                    projectNix = callProjectResults.plan-json;
+                    inherit (callProjectResults) sourceRepos src;
+                  }
+                else {
+                  pkgs = (hackage: {
+                    packages = final.lib.listToAttrs (
+                      final.lib.concatMap (p:
+                        final.lib.optional (p.type == "pre-existing" || (p.type == "configured" && (p.style == "global" || p.style == "inplace") )) {
+                          name = to-key p;
+                          value.revision =
+                            {hsPkgs, ...}@args:
+                              let cabal2nix = (if builtins.pathExists (callProjectResults.plan-json + "/cabal-files/${p.pkg-name}.nix")
+                                then import (callProjectResults.plan-json + "/cabal-files/${p.pkg-name}.nix")
+                                else (((hackage.${p.pkg-name}).${p.pkg-version}).revisions).default) (args // { hsPkgs = {}; });
+                              in cabal2nix // {
+                                flags = p.flags;
+                                components = getComponents cabal2nix.components hsPkgs p;
+                                package = cabal2nix.package // {
+                                  setup-depends = map (lookupDependency hsPkgs.pkgsBuildBuild) (p.setup.depends or []);
+                                  # TODO = map lookupExeDependency (p.setup.exe-depends or []);
+                                };
+                              };
+                        }) plan-json.install-plan);
+                    compiler = {
+                      inherit (selectedCompiler) version;
+                    };
+                  });
+                  extras = (hackage: {
+                    packages = final.lib.listToAttrs (
+                      final.lib.concatMap (p:
+                        final.lib.optional (p.type == "configured" && p.style == "local") {
+                          name = to-key p;
+                          value =
+                            {hsPkgs, ...}@args:
+                              let cabal2nix = import (callProjectResults.plan-json + "/.plan.nix/${p.pkg-name}.nix") (args // { hsPkgs = {}; });
+                              in builtins.removeAttrs cabal2nix ["src"] // {
+                                flags = p.flags;
+                                components = getComponents cabal2nix.components hsPkgs p;
+                                package = cabal2nix.package // {
+                                  setup-depends = map (lookupDependency hsPkgs.pkgsBuildBuild) (p.setup.depends or []);
+                                  # TODO = map lookupExeDependency (p.setup.exe-depends or []);
+                                };
+                              };
+                        }) plan-json.install-plan);
+                  });
+                  modules = [{
+                    preExistingPkgs =
+                      final.lib.concatMap (p:
+                        final.lib.optional (p.type == "pre-existing") p.pkg-name) plan-json.install-plan;
+                    }
+                    ({lib, ...}: {
+                      packages = final.lib.listToAttrs (map (p:
+                        let components =
+                          if p ? component-name
+                            then { ${p.component-name} = { inherit (p) depends exe-depends; }; }
+                            else p.components or {};
+                        in {
+                            name = to-key p;
+                            value.components = final.lib.mapAttrs (type: x:
+                                if type == "library"
+                                  then { planned = lib.mkOverride 900 true; }
+                                  else
+                                    final.lib.mapAttrs (_: _: {
+                                      planned = lib.mkOverride 900 true;
+                                    }) x
+                              ) (getComponents null hsPkgs p);
+                          }) plan-json.install-plan);
+                    })
+                    ({config, ...}: {
+                      hsPkgs = builtins.removeAttrs (builtins.mapAttrs (packageName: packageTargets:
+                          let
+                            byVersion = builtins.groupBy (x: x.pkg-version) packageTargets;
+                            versions = builtins.attrNames byVersion;
+                          in if builtins.length versions != 1
+                            then throw "Multiple versions for ${packageName} ${builtins.toJSON versions}"
+                            else let
+                              components = builtins.listToAttrs (map (x: { name = x.component-name; value = x.available; }) packageTargets);
+                              lookupComponent = collectionName: name: available:
+                                let attrPath =
+                                  if collectionName == ""
+                                    then "${packageName}.components.library"
+                                    else "${packageName}.components.${collectionName}.${name}";
+                                in if builtins.length available != 1
+                                  then throw "Multiple avaialble targets for ${attrPath}"
+                                else if builtins.isString (builtins.head available)
+                                  then throw "${builtins.head available} looking for ${attrPath}"
+                                else if collectionName == ""
+                                  then config.hsPkgs.${(builtins.head available).id}.components.library
+                                else config.hsPkgs.${(builtins.head available).id}.components.${collectionName}.${name};
+                              componentsWithPrefix = collectionName: prefix:
+                                final.lib.listToAttrs (final.lib.concatLists (final.lib.mapAttrsToList (n: available:
+                                  final.lib.optional (final.lib.hasPrefix "${prefix}:" n) (
+                                    let
+                                      name = final.lib.removePrefix "${prefix}:" n;
+                                      value = lookupComponent collectionName name available;
+                                    in { inherit name value; }
+                                  )) components));
+                            in {
+                              components =
+                                  final.lib.mapAttrs componentsWithPrefix haskellLib.componentPrefix
+                                  // final.lib.optionalAttrs (components ? lib) {
+                                    library = lookupComponent "" "" components.lib;
+                                  };
+                              })
+                              (builtins.groupBy (x: x.pkg-name) plan-json.targets)) config.preExistingPkgs;
+                    })
+                  ];
+                };
               buildProject = if final.stdenv.hostPlatform != final.stdenv.buildPlatform
                 then final.pkgsBuildBuild.haskell-nix.cabalProject' projectModule
                 else project;
@@ -682,7 +818,7 @@ final: prev: {
                         else if config.ghc != null
                           then config.ghc
                         else
-                          final.lib.mkDefault (config.compilerSelection final.buildPackages).${compiler-nix-name};
+                          final.lib.mkDefault selectedCompiler;
                       compiler.nix-name = final.lib.mkForce config.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
                     } ];
