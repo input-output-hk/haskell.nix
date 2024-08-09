@@ -14,7 +14,7 @@ import Distribution.Client.NixStyleOptions (NixStyleFlags (..), defaultNixStyleF
 import Distribution.Client.ProjectConfig
 import Distribution.Client.ProjectOrchestration
 import Distribution.Client.ProjectPlanOutput (writePlanExternalRepresentation)
-import Distribution.Client.ProjectPlanning (ElaboratedConfiguredPackage (..), rebuildInstallPlan)
+import Distribution.Client.ProjectPlanning (ElaboratedConfiguredPackage (..), rebuildInstallPlan, availableTargets)
 import Distribution.Client.Setup
 import Distribution.Client.Types.PackageLocation (PackageLocation (..))
 import Distribution.Client.Types.Repo (LocalRepo (..), RemoteRepo (..), Repo (..))
@@ -74,7 +74,7 @@ installPlanAction verbosity cliConfig = do
 
   -- Write plan.json
   Cabal.notice verbosity $ "Writing plan.json to " ++ distProjectCacheFile distDirLayout "plan.json"
-  writePlanExternalRepresentation distDirLayout elaboratedPlan elaboratedSharedConfig
+  writePlanExternalRepresentation distDirLayout elaboratedPlan elaboratedSharedConfig (availableTargets elaboratedPlan)
 
   -- Write cabal.freeze
   let freezeConfig = projectFreezeConfig elaboratedPlan totalIndexState activeRepos
