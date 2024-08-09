@@ -24,6 +24,13 @@ allow-newer:
 
 source-repository-package
     type: git
+    location: https://github.com/haskell/cabal.git
+    tag: c0647bc914928ab6362278c73f17b084ca3ed9ab
+    subdir: cabal-install
+    --sha256: sha256-BQs6ciCKWNzsEdUewEvUu4lcyrI5DH7abKzM4035lSc=
+
+source-repository-package
+    type: git
     location: https://github.com/michaelpj/hackage-db.git
     tag: f3b9240212b036391871e4ea09891e91efcea7a1
     --sha256: sha256-n0ATmkwtR68E2FuZK3QIQgZirVmWbd21vIQmzhGKsRw=
