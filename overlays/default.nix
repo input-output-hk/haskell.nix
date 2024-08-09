@@ -48,7 +48,7 @@ let
         static-nix-tools-for-default-setup = static-nix-tools' ../nix-tools-static-for-default-setup.nix;
 
         # Version of nix-tools built with a pinned version of haskell.nix.
-        pinned-nix-tools-lib = (import (final.haskell-nix.sources.flake-compat) {
+        pinned-nix-tools-lib = (import final.haskell-nix.sources.flake-compat {
             pkgs = final;
             inherit (final) system;
             src = ../nix-tools;
@@ -63,7 +63,7 @@ let
           prev.haskell-nix // {
             inherit (nix-tools-pkgs) nix-tools nix-tools-set;
             # either nix-tools from its overlay or from the tarball.
-            nix-tools-unchecked = static-nix-tools// {
+            nix-tools-unchecked = static-nix-tools // {
               exes =  static-nix-tools.exes // {
                 inherit (static-nix-tools-for-default-setup.exes) default-setup default-setup-ghcjs;
               };
