@@ -682,7 +682,7 @@ final: prev: {
                     };
                   };
               callProjectResults = callCabalProjectToNix config;
-              nixFilesDir = callProjectResults.projectNix + callProjectResults.src.origSubDir;
+              nixFilesDir = callProjectResults.projectNix + callProjectResults.src.origSubDir or "";
               plan-pkgs = if !builtins.pathExists (callProjectResults.projectNix + "/plan.json")
                 then
                   # TODO remove this once all the materialized files are updated
@@ -732,7 +732,7 @@ final: prev: {
                               in builtins.removeAttrs cabal2nix ["src"] // final.lib.optionalAttrs (p ? pkg-src-sha256) {
                                 sha256 = p.pkg-src-sha256;
                               } // final.lib.optionalAttrs (p.pkg-src.type or "" == "local") {
-                                src = callProjectResults.src + final.lib.removePrefix "${callProjectResults.src.origSubDir}/." p.pkg-src.path;
+                                src = callProjectResults.src + final.lib.removePrefix "${callProjectResults.src.origSubDir or ""}/." p.pkg-src.path;
                               } // {
                                 flags = p.flags;
                                 components = getComponents cabal2nix.components hsPkgs p;
