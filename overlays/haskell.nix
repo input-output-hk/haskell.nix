@@ -682,6 +682,7 @@ final: prev: {
                     };
                   };
               callProjectResults = callCabalProjectToNix config;
+              nixFilesDir = callProjectResults.projectNix + callProjectResults.src.origSubDir;
               plan-pkgs = if !builtins.pathExists (callProjectResults.projectNix + "/plan.json")
                 then
                   # TODO remove this once all the materialized files are updated
@@ -696,13 +697,21 @@ final: prev: {
                           name = to-key p;
                           value.revision =
                             {hsPkgs, ...}@args:
-                              let cabal2nix = (if builtins.pathExists (callProjectResults.projectNix + "/cabal-files/${p.pkg-name}.nix")
-                                then import (callProjectResults.projectNix + "/cabal-files/${p.pkg-name}.nix")
+                              let cabal2nix = (
+                                if builtins.pathExists (nixFilesDir + "/cabal-files/${p.pkg-name}.nix")
+                                  then import (nixFilesDir + "/cabal-files/${p.pkg-name}.nix")
+                                else if builtins.pathExists (nixFilesDir + "/.plan.nix/${p.pkg-name}.nix")
+                                  then import (nixFilesDir + "/.plan.nix/${p.pkg-name}.nix")
                                 else (((hackage.${p.pkg-name}).${p.pkg-version}).revisions).default) (args // { hsPkgs = {}; });
-                              in cabal2nix // {
+                              in builtins.removeAttrs cabal2nix ["src"] // final.lib.optionalAttrs (p ? pkg-src-sha256) {
+                                sha256 = p.pkg-src-sha256;
+                              } // final.lib.optionalAttrs (p.pkg-src.type or "" == "source-repo") {
+                                src = final.lib.lists.elemAt callProjectResults.sourceRepos (final.lib.strings.toInt p.pkg-src.source-repo.location);
+                              } // {
                                 flags = p.flags;
                                 components = getComponents cabal2nix.components hsPkgs p;
                                 package = cabal2nix.package // {
+                                  isProject = false;
                                   setup-depends = map (lookupDependency hsPkgs.pkgsBuildBuild) (p.setup.depends or []);
                                   # TODO = map lookupExeDependency (p.setup.exe-depends or []);
                                 };
@@ -719,11 +728,16 @@ final: prev: {
                           name = to-key p;
                           value =
                             {hsPkgs, ...}@args:
-                              let cabal2nix = import (callProjectResults.projectNix + "/.plan.nix/${p.pkg-name}.nix") (args // { hsPkgs = {}; });
-                              in builtins.removeAttrs cabal2nix ["src"] // {
+                              let cabal2nix = import (nixFilesDir + "/.plan.nix/${p.pkg-name}.nix") (args // { hsPkgs = {}; });
+                              in builtins.removeAttrs cabal2nix ["src"] // final.lib.optionalAttrs (p ? pkg-src-sha256) {
+                                sha256 = p.pkg-src-sha256;
+                              } // final.lib.optionalAttrs (p.pkg-src.type or "" == "local") {
+                                src = callProjectResults.src + final.lib.removePrefix "${callProjectResults.src.origSubDir}/." p.pkg-src.path;
+                              } // {
                                 flags = p.flags;
                                 components = getComponents cabal2nix.components hsPkgs p;
                                 package = cabal2nix.package // {
+                                  isProject = true;
                                   setup-depends = map (lookupDependency hsPkgs.pkgsBuildBuild) (p.setup.depends or []);
                                   # TODO = map lookupExeDependency (p.setup.exe-depends or []);
                                 };
