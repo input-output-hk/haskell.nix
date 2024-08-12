@@ -775,7 +775,7 @@ final: prev: {
                           in if builtins.length versions != 1
                             then throw "Multiple versions for ${packageName} ${builtins.toJSON versions}"
                             else let
-                              components = builtins.listToAttrs (map (x: { name = x.component-name; value = x.available; }) packageTargets);
+                              componentsByName = builtins.listToAttrs (map (x: { name = x.component-name; value = x.available; }) packageTargets);
                               lookupComponent = collectionName: name: available:
                                 let attrPath =
                                   if collectionName == ""
@@ -795,13 +795,17 @@ final: prev: {
                                       name = final.lib.removePrefix "${prefix}:" n;
                                       value = lookupComponent collectionName name available;
                                     in { inherit name value; }
-                                  )) components));
-                            in {
-                              components =
+                                  )) componentsByName));
+                            in rec {
+                                identifier = { name = packageName; version = builtins.head versions; };
+                                components =
                                   final.lib.mapAttrs componentsWithPrefix haskellLib.componentPrefix
-                                  // final.lib.optionalAttrs (components ? lib) {
-                                    library = lookupComponent "" "" components.lib;
+                                  // final.lib.optionalAttrs (componentsByName ? lib) {
+                                    library = lookupComponent "" "" componentsByName.lib;
                                   };
+                                checks = final.recurseIntoAttrs (builtins.mapAttrs
+                                  (_: d: haskellLib.check d)
+                                    (final.lib.filterAttrs (_: d: d.config.doCheck) components.tests));
                               })
                               (builtins.groupBy (x: x.pkg-name) plan-json.targets)) config.preExistingPkgs;
                     })
