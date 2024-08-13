@@ -659,7 +659,7 @@ final: prev: {
                 hsPkgs.pkgsBuildBuild.${to-key by-id.${d}}.components.exes.${final.lib.removePrefix "exe:" by-id.${d}.component-name};
               getComponents = cabal2nixComponents: hsPkgs: p:
                 let
-                  components = p.components or { ${p.component-name} = { inherit (p) depends exe-depends; }; };
+                  components = p.components or { ${p.component-name or "lib"} = { inherit (p) depends exe-depends; }; };
                   componentsWithPrefix = collectionName: prefix:
                     final.lib.listToAttrs (final.lib.concatLists (final.lib.mapAttrsToList (n: c:
                       final.lib.optional (final.lib.hasPrefix "${prefix}:" n) (
@@ -749,6 +749,16 @@ final: prev: {
                       final.lib.concatMap (p:
                         final.lib.optional (p.type == "pre-existing") p.pkg-name) plan-json.install-plan;
                     }
+                    ({config, ...}: {
+                      packages = final.lib.listToAttrs (map (p: {
+                        name = to-key p;
+                        value.components = final.lib.optionalAttrs (config.packages ? ${p.pkg-name}) (
+                          builtins.mapAttrs (_: x: builtins.mapAttrs (_: x: final.lib.mkOverride 990 x)
+                            (builtins.removeAttrs x ["buildable" "planned" "depends" "build-tools"]))
+                              (final.lib.filterAttrs (_: x: x != null) config.packages.${p.pkg-name}.components)
+                        );
+                      }) (final.lib.filter (p: to-key p != p.pkg-name) plan-json.install-plan));
+                    })
                     ({lib, ...}: {
                       packages = final.lib.listToAttrs (map (p:
                         let components =
