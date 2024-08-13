@@ -753,11 +753,14 @@ final: prev: {
                     ({config, ...}: {
                       packages = final.lib.listToAttrs (map (p: {
                         name = to-key p;
-                        value.components = final.lib.optionalAttrs (config.packages ? ${p.pkg-name}) (
-                          builtins.mapAttrs (_: x: builtins.mapAttrs (_: x: final.lib.mkOverride 990 x)
-                            (builtins.removeAttrs x ["buildable" "planned" "depends" "build-tools"]))
-                              (final.lib.filterAttrs (_: x: x != null) config.packages.${p.pkg-name}.components)
-                        );
+                        value = {
+                            components = final.lib.optionalAttrs (config.packages ? ${p.pkg-name}) (
+                              builtins.mapAttrs (_: x: builtins.mapAttrs (_: x: final.lib.mkOverride 990 x)
+                                (builtins.removeAttrs x ["buildable" "planned" "depends" "build-tools"]))
+                                  (final.lib.filterAttrs (_: x: x != null) config.packages.${p.pkg-name}.components));
+                          } // builtins.mapAttrs (n: _:
+                            final.lib.mkIf (config.packages ? ${p.pkg-name}) (final.lib.mkOverride 995 config.packages.${p.pkg-name}.${n}))
+                            (import ../modules/package-options.nix { inherit haskellLib; inherit (final) lib; }).options;
                       }) (final.lib.filter (p: to-key p != p.pkg-name) plan-json.install-plan));
                     })
                     ({lib, ...}: {
