@@ -656,7 +656,8 @@ final: prev: {
                   then hsPkgs.${to-key by-id.${d}}
                   else hsPkgs.${to-key by-id.${d}}.components.sublibs.${final.lib.removePrefix "lib:" by-id.${d}.component-name};
               lookupExeDependency = hsPkgs: d:
-                hsPkgs.pkgsBuildBuild.${to-key by-id.${d}}.components.exes.${final.lib.removePrefix "exe:" by-id.${d}.component-name};
+                # Try to lookup by ID, but if that fails use the name (currently a different plan is used by pkgsBuildBuild when cross compiling)
+                (hsPkgs.pkgsBuildBuild.${to-key by-id.${d}} or hsPkgs.pkgsBuildBuild.${by-id.${d}.pkg-name}).components.exes.${final.lib.removePrefix "exe:" by-id.${d}.component-name};
               getComponents = cabal2nixComponents: hsPkgs: p:
                 let
                   components = p.components or { ${p.component-name or "lib"} = { inherit (p) depends exe-depends; }; };
