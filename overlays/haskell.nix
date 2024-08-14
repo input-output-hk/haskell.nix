@@ -712,6 +712,7 @@ final: prev: {
                                 flags = p.flags;
                                 components = getComponents cabal2nix.components hsPkgs p;
                                 package = cabal2nix.package // {
+                                  identifier = { name = p.pkg-name; version = p.pkg-version; };
                                   isProject = false;
                                   setup-depends = map (lookupDependency hsPkgs.pkgsBuildBuild) (p.components.setup.depends or []);
                                   # TODO = map (lookupExeDependency hsPkgs.pkgsBuildBuild) (p.components.setup.exe-depends or []);
@@ -738,6 +739,7 @@ final: prev: {
                                 flags = p.flags;
                                 components = getComponents cabal2nix.components hsPkgs p;
                                 package = cabal2nix.package // {
+                                  identifier = { name = p.pkg-name; version = p.pkg-version; };
                                   isProject = true;
                                   setup-depends = map (lookupDependency hsPkgs.pkgsBuildBuild) (p.components.setup.depends or []);
                                   # TODO = map (lookupExeDependency hsPkgs.pkgsBuildBuild) (p.components.setup.exe-depends or []);
@@ -767,9 +769,9 @@ final: prev: {
                                   library = mapOptions components.library;
                                 } // final.lib.optionalAttrs (components.setup or null != null) {
                                   setup = mapOptions components.setup;
-                                } // builtins.mapAttrs (ctype: cs: builtins.mapAttrs (cname: c: __trace "${ctype} ${cname}" mapOptions c) cs) (builtins.removeAttrs components ["library" "setup"]));
+                                } // builtins.mapAttrs (ctype: cs: builtins.mapAttrs (cname: c: mapOptions c) cs) (builtins.removeAttrs components ["library" "setup"]));
                           } // builtins.mapAttrs (n: _:
-                            final.lib.mkIf (config.packages ? ${p.pkg-name}) (final.lib.mkOverride (if n == "src" then  90 else 995) config.packages.${p.pkg-name}.${n}))
+                            final.lib.mkIf (config.packages ? ${p.pkg-name}) (final.lib.mkOverride (if n == "src" then (if config.packages.${p.pkg-name}.src != null then 90 else 10000) else 995) config.packages.${p.pkg-name}.${n}))
                             ((import ../modules/package-options.nix { inherit haskellLib; inherit (final) lib; }).options // { src = {}; });
                       }) (final.lib.filter (p: to-key p != p.pkg-name) plan-json.install-plan));
                     })
