@@ -1,4 +1,4 @@
-{ lib, config, pkgs, haskellLib, ... }:
+{ lib, options, config, pkgs, haskellLib, ... }:
 
 # Work around issue that can cause _lots_ of files to be copied into the store.
 # See https://github.com/NixOS/nixpkgs/pull/64691
@@ -209,12 +209,15 @@ in
     };
 
     src = lib.mkOption {
-      type = types.either path types.package;
+      type = types.nullOr (types.either path types.package);
       default =
-        pkgs.fetchurl {
-          url = "mirror://hackage/${config.name}.tar.gz";
-          inherit (config) sha256;
-        };
+        if options.package.identifier.name.isDefined && options.package.identifier.version.isDefined && options.sha256.isDefined
+          then
+             pkgs.fetchurl {
+              url = "mirror://hackage/${config.name}.tar.gz";
+              inherit (config) sha256;
+            }
+          else null;
       defaultText = ''
         pkgs.fetchurl {
           url = "mirror://hackage/$'{config.name}.tar.gz";
