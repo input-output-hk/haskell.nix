@@ -755,12 +755,22 @@ final: prev: {
                         name = to-key p;
                         value = {
                             components = final.lib.optionalAttrs (config.packages ? ${p.pkg-name}) (
-                              builtins.mapAttrs (_: x: builtins.mapAttrs (_: x: final.lib.mkOverride 990 x)
-                                (builtins.removeAttrs x ["buildable" "planned" "depends" "build-tools"]))
-                                  (final.lib.filterAttrs (_: x: x != null) config.packages.${p.pkg-name}.components));
+                              let
+                                inherit (config.packages.${p.pkg-name}) components;
+                                mapOptions = c:
+                                  builtins.mapAttrs (_: x: final.lib.mkOverride 990 x)
+                                    (builtins.removeAttrs c ["buildable" "planned" "depends" "build-tools"]) //
+                                  builtins.mapAttrs (n: x: final.lib.mkOverride 90 x) (
+                                    final.lib.filterAttrs (n: x: builtins.elem n ["depends" "build-tools"] && builtins.length x != 0) c);
+                              in
+                                final.lib.optionalAttrs (components.library or null != null) {
+                                  library = mapOptions components.library;
+                                } // final.lib.optionalAttrs (components.setup or null != null) {
+                                  setup = mapOptions components.setup;
+                                } // builtins.mapAttrs (ctype: cs: builtins.mapAttrs (cname: c: __trace "${ctype} ${cname}" mapOptions c) cs) (builtins.removeAttrs components ["library" "setup"]));
                           } // builtins.mapAttrs (n: _:
-                            final.lib.mkIf (config.packages ? ${p.pkg-name}) (final.lib.mkOverride 995 config.packages.${p.pkg-name}.${n}))
-                            (import ../modules/package-options.nix { inherit haskellLib; inherit (final) lib; }).options;
+                            final.lib.mkIf (config.packages ? ${p.pkg-name}) (final.lib.mkOverride (if n == "src" then  90 else 995) config.packages.${p.pkg-name}.${n}))
+                            ((import ../modules/package-options.nix { inherit haskellLib; inherit (final) lib; }).options // { src = {}; });
                       }) (final.lib.filter (p: to-key p != p.pkg-name) plan-json.install-plan));
                     })
                     ({lib, ...}: {
