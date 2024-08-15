@@ -736,8 +736,8 @@ final: prev: {
                               in builtins.removeAttrs cabal2nix ["src"] // final.lib.optionalAttrs (p ? pkg-src-sha256) {
                                 sha256 = p.pkg-src-sha256;
                               } // final.lib.optionalAttrs (p.pkg-src.type or "" == "local") {
-                                src = if final.lib.hasPrefix "/" p.pkg-src.path
-                                  then p.pkg-src.path
+                                src = if final.lib.hasPrefix "/" p.pkg-src.path && !final.lib.hasPrefix "${callProjectResults.src.origSubDir or ""}/." p.pkg-src.path
+                                  then __trace p.pkg-src.path p.pkg-src.path
                                   else callProjectResults.src + final.lib.removePrefix "${callProjectResults.src.origSubDir or ""}/." p.pkg-src.path;
                               } // {
                                 flags = p.flags;
