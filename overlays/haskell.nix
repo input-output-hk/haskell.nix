@@ -662,7 +662,7 @@ final: prev: {
                 (hsPkgs.pkgsBuildBuild.${to-key by-id.${d}} or hsPkgs.pkgsBuildBuild.${by-id.${d}.pkg-name}).components.exes.${final.lib.removePrefix "exe:" by-id.${d}.component-name};
               getComponents = cabal2nixComponents: hsPkgs: p:
                 let
-                  components = p.components or { ${p.component-name or "lib"} = { inherit (p) depends exe-depends; }; };
+                  components = p.components or { ${p.component-name or "lib"} = { inherit (p) depends; exe-depends = p.exe-depends or []; }; };
                   componentsWithPrefix = collectionName: prefix:
                     final.lib.listToAttrs (final.lib.concatLists (final.lib.mapAttrsToList (n: c:
                       final.lib.optional (final.lib.hasPrefix "${prefix}:" n) (
@@ -737,7 +737,7 @@ final: prev: {
                                 sha256 = p.pkg-src-sha256;
                               } // final.lib.optionalAttrs (p.pkg-src.type or "" == "local") {
                                 src = if final.lib.hasPrefix "/" p.pkg-src.path && !final.lib.hasPrefix "${callProjectResults.src.origSubDir or ""}/." p.pkg-src.path
-                                  then __trace p.pkg-src.path p.pkg-src.path
+                                  then p.pkg-src.path
                                   else callProjectResults.src + final.lib.removePrefix "${callProjectResults.src.origSubDir or ""}/." p.pkg-src.path;
                               } // {
                                 flags = p.flags;
