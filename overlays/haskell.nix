@@ -646,7 +646,9 @@ final: prev: {
               inherit (config) compiler-nix-name compilerSelection evalPackages;
               selectedCompiler = (compilerSelection final.buildPackages).${compiler-nix-name};
 
-              plan-json = builtins.fromJSON (builtins.readFile (callProjectResults.projectNix + "/plan.json"));
+              plan-json = builtins.fromJSON (
+                builtins.unsafeDiscardStringContext (
+                  builtins.readFile (callProjectResults.projectNix + "/plan.json")));
               by-id = final.lib.listToAttrs (map (x: { name = x.id; value = x; }) plan-json.install-plan);
               to-key = p: if p.type == "pre-existing"
                           then p.pkg-name
