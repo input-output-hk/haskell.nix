@@ -696,7 +696,12 @@ final: prev: {
                   pkgs = (hackage: {
                     packages = final.lib.listToAttrs (
                       final.lib.concatMap (p:
-                        final.lib.optional (p.type == "pre-existing" || (p.type == "configured" && (p.style == "global" || p.style == "inplace") )) {
+                        final.lib.optional (p.type == "pre-existing") {
+                          name = to-key p;
+                          value.revision = null;
+                        }) plan-json.install-plan
+                      ++ final.lib.concatMap (p:
+                        final.lib.optional (p.type == "configured" && (p.style == "global" || p.style == "inplace") ) {
                           name = to-key p;
                           value.revision =
                             {hsPkgs, ...}@args:
@@ -713,9 +718,8 @@ final: prev: {
                               } // {
                                 flags = p.flags;
                                 components = getComponents cabal2nix.components hsPkgs p;
-                                package = cabal2nix.package // final.lib.optionalAttrs (p.type != "pre-existing") {
+                                package = cabal2nix.package // {
                                   identifier = { name = p.pkg-name; version = p.pkg-version; };
-                                } // {
                                   isProject = false;
                                   setup-depends = map (lookupDependency hsPkgs.pkgsBuildBuild) (p.components.setup.depends or []);
                                   # TODO = map (lookupExeDependency hsPkgs.pkgsBuildBuild) (p.components.setup.exe-depends or []);
