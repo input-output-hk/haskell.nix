@@ -677,7 +677,7 @@ let
     # proper relative paths.
     (cd $out${subDir'} && plan-to-nix --full ${if ignorePackageYaml then "--ignore-package-yaml" else ""} --plan-json $tmp${subDir'}/dist-newstyle/cache/plan.json -o .)
 
-    substituteInPlace $tmp${subDir'}/dist-newstyle/cache/plan.json --replace "$out" ""
+    substituteInPlace $tmp${subDir'}/dist-newstyle/cache/plan.json --replace "$out" "."
     substituteInPlace $tmp${subDir'}/dist-newstyle/cache/plan.json --replace "$CABAL_DIR" ""
 
     # Replace the /nix/store paths to minimal git repos with indexes (that will work with materialization).

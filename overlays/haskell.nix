@@ -713,8 +713,9 @@ final: prev: {
                               } // {
                                 flags = p.flags;
                                 components = getComponents cabal2nix.components hsPkgs p;
-                                package = cabal2nix.package // {
+                                package = cabal2nix.package // final.lib.optionalAttrs (p.type != "pre-existing") {
                                   identifier = { name = p.pkg-name; version = p.pkg-version; };
+                                } // {
                                   isProject = false;
                                   setup-depends = map (lookupDependency hsPkgs.pkgsBuildBuild) (p.components.setup.depends or []);
                                   # TODO = map (lookupExeDependency hsPkgs.pkgsBuildBuild) (p.components.setup.exe-depends or []);
@@ -736,9 +737,10 @@ final: prev: {
                               in builtins.removeAttrs cabal2nix ["src"] // final.lib.optionalAttrs (p ? pkg-src-sha256) {
                                 sha256 = p.pkg-src-sha256;
                               } // final.lib.optionalAttrs (p.pkg-src.type or "" == "local") {
-                                src = if final.lib.hasPrefix "/" p.pkg-src.path && !final.lib.hasPrefix "${callProjectResults.src.origSubDir or ""}/." p.pkg-src.path
+                                src = if final.lib.hasPrefix "/" p.pkg-src.path
                                   then p.pkg-src.path
-                                  else callProjectResults.src + final.lib.removePrefix "${callProjectResults.src.origSubDir or ""}/." p.pkg-src.path;
+                                  else callProjectResults.src + final.lib.removePrefix ".${callProjectResults.src.origSubDir or ""}"
+                                    (final.lib.removePrefix ".${callProjectResults.src.origSubDir or ""}/."  p.pkg-src.path);
                               } // {
                                 flags = p.flags;
                                 components = getComponents cabal2nix.components hsPkgs p;
