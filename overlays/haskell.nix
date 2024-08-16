@@ -655,7 +655,7 @@ final: prev: {
                           else p.id;
               lookupDependency = hsPkgs: d:
                 if by-id.${d}.component-name or "lib" == "lib"
-                  then hsPkgs.${to-key by-id.${d}}
+                  then hsPkgs.${to-key by-id.${d}} or hsPkgs.${by-id.${d}.pkg-name}
                   else hsPkgs.${to-key by-id.${d}}.components.sublibs.${final.lib.removePrefix "lib:" by-id.${d}.component-name};
               lookupExeDependency = hsPkgs: d:
                 # Try to lookup by ID, but if that fails use the name (currently a different plan is used by pkgsBuildBuild when cross compiling)
