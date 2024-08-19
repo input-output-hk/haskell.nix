@@ -790,7 +790,7 @@ final: prev: {
                                   library = mapOptions components.library;
                                 } // final.lib.optionalAttrs (components.setup or null != null) {
                                   setup = mapOptions components.setup;
-                                } // builtins.mapAttrs (ctype: cs: builtins.mapAttrs (cname: c: mapOptions c) cs) (builtins.removeAttrs components ["library" "setup"]));
+                                } // builtins.mapAttrs (_ctype: cs: builtins.mapAttrs (_cname: c: mapOptions c) cs) (builtins.removeAttrs components ["library" "setup"]));
                           } // builtins.mapAttrs (n: _:
                             final.lib.mkIf (config.packages ? ${p.pkg-name}) (final.lib.mkOverride (if n == "src" then (if config.packages.${p.pkg-name}.src != null then 90 else 10000) else 995) config.packages.${p.pkg-name}.${n}))
                             ((import ../modules/package-options.nix { inherit haskellLib; inherit (final) lib; }).options // { src = {}; });
