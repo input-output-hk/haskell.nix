@@ -755,8 +755,10 @@ final: prev: {
                               } // final.lib.optionalAttrs (p.pkg-src.type or "" == "local") {
                                 src = if final.lib.hasPrefix "/" p.pkg-src.path
                                   then p.pkg-src.path
-                                  else callProjectResults.src + final.lib.removePrefix ".${callProjectResults.src.origSubDir or ""}"
-                                    (final.lib.removePrefix ".${callProjectResults.src.origSubDir or ""}/."  p.pkg-src.path);
+                                  else callProjectResults.src + final.lib.removeSuffix "/." (
+                                    if final.lib.hasPrefix ".${callProjectResults.src.origSubDir or ""}/" (p.pkg-src.path + "/")
+                                      then final.lib.removePrefix ".${callProjectResults.src.origSubDir or ""}" p.pkg-src.path
+                                      else throw "Unexpected path ${p.pkg-src.path} expected it to start with .${callProjectResults.src.origSubDir or ""}");
                               } // {
                                 flags = p.flags;
                                 components = getComponents cabal2nix.components hsPkgs p;
