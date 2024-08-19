@@ -835,7 +835,7 @@ final: prev: {
                                 else config.hsPkgs.${(builtins.head available).id}.components.${collectionName}.${name};
                               componentsWithPrefix = collectionName: prefix:
                                 final.lib.listToAttrs (final.lib.concatLists (final.lib.mapAttrsToList (n: available:
-                                  final.lib.optional (final.lib.hasPrefix "${prefix}:" n) (
+                                  final.lib.optional (final.lib.hasPrefix "${prefix}:" n && (builtins.length available != 1 || builtins.head available != "TargetNotBuildable")) (
                                     let
                                       name = final.lib.removePrefix "${prefix}:" n;
                                       value = lookupComponent collectionName name available;
