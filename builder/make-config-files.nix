@@ -5,7 +5,8 @@
 let
   # Sort and remove duplicates from nonReinstallablePkgs.
   # That way changes to the order of nonReinstallablePkgs does not require rebuilds.
-  nonReinstallablePkgs' = __attrNames (lib.genAttrs nonReinstallablePkgs (x: x));
+  nonReinstallablePkgs' = __attrNames (lib.genAttrs nonReinstallablePkgs (x: x))
+    ++ lib.filter (x: builtins.isString x) component.depends;
 
   ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
 
@@ -55,7 +56,7 @@ let
     map chooseDrv (
       (if enableDWARF then (x: map (p: p.dwarf or p) x) else x: x)
       ((if needsProfiling then (x: map (p: p.profiled or p) x) else x: x)
-      (map haskellLib.dependToLib component.depends))
+      (map haskellLib.dependToLib (lib.filter (x: !builtins.isString x) component.depends)))
     )
   );
   script = ''

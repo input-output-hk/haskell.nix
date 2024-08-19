@@ -650,13 +650,24 @@ final: prev: {
                 builtins.unsafeDiscardStringContext (
                   builtins.readFile (callProjectResults.projectNix + "/plan.json")));
               by-id = final.lib.listToAttrs (map (x: { name = x.id; value = x; }) plan-json.install-plan);
-              to-key = p: if p.type == "pre-existing"
-                          then p.pkg-name
-                          else p.id;
+              lookupPreExisting = depends:
+                final.lib.concatMap (d: builtins.attrNames pre-existing-depends.${d}) depends;
+              pre-existing-depends =
+                final.lib.listToAttrs (map (p: {
+                  name = p.id;
+                  value = final.lib.optionalAttrs (p.type == "pre-existing") { ${p.pkg-name} = null; } //
+                    final.lib.listToAttrs (
+                      map (dname: { name = dname; value = null; }) (lookupPreExisting (p.depends or p.components.lib.depends)));
+                }) plan-json.install-plan);
+              to-key = p: p.id;
               lookupDependency = hsPkgs: d:
-                if by-id.${d}.component-name or "lib" == "lib"
-                  then hsPkgs.${to-key by-id.${d}} or hsPkgs.${by-id.${d}.pkg-name}
-                  else hsPkgs.${to-key by-id.${d}}.components.sublibs.${final.lib.removePrefix "lib:" by-id.${d}.component-name};
+                final.lib.optional (by-id.${d}.type != "pre-existing") (
+                    if by-id.${d}.component-name or "lib" == "lib"
+                      then hsPkgs.${to-key by-id.${d}} or hsPkgs.${by-id.${d}.pkg-name}
+                      else hsPkgs.${to-key by-id.${d}}.components.sublibs.${final.lib.removePrefix "lib:" by-id.${d}.component-name});
+              lookupDependencies = hsPkgs: depends:
+                final.lib.concatMap (lookupDependency hsPkgs) depends
+                ++ lookupPreExisting depends;
               lookupExeDependency = hsPkgs: d:
                 # Try to lookup by ID, but if that fails use the name (currently a different plan is used by pkgsBuildBuild when cross compiling)
                 (hsPkgs.pkgsBuildBuild.${to-key by-id.${d}} or hsPkgs.pkgsBuildBuild.${by-id.${d}.pkg-name}).components.exes.${final.lib.removePrefix "exe:" by-id.${d}.component-name};
@@ -670,7 +681,7 @@ final: prev: {
                           name = final.lib.removePrefix "${prefix}:" n;
                           value = (if cabal2nixComponents == null then {} else cabal2nixComponents.${collectionName}.${name}) // {
                             buildable = true;
-                            depends = map (lookupDependency hsPkgs) c.depends;
+                            depends = lookupDependencies hsPkgs c.depends;
                             build-tools = map lookupExeDependency c.exe-depends;
                           };
                         in { inherit name value; }
@@ -680,7 +691,7 @@ final: prev: {
                   // final.lib.optionalAttrs (components ? lib) {
                     library = (if cabal2nixComponents == null then {} else cabal2nixComponents.library) // {
                       buildable = true;
-                      depends = map (lookupDependency hsPkgs) components.lib.depends;
+                      depends = lookupDependencies hsPkgs components.lib.depends;
                       build-tools = map (lookupExeDependency hsPkgs) components.lib.exe-depends;
                     };
                   };
@@ -721,7 +732,7 @@ final: prev: {
                                 package = cabal2nix.package // {
                                   identifier = { name = p.pkg-name; version = p.pkg-version; };
                                   isProject = false;
-                                  setup-depends = map (lookupDependency hsPkgs.pkgsBuildBuild) (p.components.setup.depends or []);
+                                  setup-depends = lookupDependencies hsPkgs.pkgsBuildBuild (p.components.setup.depends or []);
                                   # TODO = map (lookupExeDependency hsPkgs.pkgsBuildBuild) (p.components.setup.exe-depends or []);
                                 };
                               };
@@ -751,16 +762,14 @@ final: prev: {
                                 package = cabal2nix.package // {
                                   identifier = { name = p.pkg-name; version = p.pkg-version; };
                                   isProject = true;
-                                  setup-depends = map (lookupDependency hsPkgs.pkgsBuildBuild) (p.components.setup.depends or []);
+                                  setup-depends = lookupDependencies hsPkgs.pkgsBuildBuild (p.components.setup.depends or []);
                                   # TODO = map (lookupExeDependency hsPkgs.pkgsBuildBuild) (p.components.setup.exe-depends or []);
                                 };
                               };
                         }) plan-json.install-plan);
                   });
                   modules = [{
-                    preExistingPkgs =
-                      final.lib.concatMap (p:
-                        final.lib.optional (p.type == "pre-existing") p.pkg-name) plan-json.install-plan;
+                    preExistingPkgs = [];
                     }
                     ({config, ...}: {
                       packages = final.lib.listToAttrs (map (p: {
