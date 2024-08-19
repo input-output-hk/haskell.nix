@@ -783,7 +783,7 @@ final: prev: {
                                 mapOptions = c:
                                   builtins.mapAttrs (_: x: final.lib.mkOverride 990 x)
                                     (builtins.removeAttrs c ["buildable" "planned" "depends" "build-tools"]) //
-                                  builtins.mapAttrs (n: x: final.lib.mkOverride 90 x) (
+                                  builtins.mapAttrs (_n: x: final.lib.mkOverride 90 x) (
                                     final.lib.filterAttrs (n: x: builtins.elem n ["depends" "build-tools"] && builtins.length x != 0) c);
                               in
                                 final.lib.optionalAttrs (components.library or null != null) {
