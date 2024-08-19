@@ -695,7 +695,7 @@ final: prev: {
                   } // final.lib.optionalAttrs (components ? setup) {
                     setup = {
                       buildable = true;
-                    } // lookupDependencies hsPkgs (components.setup.depends or []) (components.setup.exe-depends or []);
+                    } // lookupDependencies hsPkgs.pkgsBuildBuild (components.setup.depends or []) (components.setup.exe-depends or []);
                   };
               callProjectResults = callCabalProjectToNix config;
               nixFilesDir = callProjectResults.projectNix + callProjectResults.src.origSubDir or "";
