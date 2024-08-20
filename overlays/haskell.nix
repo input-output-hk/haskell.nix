@@ -724,7 +724,7 @@ final: prev: {
                                 else if builtins.pathExists (nixFilesDir + "/.plan.nix/${p.pkg-name}.nix")
                                   then import (nixFilesDir + "/.plan.nix/${p.pkg-name}.nix")
                                 else (((hackage.${p.pkg-name}).${p.pkg-version}).revisions).default) (args // { hsPkgs = {}; });
-                              in builtins.removeAttrs cabal2nix ["src"] // final.lib.optionalAttrs (p ? pkg-src-sha256) {
+                              in final.lib.optionalAttrs (p ? pkg-src-sha256) {
                                 sha256 = p.pkg-src-sha256;
                               } // final.lib.optionalAttrs (p.pkg-src.type or "" == "source-repo") {
                                 src = final.lib.lists.elemAt callProjectResults.sourceRepos (final.lib.strings.toInt p.pkg-src.source-repo.location);
@@ -750,7 +750,7 @@ final: prev: {
                           value =
                             {hsPkgs, ...}@args:
                               let cabal2nix = import (nixFilesDir + "/.plan.nix/${p.pkg-name}.nix") (args // { hsPkgs = {}; });
-                              in builtins.removeAttrs cabal2nix ["src"] // final.lib.optionalAttrs (p ? pkg-src-sha256) {
+                              in final.lib.optionalAttrs (p ? pkg-src-sha256) {
                                 sha256 = p.pkg-src-sha256;
                               } // final.lib.optionalAttrs (p.pkg-src.type or "" == "local") {
                                 src = if final.lib.hasPrefix "/" p.pkg-src.path
