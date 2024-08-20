@@ -697,6 +697,9 @@ let
 
     # Remove empty dirs
     find $out -type d -empty -delete
+
+    # move pkgs.nix to default.nix ensure we can just nix `import` the result.
+    mv $out${subDir'}/pkgs.nix $out${subDir'}/default.nix
   '');
 in {
   projectNix = plan-json;
