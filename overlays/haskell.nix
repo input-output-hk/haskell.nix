@@ -755,10 +755,10 @@ final: prev: {
                               } // final.lib.optionalAttrs (p.pkg-src.type or "" == "local") {
                                 src = if final.lib.hasPrefix "/" p.pkg-src.path
                                   then p.pkg-src.path
-                                  else callProjectResults.src + final.lib.removeSuffix "/." (
+                                  else callProjectResults.src + final.lib.removeSuffix "/." (final.lib.removeSuffix "/." (
                                     if final.lib.hasPrefix ".${callProjectResults.src.origSubDir or ""}/" (p.pkg-src.path + "/")
                                       then final.lib.removePrefix ".${callProjectResults.src.origSubDir or ""}" p.pkg-src.path
-                                      else throw "Unexpected path ${p.pkg-src.path} expected it to start with .${callProjectResults.src.origSubDir or ""}");
+                                      else throw "Unexpected path ${p.pkg-src.path} expected it to start with .${callProjectResults.src.origSubDir or ""}"));
                               } // {
                                 flags = p.flags;
                                 components = getComponents cabal2nix.components hsPkgs p;
@@ -782,9 +782,9 @@ final: prev: {
                                 inherit (config.packages.${p.pkg-name}) components;
                                 mapOptions = c:
                                   builtins.mapAttrs (_: x: final.lib.mkOverride 990 x)
-                                    (builtins.removeAttrs c ["buildable" "planned" "depends" "build-tools"]) //
+                                    (builtins.removeAttrs c ["buildable" "planned" "depends" "build-tools" "libs"]) //
                                   builtins.mapAttrs (_n: x: final.lib.mkOverride 90 x) (
-                                    final.lib.filterAttrs (n: x: builtins.elem n ["depends" "build-tools"] && builtins.length x != 0) c);
+                                    final.lib.filterAttrs (n: x: builtins.elem n ["depends" "build-tools" "libs"] && builtins.length x != 0) c);
                               in
                                 final.lib.optionalAttrs (components.library or null != null) {
                                   library = mapOptions components.library;
