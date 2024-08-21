@@ -753,6 +753,7 @@ final: prev: {
                               in final.lib.optionalAttrs (p ? pkg-src-sha256) {
                                 sha256 = p.pkg-src-sha256;
                               } // final.lib.optionalAttrs (p.pkg-src.type or "" == "local") {
+                                inherit (cabal2nix) cabal-generator;
                                 src = if final.lib.hasPrefix "/" p.pkg-src.path
                                   then p.pkg-src.path
                                   else callProjectResults.src + final.lib.removeSuffix "/." (final.lib.removeSuffix "/." (
