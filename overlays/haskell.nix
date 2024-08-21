@@ -752,8 +752,9 @@ final: prev: {
                               let cabal2nix = import (nixFilesDir + "/.plan.nix/${p.pkg-name}.nix") (args // { hsPkgs = {}; });
                               in final.lib.optionalAttrs (p ? pkg-src-sha256) {
                                 sha256 = p.pkg-src-sha256;
-                              } // final.lib.optionalAttrs (p.pkg-src.type or "" == "local") {
+                              } // final.lib.optionalAttrs (p.pkg-src.type or "" == "local" && cabal2nix ? cabal-generator) {
                                 inherit (cabal2nix) cabal-generator;
+                              } // final.lib.optionalAttrs (p.pkg-src.type or "" == "local") {
                                 src = if final.lib.hasPrefix "/" p.pkg-src.path
                                   then p.pkg-src.path
                                   else callProjectResults.src + final.lib.removeSuffix "/." (final.lib.removeSuffix "/." (
