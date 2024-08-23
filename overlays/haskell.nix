@@ -728,7 +728,7 @@ final: prev: {
                                 sha256 = p.pkg-src-sha256;
                               } // final.lib.optionalAttrs (p.pkg-src.type or "" == "source-repo") {
                                 src = final.lib.lists.elemAt callProjectResults.sourceRepos (final.lib.strings.toInt p.pkg-src.source-repo.location) + "/${p.pkg-src.source-repo.subdir}";
-                              } // final.lib.optionalAttrs (p.pkg-version == cabal2nix.package.identifier.version) {
+                              } // final.lib.optionalAttrs (cabal2nix ? package-description-override && p.pkg-version == cabal2nix.package.identifier.version) {
                                 inherit (cabal2nix) package-description-override;
                               } // {
                                 flags = p.flags;
