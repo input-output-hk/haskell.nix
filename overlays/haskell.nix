@@ -727,7 +727,7 @@ final: prev: {
                               in final.lib.optionalAttrs (p ? pkg-src-sha256) {
                                 sha256 = p.pkg-src-sha256;
                               } // final.lib.optionalAttrs (p.pkg-src.type or "" == "source-repo") {
-                                src = final.lib.lists.elemAt callProjectResults.sourceRepos (final.lib.strings.toInt p.pkg-src.source-repo.location);
+                                src = final.lib.lists.elemAt callProjectResults.sourceRepos (final.lib.strings.toInt p.pkg-src.source-repo.location) + "/${p.pkg-src.source-repo.subdir}";
                               } // {
                                 flags = p.flags;
                                 components = getComponents cabal2nix.components hsPkgs p;
