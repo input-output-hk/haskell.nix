@@ -774,9 +774,13 @@ final: prev: {
                               };
                         }) plan-json.install-plan);
                   });
-                  modules = [{
-                    preExistingPkgs = [];
-                    }
+                  modules = [({config, pkgs, ...}: {
+                    nonReinstallablePkgs = ["rts"] ++ final.lib.optionals (pkgs.stdenv.hostPlatform.isGhcjs) ([
+                        # ghci and its dependencies
+                        "ghci" "binary" "bytestring" "containers" "template-haskell" "array" "deepseq" "filepath" "ghc-boot" "ghc-boot-th" "ghc-heap" "transformers" "unix" "directory" "time" "ghc-platform" "os-string"
+                      ] ++ final.lib.optionals (builtins.compareVersions config.compiler.version "8.11" < 0) [
+                        "ghcjs-prim" "ghcjs-th"]);
+                    })
                     ({config, ...}: {
                       packages = final.lib.listToAttrs (map (p: {
                         name = to-key p;

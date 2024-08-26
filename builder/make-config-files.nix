@@ -5,8 +5,7 @@
 let
   # Sort and remove duplicates from nonReinstallablePkgs.
   # That way changes to the order of nonReinstallablePkgs does not require rebuilds.
-  nonReinstallablePkgs' = __attrNames (lib.genAttrs nonReinstallablePkgs (x: x))
-    ++ component.pre-existing or [];
+  nonReinstallablePkgs' = __attrNames (lib.genAttrs (component.pre-existing ++ nonReinstallablePkgs) (x: x));
 
   ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
 
