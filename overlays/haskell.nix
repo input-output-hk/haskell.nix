@@ -801,7 +801,8 @@ final: prev: {
                                 } // builtins.mapAttrs (_ctype: cs: builtins.mapAttrs (_cname: c: mapOptions c) cs) (builtins.removeAttrs components ["library" "setup"]));
                           } // builtins.mapAttrs (n: _:
                             final.lib.mkIf (config.packages ? ${p.pkg-name}) (final.lib.mkOverride (if n == "src" then (if config.packages.${p.pkg-name}.src != null then 90 else 10000) else 995) config.packages.${p.pkg-name}.${n}))
-                            ((import ../modules/package-options.nix { inherit haskellLib; inherit (final) lib; }).options // { src = {}; });
+                            ((import ../modules/package-options.nix   { inherit haskellLib; inherit (final) lib; }).options //
+                             (import ../modules/component-options.nix { inherit haskellLib; inherit (final) lib; }).options // { src = {}; });
                       }) (final.lib.filter (p: to-key p != p.pkg-name) plan-json.install-plan));
                     })
                     ({lib, ...}: {
