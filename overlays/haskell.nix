@@ -816,7 +816,7 @@ final: prev: {
                                     final.lib.mapAttrs (_: _: {
                                       planned = lib.mkOverride 900 true;
                                     }) x
-                              ) (getComponents null hsPkgs p);
+                              ) (getComponents null {} p);
                           }) plan-json.install-plan);
                     })
                     ({config, ...}: {
