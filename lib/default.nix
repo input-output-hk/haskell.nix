@@ -103,7 +103,7 @@ in {
   # if it's a project package it has a src attribute set with an origSubDir attribute.
   # project packages are a subset of localPackages
   isProjectPackage = p: p.isProject or false;
-  selectProjectPackages = lib.filterAttrs (_n: p: p != null && isLocalPackage p && isProjectPackage p);
+  selectProjectPackages = lib.filterAttrs (n: p: p != null && !(p.isRedirect or false) && isLocalPackage p && isProjectPackage p);
 
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.
