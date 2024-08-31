@@ -155,13 +155,6 @@ let
         });
         materialized = materialized-dir + "/ghcjs/${compiler-nix-name}";
         modules = [
-            {
-                # we need ghc-boot in here for ghcjs.
-                nonReinstallablePkgs = [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
-                                         "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
-                                         "ghc-boot" "binary" "bytestring" "filepath" "directory" "containers"
-                                         "time" "unix" "Win32" ];
-            }
             (pkgs.lib.optionalAttrs (!isGhcjs88) {
                 packages.Cabal.patches = [ ./../overlays/patches/Cabal/fix-data-dir.patch ];
             })
@@ -179,7 +172,7 @@ let
                 packages.ghc.flags.ghci = true;
                 packages.ghci.flags.ghci = true;
                 # packages.ghcjs.components.library.configureFlags = [ "-fno-wrapper-install" ];
-                packages.ghcjs.components.library.build-tools = [ alex ];
+                packages.ghcjs.components.library.build-tools = [ alex happy ];
             }
         ];
     });
