@@ -730,7 +730,7 @@ final: prev: {
                                 flags = p.flags;
                                 components = getComponents cabal2nix.components hsPkgs p;
                                 package = cabal2nix.package // {
-                                  identifier = { name = p.pkg-name; version = p.pkg-version; };
+                                  identifier = { name = p.pkg-name; version = p.pkg-version; id = p.id; };
                                   isProject = false;
                                   setup-depends = [];
                                 };
@@ -755,15 +755,21 @@ final: prev: {
                               } // final.lib.optionalAttrs (p.pkg-src.type or "" == "local") {
                                 src = if final.lib.hasPrefix "/" p.pkg-src.path
                                   then p.pkg-src.path
-                                  else callProjectResults.src + final.lib.removeSuffix "/." (final.lib.removeSuffix "/." (
-                                    if final.lib.hasPrefix ".${callProjectResults.src.origSubDir or ""}/" (p.pkg-src.path + "/")
-                                      then final.lib.removePrefix ".${callProjectResults.src.origSubDir or ""}" p.pkg-src.path
-                                      else throw "Unexpected path ${p.pkg-src.path} expected it to start with .${callProjectResults.src.origSubDir or ""}"));
+                                  else haskellLib.appendSubDir {
+                                    inherit (callProjectResults) src;
+                                    subDir = final.lib.removePrefix "/" (final.lib.removeSuffix "/." (final.lib.removeSuffix "/." (
+                                      if final.lib.hasPrefix ".${callProjectResults.src.origSubDir or ""}/" (p.pkg-src.path + "/")
+                                        then final.lib.removePrefix ".${callProjectResults.src.origSubDir or ""}" p.pkg-src.path
+                                        else throw "Unexpected path ${p.pkg-src.path} expected it to start with .${callProjectResults.src.origSubDir or ""}")));
+                                    includeSiblings = true; # Filtering sibling dirs of the package dir is done in the
+                                                            # component builder so that relative paths can be used to
+                                                            # reference project directories not in the package subDir.
+                                  };
                               } // {
                                 flags = p.flags;
                                 components = getComponents cabal2nix.components hsPkgs p;
                                 package = cabal2nix.package // {
-                                  identifier = { name = p.pkg-name; version = p.pkg-version; };
+                                  identifier = { name = p.pkg-name; version = p.pkg-version; id = p.id; };
                                   isProject = true;
                                   setup-depends = [];
                                 };
@@ -861,7 +867,8 @@ final: prev: {
                                       in { inherit name value; }
                                     )) componentsByName));
                               in rec {
-                                  identifier = { name = packageName; version = builtins.head versions; };
+                                  isRedirect = true;
+                                  identifier = rec { name = packageName; version = builtins.head versions; id = "${name}-${version}"; };
                                   components =
                                     final.lib.mapAttrs componentsWithPrefix haskellLib.componentPrefix
                                     // final.lib.optionalAttrs (componentsByName ? lib) {
@@ -963,7 +970,7 @@ final: prev: {
                             else components.${haskellLib.prefixComponent.${builtins.elemAt m 0}}.${builtins.elemAt m 1};
 
                       coverageReport = haskellLib.coverageReport ({
-                        name = package.identifier.name + "-" + package.identifier.version;
+                        name = package.identifier.id;
                         # Include the checks for a single package.
                         checks = final.lib.filter (final.lib.isDerivation) (final.lib.attrValues package'.checks);
                         # Checks from that package may provide coverage information for any library in the project.

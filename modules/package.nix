@@ -45,6 +45,11 @@ in
         type = types.str;
       };
 
+      identifier.id = lib.mkOption {
+        type = types.str;
+        default = "${config.package.identifier.name}-${config.package.identifier.version}";
+      };
+
       license = lib.mkOption {
         type = types.str;
       };
@@ -127,6 +132,12 @@ in
       };
 
       isLocal = lib.mkOption {
+        type = types.bool;
+        default = false;
+      };
+
+      # Package in `hsPkgs` that is a composite pointing components of the packages keyed by UnitID
+      isRedirect = lib.mkOption {
         type = types.bool;
         default = false;
       };
