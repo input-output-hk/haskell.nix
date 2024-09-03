@@ -6,11 +6,6 @@ let
   projectArgs = {
     inherit evalPackages;
     src = testSrc "coverage-no-libs";
-    modules = [{
-      # Package has no exposed modules which causes
-      #   haddock: No input file(s)
-      packages.bytestring-builder.doHaddock = false;
-    }];
   };
 
   # We can easily select a different compiler when using cabal,

@@ -29,10 +29,22 @@ in
   # combined or replaced. We seed the package Options with an empty set forcing the
   # default values.
   options = {
-    packages = mkOption {
-      type = attrsOf package;
+    use-package-keys = mkOption {
+      type = bool;
+      default = false;
     };
-
+    package-keys = mkOption {
+      type = listOf str;
+      default = [];
+    };
+    packages = if !config.use-package-keys
+      then mkOption {
+        type = attrsOf package;
+      }
+      else genAttrs config.package-keys (n:
+          mkOption {
+            type = package;
+          });
     compiler = {
       version = mkOption {
         type = str;
@@ -61,7 +73,11 @@ in
     };
   };
 
-  config = let module = config.plan.pkg-def config.hackage.configs; in {
+  config =
+  let
+    module = config.plan.pkg-def config.hackage.configs;
+    addPackageKeys = x: x // { package-keys = builtins.attrNames x.packages; };
+  in addPackageKeys {
     inherit (module) compiler;
     packages = lib.mapAttrs (name: { revision, ... }@revArgs: { system, compiler, flags, pkgs, hsPkgs, errorHandler, pkgconfPkgs, ... }@modArgs:
 

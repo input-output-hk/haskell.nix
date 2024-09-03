@@ -788,28 +788,12 @@ final: prev: {
                       ] ++ final.lib.optionals (builtins.compareVersions config.compiler.version "8.11" < 0) [
                         "ghcjs-prim" "ghcjs-th"]);
                     })
-                    ({config, ...}: {
+                    ({config, options, ...}: {
+                      use-package-keys = true;
+                      package-keys = map (p: p.pkg-name) plan-json.install-plan ++ map (p: to-key p) plan-json.install-plan;
                       packages = final.lib.listToAttrs (map (p: {
                         name = to-key p;
-                        value = {
-                            components = final.lib.optionalAttrs (config.packages ? ${p.pkg-name}) (
-                              let
-                                inherit (config.packages.${p.pkg-name}) components;
-                                mapOptions = c:
-                                  builtins.mapAttrs (_: x: final.lib.mkOverride 990 x)
-                                    (builtins.removeAttrs c ["buildable" "planned" "depends" "build-tools" "libs"]) //
-                                  builtins.mapAttrs (_n: x: final.lib.mkOverride 90 x) (
-                                    final.lib.filterAttrs (n: x: builtins.elem n ["depends" "build-tools" "libs"] && builtins.length x != 0) c);
-                              in
-                                final.lib.optionalAttrs (components.library or null != null) {
-                                  library = mapOptions components.library;
-                                } // final.lib.optionalAttrs (components.setup or null != null) {
-                                  setup = mapOptions components.setup;
-                                } // builtins.mapAttrs (_ctype: cs: builtins.mapAttrs (_cname: c: mapOptions c) cs) (builtins.removeAttrs components ["library" "setup"]));
-                          } // builtins.mapAttrs (n: _:
-                            final.lib.mkIf (config.packages ? ${p.pkg-name}) (final.lib.mkOverride (if n == "src" then (if config.packages.${p.pkg-name}.src != null then 90 else 10000) else 995) config.packages.${p.pkg-name}.${n}))
-                            ((import ../modules/package-options.nix   { inherit haskellLib; inherit (final) lib; }).options //
-                             (import ../modules/component-options.nix { inherit haskellLib; inherit (final) lib; }).options // { src = {}; });
+                        value = final.lib.modules.mkAliasDefinitions (options.packages.${p.pkg-name});
                       }) (final.lib.filter (p: to-key p != p.pkg-name) plan-json.install-plan));
                     })
                     ({lib, ...}: {

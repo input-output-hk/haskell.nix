@@ -14,7 +14,8 @@ let
     if builtins.compareVersions version v >= 0
       then patch
       else null;
-in {
+  addPackageKeys = x: x // { package-keys = builtins.attrNames x.packages; };
+in addPackageKeys {
   # terminfo doesn't list libtinfo in its cabal file. We could ignore
   # this if we used the terminfo shipped with GHC, but this package is
   # reinstallable so we'd rather have it defined in the plan.

@@ -8,10 +8,6 @@ let
     src = testSrc "coverage";
     cabalProjectLocal = builtins.readFile ../cabal.project.local;
     modules = [{
-      # Package has no exposed modules which causes
-      #   haddock: No input file(s)
-      packages.bytestring-builder.doHaddock = false;
-
       # Coverage
       packages.pkga.components.library.doCoverage = true;
       packages.pkgb.components.library.doCoverage = true;

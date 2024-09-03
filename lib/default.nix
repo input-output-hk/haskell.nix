@@ -614,4 +614,6 @@ in {
       }";
 
   types = import ./types.nix { inherit lib; };
+
+  addPackageKeys = x: x // { package-keys = builtins.attrNames x.packages; };
 }
