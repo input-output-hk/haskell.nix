@@ -342,7 +342,7 @@ in {
   # Converts from a `compoent.depends` value to a library derivation.
   # In the case of sublibs the `depends` value should already be the derivation.
   dependToLib = d:
-    # Do simplify this to `d.components.library or d`, as that
+    # Do not simplify this to `d.components.library or d`, as that
     # will not give a good error message if the `.library`
     # is missing (happens if the package is unplanned,
     # but has overrides).

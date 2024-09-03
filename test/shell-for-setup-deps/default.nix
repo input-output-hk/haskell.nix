@@ -44,7 +44,8 @@ in recurseIntoAttrs ({
       cp ${./pkg/src}/*.hs .
 
       printf "checking that the shell env has the dependencies...\n" >& 2
-      ${env.ghc}/bin/${env.ghc.targetPrefix}ghc-pkg list
+      ${env.ghc}/bin/${env.ghc.targetPrefix}ghc-pkg list -v
+      ${env.ghc}/bin/${env.ghc.targetPrefix}ghc-pkg check
       ${env.ghc}/bin/${env.ghc.targetPrefix}runghc conduit-test.hs
 
       touch $out
