@@ -48,6 +48,7 @@ in
       identifier.id = lib.mkOption {
         type = types.str;
         default = "${config.package.identifier.name}-${config.package.identifier.version}";
+        defaultText = "\${config.package.identifier.name}-\${config.package.identifier.version}";
       };
 
       license = lib.mkOption {
