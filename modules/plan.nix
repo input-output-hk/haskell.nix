@@ -41,7 +41,7 @@ in
       then mkOption {
         type = attrsOf package;
       }
-      else genAttrs config.package-keys (n:
+      else genAttrs config.package-keys (_n:
           mkOption {
             type = package;
           });
