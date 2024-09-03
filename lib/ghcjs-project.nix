@@ -171,8 +171,6 @@ let
             })
             {
                 packages.ghcjs.doHaddock = false;
-                packages.haddock-ghcjs.doHaddock = false;
-                packages.haddock-api-ghcjs.doHaddock = false;
                 packages.ghc.flags.ghci = true;
                 packages.ghci.flags.ghci = true;
                 # packages.ghcjs.components.library.configureFlags = [ "-fno-wrapper-install" ];
