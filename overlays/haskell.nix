@@ -757,10 +757,10 @@ final: prev: {
                                   then p.pkg-src.path
                                   else haskellLib.appendSubDir {
                                     inherit (callProjectResults) src;
-                                    subDir = final.lib.removePrefix "/" (final.lib.removeSuffix "/." (final.lib.removeSuffix "/." (
+                                    subDir = final.lib.removePrefix "./" (final.lib.removePrefix "/" (final.lib.removeSuffix "/." (final.lib.removeSuffix "/." (
                                       if final.lib.hasPrefix ".${callProjectResults.src.origSubDir or ""}/" (p.pkg-src.path + "/")
                                         then final.lib.removePrefix ".${callProjectResults.src.origSubDir or ""}" p.pkg-src.path
-                                        else throw "Unexpected path ${p.pkg-src.path} expected it to start with .${callProjectResults.src.origSubDir or ""}")));
+                                        else throw "Unexpected path ${p.pkg-src.path} expected it to start with .${callProjectResults.src.origSubDir or ""}"))));
                                     includeSiblings = true; # Filtering sibling dirs of the package dir is done in the
                                                             # component builder so that relative paths can be used to
                                                             # reference project directories not in the package subDir.
