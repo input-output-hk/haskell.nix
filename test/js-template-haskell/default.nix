@@ -10,6 +10,7 @@ let
     cabalProjectLocal = ''
       if arch(javascript)
         extra-packages: ghci
+        constraints: ghcjs installed
       constraints: text -simdutf, text source
     '';
   };
