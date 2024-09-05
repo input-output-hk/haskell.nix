@@ -744,7 +744,7 @@ stdenv.mkDerivation (rec {
   } // extra-passthru;
 
   meta = {
-    homepage = http://haskell.org/ghc;
+    homepage = "https://haskell.org/ghc";
     description = "The Glasgow Haskell Compiler";
     maintainers = [];
     inherit (ghc.meta) license platforms;
