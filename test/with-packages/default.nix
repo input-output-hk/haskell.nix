@@ -108,7 +108,10 @@ in recurseIntoAttrs {
 
     passthru = {
       # Used for debugging with nix repl
-      inherit packages project;
+      packages = packages false;
+      project =  project false;
+      packages-exact = packages true;
+      project-exact =  project true;
     };
   };
 }
