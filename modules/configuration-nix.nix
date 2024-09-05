@@ -77,6 +77,7 @@ in addPackageKeys {
     (fromUntil "9.2.0.0" "9.3" ../overlays/patches/ghc-lib-parser-9.2-global-unique-counters-in-rts.patch)
     (fromUntil "9.4.0.0" "9.7" ../overlays/patches/ghc-lib-parser-9.4-global-unique-counters-in-rts.patch)
   ];
+  packages."ghc-lib-parser-8.10.7.20220219".components.library.pre-existing = ["ghc-boot-th"];
 
   # See https://github.com/haskell-nix/hnix/pull/1053
   packages.hnix.patches = [

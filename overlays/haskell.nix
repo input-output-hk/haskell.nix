@@ -790,11 +790,15 @@ final: prev: {
                     })
                     ({config, options, ...}: {
                       use-package-keys = true;
-                      package-keys = map (p: p.pkg-name) plan-json.install-plan ++ map (p: to-key p) plan-json.install-plan;
+                      package-keys = map (p: p.pkg-name) plan-json.install-plan ++ map (p: to-key p) plan-json.install-plan ++ map (p: p.pkg-name + "-" + p.pkg-version) plan-json.install-plan;
                       packages = final.lib.listToAttrs (map (p: {
-                        name = to-key p;
-                        value = final.lib.modules.mkAliasDefinitions (options.packages.${p.pkg-name});
-                      }) (final.lib.filter (p: to-key p != p.pkg-name) plan-json.install-plan));
+                          name = to-key p;
+                          value = final.lib.modules.mkAliasDefinitions (options.packages.${p.pkg-name});
+                        }) (final.lib.filter (p: to-key p != p.pkg-name) plan-json.install-plan))
+                        // final.lib.listToAttrs (map (p: {
+                          name = to-key p;
+                          value = final.lib.modules.mkAliasDefinitions (options.packages.${p.pkg-name + "-" + p.pkg-version});
+                        }) (final.lib.filter (p: to-key p != p.pkg-name) plan-json.install-plan));
                     })
                     ({lib, ...}: {
                       packages = final.lib.listToAttrs (map (p:
