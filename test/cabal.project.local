@@ -31,6 +31,10 @@ repository ghcjs-overlay
   key-threshold: 0
   --sha256: sha256-6I5mu1QFdvWFm6jWOUMKGm3VHvB7vSqiBjjHgAZJReo=
 
+if os(ghcjs)
+  extra-packages: ghci
+  constraints: ghci installed
+
 if !impl(ghc>=9.11) && !os(ghcjs)
   active-repositories: hackage.haskell.org
 
