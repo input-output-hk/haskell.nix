@@ -678,7 +678,6 @@ final: prev: {
                           name = final.lib.removePrefix "${prefix}:" n;
                           value = (if cabal2nixComponents == null then {} else cabal2nixComponents.${collectionName}.${name}) // {
                             buildable = true;
-                            planned = final.lib.mkOverride 900 true;
                           } // lookupDependencies hsPkgs c.depends c.exe-depends;
                         in { inherit name value; }
                       )) components));
@@ -687,12 +686,10 @@ final: prev: {
                   // final.lib.optionalAttrs (components ? lib) {
                     library = (if cabal2nixComponents == null then {} else cabal2nixComponents.library) // {
                       buildable = true;
-                      planned = final.lib.mkOverride 900 true;
                     } // lookupDependencies hsPkgs components.lib.depends components.lib.exe-depends;
                   } // final.lib.optionalAttrs (components ? setup) {
                     setup = {
                       buildable = true;
-                      planned = final.lib.mkOverride 900 true;
                     } // lookupDependencies hsPkgs.pkgsBuildBuild (components.setup.depends or []) (components.setup.exe-depends or []);
                   };
               callProjectResults = callCabalProjectToNix config;
@@ -782,6 +779,7 @@ final: prev: {
                     { inherit plan-json; }
                     (import ../modules/install-plan/non-reinstallable.nix)
                     (import ../modules/install-plan/override-package-by-name.nix)
+                    (import ../modules/install-plan/planned.nix { inherit getComponents; })
                     (import ../modules/install-plan/redirect.nix)
                   ];
                 };
