@@ -29,6 +29,9 @@ in
   # combined or replaced. We seed the package Options with an empty set forcing the
   # default values.
   options = {
+    plan-json = mkOption {
+      type = attrsOf unspecified;
+    };
     use-package-keys = mkOption {
       type = bool;
       default = false;

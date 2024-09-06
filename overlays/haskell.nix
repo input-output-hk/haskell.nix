@@ -655,15 +655,14 @@ final: prev: {
                     final.lib.listToAttrs (
                       map (dname: { name = dname; value = null; }) (lookupPreExisting (p.depends or p.components.lib.depends)));
                 }) plan-json.install-plan);
-              to-key = p: p.id;
               lookupDependency = hsPkgs: d:
                 final.lib.optional (by-id.${d}.type != "pre-existing") (
                     if by-id.${d}.component-name or "lib" == "lib"
-                      then hsPkgs.${to-key by-id.${d}} or hsPkgs.${by-id.${d}.pkg-name}
-                      else hsPkgs.${to-key by-id.${d}}.components.sublibs.${final.lib.removePrefix "lib:" by-id.${d}.component-name});
+                      then hsPkgs.${d} or hsPkgs.${by-id.${d}.pkg-name}
+                      else hsPkgs.${d}.components.sublibs.${final.lib.removePrefix "lib:" by-id.${d}.component-name});
               lookupExeDependency = hsPkgs: d:
                 # Try to lookup by ID, but if that fails use the name (currently a different plan is used by pkgsBuildBuild when cross compiling)
-                (hsPkgs.pkgsBuildBuild.${to-key by-id.${d}} or hsPkgs.pkgsBuildBuild.${by-id.${d}.pkg-name}).components.exes.${final.lib.removePrefix "exe:" by-id.${d}.component-name};
+                (hsPkgs.pkgsBuildBuild.${d} or hsPkgs.pkgsBuildBuild.${by-id.${d}.pkg-name}).components.exes.${final.lib.removePrefix "exe:" by-id.${d}.component-name};
               lookupDependencies = hsPkgs: depends: exe-depends: {
                 depends = final.lib.concatMap (lookupDependency hsPkgs) depends;
                 pre-existing = lookupPreExisting depends;
@@ -679,6 +678,7 @@ final: prev: {
                           name = final.lib.removePrefix "${prefix}:" n;
                           value = (if cabal2nixComponents == null then {} else cabal2nixComponents.${collectionName}.${name}) // {
                             buildable = true;
+                            planned = final.lib.mkOverride 900 true;
                           } // lookupDependencies hsPkgs c.depends c.exe-depends;
                         in { inherit name value; }
                       )) components));
@@ -687,10 +687,12 @@ final: prev: {
                   // final.lib.optionalAttrs (components ? lib) {
                     library = (if cabal2nixComponents == null then {} else cabal2nixComponents.library) // {
                       buildable = true;
+                      planned = final.lib.mkOverride 900 true;
                     } // lookupDependencies hsPkgs components.lib.depends components.lib.exe-depends;
                   } // final.lib.optionalAttrs (components ? setup) {
                     setup = {
                       buildable = true;
+                      planned = final.lib.mkOverride 900 true;
                     } // lookupDependencies hsPkgs.pkgsBuildBuild (components.setup.depends or []) (components.setup.exe-depends or []);
                   };
               callProjectResults = callCabalProjectToNix config;
@@ -706,12 +708,12 @@ final: prev: {
                     packages = final.lib.listToAttrs (
                       final.lib.concatMap (p:
                         final.lib.optional (p.type == "pre-existing") {
-                          name = to-key p;
+                          name = p.id;
                           value.revision = null;
                         }) plan-json.install-plan
                       ++ final.lib.concatMap (p:
                         final.lib.optional (p.type == "configured" && (p.style == "global" || p.style == "inplace") ) {
-                          name = to-key p;
+                          name = p.id;
                           value.revision =
                             {hsPkgs, ...}@args:
                               let cabal2nix = (
@@ -744,7 +746,7 @@ final: prev: {
                     packages = final.lib.listToAttrs (
                       final.lib.concatMap (p:
                         final.lib.optional (p.type == "configured" && p.style == "local") {
-                          name = to-key p;
+                          name = p.id;
                           value =
                             {hsPkgs, ...}@args:
                               let cabal2nix = import (nixFilesDir + "/.plan.nix/${p.pkg-name}.nix") (args // { hsPkgs = {}; });
@@ -776,94 +778,11 @@ final: prev: {
                               };
                         }) plan-json.install-plan);
                   });
-                  modules = [({config, pkgs, ...}: {
-                    nonReinstallablePkgs = ["rts" "base" "ghc-prim" "integer-gmp" "integer-simple"]
-                      ++ final.lib.optionals (builtins.compareVersions config.compiler.version "8.11" >= 0) [
-                        "ghc-bignum"]
-                      ++ final.lib.optionals (builtins.compareVersions config.compiler.version "9.9" >= 0) [
-                        "ghc-internal"]
-                      ++ final.lib.optionals (pkgs.stdenv.hostPlatform.isGhcjs) ([
-                        # ghci and its dependencies
-                        "ghci" "binary" "bytestring" "containers" "template-haskell" "array" "deepseq" "filepath" "ghc-boot" "ghc-boot-th" "ghc-heap" "transformers" "unix" "directory" "time" "ghc-platform" "os-string"]
-                      ++ final.lib.optionals (builtins.compareVersions config.compiler.version "8.11" < 0) [
-                        "ghcjs-prim" "ghcjs-th"]);
-                    })
-                    ({config, options, ...}: {
-                      use-package-keys = true;
-                      package-keys = map (p: p.pkg-name) plan-json.install-plan ++ map (p: to-key p) plan-json.install-plan;
-                      packages = final.lib.listToAttrs (map (p: {
-                          name = to-key p;
-                          value = final.lib.modules.mkAliasDefinitions (options.packages.${p.pkg-name});
-                        }) (final.lib.filter (p: to-key p != p.pkg-name) plan-json.install-plan));
-                    })
-                    ({lib, ...}: {
-                      packages = final.lib.listToAttrs (map (p:
-                        let components =
-                          if p ? component-name
-                            then { ${p.component-name} = { inherit (p) depends exe-depends; }; }
-                            else p.components or {};
-                        in {
-                            name = to-key p;
-                            value.components = final.lib.mapAttrs (type: x:
-                                if type == "library" || type == "setup"
-                                  then { planned = lib.mkOverride 900 true; }
-                                  else
-                                    final.lib.mapAttrs (_: _: {
-                                      planned = lib.mkOverride 900 true;
-                                    }) x
-                              ) (getComponents null {} p);
-                          }) plan-json.install-plan);
-                    })
-                    ({config, ...}: {
-                      hsPkgs = builtins.removeAttrs (builtins.mapAttrs (packageName: packageTargets:
-                          let
-                            byVersion = builtins.groupBy (x: x.pkg-version) packageTargets;
-                            versions = builtins.attrNames byVersion;
-                          in if builtins.length versions != 1
-                            then let
-                                err = throw "Multiple versions for ${packageName} ${builtins.toJSON versions}";
-                              in {
-                                isRedirect = true;
-                                identifier = { name = packageName; version = err; };
-                                components = err;
-                                checks = err;
-                              }
-                            else let
-                                componentsByName = builtins.listToAttrs (map (x: { name = x.component-name; value = x.available; }) packageTargets);
-                                lookupComponent = collectionName: name: available:
-                                  let attrPath =
-                                    if collectionName == ""
-                                      then "${packageName}.components.library"
-                                      else "${packageName}.components.${collectionName}.${name}";
-                                  in if builtins.length available != 1
-                                    then throw "Multiple avaialble targets for ${attrPath}"
-                                  else if builtins.isString (builtins.head available)
-                                    then throw "${builtins.head available} looking for ${attrPath}"
-                                  else if collectionName == ""
-                                    then config.hsPkgs.${(builtins.head available).id}.components.library
-                                  else config.hsPkgs.${(builtins.head available).id}.components.${collectionName}.${name};
-                                componentsWithPrefix = collectionName: prefix:
-                                  final.lib.listToAttrs (final.lib.concatLists (final.lib.mapAttrsToList (n: available:
-                                    final.lib.optional (final.lib.hasPrefix "${prefix}:" n && (builtins.length available != 1 || !builtins.elem (builtins.head available) ["TargetNotBuildable" "TargetNotLocal"])) (
-                                      let
-                                        name = final.lib.removePrefix "${prefix}:" n;
-                                        value = lookupComponent collectionName name available;
-                                      in { inherit name value; }
-                                    )) componentsByName));
-                              in rec {
-                                  isRedirect = true;
-                                  identifier = rec { name = packageName; version = builtins.head versions; id = "${name}-${version}"; };
-                                  components =
-                                    final.lib.mapAttrs componentsWithPrefix haskellLib.componentPrefix
-                                    // final.lib.optionalAttrs (componentsByName ? lib) {
-                                      library = lookupComponent "" "" componentsByName.lib;
-                                    };
-                                  checks = final.recurseIntoAttrs (builtins.mapAttrs
-                                    (_: d: haskellLib.check d)
-                                      (final.lib.filterAttrs (_: d: d.config.doCheck) components.tests));
-                                })
-                              (builtins.groupBy (x: x.pkg-name) plan-json.targets)) config.preExistingPkgs;
-                    })
+                  modules = [
+                    { inherit plan-json; }
+                    (import ../modules/install-plan/non-reinstallable.nix)
+                    (import ../modules/install-plan/override-package-by-name.nix)
+                    (import ../modules/install-plan/redirect.nix)
                   ];
                 };
               buildProject = if final.stdenv.hostPlatform != final.stdenv.buildPlatform
