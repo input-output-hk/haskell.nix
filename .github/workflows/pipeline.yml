@@ -139,31 +139,37 @@ jobs:
 
   hydra-ifdLevel-0-and-1:
     runs-on: [self-hosted, linux]
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: "Check that jobset will evaluate in Hydra at ifdLevel 0 and 1"
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
-          ./check-hydra.sh --arg ifdLevel 0
-          ./check-hydra.sh --arg ifdLevel 1
+          sed -i 's/ifdLevel = 3/ifdLevel = 0/' flake.nix
+          ./check-hydra.sh
+          sed -i 's/ifdLevel = 0/ifdLevel = 1/' flake.nix
+          ./check-hydra.sh
 
   hydra-ifdLevel-2:
     runs-on: [self-hosted, linux]
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: "Check that jobset will evaluate in Hydra at ifdLevel 2"
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
-          ./check-hydra.sh --arg ifdLevel 2
+          sed -i 's/ifdLevel = 3/ifdLevel = 2/' flake.nix
+          ./check-hydra.sh
 
   hydra-ifdLevel-3-and-ghc-8-10:
     runs-on: [self-hosted, linux]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: "Check that jobset will evaluate in Hydra at ifdLevel 3 and ghc 8.10"
+      - name: "Check that jobset will evaluate in Hydra at ifdLevel 3"
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
-          ./check-hydra.sh --arg ifdLevel 3 --arg include 'x: __substring 0 6 x == "ghc810"'
+          ./check-hydra.sh
 
   hydra-ifdLevel-3-and-ghc-9-2:
     runs-on: [self-hosted, linux]
