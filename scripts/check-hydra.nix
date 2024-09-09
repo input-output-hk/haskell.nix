@@ -13,6 +13,7 @@ writeScript "check-hydra.sh" ''
   echo '~~~ Evaluating release.nix with' "$@"
   HYDRA_CONFIG= command time --format '%e' -o eval-time.txt \
       hydra-eval-jobs \
+      --option allowed-uris "https://github.com/NixOS/ https://github.com/input-output-hk/" \
       --flake $(pwd) > eval.json
   EVAL_EXIT_CODE="$?"
   if [ "$EVAL_EXIT_CODE" != 0 ]
