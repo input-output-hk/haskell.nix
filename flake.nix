@@ -91,6 +91,7 @@
       callFlake = import flake-compat;
 
       ifdLevel = 3;
+      runningHydraEvalTest = false;
       compiler = "ghc928";
       config = import ./config.nix;
 
@@ -108,9 +109,10 @@
       # systems supported by haskell.nix
       systems = [
         "x86_64-linux"
+      ] ++ (if runningHydraEvalTest then [] else [
         "x86_64-darwin"
         "aarch64-darwin"
-      ];
+      ]);
 
       nixpkgsArgs = {
         inherit config;
