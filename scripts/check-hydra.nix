@@ -4,10 +4,10 @@ with lib;
 
 writeScript "check-hydra.sh" ''
   #! /usr/bin/env nix-shell
-  #! nix-shell -i bash --pure -p glibc coreutils time gnutar gzip hydra_unstable jq gitMinimal
 
   set -euo pipefail
 
+  export PATH="${makeBinPath [ coreutils time gnutar gzip hydra_unstable jq gitMinimal ]}"
   export NIX_PATH=
 
   echo '~~~ Evaluating release.nix with' "$@"
