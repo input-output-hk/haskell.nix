@@ -1,9 +1,9 @@
-{ stdenv, glibc, lib, writeScript, coreutils, time, gnutar, gzip, hydra_unstable, jq, gitMinimal }:
+{ stdenv, lib, writeScript, coreutils, time, gnutar, gzip, hydra_unstable, jq, gitMinimal }:
 
 with lib;
 
 writeScript "check-hydra.sh" ''
-  #! /usr/bin/env nix-shell
+  #!${stdenv.shell}
 
   set -euo pipefail
 
