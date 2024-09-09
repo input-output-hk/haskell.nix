@@ -642,10 +642,14 @@ final: prev: {
               inherit (config) compiler-nix-name compilerSelection evalPackages;
               selectedCompiler = (compilerSelection final.buildPackages).${compiler-nix-name};
 
+              # Read the plan.json file `plan-nix` derivation
               plan-json = builtins.fromJSON (
                 builtins.unsafeDiscardStringContext (
                   builtins.readFile (callProjectResults.projectNix + "/plan.json")));
+              # All the units in the plan indexed by unit ID.
               by-id = final.lib.listToAttrs (map (x: { name = x.id; value = x; }) plan-json.install-plan);
+              # Find the names of all the pre-existing packages used by a list of dependencies
+              # (includes transitive dependencies)
               lookupPreExisting = depends:
                 final.lib.concatMap (d: builtins.attrNames pre-existing-depends.${d}) depends;
               pre-existing-depends =
@@ -655,22 +659,28 @@ final: prev: {
                     final.lib.listToAttrs (
                       map (dname: { name = dname; value = null; }) (lookupPreExisting (p.depends or p.components.lib.depends)));
                 }) plan-json.install-plan);
+              # Lookup a dependency in `hsPkgs`
               lookupDependency = hsPkgs: d:
                 final.lib.optional (by-id.${d}.type != "pre-existing") (
                     if by-id.${d}.component-name or "lib" == "lib"
                       then hsPkgs.${d} or hsPkgs.${by-id.${d}.pkg-name}
                       else hsPkgs.${d}.components.sublibs.${final.lib.removePrefix "lib:" by-id.${d}.component-name});
+              # Lookup an executable dependency in `hsPkgs.pkgsBuildBuild`
               lookupExeDependency = hsPkgs: d:
                 # Try to lookup by ID, but if that fails use the name (currently a different plan is used by pkgsBuildBuild when cross compiling)
                 (hsPkgs.pkgsBuildBuild.${d} or hsPkgs.pkgsBuildBuild.${by-id.${d}.pkg-name}).components.exes.${final.lib.removePrefix "exe:" by-id.${d}.component-name};
+              # Populate `depends`, `pre-existing` and `build-tools`
               lookupDependencies = hsPkgs: depends: exe-depends: {
                 depends = final.lib.concatMap (lookupDependency hsPkgs) depends;
                 pre-existing = lookupPreExisting depends;
                 build-tools = map (lookupExeDependency hsPkgs) exe-depends;
               };
+              # Calculate the packages for a component
               getComponents = cabal2nixComponents: hsPkgs: p:
                 let
                   components = p.components or { ${p.component-name or "lib"} = { inherit (p) depends; exe-depends = p.exe-depends or []; }; };
+                  # Other than the `lib` and `setup` components, component names
+                  # have a prefix based on their type.
                   componentsWithPrefix = collectionName: prefix:
                     final.lib.listToAttrs (final.lib.concatLists (final.lib.mapAttrsToList (n: c:
                       final.lib.optional (final.lib.hasPrefix "${prefix}:" n) (
@@ -696,42 +706,54 @@ final: prev: {
               nixFilesDir = callProjectResults.projectNix + callProjectResults.src.origSubDir or "";
               plan-pkgs = if !builtins.pathExists (callProjectResults.projectNix + "/plan.json")
                 then
+                  # If there is no `plan.json` file assume this is a materialized
+                  # `plan-nix` and use the old code path.
                   # TODO remove this once all the materialized files are updated
                   importAndFilterProject {
                     inherit (callProjectResults) projectNix sourceRepos src;
                   }
                 else {
+                  # This replaces the `plan-nix/default.nix`
                   pkgs = (hackage: {
                     packages = final.lib.listToAttrs (
+                      # Include entries for the `pre-existing` packages, but leave them as `null`
                       final.lib.concatMap (p:
                         final.lib.optional (p.type == "pre-existing") {
                           name = p.id;
                           value.revision = null;
                         }) plan-json.install-plan
+                      # The other packages that are not part of the project itself.
                       ++ final.lib.concatMap (p:
                         final.lib.optional (p.type == "configured" && (p.style == "global" || p.style == "inplace") ) {
                           name = p.id;
                           value.revision =
                             {hsPkgs, ...}@args:
-                              let cabal2nix = (
-                                if builtins.pathExists (nixFilesDir + "/cabal-files/${p.pkg-name}.nix")
-                                  then import (nixFilesDir + "/cabal-files/${p.pkg-name}.nix")
-                                else if builtins.pathExists (nixFilesDir + "/.plan.nix/${p.pkg-name}.nix")
-                                  then import (nixFilesDir + "/.plan.nix/${p.pkg-name}.nix")
-                                else (((hackage.${p.pkg-name}).${p.pkg-version}).revisions).default) (args // { hsPkgs = {}; });
+                              let
+                                # Read the output of `Cabal2Nix.hs`.  We need it for information not
+                                # in the `plan.json` file.
+                                cabal2nix = (
+                                  if builtins.pathExists (nixFilesDir + "/cabal-files/${p.pkg-name}.nix")
+                                    then import (nixFilesDir + "/cabal-files/${p.pkg-name}.nix")
+                                  else if builtins.pathExists (nixFilesDir + "/.plan.nix/${p.pkg-name}.nix")
+                                    then import (nixFilesDir + "/.plan.nix/${p.pkg-name}.nix")
+                                  else (((hackage.${p.pkg-name}).${p.pkg-version}).revisions).default) (args // { hsPkgs = {}; });
                               in final.lib.optionalAttrs (p ? pkg-src-sha256) {
                                 sha256 = p.pkg-src-sha256;
                               } // final.lib.optionalAttrs (p.pkg-src.type or "" == "source-repo") {
+                                # Replace the source repository packages with versions created when
+                                # parsing the `cabal.project` file.
                                 src = final.lib.lists.elemAt callProjectResults.sourceRepos (final.lib.strings.toInt p.pkg-src.source-repo.location) + "/${p.pkg-src.source-repo.subdir}";
                               } // final.lib.optionalAttrs (cabal2nix ? package-description-override && p.pkg-version == cabal2nix.package.identifier.version) {
+                                # Use the `.cabal` file from the `Cabal2Nix` if it for the matching
+                                # version of the package (the one in the plan).
                                 inherit (cabal2nix) package-description-override;
                               } // {
-                                flags = p.flags;
+                                flags = p.flags; # Use the flags from `plan.json`
                                 components = getComponents cabal2nix.components hsPkgs p;
                                 package = cabal2nix.package // {
                                   identifier = { name = p.pkg-name; version = p.pkg-version; id = p.id; };
                                   isProject = false;
-                                  setup-depends = [];
+                                  setup-depends = []; # The correct setup depends will be in `components.setup.depends`
                                 };
                               };
                         }) plan-json.install-plan);
@@ -739,6 +761,7 @@ final: prev: {
                       inherit (selectedCompiler) version;
                     };
                   });
+                  # Packages in the project (those that are both configure and local)
                   extras = (_hackage: {
                     packages = final.lib.listToAttrs (
                       final.lib.concatMap (p:
@@ -752,9 +775,11 @@ final: prev: {
                               } // final.lib.optionalAttrs (p.pkg-src.type or "" == "local" && cabal2nix ? cabal-generator) {
                                 inherit (cabal2nix) cabal-generator;
                               } // final.lib.optionalAttrs (p.pkg-src.type or "" == "local") {
+                                # Find the `src` location based on `p.pkg-src.path`
                                 src = if final.lib.hasPrefix "/" p.pkg-src.path
-                                  then p.pkg-src.path
+                                  then p.pkg-src.path # Absolute path
                                   else haskellLib.appendSubDir {
+                                    # Relative to the project path
                                     inherit (callProjectResults) src;
                                     subDir = final.lib.removePrefix "./" (final.lib.removePrefix "/" (final.lib.removeSuffix "/." (final.lib.removeSuffix "/." (
                                       if final.lib.hasPrefix ".${callProjectResults.src.origSubDir or ""}/" (p.pkg-src.path + "/")
@@ -765,12 +790,12 @@ final: prev: {
                                                             # reference project directories not in the package subDir.
                                   };
                               } // {
-                                flags = p.flags;
+                                flags = p.flags; # Use the flags from `plan.json`
                                 components = getComponents cabal2nix.components hsPkgs p;
                                 package = cabal2nix.package // {
                                   identifier = { name = p.pkg-name; version = p.pkg-version; id = p.id; };
                                   isProject = true;
-                                  setup-depends = [];
+                                  setup-depends = []; # The correct setup depends will be in `components.setup.depends`
                                 };
                               };
                         }) plan-json.install-plan);
