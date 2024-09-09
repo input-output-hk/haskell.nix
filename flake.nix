@@ -284,13 +284,14 @@
           traceHydraJobs (lib.recursiveUpdate flake (lib.optionalAttrs (ifdLevel > 2) {
             hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
               name = "nix-tools";
-              constituents = [
+              constituents = (if runningHydraEvalTest then [] else [
                 "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
                 "x86_64-darwin.nix-tools.static.zipped.nix-tools-static"
-                "x86_64-linux.nix-tools.static.zipped.nix-tools-static"
-                "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
                 "aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
                 "x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+              ]) ++ [
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static"
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
                 "x86_64-linux.nix-tools.static.zipped.nix-tools-static-no-ifd"
                 "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64-no-ifd"
                 (writeText "gitrev" (self.rev or "0000000000000000000000000000000000000000"))

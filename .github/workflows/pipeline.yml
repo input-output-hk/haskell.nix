@@ -163,7 +163,7 @@ jobs:
           sed -i 's/ifdLevel = 3;/ifdLevel = 2;/' flake.nix
           ./check-hydra.sh
 
-  hydra-ifdLevel-3-and-ghc-8-10:
+  hydra-ifdLevel-3:
     runs-on: [self-hosted, linux]
     timeout-minutes: 30
     steps:
