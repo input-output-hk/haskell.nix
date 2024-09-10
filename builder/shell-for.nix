@@ -68,7 +68,8 @@ let
   selectedComponents =
     lib.filter isSelectedComponent  (lib.attrValues transitiveDependenciesComponents);
 
-  allHsPkgsComponents = lib.concatMap haskellLib.getAllComponents (builtins.attrValues hsPkgs);
+  allHsPkgsComponents = lib.concatMap haskellLib.getAllComponents
+    (lib.filter (x: !(x.isRedirect or false)) (builtins.attrValues hsPkgs));
 
   # Given a list of `depends`, removes those which are selected components
   removeSelectedInputs =
