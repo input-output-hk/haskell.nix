@@ -22,7 +22,7 @@ let
   lookupDependency = hsPkgs: d:
     pkgs.lib.optional (by-id.${d}.type != "pre-existing") (
         if by-id.${d}.component-name or "lib" == "lib"
-          then hsPkgs.${d} or hsPkgs.${by-id.${d}.pkg-name}
+          then hsPkgs.${d} or hsPkgs."${by-id.${d}.pkg-name}-${by-id.${d}.pkg-version}" or hsPkgs.${by-id.${d}.pkg-name}
           else hsPkgs.${d}.components.sublibs.${pkgs.lib.removePrefix "lib:" by-id.${d}.component-name});
   # Lookup an executable dependency in `hsPkgs.pkgsBuildBuild`
   lookupExeDependency = hsPkgs: d:
