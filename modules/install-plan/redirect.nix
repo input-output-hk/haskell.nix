@@ -24,6 +24,12 @@ let
               value = lookupComponent collectionName name available;
             in { inherit name value; }
           )) componentsByName));
+      defaultTargetPackage = config.hsPkgs.${(builtins.head (
+          # Use the package identified by the library component
+          componentsByName.lib or
+          # Or by the first component
+          componentsByName.${builtins.head (builtins.attrNames componentsByName)}
+        )).id};
     in rec {
       isRedirect = true;
       identifier = rec { name = (builtins.head packageTargets).pkg-name; version = (builtins.head packageTargets).pkg-version; id = "${name}-${version}"; };
@@ -35,6 +41,7 @@ let
       checks = pkgs.recurseIntoAttrs (builtins.mapAttrs
         (_: d: pkgs.haskell-nix.haskellLib.check d)
           (lib.filterAttrs (_: d: d.config.doCheck) components.tests));
+      inherit (defaultTargetPackage) buildType setup;
     };
 in {
   hsPkgs =
