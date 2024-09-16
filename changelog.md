@@ -3,27 +3,28 @@ that will impact users.
 
 ## Sep 16, 2024
 
-Haskell.nix now uses the more granular Unit IDs from the plan.json
+Cabal projects now use the more granular Unit IDs from plan.json
 to identify packages.  This allows for different versions of a
-package to be used when building `built-tool-depend` and setup
+package to be used when building `built-tool-depends` and setup
 dependencies.
 
 Overrides in the `modules` argument apply to all versions of
 the package.  However to make this work we needed to make
-each `packages.somepackage` an option (instead of using the
-`attrsOf` option try).
+each `packages.somepackage` an option (instead of using an
+`attrsOf` the submodule type).
 
 It is now an error to override a package that is not in the
-plan.  This can be a problem if you use the same overrides
-for multiple plans (different GHC versions, target platforms,
-or cabal flag settings).  If the package does not exist in
-some of the variants you use `package-keys` to tell include
-the option anyway:
+plan.  This can be a problem if different GHC versions, target
+platforms, or cabal flag settings cause the package to be
+excluded from the plan.  Adding `package-keys` can tell
+haskell.nix to include the option anyway:
 
 ```
   modules = [{
     # Tell haskell.nix that `somepackage` may exist.
     package-keys = ["somepackage"];
+    # Now the following will not cause an error even
+    # if `somepackage` is not in the plan
     packages.somepackage.flags.someflag = true;
   }];
 ```
@@ -37,10 +38,10 @@ for all of the `builtins.attrNames` of `packages`:
   })];
 ```
 
-Do not use the modules `pkgs` arg to look `addPackageKeys` up
+Do not use the module's `pkgs` arg to look `addPackageKeys` up
 though or it will result an `infinite recursion` error.
 
-Code that uses `options.packages` will also need to be update.
+Code that uses `options.packages` will also need to be updated.
 For instance the following code that uses `options.packages`
 to set `--Werror` for local packages:
 
