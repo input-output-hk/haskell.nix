@@ -1,6 +1,81 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Sep 16, 2024
+
+Haskell.nix now uses the more granular Unit IDs from the plan.json
+to identify packages.  This allows for different versions of a
+package to be used when building `built-tool-depend` and setup
+dependencies.
+
+Overrides in the `modules` argument apply to all versions of
+the package.  However to make this work we needed to make
+each `packages.somepackage` an option (instead of using the
+`attrsOf` option try).
+
+It is now an error to override a package that is not in the
+plan.  This can be a problem if you use the same overrides
+for multiple plans (different GHC versions, target platforms,
+or cabal flag settings).  If the package does not exist in
+some of the variants you use `package-keys` to tell include
+the option anyway:
+
+```
+  modules = [{
+    # Tell haskell.nix that `somepackage` may exist.
+    package-keys = ["somepackage"];
+    packages.somepackage.flags.someflag = true;
+  }];
+```
+
+There is a helper function you can use to add `package-keys`
+for all of the `builtins.attrNames` of `packages`:
+
+```
+  modules = [(pkgs.haskell-nix.haskellLib.addPackageKeys {
+    packages.somepackage.flags.someflag = true;
+  })];
+```
+
+Do not use the modules `pkgs` arg to look `addPackageKeys` up
+though or it will result an `infinite recursion` error.
+
+Code that uses `options.packages` will also need to be update.
+For instance the following code that uses `options.packages`
+to set `--Werror` for local packages:
+
+```
+  ({ lib, ... }: {
+    options.packages = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule (
+        { config, lib, ... }:
+        lib.mkIf config.package.isLocal
+        {
+          configureFlags = [ "--ghc-option=-Werror"];
+        }
+      ));
+    };
+  })
+```
+
+Now needs to do it for each of the entry in `config.package-keys`
+instead of using `attrsOf`:
+
+```
+  ({ config, lib, ... }: {
+    options.packages = lib.genAttrs config.package-keys (_:
+      lib.mkOption {
+        type = lib.types.submodule (
+          { config, lib, ... }:
+          lib.mkIf config.package.isLocal
+          {
+            configureFlags = [ "--ghc-option=-Werror"];
+          }
+        );
+      });
+  })
+```
+
 ## Jun 5, 2024
 
 Haskell.nix now respects the `pre-existing` packages selected
