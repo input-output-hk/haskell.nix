@@ -1,7 +1,7 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
-## Sep 16, 2024
+## Sep 17, 2024
 
 Cabal projects now use the more granular Unit IDs from plan.json
 to identify packages.  This allows for different versions of a
