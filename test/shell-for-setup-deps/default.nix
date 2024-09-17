@@ -7,11 +7,6 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "shell-for-setup-deps";
     cabalProjectLocal = builtins.readFile ../cabal.project.local;
-    modules = [{
-      # Package has no exposed modules which causes
-      #   haddock: No input file(s)
-      packages.bytestring-builder.doHaddock = false;
-    }];
   };
 
   env = project.shellFor {
@@ -44,7 +39,8 @@ in recurseIntoAttrs ({
       cp ${./pkg/src}/*.hs .
 
       printf "checking that the shell env has the dependencies...\n" >& 2
-      ${env.ghc}/bin/${env.ghc.targetPrefix}ghc-pkg list
+      ${env.ghc}/bin/${env.ghc.targetPrefix}ghc-pkg list -v
+      ${env.ghc}/bin/${env.ghc.targetPrefix}ghc-pkg check
       ${env.ghc}/bin/${env.ghc.targetPrefix}runghc conduit-test.hs
 
       touch $out

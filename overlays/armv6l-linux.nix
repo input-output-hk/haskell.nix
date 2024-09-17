@@ -24,7 +24,7 @@ final: prev:
           # Therefore let's enable doCrossCheck here!
           doCrossCheck = pkgs.stdenv.hostPlatform.isWindows;
         };
-      in {
+      in prev.haskell-nix.haskellLib.addPackageKeys {
         packages = {
           # clock 0.7.2 needs to be patched to support cross compilation.
           clock.patches              = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isAarch32 [ ({ version }: (if version == "0.7.2" then ./patches/clock-0.7.2.patch else null)) ];

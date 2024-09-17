@@ -2,7 +2,7 @@ _final: prev:
 {
   haskell-nix = prev.haskell-nix // ({
     defaultModules = prev.haskell-nix.defaultModules ++ [
-      ({ pkgs, buildModules, config, lib, ... }:
+      ({ pkgs, buildModules, config, lib, ... }: prev.haskell-nix.haskellLib.addPackageKeys
         {
           packages = { } // pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.isDarwin && !pkgs.stdenv.cc.nativeLibc)
             {

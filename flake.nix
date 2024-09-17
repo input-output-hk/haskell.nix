@@ -22,7 +22,7 @@
     "hls-2.6" = { url = "github:haskell/haskell-language-server/2.6.0.0"; flake = false; };
     "hls-2.7" = { url = "github:haskell/haskell-language-server/2.7.0.0"; flake = false; };
     "hls-2.8" = { url = "github:haskell/haskell-language-server/2.8.0.0"; flake = false; };
-    "hls-2.9" = { url = "github:haskell/haskell-language-server/2.9.0.0"; flake = false; };
+    "hls-2.9" = { url = "github:haskell/haskell-language-server/2.9.0.1"; flake = false; };
     hydra.url = "hydra";
     hackage = {
       url = "github:input-output-hk/hackage.nix";
@@ -91,6 +91,7 @@
       callFlake = import flake-compat;
 
       ifdLevel = 3;
+      runningHydraEvalTest = false;
       compiler = "ghc928";
       config = import ./config.nix;
 
@@ -108,9 +109,10 @@
       # systems supported by haskell.nix
       systems = [
         "x86_64-linux"
+      ] ++ (if runningHydraEvalTest then [] else [
         "x86_64-darwin"
         "aarch64-darwin"
-      ];
+      ]);
 
       nixpkgsArgs = {
         inherit config;
@@ -282,13 +284,14 @@
           traceHydraJobs (lib.recursiveUpdate flake (lib.optionalAttrs (ifdLevel > 2) {
             hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
               name = "nix-tools";
-              constituents = [
+              constituents = (if runningHydraEvalTest then [] else [
                 "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
                 "x86_64-darwin.nix-tools.static.zipped.nix-tools-static"
-                "x86_64-linux.nix-tools.static.zipped.nix-tools-static"
-                "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
                 "aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
                 "x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+              ]) ++ [
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static"
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
                 "x86_64-linux.nix-tools.static.zipped.nix-tools-static-no-ifd"
                 "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64-no-ifd"
                 (writeText "gitrev" (self.rev or "0000000000000000000000000000000000000000"))
