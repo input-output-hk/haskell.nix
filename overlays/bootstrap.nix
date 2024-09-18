@@ -1007,7 +1007,7 @@ in {
                 compilerSelection = p: p.haskell.compiler;
                 version = "1.19.12";
                 inherit ghcOverride index-state;
-                materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-${version}";
+                materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-1.19.12";
               });
             hscolour = (final.haskell-nix.hackage-package
               ({config, pkgs, ...}: {
