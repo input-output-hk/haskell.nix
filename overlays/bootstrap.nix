@@ -41,9 +41,7 @@ in {
     compiler =
         let bootPkgs = {
                 ghc = final.buildPackages.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
-                alex = final.haskell-nix.bootstrap.packages.alex-unchecked;
-                happy = final.haskell-nix.bootstrap.packages.happy-unchecked;
-                hscolour = final.haskell-nix.bootstrap.packages.hscolour-unchecked;
+                inherit (final.haskell-nix.bootstrap.packages) alex happy hscolour;
             };
             bootPkgsGhc94 = bootPkgs // {
                 alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" {
@@ -998,50 +996,28 @@ in {
             # hackage with haskell.nix.  For alex and happy we
             # need to use the boot strap compiler as we need them
             # to build ghcs from source.
-            # guardMaterializationChecks is used here so we
-            # can turn off materialization checks when
-            # building ghc itself (since GHC is a dependency
-            # of the materialization check it would cause
-            # infinite recursion).
-            alex-tool = args: final.haskell-nix.tool buildBootstrapper.compilerNixName "alex" ({config, pkgs, ...}: {
+            alex = final.haskell-nix.tool buildBootstrapper.compilerNixName "alex" ({config, pkgs, ...}: {
                 compilerSelection = p: p.haskell.compiler;
-                evalPackages = pkgs.buildPackages;
                 version = "3.2.4";
                 inherit ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
-                modules = [{ reinstallableLibGhc = false; }];
-                nix-tools = config.evalPackages.haskell-nix.nix-tools;
-            } // args);
-            alex = final.haskell-nix.bootstrap.packages.alex-tool {};
-            alex-unchecked = final.haskell-nix.bootstrap.packages.alex-tool { checkMaterialization = false; };
-            happy-tool = { version ? "1.19.12", ... }@args: final.haskell-nix.tool buildBootstrapper.compilerNixName "happy"
+            });
+            happy = final.haskell-nix.tool buildBootstrapper.compilerNixName "happy"
               ({config, pkgs, ...}: {
                 compilerSelection = p: p.haskell.compiler;
-                evalPackages = pkgs.buildPackages;
+                version = "1.19.12";
                 inherit version ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-${version}";
-                modules = [{ reinstallableLibGhc = false; }];
-                nix-tools = config.evalPackages.haskell-nix.nix-tools;
-              } // args);
-            happy = final.haskell-nix.bootstrap.packages.happy-tool {};
-            happy-unchecked = final.haskell-nix.bootstrap.packages.happy-tool { checkMaterialization = false; };
-            # Older version needed when building ghc 8.6.5
-            happy-old = final.haskell-nix.bootstrap.packages.happy-tool { version = "1.19.11"; };
-            happy-old-unchecked = final.haskell-nix.bootstrap.packages.happy-tool { version = "1.19.11"; checkMaterialization = false; };
-            hscolour-tool = args: (final.haskell-nix.hackage-package
+              });
+            hscolour = (final.haskell-nix.hackage-package
               ({config, pkgs, ...}: {
                 compilerSelection = p: p.haskell.compiler;
-                evalPackages = pkgs.buildPackages;
                 compiler-nix-name = buildBootstrapper.compilerNixName;
                 name = "hscolour";
                 version = "1.24.4";
                 inherit ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/hscolour";
-                modules = [{ reinstallableLibGhc = false; }];
-                nix-tools = config.evalPackages.haskell-nix.nix-tools;
-            } // args)).getComponent "exe:HsColour";
-            hscolour = final.haskell-nix.bootstrap.packages.hscolour-tool {};
-            hscolour-unchecked = final.haskell-nix.bootstrap.packages.hscolour-tool { checkMaterialization = false; };
+            })).getComponent "exe:HsColour";
         };
     };
   };
