@@ -81,7 +81,7 @@ in {
                 # Try to avoid reordering the patches unless a patch is added or changed that
                 # will be applied to most versions of the GHC anyway (reordering the patches
                 # results in rebuilds of GHC and reduces sharing in /nix/store).
-                in always                    ./patches/ghc/dll-loader-8.4.2.patch                                # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- open
+                in until             "9.11"  ./patches/ghc/dll-loader-8.4.2.patch                                # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- open
                 ++ until             "9.2"   ./patches/ghc/ghc-8.4.3-Cabal2201-no-hackage-tests.patch            # ?
                 ++ until             "9.2"   ./patches/ghc/cabal-host.patch                                      # https://github.com/haskell/cabal/issues/5887
                 ++ fromUntil "9.2"   "9.4"   ./patches/ghc/ghc-9.2-cabal-host.patch                              # https://github.com/haskell/cabal/issues/5887
