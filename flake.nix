@@ -198,6 +198,12 @@
       packages = forEachSystemPkgs (pkgs:
         (import ./hix/default.nix { inherit pkgs; }).apps
       );
+      apps = forEachSystemPkgs (pkgs:
+        builtins.mapAttrs (name: exe: {
+          type = "app";
+          program = exe + "/bin/${name}";
+        }) pkgs.haskell-nix.nix-tools-unchecked.exes
+      );
 
       allJobs = forEachSystem (system:
         stripAttrsForHydra (filterDerivations (
