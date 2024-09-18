@@ -41,7 +41,7 @@
         "AlexWrapper-monadUserState"
         "AlexWrapper-monadUserState-bytestring"
         "AlexWrapper-gscan"
-        ];
+      ];
       extraSrcFiles = [
         "CHANGELOG.md"
         "README.md"
@@ -98,22 +98,22 @@
         "tests/posn_typeclass_bytestring.x"
         "tests/strict_typeclass.x"
         "tests/unicode.x"
-        ];
+      ];
       extraTmpFiles = [];
       extraDocFiles = [];
-      };
+    };
     components = {
       exes = {
         "alex" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
-            ] ++ (if flags.small_base
+          ] ++ (if flags.small_base
             then [
               (hsPkgs."base" or (errorHandler.buildDepError "base"))
               (hsPkgs."array" or (errorHandler.buildDepError "array"))
               (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
               (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
-              ]
+            ]
             else [ (hsPkgs."base" or (errorHandler.buildDepError "base")) ]);
           buildable = true;
           modules = [
@@ -138,23 +138,23 @@
             "Data/Ranged/Boundaries"
             "Data/Ranged/RangedSet"
             "Data/Ranged/Ranges"
-            ];
+          ];
           hsSourceDirs = [ "src" ];
           mainPath = [ "Main.hs" ] ++ [ "" ];
-          };
         };
+      };
       tests = {
         "tests" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."process" or (errorHandler.buildDepError "process"))
-            ];
+          ];
           build-tools = [
             (hsPkgs.pkgsBuildBuild.alex.components.exes.alex or (pkgs.pkgsBuildBuild.alex or (errorHandler.buildToolDepError "alex:alex")))
-            ];
+          ];
           buildable = true;
           mainPath = [ "test.hs" ];
-          };
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../.; }
