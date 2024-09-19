@@ -183,8 +183,8 @@ in {
                 ++ onAarch64 (until "9.0" ./patches/ghc/ghc-8.10-better-symbol-addr-debug.patch)
                 ++ onAarch64 (until "9.0" ./patches/ghc/ghc-8.10-aarch64-handle-none-rela.patch)
                 ++ onWindows (until "9.0" ./patches/ghc/5b08e0c06e038448a63aa9bd7f163b23d824ba4b.patch)
-                ++ onAarch64 (from  "9.0" ./patches/ghc/ghc-9.0-better-symbol-addr-debug.patch)
-                ++ onAarch64 (from  "9.0" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
+                ++ onAarch64 (fromUntil "9.0" "9.11" ./patches/ghc/ghc-9.0-better-symbol-addr-debug.patch)
+                ++ onAarch64 (fromUntil "9.0" "9.11" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
 
                 ++ onWindows (fromUntil "9.6.3" "9.6.4" ./patches/ghc/ghc-9.6-hadrian-splitsections.patch)
                 ++ onWindows (fromUntil "9.8.1" "9.8.2" ./patches/ghc/ghc-9.6-hadrian-splitsections.patch)
