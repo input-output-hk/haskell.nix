@@ -126,7 +126,7 @@ in {
                 ++ onWindows (fromUntil "9.6.3"  "9.11"   ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
                 # support R_X86_64_PC64 (ELF constant 24) - IMAGE_REL_AMD64_SREL32 (PE constant 14), which seems to appear with 9.6 more frequently, and
                 # results in "unhandled PEi386 relocation type 14".
-                ++ onWindows (fromUntil "9.4.1"  "9.12"   ./patches/ghc/win-reloc-x86_64-pc64.patch)
+                ++ onWindows (fromUntil "9.4.1"  "9.11"   ./patches/ghc/win-reloc-x86_64-pc64.patch)
                 # ++ onWindows (fromUntil "9.4.1"  "9.10"   ./patches/ghc/Win32-depends-on-mingwex.patch)
                 # if the host system provides ucrt (e.g. wine with ucrtbase.dll), we may end up linking against symbols from ucrtbase, instead of msvcrt,
                 # thus leading to broken code.  E.g. the handles we create and hand to wine will all be busted, because they come from one and are processed
