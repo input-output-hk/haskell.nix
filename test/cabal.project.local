@@ -14,6 +14,13 @@ allow-newer: hsc2hs:*
 if impl(ghc >=9.10.1)
   extra-packages: process
 
+if impl(ghc >=9.11)
+  source-repository-package
+    type: git
+    location: https://github.com/hamishmack/extra.git
+    tag: 3cced868b7f270acb90b7064d34e2d4c5952ca48
+    --sha256: sha256-e2JHNRvkpws18dWmc+RUPWEESX+LV9W0u25dCG2e8ws=
+
 repository head.hackage.ghc.haskell.org
   url: https://ghc.gitlab.haskell.org/head.hackage/
   secure: True
@@ -22,7 +29,7 @@ repository head.hackage.ghc.haskell.org
      f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
      26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
      7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
-  --sha256: sha256-yyYXGnFwUr6MaUEXz6odRv+IJMCmAZioN5dz3LbY1n4=
+  --sha256: sha256-Z4NrYC11bsuJp4IPy6cRoFQ03wLAPEaejM9Y52n4EHk=
 
 repository ghcjs-overlay
   url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/d37efd733666d090bf1c83bf7d5f9cb71b1dacc1
