@@ -1,0 +1,13 @@
+diff --git a/compiler/GHC/CoreToStg/Prep.hs b/compiler/GHC/CoreToStg/Prep.hs
+index c463f41121..58b1d957c8 100644
+--- a/compiler/GHC/CoreToStg/Prep.hs
++++ b/compiler/GHC/CoreToStg/Prep.hs
+@@ -1759,7 +1759,7 @@ data OkToSpec
+ 
+ mkFloat :: CorePrepEnv -> Demand -> Bool -> Id -> CpeRhs -> FloatingBind
+ mkFloat env dmd is_unlifted bndr rhs
+-  | is_strict || ok_for_spec -- See Note [Speculative evaluation]
++  | is_strict {-|| ok_for_spec-} -- See Note [Speculative evaluation]
+   , not is_hnf  = FloatCase rhs bndr DEFAULT [] ok_for_spec
+     -- Don't make a case for a HNF binding, even if it's strict
+     -- Otherwise we get  case (\x -> e) of ...!
