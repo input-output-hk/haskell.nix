@@ -362,14 +362,8 @@ let
   # Sometimes we have to dispatch between the bintools wrapper and the unwrapped
   # derivation for certain tools depending on the platform.
   bintoolsFor = {
-    # GHC needs install_name_tool on all darwin platforms. On aarch64-darwin it is
-    # part of the bintools wrapper (due to codesigning requirements), but not on
-    # x86_64-darwin.
-    install_name_tool =
-      if stdenv.targetPlatform.isAarch64
-      then targetCC.bintools
-      else targetCC.bintools.bintools;
-    # Same goes for strip.
+    # GHC needs install_name_tool on all darwin platforms.
+    install_name_tool = targetCC.bintools.bintools;
     strip =
       # TODO(@sternenseemann): also use wrapper if linker == "bfd" or "gold"
       if stdenv.targetPlatform.isAarch64
