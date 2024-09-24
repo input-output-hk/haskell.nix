@@ -94,6 +94,11 @@ in {
                 # parsing the `cabal.project` file.
                 src = pkgs.lib.lists.elemAt callProjectResults.sourceRepos (pkgs.lib.strings.toInt p.pkg-src.source-repo.location)
                   + pkgs.lib.optionalString (p.pkg-src.source-repo.subdir != ".") "/${p.pkg-src.source-repo.subdir}";
+              } // pkgs.lib.optionalAttrs (p.pkg-src.type or "" == "repo-tar") {
+                src = pkgs.fetchurl {
+                  url = p.pkg-src.repo.uri + "${pkgs.lib.optionalString (!pkgs.lib.hasSuffix "/" p.pkg-src.repo.uri) "/"}package/${p.pkg-name}-${p.pkg-version}.tar.gz";
+                  sha256 = p.pkg-src-sha256;
+                };
               } // pkgs.lib.optionalAttrs (cabal2nix ? package-description-override && p.pkg-version == cabal2nix.package.identifier.version) {
                 # Use the `.cabal` file from the `Cabal2Nix` if it for the matching
                 # version of the package (the one in the plan).
