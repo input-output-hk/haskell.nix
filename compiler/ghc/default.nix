@@ -397,16 +397,26 @@ stdenv.mkDerivation (rec {
         done
     ''
     # Use emscripten and the `config.sub` saved by `postPatch`
-    + lib.optionalString (targetPlatform.isGhcjs) ''
+    + lib.optionalString (targetPlatform.isGhcjs) (''
         export CC="${targetCC}/bin/emcc"
         export CXX="${targetCC}/bin/em++"
         export LD="${targetCC}/bin/emcc"
-        export AR="${targetCC}/bin/emar"
-        export NM="${targetCC}/share/emscripten/emnm"
-        export RANLIB="${targetCC}/bin/emranlib"
+    '' + (
+      # Including AR and RANLIB here breaks tests.js-template-haskell for GHC 9.6
+      # `LLVM ERROR: malformed uleb128, extends past end`
+      if builtins.compareVersions ghc-version "9.8" >= 0
+        then ''
+          export AR="${targetCC}/bin/emar"
+          export NM="${targetCC}/share/emscripten/emnm"
+          export RANLIB="${targetCC}/bin/emranlib"
+        ''
+        else ''
+          export NM="${targetCC}/share/emscripten/emnm"
+        ''
+    ) + ''
         export EM_CACHE=$(mktemp -d)
         mv config.sub.ghcjs config.sub
-    ''
+    '')
     # GHC is a bit confused on its cross terminology, as these would normally be
     # the *host* tools.
     + lib.optionalString (!targetPlatform.isGhcjs) (''
