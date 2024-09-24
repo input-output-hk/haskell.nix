@@ -401,7 +401,9 @@ stdenv.mkDerivation (rec {
         export CC="${targetCC}/bin/emcc"
         export CXX="${targetCC}/bin/em++"
         export LD="${targetCC}/bin/emcc"
+        export AR="${targetCC}/bin/emar"
         export NM="${targetCC}/share/emscripten/emnm"
+        export RANLIB="${targetCC}/bin/emranlib"
         export EM_CACHE=$(mktemp -d)
         mv config.sub.ghcjs config.sub
     ''
