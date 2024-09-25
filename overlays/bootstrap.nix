@@ -220,17 +220,17 @@ in {
                      && (final.stdenv.targetPlatform.isAarch64 || final.stdenv.targetPlatform.is32bit))
                   (fromUntil "9.6.1" "9.11" ./patches/ghc/iserv-syms.patch)
                 ++ onAndroid (until "9.0" ./patches/ghc/ghc-8.10.7-weak-symbols-2.patch)
-                ++ onDarwin (onAarch64 (until "9.0" ./patches/ghc/ghc-8.10.7-rts-aarch64-darwin.patch)
-                ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10-android.patch)
-                ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10.7-android-bionic-symbols.patch)
-                ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10.7-bionic-libc.patch)
-                ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10.7-cross-dont-build-stage2-tools.patch)
+                ++ onDarwin (onAarch64 (until "9.0" ./patches/ghc/ghc-8.10.7-rts-aarch64-darwin.patch))
+                ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10-android.patch))
+                ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10.7-android-bionic-symbols.patch))
+                ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10.7-bionic-libc.patch))
+                ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10.7-cross-dont-build-stage2-tools.patch))
                 ++ onAndroid (fromUntil "9.0" "9.8"./patches/ghc/ghc-9.6-hadrian-android.patch)
                 ++ onMusl (onAarch64 (fromUntil "9.0" "9.8" ./patches/ghc/ghc-9.6-hadrian-strip-cmd.patch))
                 ++ on32bit (from "9.0" ./patches/ghc/ghc-9.6-32bit-cmm.patch)
                 # this one is to allow linking extra symbols from iserv.
                 # This one will lead to segv's on darwin, when calling `strlen` during lookupStrHashTable. `strlen` ends up being called with 0x0.
-                ++ final.lib.optionls (
+                ++ final.lib.optionals (
                        (final.stdenv.targetPlatform.isAndroid || final.stdenv.targetPlatform.isLinux)
                     && (final.stdenv.targetPlatform.isAarch64 || final.stdenv.targetPlatform.is32bit))
                   (fromUntil "9.6.1" "9.10" ./patches/ghc/iserv-syms.patch)
