@@ -22,25 +22,25 @@
       description = "This package contains the primitive types and operations supplied by GHC.";
       buildType = "Custom";
       setup-depends = [
-        (hsPkgs.buildPackages.base or (pkgs.buildPackages.base or (errorHandler.setupDepError "base")))
-        (hsPkgs.buildPackages.process or (pkgs.buildPackages.process or (errorHandler.setupDepError "process")))
-        (hsPkgs.buildPackages.filepath or (pkgs.buildPackages.filepath or (errorHandler.setupDepError "filepath")))
-        (hsPkgs.buildPackages.directory or (pkgs.buildPackages.directory or (errorHandler.setupDepError "directory")))
-        (hsPkgs.buildPackages.Cabal or (pkgs.buildPackages.Cabal or (errorHandler.setupDepError "Cabal")))
-        ];
-      };
+        (hsPkgs.pkgsBuildBuild.base or (pkgs.pkgsBuildBuild.base or (errorHandler.setupDepError "base")))
+        (hsPkgs.pkgsBuildBuild.process or (pkgs.pkgsBuildBuild.process or (errorHandler.setupDepError "process")))
+        (hsPkgs.pkgsBuildBuild.filepath or (pkgs.pkgsBuildBuild.filepath or (errorHandler.setupDepError "filepath")))
+        (hsPkgs.pkgsBuildBuild.directory or (pkgs.pkgsBuildBuild.directory or (errorHandler.setupDepError "directory")))
+        (hsPkgs.pkgsBuildBuild.Cabal or (pkgs.pkgsBuildBuild.Cabal or (errorHandler.setupDepError "Cabal")))
+      ];
+    };
     components = {
       "library" = {
         depends = [ (hsPkgs."rts" or (errorHandler.buildDepError "rts")) ];
-        libs = (pkgs.lib).optionals (system.isWindows) [
+        libs = pkgs.lib.optionals (system.isWindows) [
           (pkgs."user32" or (errorHandler.sysDepError "user32"))
           (pkgs."mingw32" or (errorHandler.sysDepError "mingw32"))
           (pkgs."ucrt" or (errorHandler.sysDepError "ucrt"))
-          ] ++ (pkgs.lib).optionals (system.isLinux) [
+        ] ++ pkgs.lib.optionals (system.isLinux) [
           (pkgs."c" or (errorHandler.sysDepError "c"))
           (pkgs."m" or (errorHandler.sysDepError "m"))
-          ];
+        ];
         buildable = true;
-        };
       };
-    } // rec { src = (pkgs.lib).mkDefault ./.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ./.; }

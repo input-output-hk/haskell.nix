@@ -1,4 +1,4 @@
-{ lib, stdenv, mkShell, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, buildPackages, evalPackages, compiler }:
+{ lib, stdenv, mkShell, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, pkgsBuildBuild, evalPackages, compiler }:
 
 { # `packages` function selects packages that will be worked on in the shell itself.
   # These packages will not be built by `shellFor`, but their
@@ -68,7 +68,8 @@ let
   selectedComponents =
     lib.filter isSelectedComponent  (lib.attrValues transitiveDependenciesComponents);
 
-  allHsPkgsComponents = lib.concatMap haskellLib.getAllComponents (builtins.attrValues hsPkgs);
+  allHsPkgsComponents = lib.concatMap haskellLib.getAllComponents
+    (lib.filter (x: !(x.isRedirect or false)) (builtins.attrValues hsPkgs));
 
   # Given a list of `depends`, removes those which are selected components
   removeSelectedInputs =
@@ -114,9 +115,10 @@ let
   # Set up a "dummy" component to use with ghcForComponent.
   component = {
     depends = packageInputs;
-    libs = [];
-    pkgconfig = [];
-    frameworks = [];
+    pre-existing = lib.concatMap (x: (haskellLib.dependToLib x).config.pre-existing or []) packageInputs;
+    libs         = lib.concatMap (x: (haskellLib.dependToLib x).config.libs or []) packageInputs;
+    pkgconfig    = lib.concatMap (x: (haskellLib.dependToLib x).config.pkgconfig or []) packageInputs;
+    frameworks   = lib.concatMap (x: (haskellLib.dependToLib x).config.frameworks or []) packageInputs;
     doExactConfig = false;
   };
   configFiles = makeConfigFiles {
@@ -142,21 +144,17 @@ let
       pname = p.identifier.name;
       haddockDir = p.haddockDir;
     };
-  in hoogleLocal ({
+  in hoogleLocal {
     packages = map docPackage (haskellLib.flatLibDepends component);
 
-    # Need to add hoogle to hsPkgs.
-    # inherit (hsPkgs) hoogle;
-  } // (
-    lib.optionalAttrs (args ? tools && args.tools ? hoogle) {
-      hoogle = buildPackages.haskell-nix.hackage-tool (
-        haskellLib.versionOrModToMods args.tools.hoogle ++ [{
+    hoogle = pkgsBuildBuild.haskell-nix.hackage-tool (
+        lib.optionals (args ? tools && args.tools ? hoogle) (haskellLib.versionOrModToMods args.tools.hoogle)
+      ++ [{
           name = "hoogle";
           compiler-nix-name = compiler.nix-name;
           inherit evalPackages;
         }]);
-    }
-  ));
+    };
 
   mkDrvArgs = builtins.removeAttrs args ["packages" "components" "additional" "withHoogle" "tools"];
 in
@@ -168,12 +166,12 @@ in
     nativeBuildInputs = [ ghcEnv.drv ]
       ++ nativeBuildInputs
       ++ mkDrvArgs.nativeBuildInputs or []
-      ++ lib.attrValues (buildPackages.haskell-nix.tools' evalPackages compiler.nix-name tools)
+      ++ lib.attrValues (pkgsBuildBuild.haskell-nix.tools' evalPackages compiler.nix-name tools)
       # If this shell is a cross compilation shell include
       # wrapper script for running cabal build with appropriate args.
       # Includes `--with-compiler` in case the `cabal.project` file has `with-compiler:` in it.
       ++ lib.optional (ghcEnv.targetPrefix != "") (
-            buildPackages.writeShellScriptBin "${ghcEnv.targetPrefix}cabal" ''
+            pkgsBuildBuild.writeShellScriptBin "${ghcEnv.targetPrefix}cabal" ''
               exec cabal \
                 --with-ghc=${ghcEnv.targetPrefix}ghc \
                 --with-compiler=${ghcEnv.targetPrefix}ghc \

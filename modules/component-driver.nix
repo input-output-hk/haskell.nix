@@ -1,4 +1,4 @@
-{ config, pkgs, lib, haskellLib, buildModules, ... }:
+{ config, options, pkgs, lib, haskellLib, buildModules, ... }:
 let
   builder = haskellLib.weakCallPackage pkgs ../builder {
     inherit haskellLib;
@@ -10,6 +10,11 @@ let
 in
 
 {
+  # Packages in that are `pre-existing` in the cabal plan
+  options.preExistingPkgs = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+    default = [];
+  };
   # This has a slightly modified option type. We will *overwrite* any previous
   # setting of nonRelocatablePkgs, instead of merging them.  Otherwise you
   # have no chance of removing packages retroactively.  We might improve this
@@ -24,7 +29,7 @@ in
 
   options.reinstallableLibGhc = lib.mkOption {
     type = lib.types.bool;
-    default = true;
+    default = !pkgs.stdenv.hostPlatform.isGhcjs;
     description = "Is lib:ghc reinstallable?";
   };
   options.setup-depends = lib.mkOption {
@@ -53,7 +58,11 @@ in
   #
   # without reinstallable-lib:ghc, this is significantly larger.
 
-  config.nonReinstallablePkgs =
+  config.nonReinstallablePkgs = if config.preExistingPkgs != []
+   then ["rts"] ++ config.preExistingPkgs
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "8.11" < 0 && pkgs.stdenv.hostPlatform.isGhcjs) [
+      "ghcjs-prim" "ghcjs-th"]
+   else
     [ "rts" "ghc-prim" "integer-gmp" "integer-simple" "base"
       "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
       # ghcjs custom packages
@@ -77,6 +86,10 @@ in
     ++ lib.optionals (builtins.compareVersions config.compiler.version "8.11" >= 0) [
       # stm and exceptions are needed by the GHC package since 9.0.1
       "stm" "exceptions"]
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "9.8.1" >= 0) [
+      "semaphore-compat"]
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "9.9" >= 0) [
+      "os-string"]
     )
     ++ lib.optionals (!config.reinstallableLibGhc || __elem config.compiler.nix-name ["ghc865"]) [
       "ghc-heap"
@@ -103,9 +116,10 @@ in
 
   config.hsPkgs =
     { inherit (builder) shellFor makeConfigFiles ghcWithPackages ghcWithHoogle;
-      buildPackages = buildModules.config.hsPkgs;
+      buildPackages = buildModules.config.hsPkgs; # TODO perhaps remove this
+      pkgsBuildBuild = buildModules.config.hsPkgs;
     } //
     lib.mapAttrs
-      (_name: pkg: if pkg == null then null else builder.build-package config pkg)
+      (name: pkg: if !(options.packages.${name}.isDefined or true) || pkg == null then null else builder.build-package config pkg)
       (config.packages // lib.genAttrs (config.nonReinstallablePkgs ++ config.bootPkgs) (_: null));
 }

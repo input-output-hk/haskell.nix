@@ -10,9 +10,6 @@ let
       pkgb = ./.plan.nix/pkgb.nix;
     }];
     modules = [{
-      # Package has no exposed modules which causes
-      #   haddock: No input file(s)
-      packages.bytestring-builder.doHaddock = false;
       inherit evalPackages;
     }];
   };

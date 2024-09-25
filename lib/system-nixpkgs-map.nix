@@ -21,7 +21,11 @@ in
 # -- linux
 { crypto = [ openssl ];
   "c++" = [ libcxx ];
-  "c++abi" = [ libcxxabi ];
+  # at some point this happened:
+  #
+  #    error: 'libcxxabi' was merged into 'libcxx'
+  #
+  "c++abi" = if (__tryEval libcxxabi).success then [ libcxxabi ] else [ libcxx ];
   system-cxx-std-lib = [];
   "stdc++" = gcclibs;
   "stdc++-6" = gcclibs;
@@ -100,6 +104,7 @@ in
   # compile C sources (https://github.com/fpco/odbc/blob/master/cbits/odbc.c)
   odbc = [ unixODBC ];
   opencv = [ opencv3 ];
+  phonenumber = [ libphonenumber ];
   icuuc = [ icu ];
   icui18n = [ icu ];
   icu-i18n = [ icu ];

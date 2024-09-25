@@ -29,7 +29,7 @@
       extraSrcFiles = [];
       extraTmpFiles = [];
       extraDocFiles = [];
-      };
+    };
     components = {
       "library" = {
         depends = [
@@ -40,9 +40,9 @@
           (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
           (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
           (hsPkgs."ghci" or (errorHandler.buildDepError "ghci"))
-          ];
+        ];
         buildable = true;
         modules = [ "GHCJS/Prim/TH/Eval" "GHCJS/Prim/TH/Types" ];
-        };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../lib/ghcjs-th; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../lib/ghcjs-th; }

@@ -14,7 +14,8 @@ let
     if builtins.compareVersions version v >= 0
       then patch
       else null;
-in {
+  addPackageKeys = x: x // { package-keys = builtins.attrNames x.packages; };
+in addPackageKeys {
   # terminfo doesn't list libtinfo in its cabal file. We could ignore
   # this if we used the terminfo shipped with GHC, but this package is
   # reinstallable so we'd rather have it defined in the plan.
@@ -44,7 +45,7 @@ in {
     (fromUntil "3.2.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.0.0.0-no-final-checks.diff)
     (fromUntil "3.6.0.0" "3.11" ../overlays/patches/Cabal/Cabal-3.6.0.0-drop-pkg-db-check.diff)
     (fromUntil "3.6.0.0" "3.11" ../overlays/patches/Cabal/Cabal-3.6.0.0-no-final-checks.diff)
-    (fromUntil "3.10" "3.11" ../overlays/patches/Cabal/9220.patch)
+    (fromUntil "3.10" "3.10.3" ../overlays/patches/Cabal/9220.patch)
   ];
 
   # These two patches are:
@@ -76,6 +77,7 @@ in {
     (fromUntil "9.2.0.0" "9.3" ../overlays/patches/ghc-lib-parser-9.2-global-unique-counters-in-rts.patch)
     (fromUntil "9.4.0.0" "9.7" ../overlays/patches/ghc-lib-parser-9.4-global-unique-counters-in-rts.patch)
   ];
+  packages.ghc-lib-parser.components.library.pre-existing = ["ghc-boot-th"];
 
   # See https://github.com/haskell-nix/hnix/pull/1053
   packages.hnix.patches = [
@@ -183,7 +185,9 @@ in {
   # https://gitlab.haskell.org/ghc/ghc/-/issues/23392
   # Using -j1 works around the issue.
   packages.gi-gtk.components.library.ghcOptions =
-    pkgs.lib.optional (__elem config.compiler.nix-name ["ghc961" "ghc962" "ghc963" "ghc964"]) "-j1";
+    pkgs.lib.optional (
+         builtins.compareVersions config.compiler.version "9.6.1" >= 0
+      && builtins.compareVersions config.compiler.version "9.9" < 0) "-j1";
 
   # With recent versions of nixpkgs fortify causes musl version of the
   # text package to fail with:

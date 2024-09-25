@@ -39,7 +39,7 @@
         "GLR_Lib"
         "GLR_Lib-ghc"
         "GLR_Lib-ghc-debug"
-        ];
+      ];
       extraSrcFiles = [
         "ANNOUNCE"
         "CHANGES"
@@ -145,10 +145,10 @@
         "tests/typeclass_monad002.ly"
         "tests/typeclass_monad_lexer.y"
         "tests/rank2.y"
-        ];
+      ];
       extraTmpFiles = [];
       extraDocFiles = [];
-      };
+    };
     components = {
       exes = {
         "happy" = {
@@ -157,7 +157,7 @@
             (hsPkgs."array" or (errorHandler.buildDepError "array"))
             (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
             (hsPkgs."mtl" or (errorHandler.buildDepError "mtl"))
-            ];
+          ];
           buildable = true;
           modules = [
             "Paths_happy"
@@ -178,23 +178,23 @@
             "AttrGrammarParser"
             "ParamRules"
             "PrettyGrammar"
-            ];
+          ];
           hsSourceDirs = [ "src" ];
           mainPath = [ "Main.lhs" ];
-          };
         };
+      };
       tests = {
         "tests" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."process" or (errorHandler.buildDepError "process"))
-            ];
+          ];
           build-tools = [
-            (hsPkgs.buildPackages.happy.components.exes.happy or (pkgs.buildPackages.happy or (errorHandler.buildToolDepError "happy:happy")))
-            ];
+            (hsPkgs.pkgsBuildBuild.happy.components.exes.happy or (pkgs.pkgsBuildBuild.happy or (errorHandler.buildToolDepError "happy:happy")))
+          ];
           buildable = true;
           mainPath = [ "test.hs" ];
-          };
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../.; }

@@ -1,0 +1,23 @@
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index 9e15349e7a..140554eaab 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -1972,7 +1972,7 @@ ocMprotect_Elf( ObjectCode *oc )
+         if(section->size == 0) continue;
+         switch (section->kind) {
+         case SECTIONKIND_CODE_OR_RODATA:
+-            if (section->alloc != SECTION_M32) {
++            if (section->alloc != SECTION_M32 && section->alloc != SECTION_POOL) {
+                 // N.B. m32 handles protection of its allocations during
+                 // flushing.
+                 mprotectForLinker(section->mapped_start, section->mapped_size, MEM_READ_EXECUTE);
+@@ -2073,8 +2073,7 @@ ocResolve_ELF ( ObjectCode* oc )
+     ocFlushInstructionCache( oc );
+ #endif
+
+-    // return ocMprotect_Elf(oc);
+-    return true;
++    return ocMprotect_Elf(oc);
+ }
+
+ /*

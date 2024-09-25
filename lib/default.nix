@@ -98,12 +98,13 @@ in {
   # Was there a reference to the package source in the `cabal.project` or `stack.yaml` file.
   # This is used to make the default `packages` list for `shellFor`.
   isLocalPackage = p: p.isLocal or false;
-  selectLocalPackages = lib.filterAttrs (_n: p: p != null && isLocalPackage p);
+  isRedirectPackage = p: p.isRedirect or false;
+  selectLocalPackages = lib.filterAttrs (_n: p: p != null && isLocalPackage p && !isRedirectPackage p);
 
   # if it's a project package it has a src attribute set with an origSubDir attribute.
   # project packages are a subset of localPackages
   isProjectPackage = p: p.isProject or false;
-  selectProjectPackages = lib.filterAttrs (_n: p: p != null && isLocalPackage p && isProjectPackage p);
+  selectProjectPackages = lib.filterAttrs (_n: p: p != null && isLocalPackage p && isProjectPackage p && !isRedirectPackage p);
 
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.
@@ -340,7 +341,19 @@ in {
 
   # Converts from a `compoent.depends` value to a library derivation.
   # In the case of sublibs the `depends` value should already be the derivation.
-  dependToLib = d: d.components.library or d;
+  dependToLib = d:
+    # Do not simplify this to `d.components.library or d`, as that
+    # will not give a good error message if the `.library`
+    # is missing (happens if the package is unplanned,
+    # but has overrides).
+    # It would be nice to put an `assert` here, but there is
+    # currently no good way to get the name of the dependency
+    # when it is not in the plan.  The attribute path of
+    # `d` in the `nix` error should include the name
+    # eg. `packages.Cabal.components.library`.
+    if d ? components
+      then d.components.library
+      else d;
 
   projectOverlays = import ./project-overlays.nix {
     inherit lib haskellLib;
@@ -570,11 +583,6 @@ in {
     inherit (pkgs.buildPackages.buildPackages) lib runCommand;
   };
 
-  makeDummyGhcData = import ./make-dummy-ghc-data.nix {
-    inherit pkgs;
-    inherit (pkgs.buildPackages.buildPackages) runCommand;
-  };
-
   # Here we try to figure out which qemu to use based on the host platform.
   # This guess can be overridden by passing qemuSuffix
   qemuByHostPlatform = hostPlatform:
@@ -608,4 +616,6 @@ in {
       }";
 
   types = import ./types.nix { inherit lib; };
+
+  addPackageKeys = x: x // { package-keys = builtins.attrNames x.packages; };
 }

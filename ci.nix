@@ -1,6 +1,6 @@
 # 'supportedSystems' restricts the set of systems that we will evaluate for. Useful when you're evaluating
 # on a machine with e.g. no way to build the Darwin IFDs you need!
-{ ifdLevel ? 3
+{ ifdLevel # This is passed in from flake.nix
 , checkMaterialization ? false
 , system ? builtins.currentSystem
 , evalSystem ? builtins.currentSystem or "x86_64-linux"
@@ -22,6 +22,7 @@
     "R2211" = inputs.nixpkgs-2211;
     "R2305" = inputs.nixpkgs-2305;
     "R2311" = inputs.nixpkgs-2311;
+    "R2405" = inputs.nixpkgs-2405;
     "unstable" = inputs.nixpkgs-unstable;
   };
 
@@ -29,10 +30,14 @@
     # set checkMaterialization as per top-level argument
     overlays = [
       haskellNix.overlay
-      (_final: prev: {
+      (final: prev: {
         haskell-nix = prev.haskell-nix // {
           inherit checkMaterialization;
+          extraPkgconfigMappings = prev.haskell-nix.extraPkgconfigMappings or {} // {
+            "libsodium" = [ "libsodium-18" ];
+          };
         };
+        libsodium-18 = (final.callPackage (inputs.nixpkgs-2311 + "/pkgs/development/libraries/libsodium") {}).overrideAttrs (_: { dontDisableStatic = true; });
       })
     ];
     # Needed for dwarf tests
@@ -56,25 +61,19 @@
       # cabal-install and nix-tools plans.  When removing a ghc version
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
-      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2305") {
-        ghc810 = false;
-        ghc90 = false;
-        ghc92 = false;
-      } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2311") {
-        ghc94 = false;
+      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2405") {
         ghc96 = false;
         ghc98 = false;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc810 = true;
-        ghc90 = false;
-        ghc92 = true;
-        ghc94 = true;
+        ghc92 = false;
+        ghc94 = false;
         ghc96 = true;
-        ghc96llvm = true;
         ghc98 = true;
-        ghc98llvm = true;
-        # ghc98X = true; Disabled for now as there are no changes since 9.8.1 release yet and the current source does not boot with 9.8.1
-        ghc99 = true;
+        ghc98llvm = false;
+        ghc910 = true;
+        ghc910llvm = true;
+        ghc911 = true;
       })));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values
@@ -84,21 +83,21 @@
       && (__match ".*llvm" compiler-nix-name == null)
       && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"])
        || (system == "aarch64-linux" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"])
-       || (system == "x86_64-darwin" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"])
-       || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"])
+       || (system == "x86_64-darwin" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948" "ghc966" "ghc982"])
+       || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948" "ghc966" "ghc982"])
        )) {
     inherit (lib.systems.examples) ghcjs;
-  } // lib.optionalAttrs (nixpkgsName != "unstable"
-      && (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884"])
+  } // lib.optionalAttrs (
+         (__match ".*llvm" compiler-nix-name == null)
+      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc91120240918"]) # Including GHC HEAD here because the patches for rts/RtsSymbols.c no longer apply and mingwW64 GHC build fails without them
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
       && (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc8107" "ghc902" "ghc928"])
+      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc8107" "ghc902" "ghc928" "ghc948"])
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) ucrt64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc884"]) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"]) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
@@ -124,8 +123,6 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
           ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name};
         } // pkgs.lib.optionalAttrs runTests {
           inherit (build) tests tools maintainer-scripts maintainer-script-cache;
-        } // pkgs.lib.optionalAttrs (ifdLevel >= 2) {
-          inherit (pkgs.haskell-nix.iserv-proxy-exes.${compiler-nix-name}) iserv-proxy;
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
           hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }).getComponent "exe:hello";
         });
@@ -149,7 +146,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
         // pkgs.lib.optionalAttrs (ifdLevel >= 2 && crossSystemName != "ghcjs")
             pkgs.haskell-nix.iserv-proxy-exes.${compiler-nix-name}
         // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
-          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit compiler-nix-name; }).getComponent "exe:hello";
+          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }).getComponent "exe:hello";
         })
       ))
     )

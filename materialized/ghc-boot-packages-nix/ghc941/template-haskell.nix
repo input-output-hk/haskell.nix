@@ -21,7 +21,7 @@
       synopsis = "Support library for Template Haskell";
       description = "This package provides modules containing facilities for manipulating\nHaskell source code using Template Haskell.\n\nSee <http://www.haskell.org/haskellwiki/Template_Haskell> for more\ninformation.";
       buildType = "Simple";
-      };
+    };
     components = {
       "library" = {
         depends = [
@@ -29,8 +29,8 @@
           (hsPkgs."ghc-boot-th" or (errorHandler.buildDepError "ghc-boot-th"))
           (hsPkgs."ghc-prim" or (errorHandler.buildDepError "ghc-prim"))
           (hsPkgs."pretty" or (errorHandler.buildDepError "pretty"))
-          ] ++ (pkgs.lib).optional (!flags.vendor-filepath) (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"));
+        ] ++ pkgs.lib.optional (!flags.vendor-filepath) (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"));
         buildable = true;
-        };
       };
-    } // rec { src = (pkgs.lib).mkDefault ./.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ./.; }

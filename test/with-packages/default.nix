@@ -52,8 +52,8 @@ in recurseIntoAttrs {
 
   run = stdenv.mkDerivation {
     name = "with-packages-test";
-    decLibraryDepends = showDepends (project true).pkg-set.config.packages.test-with-packages.components.library;
-    libraryDepends = showDepends (project false).pkg-set.config.packages.test-with-packages.components.library;
+    decLibraryDepends = showDepends decLibrary.config;
+    libraryDepends = showDepends library.config;
 
     src = ./.;
 
@@ -108,7 +108,10 @@ in recurseIntoAttrs {
 
     passthru = {
       # Used for debugging with nix repl
-      inherit packages project;
+      packages = packages false;
+      project =  project false;
+      packages-exact = packages true;
+      project-exact =  project true;
     };
   };
 }

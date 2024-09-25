@@ -1,5 +1,5 @@
 { stdenv, lib, haskellLib, buildPackages }:
-drv:
+let self = drv:
 
 let
   component = drv.config;
@@ -28,6 +28,8 @@ in stdenv.mkDerivation ((
 
   passthru = {
     inherit (drv) identifier config configFiles executableToolDepends cleanSrc env exeName;
+    profiled = self drv.profiled;
+    dwarf = self drv.dwarf;
   };
 
   inherit (drv) meta LANG LC_ALL buildInputs;
@@ -62,4 +64,5 @@ in stdenv.mkDerivation ((
   inherit (component) preCheck postCheck;
 }
 // lib.optionalAttrs (drv ? LOCALE_ARCHIVE) { inherit (drv) LOCALE_ARCHIVE; }
-)
+);
+in self

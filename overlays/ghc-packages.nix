@@ -2,7 +2,7 @@ final: _prev:
 let
   callCabal2Nix = _compiler-nix-name: name: src: final.buildPackages.stdenv.mkDerivation {
     name = "${name}-package.nix";
-    inherit src;
+    src = src.srcForCabal2Nix or src;
     nativeBuildInputs = [
       # It is not safe to check the nix-tools materialization here
       # as we would need to run this code to do so leading to
@@ -42,7 +42,7 @@ let
   combineAndMaterialize = unchecked: materialized-dir: ghcName: bootPackages:
       (final.haskell-nix.materialize ({
           materialized =
-            if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.8" < 0
+            if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.11" < 0
               then materialized-dir + "/ghc-boot-packages-nix/${ghcName +
                 # The 3434.patch we apply to fix linking on arm systems changes ghc-prim.cabal
                 # so it needs its own materialization.
@@ -63,7 +63,6 @@ let
   # The packages in GHC source and the locations of them
   ghc-extra-pkgs = ghcVersion: {
       base         = "libraries/base";
-      bytestring   = "libraries/bytestring";
       ghci         = "libraries/ghci";
       ghc-heap     = "libraries/ghc-heap";
       ghc-prim     = "libraries/ghc-prim";
@@ -71,40 +70,19 @@ let
       integer-gmp  = "libraries/integer-gmp";
       template-haskell = "libraries/template-haskell";
       iserv        = "utils/iserv";
+      ghc-boot     = "libraries/ghc-boot";
     } // final.lib.optionalAttrs ((!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "9.6" < 0) && builtins.compareVersions ghcVersion "9.8" < 0) {
       libiserv     = "libraries/libiserv";
-    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.9" > 0) {
-      Cabal        = "libraries/Cabal/Cabal";
-      Cabal-syntax = "libraries/Cabal/Cabal-syntax";
-      cabal-install = "libraries/Cabal/cabal-install";
-      cabal-install-solver = "libraries/Cabal/cabal-install-solver";
-    } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs) {
+    } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "9" > 0) {
       ghc          = "compiler";
-      ghc-boot     = "libraries/ghc-boot";
-    } // (
-      if builtins.compareVersions ghcVersion "9.4" < 0
-        then {
-          # The version of `Win32` that comes with ghc 9.4 (2.12.0.0) is older
-          # than the one in hackage.  Including it causes `cabal configure` to fail.
-          Win32        = "libraries/Win32";
-          # As of GHC 9.4 this has been split out of the GHC repo and
-          # is now in the iserv-proxy flake input
-          iserv-proxy  = "utils/iserv-proxy";
-        }
-        else {
-          genprimopcode = "utils/genprimopcode";
-          deriveConstants = "utils/deriveConstants";
-        }
-    ) // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "8.10.5" >= 0) {
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.4" >= 0) {
+      genprimopcode = "utils/genprimopcode";
+      deriveConstants = "utils/deriveConstants";
+    } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "8.10.5" >= 0) {
       # Not sure why, but this is missing from older ghcjs versions
       remote-iserv = "utils/remote-iserv";
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.0.1" >= 0) {
       ghc-bignum   = "libraries/ghc-bignum";
-    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.2.1" >= 0) {
-      deepseq      = "libraries/deepseq";
-      pretty       = "libraries/pretty";
-    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.8" >= 0) {
-      parsec       = "libraries/parsec";
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.9" >= 0) {
       ghc-platform = "libraries/ghc-platform";
       ghc-internal = "libraries/ghc-internal";
@@ -151,7 +129,7 @@ in rec {
               mkdir $out
               lndir -silent ${ghc.passthru.configured-src}/${subDir} $out
               lndir -silent ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC $out/GHC
-            '')
+            '') // { srcForCabal2Nix = ghc.passthru.configured-src + "/${subDir}"; }
           else if subDir == "compiler"
             then final.haskell-nix.haskellLib.cleanSourceWith {
               src = nix24srcFix (final.buildPackages.runCommand "ghc-src" { nativeBuildInputs = [final.buildPackages.xorg.lndir]; } ''
@@ -172,12 +150,15 @@ in rec {
                 if [[ -f ${ghc.generated}/compiler/stage2/build/GHC/Settings/Config.hs ]]; then
                   ln -s ${ghc.generated}/compiler/stage2/build/GHC/Settings/Config.hs $out/compiler/GHC/Settings
                 fi
+                if [[ -f ${ghc.generated}/compiler/GHC/CmmToLlvm/Version/Bounds.hs ]]; then
+                  ln -s ${ghc.generated}/compiler/GHC/CmmToLlvm/Version/Bounds.hs $out/compiler/GHC/CmmToLlvm/Version
+                fi
                 ln -s ${ghc.generated}/includes/dist-derivedconstants/header/* $out/compiler
                 ln -s ${ghc.generated}/compiler/stage2/build/*.hs-incl $out/compiler
               '');
               inherit subDir;
               includeSiblings = true;
-            }
+            } // { srcForCabal2Nix = ghc.passthru.configured-src + "/${subDir}"; }
             else "${ghc.passthru.configured-src}/${subDir}";
         nix = callCabal2Nix ghcName "${ghcName}-${pkgName}" src;
       }) (ghc-extra-pkgs ghc.version))
@@ -255,7 +236,7 @@ in rec {
       index-state = final.haskell-nix.internalHackageIndexState;
       # Where to look for materialization files
       materialized =
-        if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.8" < 0
+        if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.11" < 0
           then ../materialized/ghc-extra-projects + "/${ghc-extra-projects-type proj.ghc}/${ghcName}"
           else null;
       compiler-nix-name = ghcName;

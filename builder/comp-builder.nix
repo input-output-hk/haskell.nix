@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, windows, zlib, ncurses, nodejs, nonReinstallablePkgs }@defaults:
+{ pkgs, stdenv, buildPackages, pkgsBuildBuild, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, windows, zlib, ncurses, nodejs, nonReinstallablePkgs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -28,7 +28,7 @@ let self =
     # (not just the one we are building).
     # Enable for tests in packages that use cabal-doctest.
     ( haskellLib.isTest componentId &&
-      lib.any (x: x.identifier.name or "" == "cabal-doctest") package.setup-depends
+      lib.any (x: x.identifier.name or "" == "cabal-doctest") (package.setup-depends ++ setup.config.depends or [])
     )
 , allComponent # Used when `configureAllComponents` is set to get a suitable configuration.
 
@@ -110,8 +110,8 @@ let
 
   ghc = (if enableDWARF then (x: x.dwarf) else (x: x)) (
         (if smallAddressSpace then (x: x.smallAddressSpace) else (x: x)) defaults.ghc);
-  setup = (if enableDWARF then (x: x.dwarf) else (x: x)) (
-        (if smallAddressSpace then (x: x.smallAddressSpace) else (x: x)) drvArgs.setup);
+  setup = (if enableDWARF then (x: x.dwarf or x) else (x: x)) (
+          (if smallAddressSpace then (x: x.smallAddressSpace or x) else (x: x)) drvArgs.setup);
 
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
   canCleanSource = !(cabal-generator == "hpack" && !(package.cleanHpack or false));
@@ -194,8 +194,8 @@ let
       ++ lib.optional (!stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9.8" >= 0)
         "--with-ld=${stdenv.cc.bintools.targetPrefix}ld"
       ++ lib.optionals (stdenv.hostPlatform.isGhcjs) [
-        "--with-gcc=${buildPackages.emscripten}/bin/emcc"
-        "--with-ld=${buildPackages.emscripten}/bin/emcc"
+        "--with-gcc=${pkgsBuildBuild.emscripten}/bin/emcc"
+        "--with-ld=${pkgsBuildBuild.emscripten}/bin/emcc"
       ]
       ++ [ # other flags
       (disableFeature dontStrip "executable-stripping")
@@ -293,7 +293,7 @@ let
 
       enableParallelBuilding = true;
 
-      SETUP_HS = setup + /bin/Setup;
+      SETUP_HS = setup + "/bin/${setup.exeName}";
 
       inherit cabalFile;
       passAsFile = [ "cabalFile" ];
@@ -426,7 +426,8 @@ let
 
     nativeBuildInputs =
       [ghc buildPackages.removeReferencesTo]
-      ++ executableToolDepends;
+      ++ executableToolDepends
+      ++ (lib.optional stdenv.hostPlatform.isGhcjs buildPackages.nodejs);
 
     outputs = ["out"]
       ++ (lib.optional keepConfigFiles "configFiles")
@@ -553,7 +554,7 @@ let
               # we assume that if the SETUP_HS command fails and the following line was found in the error
               # log, that it was the only error. Hence if we do _not_ find the line, grep will fail and this derivation
               # will be marked as failure.
-              cat $SETUP_ERR | grep 'No executables and no library found\. Nothing to do\.'
+              cat $SETUP_ERR | tr '\n' ' ' | tr -d '\r' | grep 'No executables and no library found\. Nothing to do\.'
             fi
             ''}
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
@@ -643,7 +644,11 @@ let
       ''))
       + (lib.optionalString doCoverage ''
         mkdir -p $out/share
-        cp -r dist/hpc $out/share
+        if [ -d dist/build/extra-compilation-artifacts ]; then
+          cp -r dist/build/extra-compilation-artifacts/hpc $out/share
+        else
+          cp -r dist/hpc $out/share
+        fi
         cp dist/setup-config $out/
       '')
       }

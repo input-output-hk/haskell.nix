@@ -1,0 +1,98 @@
+diff --git a/compiler/nativeGen/AsmCodeGen.hs b/compiler/nativeGen/AsmCodeGen.hs
+index 7357273..196acc8 100644
+--- a/compiler/nativeGen/AsmCodeGen.hs
++++ b/compiler/nativeGen/AsmCodeGen.hs
+@@ -321,6 +321,13 @@ nativeCodeGen' dflags this_mod modLoc ncgImpl h us cmms
+         -- Pretty if it weren't for the fact that we do lots of little
+         -- printDocs here (in order to do codegen in constant space).
+         bufh <- newBufHandle h
++        let Module _u nm = this_mod
++        -- emit file prolue. Including file meta inforamtion. e.g. The
++        -- current name of the compile file. This may show up during linking,
++        -- and thus having the proper file name is essential.
++        _ <- emitNativeCode dflags bufh $
++                text "\t.file \"" <> ftext (moduleNameFS nm) <> text ".hs\""
++
+         let ngs0 = NGS [] [] [] [] [] [] emptyUFM mapEmpty
+         (ngs, us', a) <- cmmNativeGenStream dflags this_mod modLoc ncgImpl bufh us
+                                          cmms ngs0
+diff --git a/compiler/nativeGen/PIC.hs b/compiler/nativeGen/PIC.hs
+index 7ea68e1..af8cba2 100644
+--- a/compiler/nativeGen/PIC.hs
++++ b/compiler/nativeGen/PIC.hs
+@@ -156,10 +156,17 @@ cmmMakeDynamicReference dflags referenceKind lbl
+ cmmMakePicReference :: DynFlags -> CLabel -> CmmExpr
+ cmmMakePicReference dflags lbl
+
+-        -- Windows doesn't need PIC,
+-        -- everything gets relocated at runtime
++        -- Windows used to be absolute 32bit only (small code model)
++        -- however with ASLR, and high entropy base images, we assume
++        -- everything to be RIP relative. This basically for windows
++        -- we want always PIC relative addressing.
+         | OSMinGW32 <- platformOS $ targetPlatform dflags
+-        = CmmLit $ CmmLabel lbl
++        = CmmMachOp (MO_Add (wordWidth dflags))
++                [ CmmReg (CmmGlobal PicBaseReg)
++                , CmmLit $ picRelative dflags
++                                (platformArch   $ targetPlatform dflags)
++                                (platformOS     $ targetPlatform dflags)
++                                lbl ]
+
+         | OSAIX <- platformOS $ targetPlatform dflags
+         = CmmMachOp (MO_Add W32)
+@@ -453,6 +460,8 @@ picRelative _ arch os lbl
+
+           in    result
+
++picRelative _ ArchX86_64 OSMinGW32 lbl = CmmLabel lbl
++
+ picRelative _ _ _ _
+         = panic "PositionIndependentCode.picRelative undefined for this platform"
+
+diff --git a/compiler/nativeGen/X86/CodeGen.hs b/compiler/nativeGen/X86/CodeGen.hs
+index e319931..3909a23 100644
+--- a/compiler/nativeGen/X86/CodeGen.hs
++++ b/compiler/nativeGen/X86/CodeGen.hs
+@@ -343,6 +343,13 @@ stmtToInstrs bid stmt = do
+                   lbl <- mkAsmTempLabel <$> getUniqueM
+                   return $ unitOL $ UNWIND lbl tbl
+
++      CmmAssign reg src@(CmmLit lit)
++        | isFloatType ty         -> assignReg_FltCode format reg src
++        | is32Bit && isWord64 ty -> assignReg_I64Code      reg src
++        | otherwise              -> assignReg_IntCode format reg src
++          where ty = cmmRegType dflags reg
++                format = cmmTypeFormat ty
++
+       CmmAssign reg src
+         | isFloatType ty         -> assignReg_FltCode format reg src
+         | is32Bit && isWord64 ty -> assignReg_I64Code      reg src
+@@ -350,6 +357,13 @@ stmtToInstrs bid stmt = do
+           where ty = cmmRegType dflags reg
+                 format = cmmTypeFormat ty
+
++      CmmStore addr src@(CmmLit lit)
++        | isFloatType ty         -> assignMem_FltCode format addr src
++        | is32Bit && isWord64 ty -> assignMem_I64Code      addr src
++        | otherwise              -> assignMem_IntCode format addr src
++          where ty = cmmExprType dflags src
++                format = cmmTypeFormat ty
++
+       CmmStore addr src
+         | isFloatType ty         -> assignMem_FltCode format addr src
+         | is32Bit && isWord64 ty -> assignMem_I64Code      addr src
+@@ -3409,7 +3423,12 @@ outOfLineCmmOp bid mop res args
+ genSwitch :: DynFlags -> CmmExpr -> SwitchTargets -> NatM InstrBlock
+
+ genSwitch dflags expr targets
+-  | positionIndependent dflags
++  -- Windows is a bit odd.  It's virtually PIC on x86_64, by preference of
++  -- %rip relative addressing to produce the appropriate IMAGE relative
++  -- relocations.  Absolute relocations start to fail with binutils switching
++  -- to default to high entropy ASLR and dynamic base.  For most things, we can
++  -- simply consider Windows to be PIC on x86_64.
++  | positionIndependent dflags || (platformOS $ targetPlatform dflags) == OSMinGW32
+   = do
+         (reg,e_code) <- getNonClobberedReg (cmmOffset dflags expr offset)
+            -- getNonClobberedReg because it needs to survive across t_code

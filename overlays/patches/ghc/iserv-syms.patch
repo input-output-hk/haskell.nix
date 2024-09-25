@@ -2,12 +2,11 @@ diff --git a/rts/Linker.c b/rts/Linker.c
 index 7eb0409..d538cad 100644
 --- a/rts/Linker.c
 +++ b/rts/Linker.c
-@@ -424,6 +424,16 @@ Mutex dl_mutex; // mutex to protect dlopen/dlerror critical section
+@@ -424,6 +424,15 @@ Mutex dl_mutex; // mutex to protect dlopen/dlerror critical section
  #endif
  #endif
 
-+RtsSymbolVal* __attribute__((weak)) iserv_syms();
-+RtsSymbolVal*                       iserv_syms() {
++RtsSymbolVal* __attribute__((weak)) iserv_syms() {
 +    return (RtsSymbolVal[]){
 +        { .lbl = NULL
 +        , .addr = NULL
@@ -19,7 +18,7 @@ index 7eb0409..d538cad 100644
  void initLinker (void)
  {
      // default to retaining CAFs for backwards compatibility.  Most
-@@ -471,6 +481,19 @@ initLinker_ (int retain_cafs)
+@@ -471,6 +480,22 @@ initLinker_ (int retain_cafs)
          }
          IF_DEBUG(linker, debugBelch("initLinker: inserting rts symbol %s, %p\n", sym->lbl, sym->addr));
      }
@@ -28,7 +27,9 @@ index 7eb0409..d538cad 100644
 +     * symbol in the rts, that can be overrided by linking in an object with
 +     * a corresponding definition later.
 +     */
++    IF_DEBUG(linker, debugBelch("checking iserv_syms\n"));
 +    if(iserv_syms && iserv_syms() != NULL) for(RtsSymbolVal *sym = iserv_syms(); sym->lbl != NULL; sym++) {
++        IF_DEBUG(linker, debugBelch("adding iserv symbol\n"));
 +        if (! ghciInsertSymbolTable(WSTR("(GHCi built-in symbols)"),
 +                                    symhash, sym->lbl, sym->addr,
 +                                    sym->strength, sym->type, NULL)) {
@@ -36,6 +37,7 @@ index 7eb0409..d538cad 100644
 +        }
 +        IF_DEBUG(linker, debugBelch("initLinker: inserting rts symbol %s, %p\n", sym->lbl, sym->addr));
 +    }
++    IF_DEBUG(linker, debugBelch("done with iserv_syms\n"));
 
      // Redirect newCAF to newRetainedCAF if retain_cafs is true.
      if (! ghciInsertSymbolTable(WSTR("(GHCi built-in symbols)"), symhash,

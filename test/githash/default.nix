@@ -15,10 +15,9 @@ let
   project = haskell-nix.cabalProject' {
     inherit src;
     cabalProjectLocal = builtins.readFile ../cabal.project.local;
-    # When haskell.nix has come from the store (e.g. on hydra) we need to provide
-    # a suitable mock of the cleaned source with a .git dir.
-    modules = (optional (!(src ? origSrc && __pathExists (src.origSrc + "/.git"))) {
-      packages.githash-test.src =
+    # Mock the .git dir to avoid rebuilding on every commit.
+    modules = [{
+      packages.githash-test.src = mkForce
         rec {
           origSrc = evalPackages.runCommand "githash-test-src" { nativeBuildInputs = [ evalPackages.gitReallyMinimal ]; } ''
             mkdir -p $out/test/githash
@@ -32,7 +31,6 @@ let
           origSrcSubDir = origSrc + origSubDir;
           outPath = origSrcSubDir;
         };
-      }) ++ [{
         packages.githash-test.components.exes.githash-test.build-tools = mkForce [ git ];
       }];
     inherit compiler-nix-name evalPackages;

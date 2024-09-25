@@ -74,7 +74,7 @@ let
             cabal-install
         ];
 
-    inherit (pkgs.buildPackages) emscriptenupstream emscripten emsdk;
+    inherit (pkgs.pkgsBuildBuild) emscriptenupstream emscripten emsdk;
 
     # Inputs needed to boot the GHCJS compiler
     bootInputs = with pkgs.buildPackages; [
@@ -147,6 +147,17 @@ let
         index-state = "2021-03-20T00:00:00Z";
         inherit compiler-nix-name;
         configureArgs = pkgs.lib.optionalString (isGhcjs88 && !isGhcjs810) "--constraint='Cabal >=3.0.2.0 && <3.1'";
+        # set use-host-template-haskell. This *does*
+        # work as we use a patched ghc to boot anyway.
+        # (we apply https://github.com/ghcjs/ghc/commit/2918d88d4ef786b5f2801f6f77ac333cc56dde75 already)
+        cabalProjectLocal = ''
+          package ghcjs
+            flags: +use-host-template-haskell +no-wrapper-install
+          package ghc-api-ghcjs
+            flags: +use-host-template-haskell
+          package ghcjs-th
+            flags: +use-host-template-haskell
+        '';
         # If a package is in both build-depends and build-tool-depends multiple versions may
         # be in the `plan.json` file.  Haskell.nix will pick the newer one, but when nbuilding
         # ghcjs 8.6 we need to use the older happy version.
@@ -155,31 +166,15 @@ let
         });
         materialized = materialized-dir + "/ghcjs/${compiler-nix-name}";
         modules = [
-            {
-                # we need ghc-boot in here for ghcjs.
-                nonReinstallablePkgs = [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
-                                         "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
-                                         "ghc-boot" "binary" "bytestring" "filepath" "directory" "containers"
-                                         "time" "unix" "Win32" ];
-            }
             (pkgs.lib.optionalAttrs (!isGhcjs88) {
                 packages.Cabal.patches = [ ./../overlays/patches/Cabal/fix-data-dir.patch ];
             })
             {
                 packages.ghcjs.doHaddock = false;
-                packages.haddock-ghcjs.doHaddock = false;
-                packages.haddock-api-ghcjs.doHaddock = false;
-                packages.ghcjs.flags.no-wrapper-install = true;
-                # set use-host-template-haskell. This *does*
-                # work as we use a patched ghc to boot anyway.
-                # (we apply https://github.com/ghcjs/ghc/commit/2918d88d4ef786b5f2801f6f77ac333cc56dde75 already)
-                packages.ghcjs.flags.use-host-template-haskell = true;
-                packages.ghc-api-ghcjs.flags.use-host-template-haskell = true;
-                packages.ghcjs-th.flags.use-host-template-haskell = true;
                 packages.ghc.flags.ghci = true;
                 packages.ghci.flags.ghci = true;
                 # packages.ghcjs.components.library.configureFlags = [ "-fno-wrapper-install" ];
-                packages.ghcjs.components.library.build-tools = [ alex ];
+                packages.ghcjs.components.library.build-tools = [ alex happy ];
             }
         ];
     });

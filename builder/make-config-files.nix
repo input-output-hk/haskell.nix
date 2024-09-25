@@ -5,7 +5,7 @@
 let
   # Sort and remove duplicates from nonReinstallablePkgs.
   # That way changes to the order of nonReinstallablePkgs does not require rebuilds.
-  nonReinstallablePkgs' = __attrNames (lib.genAttrs nonReinstallablePkgs (x: x));
+  nonReinstallablePkgs' = __attrNames (lib.genAttrs (component.pre-existing or [] ++ nonReinstallablePkgs) (x: x));
 
   ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
 
@@ -160,7 +160,7 @@ let
         fi
       ''}
     done
-    for p in ${lib.concatStringsSep " " (lib.remove "ghc" nonReinstallablePkgs')}; do
+    for p in ${lib.concatStringsSep " " nonReinstallablePkgs'}; do
       if [ -e $ghcDeps/envDeps/$p ]; then
         cat $ghcDeps/envDeps/$p >> $configFiles/ghc-environment
       fi

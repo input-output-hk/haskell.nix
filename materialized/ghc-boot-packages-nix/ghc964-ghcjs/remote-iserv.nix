@@ -21,16 +21,16 @@
       synopsis = "iserv allows GHC to delegate Template Haskell computations";
       description = "This is a very simple remote runner for iserv, to be used together\nwith iserv-proxy.  The foundamental idea is that this this wrapper\nstarts running the GHCi server on a given port to which iserv-proxy will\nthen connect.";
       buildType = "Simple";
-      };
+    };
     components = {
       exes = {
         "remote-iserv" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."ghci" or (errorHandler.buildDepError "ghci"))
-            ];
+          ];
           buildable = true;
-          };
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ./.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ./.; }

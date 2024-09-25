@@ -29,7 +29,7 @@
       extraSrcFiles = [ "changelog.md" ];
       extraTmpFiles = [];
       extraDocFiles = [];
-      };
+    };
     components = {
       "library" = {
         depends = [
@@ -39,14 +39,14 @@
           (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
           (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
           (hsPkgs."time" or (errorHandler.buildDepError "time"))
-          ];
+        ];
         buildable = true;
         modules = [
           "Trace/Hpc/Util"
           "Trace/Hpc/Mix"
           "Trace/Hpc/Tix"
           "Trace/Hpc/Reflect"
-          ];
-        };
+        ];
       };
-    } // rec { src = (pkgs.lib).mkDefault ../libraries/hpc; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../libraries/hpc; }

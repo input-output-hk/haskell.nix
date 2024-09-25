@@ -1,8 +1,13 @@
 {
-  inputs.nixpkgs.follows = "haskellNix/nixpkgs";
-  inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
+  inputs = {
+    nixpkgs.follows = "haskellNix/nixpkgs";
+    # nixpkgs-unstable.url = "github:NixOS/nixpkgs";
 
-  outputs = { self, nixpkgs, haskellNix, ... }:
+    haskellNix.url = "github:input-output-hk/haskell.nix";
+  };
+
+  
+  outputs = inputs@{ self, nixpkgs, haskellNix, ... }:
     let
       systems = [
         "x86_64-linux"
@@ -40,8 +45,13 @@
             mkdir -p $out/nix-support
             echo "file binary-dist $out/${tarball-filename}" >> $out/nix-support/hydra-build-products
           '';
-    in
-    {
+    
+      static-nix-tools-outputs = import ./static/outputs.nix inputs;
+    
+    in {
+
+      inherit static-nix-tools-outputs;
+
       # this is not per-system!
       overlays.default = import ./overlay.nix;
 
@@ -51,6 +61,7 @@
         nix-tools = system: (haskellNix.legacyPackages.${system}.extend self.overlays.default).nix-tools;
         haskell-nix = system: (haskellNix.legacyPackages.${system}.extend self.overlays.default).haskell-nix;
       };
+
       project = forAllSystems (pkgs: pkgs.nix-tools.project);
 
       packages = forAllSystems (pkgs:
@@ -76,6 +87,9 @@
           # aarch64-multiplatform-musl cross compile is currently broken
           # // lib.optionalAttrs (pkgs.buildPlatform.system == "aarch64-linux")
           #   { binary-tarball = mkTarball pkgs.pkgsCross.aarch64-multiplatform-musl; }
+          // {
+            static = static-nix-tools-outputs.hydraJobs.${pkgs.system};
+          }
         );
     };
 

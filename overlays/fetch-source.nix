@@ -1,6 +1,5 @@
 final: prev:
 let
-  lockFile = builtins.fromJSON (builtins.readFile ../flake.lock);
   # Courtesy of `flake-compat`
   # Format number of seconds in the Unix epoch as %Y%m%d%H%M%S.
   formatSecondsSinceEpoch = t:
@@ -28,7 +27,9 @@ let
     in "${toString y'}${pad (toString m)}${pad (toString d)}${pad (toString hours)}${pad (toString minutes)}${pad (toString seconds)}";
 in {
   haskell-nix = prev.haskell-nix // {
-    sources = prev.haskell-nix.sources // builtins.listToAttrs (map (name: {
+    sources = prev.haskell-nix.sources // builtins.listToAttrs (map (name:
+      let lockFile = builtins.fromJSON (builtins.readFile ../lazy-inputs/${name}/flake.lock);
+      in {
         inherit name;
         value = final.fetchFromGitLab {
                     domain = "gitlab.haskell.org";
@@ -40,6 +41,6 @@ in {
                 } // {
                   lastModifiedDate = formatSecondsSinceEpoch lockFile.nodes.${name}.locked.lastModified;
                 };
-    }) ["ghc98X" "ghc99"]);
+    }) ["ghc910X" "ghc911"]);
   };
 }
