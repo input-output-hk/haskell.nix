@@ -91,7 +91,7 @@
       callFlake = import flake-compat;
 
       ifdLevel = 0;
-      runningHydraEvalTest = false;
+      runningHydraEvalTest = true;
       compiler = "ghc928";
       config = import ./config.nix;
 
