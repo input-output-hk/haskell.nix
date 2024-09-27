@@ -227,7 +227,7 @@ in {
                 ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10.7-cross-dont-build-stage2-tools.patch))
                 ++ onAndroid (fromUntil "9.0" "9.8"./patches/ghc/ghc-9.6-hadrian-android.patch)
                 ++ onMusl (onAarch64 (fromUntil "9.0" "9.8" ./patches/ghc/ghc-9.6-hadrian-strip-cmd.patch))
-                ++ on32bit (from "9.0" ./patches/ghc/ghc-9.6-32bit-cmm.patch)
+                ++ on32bit (fromUntil "9.0" "9.4" ./patches/ghc/ghc-9.6-32bit-cmm.patch)
                 # this one is to allow linking extra symbols from iserv.
                 # This one will lead to segv's on darwin, when calling `strlen` during lookupStrHashTable. `strlen` ends up being called with 0x0.
                 ++ final.lib.optionals (
