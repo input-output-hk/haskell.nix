@@ -228,7 +228,6 @@ in {
                 ++ onMusl (onAarch64 (fromUntil "9.0" "9.8" ./patches/ghc/ghc-9.6-hadrian-strip-cmd.patch))
                 ++ on32bit (fromUntil "9.0" "9.4" ./patches/ghc/ghc-9.6-32bit-cmm.patch)
                 ++ onAndroid (fromUntil "9.6.3" "9.10" ./patches/ghc/ghc-9.6-iog.patch)
-                ++ on32bit (fromUntil "9.6" "9.12" ./patches/ghc/ghc-9.6-genapply-cross-arch.patch)
                 ++ onAndroid (fromUntil "9.6" "9.9" ./patches/ghc/ghc-9.6-debug-secno.patch)
                 ++ onAndroid (on32bit (fromUntil "9.6" "9.9"./patches/ghc/ghc-9.6-missing-symbols-deadbeef.patch))
 
