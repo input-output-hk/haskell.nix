@@ -733,7 +733,7 @@ stdenv.mkDerivation (rec {
           --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
         find . -name 'system*.conf*'
         cat mk/system-cxx-std-lib-1.0.conf
-      '' + lib.optionalString (installStage1 && stdenv.targetPlatform.isNativeMusl) ''
+      '' + lib.optionalString (installStage1 && haskell-nix.haskellLib.isNativeMusl) ''
         substituteInPlace hadrian/cfg/system.config \
           --replace 'cross-compiling       = YES' \
                     'cross-compiling       = NO'
@@ -823,7 +823,7 @@ stdenv.mkDerivation (rec {
       --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
     find . -name 'system*.conf*'
     cat mk/system-cxx-std-lib-1.0.conf
-  '' + lib.optionalString (installStage1 && stdenv.targetPlatform.isNativeMusl) ''
+  '' + lib.optionalString (installStage1 && haskell-nix.haskellLib.isNativeMusl) ''
     substituteInPlace hadrian/cfg/system.config \
       --replace 'cross-compiling       = YES' \
                 'cross-compiling       = NO'
