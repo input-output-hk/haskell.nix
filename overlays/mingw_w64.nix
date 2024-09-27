@@ -39,8 +39,6 @@ let
         REMOTE_ISERV=$(mktemp -d)
         ln -s ${interpreter.override
           {
-            patches = [ ./patches/iserv-proxy-keep-cafs.patch ]
-                      ;
             enableDebugRTS = true;
             setupBuildFlags = ["--ghc-option=-optl-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000" ];
           }}/bin/* $REMOTE_ISERV
