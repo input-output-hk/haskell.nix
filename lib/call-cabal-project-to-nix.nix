@@ -342,6 +342,10 @@ let
           echo ',("target arch","${
               if pkgs.stdenv.targetPlatform.isx86_64
                 then "ArchX86_64"
+              else if pkgs.stdenv.targetPlatform.isx86
+                then "ArchX86"
+              else if pkgs.stdenv.targetPlatform.isRiscV64
+                then "ArchRISCV64"
               else if pkgs.stdenv.targetPlatform.isAarch64
                 then "ArchAArch64"
               else if pkgs.stdenv.targetPlatform.isJavaScript
