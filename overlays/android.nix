@@ -23,6 +23,6 @@ _final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isAndroid ({
   gmp6 = (prev.gmp6.override { withStatic = true; }).overrideAttrs(_: {
     hardeningDisable = [ "fortify" "stackprotector" "format" ];
   });
-}) // prev.lib.optionalAttrs prev.stdenv.targetPlatform.isAndroid ({
+}) // prev.lib.optionalAttrs (prev.stdenv.targetPlatform.isAndroid && (!prev.stdenv.hostPlatform.useAndroidPrebuilt)) ({
   bionic = prev.bionic.override { enableStatic = true; };
 })
