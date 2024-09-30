@@ -125,7 +125,7 @@ let
     done
 
   ''
-  + lib.optionalString (stdenv.targetPlatform.isMusl && !haskellLib.isNativeMusl && builtins.compareVersions ghc.version "9.9" >0) ''
+  + lib.optionalString (stdenv.targetPlatform.isMusl && builtins.compareVersions ghc.version "9.9" >0) ''
      ln -s $wrappedGhc/bin/${ghcCommand}-iserv $wrappedGhc/bin/ghc-iserv
      ln -s $wrappedGhc/bin/${ghcCommand}-iserv-prof $wrappedGhc/bin/ghc-iserv-prof
   ''
