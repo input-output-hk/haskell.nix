@@ -1,0 +1,55 @@
+diff --git a/hadrian/cfg/system.config.in b/hadrian/cfg/system.config.in
+index 4912673869..85b5c58c2a 100644
+--- a/hadrian/cfg/system.config.in
++++ b/hadrian/cfg/system.config.in
+@@ -18,6 +18,7 @@ merge-objects  = @MergeObjsCmd@
+ system-merge-objects = @LD_STAGE0@
+ objdump        = @ObjdumpCmd@
+ ranlib         = @REAL_RANLIB_CMD@
++strip          = @StripCmd@
+ sphinx-build   = @SPHINXBUILD@
+ system-ar      = @AR_STAGE0@
+ system-cc      = @CC_STAGE0@
+diff --git a/hadrian/src/Oracles/Setting.hs b/hadrian/src/Oracles/Setting.hs
+index a0f639d325..55f9a2f902 100644
+--- a/hadrian/src/Oracles/Setting.hs
++++ b/hadrian/src/Oracles/Setting.hs
+@@ -73,6 +73,7 @@ data Setting = BuildArch
+              | ProjectPatchLevel
+              | ProjectPatchLevel1
+              | ProjectPatchLevel2
++             | Strip
+              | SystemGhc
+              | TargetArch
+              | TargetOs
+@@ -176,6 +177,7 @@ setting key = lookupSystemConfig $ case key of
+     ProjectPatchLevel  -> "project-patch-level"
+     ProjectPatchLevel1 -> "project-patch-level1"
+     ProjectPatchLevel2 -> "project-patch-level2"
++    Strip              -> "strip"
+     SystemGhc          -> "system-ghc"
+     TargetArch         -> "target-arch"
+     TargetArmVersion   -> "target-arm-version"
+diff --git a/hadrian/src/Settings/Builders/Cabal.hs b/hadrian/src/Settings/Builders/Cabal.hs
+index 75eb78ccd8..6904c973d4 100644
+--- a/hadrian/src/Settings/Builders/Cabal.hs
++++ b/hadrian/src/Settings/Builders/Cabal.hs
+@@ -85,15 +85,11 @@ commonCabalArgs :: Stage -> Args
+ commonCabalArgs stage = do
+   verbosity <- expr getVerbosity
+   pkg       <- getPackage
++  strip     <- getSetting Strip
+   package_id <- expr $ pkgUnitId stage pkg
+   let prefix = "${pkgroot}" ++ (if windowsHost then "" else "/..")
+-  mconcat [ -- Don't strip libraries when cross compiling.
+-            -- TODO: We need to set @--with-strip=(stripCmdPath :: Action FilePath)@,
+-            -- and if it's @:@ disable stripping as well. As it is now, I believe
+-            -- we might have issues with stripping on Windows, as I can't see a
+-            -- consumer of 'stripCmdPath'.
+-            -- TODO: See https://github.com/snowleopard/hadrian/issues/549.
+-              flag CrossCompiling ? pure [ "--disable-executable-stripping"
++  mconcat [ notStage0 ? strip /= "" ? pure [ "--with-strip=" ++ strip ]
++            , flag CrossCompiling ? pure [ "--disable-executable-stripping"
+                                          , "--disable-library-stripping" ]
+             -- We don't want to strip the debug RTS
+             , S.package rts ? pure [ "--disable-executable-stripping"
