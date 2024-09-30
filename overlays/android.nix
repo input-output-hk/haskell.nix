@@ -32,7 +32,7 @@ _final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isAndroid ({
   # because the android (linux) kernel doesn't expose those.
   openssl = prev.openssl.override { static = true; enableKTLS = false; };
   
-}) // prev.lib.optionalAttrs prev.stdenv.targetPlatform.isAndroid ({
+}) // prev.lib.optionalAttrs (prev.stdenv.targetPlatform.isAndroid && (!prev.stdenv.hostPlatform.useAndroidPrebuilt)) ({
   # we still need the shared libraries to link against on the platform.  GHC
   # has been neutered to not even try loading shared libs and will use dynamic ones.
   # We also link iserv against the static libs, so that we have a fully static
