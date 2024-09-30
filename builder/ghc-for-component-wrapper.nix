@@ -23,7 +23,7 @@ let
   libDir         = "$wrappedGhc/${configFiles.libDir}";
   docDir         = "$wrappedGhc/share/doc/ghc/html";
   # For musl we can use haddock from the buildGHC
-  haddock        = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && !haskellLib.isNativeMusl
+  haddock        = if stdenv.targetPlatform.isMusl
     then ghc.buildGHC
     else ghc;
 
