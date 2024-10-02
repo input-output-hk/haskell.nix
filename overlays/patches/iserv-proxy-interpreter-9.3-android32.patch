@@ -453,14 +453,17 @@ index 0000000..9974c73
 +}
 \ No newline at end of file
 diff --git a/iserv-proxy.cabal b/iserv-proxy.cabal
-index eca2047..51a125b 100644
+index 5f1449a..328b000 100644
 --- a/iserv-proxy.cabal
 +++ b/iserv-proxy.cabal
-@@ -104,6 +104,7 @@ Executable iserv-proxy-interpreter
+@@ -106,9 +106,7 @@ Executable iserv-proxy-interpreter
     -- We need to pass -fkeep-cafs to ensure that the interpreter retains CAFs
     -- Iserv and GHC do something similar.
     ghc-options: -fkeep-cafs
+-   -- no idea how to check for musl :-/
+-   if os(linux) && arch(aarch64)
+-     c-sources: cbits/symbols.aarch64-musl.c
 +   c-sources: cbits/symbols.c
+
     Build-Depends: base       >= 4   && < 5,
                    iserv-proxy
- 
