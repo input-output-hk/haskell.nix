@@ -231,7 +231,6 @@ in {
                 ++ on32bit (fromUntil "9.0" "9.4" ./patches/ghc/ghc-9.6-32bit-cmm.patch)
                 ++ onAndroid (fromUntil "9.6.3" "9.10" ./patches/ghc/ghc-9.6-iog.patch)
                 ++ onAndroid (fromUntil "9.6" "9.9" ./patches/ghc/ghc-9.6-debug-secno.patch)
-                ++ onAndroid (on32bit (fromUntil "9.6" "9.9"./patches/ghc/ghc-9.6-missing-symbols-deadbeef.patch))
 
                 # Allow loading static external plugins into cross compilers
                 ++ onCross (fromUntil "9.6.1" "9.11" ./patches/ghc/5c80a27488acfe3610ddfcb99a1e961002e386d0.patch)
