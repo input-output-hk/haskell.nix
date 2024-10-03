@@ -41,9 +41,7 @@ in {
     compiler =
         let bootPkgs = {
                 ghc = final.buildPackages.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
-                alex = final.haskell-nix.bootstrap.packages.alex-unchecked;
-                happy = final.haskell-nix.bootstrap.packages.happy-unchecked;
-                hscolour = final.haskell-nix.bootstrap.packages.hscolour-unchecked;
+                inherit (final.haskell-nix.bootstrap.packages) alex happy hscolour;
             };
             bootPkgsGhc94 = bootPkgs // {
                 alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" {
@@ -83,7 +81,7 @@ in {
                 # Try to avoid reordering the patches unless a patch is added or changed that
                 # will be applied to most versions of the GHC anyway (reordering the patches
                 # results in rebuilds of GHC and reduces sharing in /nix/store).
-                in always                    ./patches/ghc/dll-loader-8.4.2.patch                                # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- open
+                in until             "9.11"  ./patches/ghc/dll-loader-8.4.2.patch                                # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- open
                 ++ fromUntil "9.4"   "9.12"  ./patches/ghc/ghc-9.4-9.6-9.8-disable-coreprep-spec-eval.patch      # causes more allocations
                 ++ until             "9.2"   ./patches/ghc/ghc-8.4.3-Cabal2201-no-hackage-tests.patch            # ?
                 ++ until             "9.2"   ./patches/ghc/cabal-host.patch                                      # https://github.com/haskell/cabal/issues/5887
@@ -129,7 +127,7 @@ in {
                 ++ onWindows (fromUntil "9.6.3"  "9.11"   ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
                 # support R_X86_64_PC64 (ELF constant 24) - IMAGE_REL_AMD64_SREL32 (PE constant 14), which seems to appear with 9.6 more frequently, and
                 # results in "unhandled PEi386 relocation type 14".
-                ++ onWindows (fromUntil "9.4.1"  "9.12"   ./patches/ghc/win-reloc-x86_64-pc64.patch)
+                ++ onWindows (fromUntil "9.4.1"  "9.11"   ./patches/ghc/win-reloc-x86_64-pc64.patch)
                 # ++ onWindows (fromUntil "9.4.1"  "9.10"   ./patches/ghc/Win32-depends-on-mingwex.patch)
                 # if the host system provides ucrt (e.g. wine with ucrtbase.dll), we may end up linking against symbols from ucrtbase, instead of msvcrt,
                 # thus leading to broken code.  E.g. the handles we create and hand to wine will all be busted, because they come from one and are processed
@@ -186,8 +184,8 @@ in {
                 ++ onAarch64 (until "9.0" ./patches/ghc/ghc-8.10-better-symbol-addr-debug.patch)
                 ++ onAarch64 (until "9.0" ./patches/ghc/ghc-8.10-aarch64-handle-none-rela.patch)
                 ++ onWindows (until "9.0" ./patches/ghc/5b08e0c06e038448a63aa9bd7f163b23d824ba4b.patch)
-                ++ onAarch64 (from  "9.0" ./patches/ghc/ghc-9.0-better-symbol-addr-debug.patch)
-                ++ onAarch64 (from  "9.0" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
+                ++ onAarch64 (fromUntil "9.0" "9.11" ./patches/ghc/ghc-9.0-better-symbol-addr-debug.patch)
+                ++ onAarch64 (fromUntil "9.0" "9.11" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
 
                 ++ onWindows (fromUntil "9.6.3" "9.6.4" ./patches/ghc/ghc-9.6-hadrian-splitsections.patch)
                 ++ onWindows (fromUntil "9.8.1" "9.8.2" ./patches/ghc/ghc-9.6-hadrian-splitsections.patch)
@@ -835,8 +833,8 @@ in {
                 };
                 inherit sphinx;
 
-                buildLlvmPackages = final.buildPackages.llvmPackages_12;
-                llvmPackages = final.llvmPackages_12;
+                buildLlvmPackages = final.buildPackages.llvmPackages_15;
+                llvmPackages = final.llvmPackages_15;
 
                 src-spec.file = final.haskell-nix.sources.ghc9101;
                 src-spec.version = "9.10.1";
@@ -871,8 +869,8 @@ in {
                 };
                 inherit sphinx;
 
-                buildLlvmPackages = final.buildPackages.llvmPackages_12;
-                llvmPackages = final.llvmPackages_12;
+                buildLlvmPackages = final.buildPackages.llvmPackages_15;
+                llvmPackages = final.llvmPackages_15;
 
                 src-spec.file = src;
                 src-spec.version = version;
@@ -999,50 +997,28 @@ in {
             # hackage with haskell.nix.  For alex and happy we
             # need to use the boot strap compiler as we need them
             # to build ghcs from source.
-            # guardMaterializationChecks is used here so we
-            # can turn off materialization checks when
-            # building ghc itself (since GHC is a dependency
-            # of the materialization check it would cause
-            # infinite recursion).
-            alex-tool = args: final.haskell-nix.tool buildBootstrapper.compilerNixName "alex" ({config, pkgs, ...}: {
+            alex = final.haskell-nix.tool buildBootstrapper.compilerNixName "alex" ({config, pkgs, ...}: {
                 compilerSelection = p: p.haskell.compiler;
-                evalPackages = pkgs.buildPackages;
                 version = "3.2.4";
                 inherit ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
-                modules = [{ reinstallableLibGhc = false; }];
-                nix-tools = config.evalPackages.haskell-nix.nix-tools;
-            } // args);
-            alex = final.haskell-nix.bootstrap.packages.alex-tool {};
-            alex-unchecked = final.haskell-nix.bootstrap.packages.alex-tool { checkMaterialization = false; };
-            happy-tool = { version ? "1.19.12", ... }@args: final.haskell-nix.tool buildBootstrapper.compilerNixName "happy"
+            });
+            happy = final.haskell-nix.tool buildBootstrapper.compilerNixName "happy"
               ({config, pkgs, ...}: {
                 compilerSelection = p: p.haskell.compiler;
-                evalPackages = pkgs.buildPackages;
-                inherit version ghcOverride index-state;
-                materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-${version}";
-                modules = [{ reinstallableLibGhc = false; }];
-                nix-tools = config.evalPackages.haskell-nix.nix-tools;
-              } // args);
-            happy = final.haskell-nix.bootstrap.packages.happy-tool {};
-            happy-unchecked = final.haskell-nix.bootstrap.packages.happy-tool { checkMaterialization = false; };
-            # Older version needed when building ghc 8.6.5
-            happy-old = final.haskell-nix.bootstrap.packages.happy-tool { version = "1.19.11"; };
-            happy-old-unchecked = final.haskell-nix.bootstrap.packages.happy-tool { version = "1.19.11"; checkMaterialization = false; };
-            hscolour-tool = args: (final.haskell-nix.hackage-package
+                version = "1.19.12";
+                inherit ghcOverride index-state;
+                materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-1.19.12";
+              });
+            hscolour = (final.haskell-nix.hackage-package
               ({config, pkgs, ...}: {
                 compilerSelection = p: p.haskell.compiler;
-                evalPackages = pkgs.buildPackages;
                 compiler-nix-name = buildBootstrapper.compilerNixName;
                 name = "hscolour";
                 version = "1.24.4";
                 inherit ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/hscolour";
-                modules = [{ reinstallableLibGhc = false; }];
-                nix-tools = config.evalPackages.haskell-nix.nix-tools;
-            } // args)).getComponent "exe:HsColour";
-            hscolour = final.haskell-nix.bootstrap.packages.hscolour-tool {};
-            hscolour-unchecked = final.haskell-nix.bootstrap.packages.hscolour-tool { checkMaterialization = false; };
+            })).getComponent "exe:HsColour";
         };
     };
   };

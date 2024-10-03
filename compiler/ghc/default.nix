@@ -232,7 +232,7 @@ let
     if targetPlatform.isGhcjs
       then [ buildPackages.emscripten ]
     else if hostPlatform == buildPlatform
-      then [ targetPackages.stdenv.cc ] ++ lib.optional useLLVM llvmPackages.llvm
+      then [ targetPackages.stdenv.cc ] ++ lib.optionals useLLVM [llvmPackages.llvm llvmPackages.clang]
     else assert targetPlatform == hostPlatform; # build != host == target
       [ stdenv.cc ] ++ lib.optional useLLVM buildLlvmPackages.llvm;
 
@@ -362,14 +362,8 @@ let
   # Sometimes we have to dispatch between the bintools wrapper and the unwrapped
   # derivation for certain tools depending on the platform.
   bintoolsFor = {
-    # GHC needs install_name_tool on all darwin platforms. On aarch64-darwin it is
-    # part of the bintools wrapper (due to codesigning requirements), but not on
-    # x86_64-darwin.
-    install_name_tool =
-      if stdenv.targetPlatform.isAarch64
-      then targetCC.bintools
-      else targetCC.bintools.bintools;
-    # Same goes for strip.
+    # GHC needs install_name_tool on all darwin platforms.
+    install_name_tool = targetCC.bintools.bintools;
     strip =
       # TODO(@sternenseemann): also use wrapper if linker == "bfd" or "gold"
       if stdenv.targetPlatform.isAarch64
@@ -403,14 +397,26 @@ stdenv.mkDerivation (rec {
         done
     ''
     # Use emscripten and the `config.sub` saved by `postPatch`
-    + lib.optionalString (targetPlatform.isGhcjs) ''
+    + lib.optionalString (targetPlatform.isGhcjs) (''
         export CC="${targetCC}/bin/emcc"
         export CXX="${targetCC}/bin/em++"
         export LD="${targetCC}/bin/emcc"
-        export NM="${targetCC}/share/emscripten/emnm"
+    '' + (
+      # Including AR and RANLIB here breaks tests.js-template-haskell for GHC 9.6
+      # `LLVM ERROR: malformed uleb128, extends past end`
+      if builtins.compareVersions ghc-version "9.8" >= 0
+        then ''
+          export AR="${targetCC}/bin/emar"
+          export NM="${targetCC}/share/emscripten/emnm"
+          export RANLIB="${targetCC}/bin/emranlib"
+        ''
+        else ''
+          export NM="${targetCC}/share/emscripten/emnm"
+        ''
+    ) + ''
         export EM_CACHE=$(mktemp -d)
         mv config.sub.ghcjs config.sub
-    ''
+    '')
     # GHC is a bit confused on its cross terminology, as these would normally be
     # the *host* tools.
     + lib.optionalString (!targetPlatform.isGhcjs) (''

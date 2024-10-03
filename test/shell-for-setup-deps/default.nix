@@ -10,7 +10,8 @@ let
   };
 
   env = project.shellFor {
-    withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc927"];
+    tools.hoogle = { cabalProjectLocal = builtins.readFile ../cabal.project.local; };
+    withHoogle = true;
   };
 
 in recurseIntoAttrs ({

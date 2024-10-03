@@ -29,13 +29,13 @@
       extraSrcFiles = [];
       extraTmpFiles = [];
       extraDocFiles = [];
-      };
+    };
     components = {
       "library" = {
         depends = [
           (hsPkgs."base" or (errorHandler.buildDepError "base"))
           (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
-          ];
+        ];
         buildable = true;
         modules = [
           "Language/Haskell/HsColour"
@@ -54,17 +54,17 @@
           "Language/Haskell/HsColour/Options"
           "Language/Haskell/HsColour/Output"
           "Language/Haskell/HsColour/TTY"
-          ];
-        };
+        ];
+      };
       exes = {
         "HsColour" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
-            ];
+          ];
           buildable = true;
           mainPath = [ "HsColour.hs" ];
-          };
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../.; }
+    };
+  } // rec { src = pkgs.lib.mkDefault ../.; }

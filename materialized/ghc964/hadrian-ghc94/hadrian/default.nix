@@ -80,6 +80,25 @@
   extras = hackage:
     { packages = { hadrian = ./.plan.nix/hadrian.nix; }; };
   modules = [
+    {
+      preExistingPkgs = [
+        "ghc-prim"
+        "time"
+        "base"
+        "ghc-boot-th"
+        "pretty"
+        "stm"
+        "template-haskell"
+        "system-cxx-std-lib"
+        "deepseq"
+        "text"
+        "containers"
+        "array"
+        "bytestring"
+        "ghc-bignum"
+        "binary"
+      ];
+    }
     ({ lib, ... }:
       {
         packages = {
