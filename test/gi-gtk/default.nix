@@ -8,6 +8,8 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "gi-gtk";
     cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
+      -- haskell-gi 0.26.12 breaks gi-gtkpixbuf
+      index-state: 2024-09-30T00:00:00Z
       -- The overloading feature of haskell-gi makes build times very long
       constraints: haskell-gi-overloading ==0.0
       if impl(ghc >=9.11)
