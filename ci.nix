@@ -67,8 +67,8 @@
         ghc910 = true;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc810 = true;
-        ghc92 = true;
-        ghc94 = true;
+        ghc92 = false;
+        ghc94 = false;
         ghc96 = true;
         ghc98 = true;
         ghc98llvm = false;
@@ -98,11 +98,11 @@
       && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc928" "ghc948"])
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) ucrt64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable") {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl32 musl64 aarch64-multiplatform;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "R2405") {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "R2405" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
     inherit (lib.systems.examples) aarch64-android armv7a-android-prebuilt;
   } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc8107" "ghc902"]) {
     # TODO fix this for the compilers we build with hadrian (ghc >=9.4)
