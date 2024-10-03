@@ -98,6 +98,35 @@
       };
     };
   modules = [
+    {
+      preExistingPkgs = [
+        "ghc-prim"
+        "transformers"
+        "time"
+        "base"
+        "unix"
+        "ghc-boot-th"
+        "mtl"
+        "pretty"
+        "Cabal-syntax"
+        "process"
+        "stm"
+        "template-haskell"
+        "exceptions"
+        "parsec"
+        "system-cxx-std-lib"
+        "deepseq"
+        "text"
+        "containers"
+        "array"
+        "bytestring"
+        "Cabal"
+        "directory"
+        "ghc-bignum"
+        "binary"
+        "filepath"
+      ];
+    }
     ({ lib, ... }:
       {
         packages = {

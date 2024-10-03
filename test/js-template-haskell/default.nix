@@ -7,7 +7,8 @@ let
   project = project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "js-template-haskell";
-    cabalProjectLocal = ''
+    cabalProjectLocal = builtins.readFile ../cabal.project.local
+      + ''
       if arch(javascript)
         extra-packages: ghci
         constraints: ghcjs installed
