@@ -96,8 +96,6 @@ in {
                 # See https://github.com/input-output-hk/haskell.nix/issues/1027
                 ++ onAarch32 (until             "9.2" ./patches/ghc/ghc-8.10-3434-armv7a.patch)
                 ++ onAarch64 (until             "9.2" ./patches/ghc/ghc-8.10-3434.patch)
-                ++ onAarch64 (fromUntil "9.2.1" "9.4" ./patches/ghc/ghc-9.2-3434.patch)
-                ++ onAndroid (fromUntil "9.2.1" "9.4" ./patches/ghc/ghc-9.2-3434.patch)
 
                 ++ until              "9.4"    ./patches/ghc/ghc-acrt-iob-func.patch
                 ++ until              "9.2"    ./patches/ghc/ghc-mprotect-nonzero-len.patch
