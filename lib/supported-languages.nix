@@ -308,5 +308,9 @@ evalPackages.writeTextFile {
     ${pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.11" >=0) ''
       OrPatterns
       NoOrPatterns
+      MultilineStrings
+      NoMultilineStrings
+      NamedDefaults
+      NoNamedDefaults
     ''}'';
 }

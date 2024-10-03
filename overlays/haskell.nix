@@ -1075,7 +1075,9 @@ final: prev: {
         roots' = compiler-nix-name: ifdLevel:
           	final.recurseIntoAttrs ({
             # Things that require no IFD to build
-            inherit (final.buildPackages.haskell-nix) source-pins;
+            source-pin-hackage = hackageSrc;
+            source-pin-stackage = stackageSrc;
+            source-pin-haskell-nix = final.path;
             # Double buildPackages is intentional,
             # see comment in lib/default.nix for details.
             # Using buildPackages rather than evalPackages so both darwin and linux

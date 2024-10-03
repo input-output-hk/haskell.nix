@@ -1,4 +1,4 @@
-{ stdenv, lib, buildPackages, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, buildPackages, mkCabalProjectPkgSet, callCabalProjectToNix, loadCabalPlan, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -15,11 +15,16 @@ let
     '';
   };
   pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = importAndFilterProject {
-      inherit (callProjectResults) projectNix sourceRepos src;
+    plan-pkgs = loadCabalPlan {
+      inherit callProjectResults;
+      selectedCompiler = buildPackages.haskell-nix.compiler.${compiler-nix-name};
     };
+    inherit compiler-nix-name;
     inherit (callProjectResults) extra-hackages;
-    modules = [{ inherit evalPackages; }];
+    modules = [{
+      inherit evalPackages;
+      compiler.nix-name = compiler-nix-name;
+    }];
   };
   packages = pkgSet.config.hsPkgs;
 
