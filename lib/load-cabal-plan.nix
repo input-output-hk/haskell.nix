@@ -47,7 +47,7 @@ let
               name = pkgs.lib.removePrefix "${prefix}:" n;
               value = (if cabal2nixComponents == null then {} else cabal2nixComponents.${collectionName}.${name}) // {
                 buildable = true;
-              } // lookupDependencies hsPkgs c.depends c.exe-depends;
+              } // lookupDependencies hsPkgs (c.depends ++ pkgs.lib.optional (p ? components) p.id) c.exe-depends;
             in { inherit name value; }
           )) components));
     in
