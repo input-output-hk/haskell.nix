@@ -47,7 +47,15 @@ let
               name = pkgs.lib.removePrefix "${prefix}:" n;
               value = (if cabal2nixComponents == null then {} else cabal2nixComponents.${collectionName}.${name}) // {
                 buildable = true;
-              } // lookupDependencies hsPkgs (c.depends ++ pkgs.lib.optional (p ? components) p.id) c.exe-depends;
+              } // lookupDependencies hsPkgs (
+                    c.depends
+                    # If plan.json uses a single unit for this package (build-type: Custom),
+                    # then it will leave the package itself out of `c.depends` for the
+                    # components of the package.
+                    # Haskell.nix builds the components separately so we need
+                    # to add the `library` component as a dependency.
+                    ++ pkgs.lib.optional (p ? components && p.components ? lib) p.id
+                  ) c.exe-depends;
             in { inherit name value; }
           )) components));
     in
