@@ -23,13 +23,7 @@ let self =
 , preInstall ? component.preInstall , postInstall ? component.postInstall
 , preHaddock ? component.preHaddock , postHaddock ? component.postHaddock
 , shellHook ? ""
-, configureAllComponents ? component.configureAllComponents ||
-    # When set, configure all the components in the package
-    # (not just the one we are building).
-    # Enable for tests in packages that use cabal-doctest.
-    ( haskellLib.isTest componentId &&
-      lib.any (x: x.identifier.name or "" == "cabal-doctest") (package.setup-depends ++ setup.config.depends or [])
-    )
+, configureAllComponents ? package.buildType != "Simple"
 , allComponent # Used when `configureAllComponents` is set to get a suitable configuration.
 
 , build-tools ? component.build-tools
