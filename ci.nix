@@ -64,6 +64,7 @@
       nixpkgs.lib.optionalAttrs (nixpkgsName == "R2405") {
         ghc96 = false;
         ghc98 = false;
+        ghc910 = true;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc810 = true;
         ghc92 = false;
@@ -81,30 +82,32 @@
     let lib = nixpkgs.lib;
     in lib.optionalAttrs (nixpkgsName == "unstable"
       && (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"])
-       || (system == "aarch64-linux" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"])
-       || (system == "x86_64-darwin" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948" "ghc966" "ghc982"])
-       || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948" "ghc966" "ghc982"])
+      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"])
+       || (system == "aarch64-linux" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"])
+       || (system == "x86_64-darwin" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948" "ghc966" "ghc982"])
+       || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948" "ghc966" "ghc982"])
        )) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (
          (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc91120240918"]) # Including GHC HEAD here because the patches for rts/RtsSymbols.c no longer apply and mingwW64 GHC build fails without them
+      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc91120240918"]) # Including GHC HEAD here because the patches for rts/RtsSymbols.c no longer apply and mingwW64 GHC build fails without them
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
       && (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc8107" "ghc902" "ghc928" "ghc948"])
+      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc928" "ghc948"])
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) ucrt64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"]) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
-    inherit (lib.systems.examples) musl64 aarch64-multiplatform;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && builtins.elem compiler-nix-name ["ghc927" "ghc928"]) {
+    inherit (lib.systems.examples) musl32 musl64 aarch64-multiplatform;
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "R2405" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
+    inherit (lib.systems.examples) aarch64-android armv7a-android-prebuilt;
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc8107" "ghc902"]) {
     # TODO fix this for the compilers we build with hadrian (ghc >=9.4)
     inherit (lib.systems.examples) aarch64-multiplatform-musl;
-  } // lib.optionalAttrs (system == "aarch64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc884" "ghc8107" "ghc902"]) {
+  } // lib.optionalAttrs (system == "aarch64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc8107" "ghc902"]) {
     inherit (lib.systems.examples) aarch64-multiplatform-musl;
   };
   isDisabled = d: d.meta.disabled or false;
