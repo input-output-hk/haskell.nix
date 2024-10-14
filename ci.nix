@@ -102,8 +102,8 @@
     # Musl cross only works on linux
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl32 musl64 aarch64-multiplatform;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "R2405" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
-    inherit (lib.systems.examples) aarch64-android armv7a-android-prebuilt;
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
+    inherit (lib.systems.examples) aarch64-android-prebuilt armv7a-android-prebuilt;
   } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc8107" "ghc902"]) {
     # TODO fix this for the compilers we build with hadrian (ghc >=9.4)
     inherit (lib.systems.examples) aarch64-multiplatform-musl;
