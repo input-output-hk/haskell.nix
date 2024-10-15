@@ -15,7 +15,7 @@ final: prev: {
         extraPkgconfigMappings = prev.haskell-nix.extraPkgconfigMappings or {};
         # Nix Flake based source pins.
         # To update all inputs, get unstable Nix and then `nix flake update --recreate-lock-file`
-        # Or `nix-shell -p nixUnstable --run "nix --experimental-features 'nix-command flakes' flake update --recreate-lock-file"`
+        # Or `nix-shell -p nixVersions.latest --run "nix --experimental-features 'nix-command flakes' flake update --recreate-lock-file"`
         sources = sources;
 
         # We provide a `callPackage` function to consumers for

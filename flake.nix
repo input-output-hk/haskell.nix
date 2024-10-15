@@ -263,12 +263,12 @@
         );
 
         devShells = forEachSystemPkgs (pkgs:
-          let inherit (pkgs) mkShell nixUnstable cabal-install haskell-nix;
+          let inherit (pkgs) mkShell nixVersions cabal-install haskell-nix;
           in {
             default =
               mkShell {
                 buildInputs = [
-                  nixUnstable
+                  nixVersions.latest
                   cabal-install
                   haskell-nix.compiler.${compiler}
                 ];
