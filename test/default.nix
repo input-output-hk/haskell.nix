@@ -234,6 +234,7 @@ let
     supported-languages = callTest ./supported-langauges {};
     js-template-haskell = callTest ./js-template-haskell {};
     gi-gtk = callTest ./gi-gtk { inherit util; };
+    literate-haskell = callTest ./literate-haskell {};
     unit = unitTests;
   };
 
