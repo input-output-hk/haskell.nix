@@ -85,7 +85,7 @@
 
       ifdLevel = 3;
       runningHydraEvalTest = false;
-      compiler = "ghc928";
+      defaultCompiler = "ghc928";
       config = import ./config.nix;
 
       inherit (nixpkgs) lib;
@@ -163,7 +163,7 @@
         # for core of haskell.nix E.g. this should always work:
         #   nix build .#roots.x86_64-linux --accept-flake-config --option allow-import-from-derivation false
         roots = forEachSystem (system:
-          self.legacyPackagesUnstable.${system}.haskell-nix.roots compiler);
+          self.legacyPackagesUnstable.${system}.haskell-nix.roots defaultCompiler);
 
         # Note: `nix flake check` evaluates outputs for all platforms, and haskell.nix
         # uses IFD heavily, you have to have the ability to build for all platforms
@@ -179,7 +179,7 @@
                 (import ./test {
                   haskellNix.sources = inputs;
                   haskellNix.nixpkgsArgs = nixpkgsArgs;
-                  compiler-nix-name = compiler;
+                  compiler-nix-name = defaultCompiler;
                   inherit pkgs;
                 })
               )
@@ -191,6 +191,7 @@
         packages = forEachSystemPkgs (pkgs:
           (import ./hix/default.nix { inherit pkgs; }).apps
         );
+
         apps = forEachSystemPkgs (pkgs:
           builtins.mapAttrs
             (name: exe: {
@@ -277,28 +278,31 @@
               ))
               mkHaskellNixShell;
           in
-          shells // { default = shells.${compiler}; });
+          shells // { default = shells.${defaultCompiler}; });
       };
 
     in
-    with (import nixpkgs { system = "x86_64-linux"; });
-    traceHydraJobs (lib.recursiveUpdate flake (lib.optionalAttrs (ifdLevel > 2) {
-      hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
-        name = "nix-tools";
-        constituents = (if runningHydraEvalTest then [ ] else [
-          "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
-          "x86_64-darwin.nix-tools.static.zipped.nix-tools-static"
-          "aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
-          "x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
-        ]) ++ [
-          "x86_64-linux.nix-tools.static.zipped.nix-tools-static"
-          "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
-          "x86_64-linux.nix-tools.static.zipped.nix-tools-static-no-ifd"
-          "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64-no-ifd"
-          (writeText "gitrev" (self.rev or "0000000000000000000000000000000000000000"))
-        ];
-      };
-    }));
+    traceHydraJobs (lib.recursiveUpdate flake (lib.optionalAttrs (ifdLevel > 2)
+      (
+        let pkgs = nixpkgs.legacyPackages."x86_64-linux"; in
+        {
+          hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
+            name = "nix-tools";
+            constituents = (if runningHydraEvalTest then [ ] else [
+              "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
+              "x86_64-darwin.nix-tools.static.zipped.nix-tools-static"
+              "aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+              "x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+            ]) ++ [
+              "x86_64-linux.nix-tools.static.zipped.nix-tools-static"
+              "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
+              "x86_64-linux.nix-tools.static.zipped.nix-tools-static-no-ifd"
+              "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64-no-ifd"
+              (pkgs.writeText "gitrev" (self.rev or "0000000000000000000000000000000000000000"))
+            ];
+          };
+        }
+      )));
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
