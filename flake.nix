@@ -77,13 +77,6 @@
     { self
     , nixpkgs
     , nixpkgs-unstable
-    , nixpkgs-2105
-    , nixpkgs-2111
-    , nixpkgs-2205
-    , nixpkgs-2211
-    , nixpkgs-2305
-    , nixpkgs-2311
-    , nixpkgs-2405
     , flake-compat
     , ...
     }@inputs:
