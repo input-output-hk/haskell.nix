@@ -263,53 +263,48 @@
         );
 
         devShells = forEachSystemPkgs (pkgs:
-          let inherit (pkgs) mkShell nixVersions cabal-install haskell-nix;
-          in {
-            default =
-              mkShell {
+          let
+            mkHaskellNixShell = compiler-nix-name:
+              pkgs.mkShell {
                 buildInputs = [
-                  nixVersions.latest
-                  cabal-install
-                  haskell-nix.compiler.${compiler}
+                  pkgs.nixVersions.latest
+                  pkgs.haskell-nix.cabal-install.${compiler-nix-name}
+                  pkgs.haskell-nix.compiler.${compiler-nix-name}
                 ];
               };
-          }
-          //
-          builtins.mapAttrs
-            (compiler-nix-name: compiler:
-              mkShell {
-                buildInputs = [
-                  compiler
-                  haskell-nix.cabal-install.${compiler-nix-name}
-                ];
-              })
-            (
-              # Exclude old versions of GHC to speed up `nix flake check`
-              builtins.removeAttrs haskell-nix.compiler
-                [
-                  "ghc844"
-                  "ghc861"
-                  "ghc862"
-                  "ghc863"
-                  "ghc864"
-                  "ghc881"
-                  "ghc882"
-                  "ghc883"
-                  "ghc8101"
-                  "ghc8102"
-                  "ghc8103"
-                  "ghc8104"
-                  "ghc8105"
-                  "ghc8106"
-                  "ghc810420210212"
-                  "ghc901"
-                  "ghc921"
-                  "ghc922"
-                  "ghc923"
-                ]
-            )
-        );
+            shells = lib.genAttrs
+              (
+                # Exclude old versions of GHC to speed up `nix flake check`
+                lib.attrNames (
+                  lib.removeAttrs pkgs.haskell-nix.compiler
+                    [
+                      "ghc844"
+                      "ghc861"
+                      "ghc862"
+                      "ghc863"
+                      "ghc864"
+                      "ghc881"
+                      "ghc882"
+                      "ghc883"
+                      "ghc8101"
+                      "ghc8102"
+                      "ghc8103"
+                      "ghc8104"
+                      "ghc8105"
+                      "ghc8106"
+                      "ghc810420210212"
+                      "ghc901"
+                      "ghc921"
+                      "ghc922"
+                      "ghc923"
+                    ]
+                )
+              )
+              mkHaskellNixShell;
+          in
+          shells // { default = shells.${compiler}; });
       };
+
     in
     with (import nixpkgs { system = "x86_64-linux"; });
     traceHydraJobs (lib.recursiveUpdate flake (lib.optionalAttrs (ifdLevel > 2) {
