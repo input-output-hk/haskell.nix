@@ -5,6 +5,12 @@ let
   plan-json = builtins.fromJSON (
     builtins.unsafeDiscardStringContext (
       builtins.readFile (callProjectResults.projectNix + "/plan.json")));
+  # Function to add context back to the strings we get from `plan.json`
+  addContext = s:
+    let storeDirMatch = builtins.match ".*(${builtins.storeDir}/[^/]+).*" s;
+    in if storeDirMatch == null
+      then s
+      else builtins.appendContext s { ${builtins.head storeDirMatch} = { path = true; }; };
   # All the units in the plan indexed by unit ID.
   by-id = pkgs.lib.listToAttrs (map (x: { name = x.id; value = x; }) plan-json.install-plan);
   # Find the names of all the pre-existing packages used by a list of dependencies
@@ -104,7 +110,7 @@ in {
                   + pkgs.lib.optionalString (p.pkg-src.source-repo.subdir != ".") "/${p.pkg-src.source-repo.subdir}";
               } // pkgs.lib.optionalAttrs (p.pkg-src.type or "" == "repo-tar") {
                 src = pkgs.lib.mkDefault (pkgs.fetchurl {
-                  url = p.pkg-src.repo.uri + "${pkgs.lib.optionalString (!pkgs.lib.hasSuffix "/" p.pkg-src.repo.uri) "/"}package/${p.pkg-name}-${p.pkg-version}.tar.gz";
+                  url = addContext p.pkg-src.repo.uri + "${pkgs.lib.optionalString (!pkgs.lib.hasSuffix "/" p.pkg-src.repo.uri) "/"}package/${p.pkg-name}-${p.pkg-version}.tar.gz";
                   sha256 = p.pkg-src-sha256;
                 });
               } // pkgs.lib.optionalAttrs (cabal2nix ? package-description-override && p.pkg-version == cabal2nix.package.identifier.version) {
