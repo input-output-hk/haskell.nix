@@ -110,6 +110,8 @@ in {
                   + pkgs.lib.optionalString (p.pkg-src.source-repo.subdir != ".") "/${p.pkg-src.source-repo.subdir}";
               } // pkgs.lib.optionalAttrs (p.pkg-src.type or "" == "repo-tar") {
                 src = pkgs.lib.mkDefault (pkgs.fetchurl {
+                   # repo.uri might look like file:/nix/store/xxx; using addContext, we let nix know about the dependency on
+                   # /nix/store/xxx.  Otherwise we can run into the situation where nix won't be able to access the dependencies needed to build. (e.g. the /nix/store/xxx path).
                   url = addContext p.pkg-src.repo.uri + "${pkgs.lib.optionalString (!pkgs.lib.hasSuffix "/" p.pkg-src.repo.uri) "/"}package/${p.pkg-name}-${p.pkg-version}.tar.gz";
                   sha256 = p.pkg-src-sha256;
                 });
