@@ -2,11 +2,10 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Main where
+module Main (main) where
 
 import           Cabal2Nix
 import           Cabal2Nix.Util                           ( quoted )
-import           Control.Applicative                      ( liftA2 )
 import           Control.Monad.Trans.State.Strict
 import           Crypto.Hash.SHA256                       ( hash )
 import qualified Data.ByteString.Base16        as Base16
@@ -64,10 +63,11 @@ main :: IO ()
 main = do
   out:rest <- getArgs
   (inp, src) <- case rest of
-                 [tarball, url, hash] -> return (tarball, Just $ Repo url (Just hash))
+                 [tarball, url, sha256] -> return (tarball, Just $ Repo url (Just sha256))
                  [tarball, url] -> return (tarball, Just $ Repo url Nothing)
                  [tarball] -> return (tarball, Nothing)
                  [] -> hackageTarball >>= \tarball -> return (tarball, Nothing)
+                 _ -> error "Usage: hackage2nix [tarball [url [hash]]]"
 
   db    <- U.readTarball Nothing inp
 
@@ -124,9 +124,9 @@ version2nix pname vnum (U.VersionData { U.cabalFileRevisions, U.metaFile }) =
   do
     revisionBindings <- sequenceA
       $ zipWith (revBindingJson pname vnum) cabalFileRevisions [0 ..]
-    let hash = decodeUtf8 $ fromString $ P.parseMetaData pname vnum metaFile Map.! "sha256"
+    let sha256 = decodeUtf8 $ fromString $ P.parseMetaData pname vnum metaFile Map.! "sha256"
     return $ Seq.singleton (quoted (fromPretty vnum), mkNonRecSet
-      [ "sha256" $= mkStr hash
+      [ "sha256" $= mkStr sha256
       , "revisions" $= mkNonRecSet
         ( map (uncurry ($=)) revisionBindings
         ++ ["default" $= mkStr (fst (last revisionBindings))]

@@ -1,4 +1,4 @@
-index-state: 2024-03-28T00:00:00Z
+index-state: 2024-10-15T20:31:31Z
 
 packages: nix-tools
 
@@ -10,24 +10,22 @@ extra-packages: cabal-install, hpack, Cabal-syntax-json
 test-show-details: direct
 
 allow-newer:
+    algebraic-graphs:deepseq,
     hackage-db:base,
     hackage-db:Cabal,
-    hpack:Cabal,
-    hnix:base,
-    hnix:template-haskell,
     hnix:aeson,
+    hnix:base,
+    hnix:bytestring,
+    hnix:free,
     hnix:relude,
     hnix-store-core:base,
-    hnix-store-core:memory,
+    hnix-store-core:bytestring,
     hnix-store-core:cryptonite,
-    hnix-store-core:bytestring
-
-source-repository-package
-    type: git
-    location: https://github.com/haskell/cabal.git
-    tag: c0647bc914928ab6362278c73f17b084ca3ed9ab
-    subdir: cabal-install
-    --sha256: sha256-BQs6ciCKWNzsEdUewEvUu4lcyrI5DH7abKzM4035lSc=
+    hnix-store-core:memory,
+    hnix:template-haskell,
+    hpack:Cabal,
+    lens-family-th:base,
+    lens-family-th:template-haskell,
 
 source-repository-package
     type: git
@@ -38,5 +36,5 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/andreabedini/Cabal-syntax-json.git
-    tag: bf97be0038489239a11c61653b55afc77356ac1e
-    --sha256: sha256-i9TEqQqRqFM07q1Lr6wcMlURhBkhkVxHhP1jQjSE+Yg=
+    tag: 30d67e1f2617ab8e8fb50f7326cd815799d867a8
+    --sha256: sha256-W+NPqhYYd6HEph5cZEg+kvQSGRyqmH6r6krYBX2w9qs=
