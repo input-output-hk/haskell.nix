@@ -26,6 +26,9 @@ in recurseIntoAttrs {
     || (builtins.elem compiler-nix-name ["ghc947" "ghc948"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
     # We have been unable to get windows cross compilation of th-orphans to work for GHC 8.10 using the latest nixpkgs
     || (compiler-nix-name == "ghc8107" && stdenv.hostPlatform.isWindows)
+    # We need to update GHC HEAD to get a version of ghc-internal compatible
+    # with th-lift from head.hackage.
+    || compiler-nix-name == "ghc91120240918"
     ;
 
   ifdInputs = {
