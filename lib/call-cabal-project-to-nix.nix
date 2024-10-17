@@ -396,6 +396,7 @@ let
     # GHCJS 8.10 does not have these
     "Cabal-syntax"
     "exceptions"
+    "file-io"
     "ghc"
     "ghc-bignum"
     "ghc-experimental"
@@ -422,6 +423,79 @@ let
         evalPackages.jq
       ];
     } (let varname = x: builtins.replaceStrings ["-"] ["_"] x; in ''
+          PACKAGE_VERSION=${ghc.version}
+          ProjectVersion=${ghc.version}
+
+          # The following logic is from GHC m4/setup_project_version.m4
+
+          # Split PACKAGE_VERSION into (possibly empty) parts
+          VERSION_MAJOR=`echo $PACKAGE_VERSION | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\1'/`
+          VERSION_TMP=`echo $PACKAGE_VERSION | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\3'/`
+          VERSION_MINOR=`echo $VERSION_TMP | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\1'/`
+          ProjectPatchLevel=`echo $VERSION_TMP | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\3'/`
+
+          # Calculate project version as an integer, using 2 digits for minor version
+          case $VERSION_MINOR in
+            ?) ProjectVersionInt=''${VERSION_MAJOR}0''${VERSION_MINOR} ;;
+            ??) ProjectVersionInt=''${VERSION_MAJOR}''${VERSION_MINOR} ;;
+            *) echo bad minor version in $PACKAGE_VERSION; exit 1 ;;
+          esac
+          # AC_SUBST([ProjectVersionInt])
+
+          # The project patchlevel is zero unless stated otherwise
+          test -z "$ProjectPatchLevel" && ProjectPatchLevel=0
+
+          # Save split version of ProjectPatchLevel
+          ProjectPatchLevel1=`echo $ProjectPatchLevel | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\1/'`
+          ProjectPatchLevel2=`echo $ProjectPatchLevel | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\3/'`
+
+          # The project patchlevel1/2 is zero unless stated otherwise
+          test -z "$ProjectPatchLevel1" && ProjectPatchLevel1=0
+          test -z "$ProjectPatchLevel2" && ProjectPatchLevel2=0
+
+          # AC_SUBST([ProjectPatchLevel1])
+          # AC_SUBST([ProjectPatchLevel2])
+
+          # Remove dots from the patch level; this allows us to have versions like 6.4.1.20050508
+          ProjectPatchLevel=`echo $ProjectPatchLevel | sed 's/\.//'`
+
+          # AC_SUBST([ProjectPatchLevel])
+
+          # The version of the GHC package changes every day, since the
+          # patchlevel is the current date.  We don't want to force
+          # recompilation of the entire compiler when this happens, so for
+          # GHC HEAD we omit the patchlevel from the package version number.
+          #
+          # The ProjectPatchLevel1 > 20000000 iff GHC HEAD. If it's for a stable
+          # release like 7.10.1 or for a release candidate such as 7.10.1.20141224
+          # then we don't omit the patchlevel components.
+
+          ProjectVersionMunged="$ProjectVersion"
+          if test "$ProjectPatchLevel1" -gt 20000000; then
+            ProjectVersionMunged="''${VERSION_MAJOR}.''${VERSION_MINOR}"
+          fi
+          # AC_SUBST([ProjectVersionMunged])
+
+          # The version used for libraries tightly coupled with GHC (e.g.
+          # ghc-internal) which need a major version bump for every minor/patchlevel
+          # GHC version.
+          # Example: for GHC=9.10.1, ProjectVersionForLib=9.1001
+          #
+          # Just like with project version munged, we don't want to use the
+          # patchlevel version which changes every day, so if using GHC HEAD, the
+          # patchlevel = 00.
+          case $VERSION_MINOR in
+            ?) ProjectVersionForLibUpperHalf=''${VERSION_MAJOR}.0''${VERSION_MINOR} ;;
+            ??) ProjectVersionForLibUpperHalf=''${VERSION_MAJOR}.''${VERSION_MINOR} ;;
+            *) echo bad minor version in $PACKAGE_VERSION; exit 1 ;;
+          esac
+          # GHC HEAD uses patch level version > 20000000
+          case $ProjectPatchLevel1 in
+            ?) ProjectVersionForLib=''${ProjectVersionForLibUpperHalf}0''${ProjectPatchLevel1} ;;
+            ??) ProjectVersionForLib=''${ProjectVersionForLibUpperHalf}''${ProjectPatchLevel1} ;;
+            *) ProjectVersionForLib=''${ProjectVersionForLibUpperHalf}00
+          esac
+
           PKGS=""
           ${pkgs.lib.concatStrings
             (builtins.map (name: ''
@@ -441,7 +515,7 @@ let
               fi
               if [[ "$cabal_file" != "" ]]; then
                 fixed_cabal_file=$(mktemp)
-                cat $cabal_file | sed -e 's/@ProjectVersionMunged@/${ghc.version}/g' -e 's/default: *@[A-Za-z0-9]*@/default: False/g' -e 's/@Suffix@//g' > $fixed_cabal_file
+                cat $cabal_file | sed -e "s/@ProjectVersionMunged@/$ProjectVersionMunged/g" -e "s/@ProjectVersionForLib@/$ProjectVersionForLib/g" -e 's/default: *@[A-Za-z0-9]*@/default: False/g' -e 's/@Suffix@//g' > $fixed_cabal_file
                 json_cabal_file=$(mktemp)
                 cabal2json $fixed_cabal_file > $json_cabal_file
 
@@ -538,11 +612,11 @@ let
     '';
   };
 
-  plan-nix = materialize ({
+  plan-json = materialize ({
     inherit materialized;
     sha256 = plan-sha256;
     sha256Arg = "plan-sha256";
-    this = "project.plan-nix" + (if name != null then " for ${name}" else "");
+    this = "project.plan-json" + (if name != null then " for ${name}" else "");
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
@@ -564,7 +638,6 @@ let
       # These two output will be present if in cabal configure failed.
       # They are used to provide passthru.json and passthru.freeze that
       # check first for cabal configure failure.
-      "json"    # The `plan.json` file generated by cabal and used for `plan-to-nix` input
       "freeze"  # The `cabal.project.freeze` file created by `cabal v2-freeze`
     ];
   } ''
@@ -619,7 +692,7 @@ let
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
 
-    CABAL_DIR=${
+    export CABAL_DIR=${
       # This creates `.cabal` directory that is as it would have
       # been at the time `cached-index-state`.  We may include
       # some packages that will be excluded by `index-state-max`
@@ -630,7 +703,9 @@ let
         index-state = cached-index-state;
         sha256 = index-sha256-found;
       }
-    } make-install-plan ${
+    }
+
+    make-install-plan ${
           # Setting the desired `index-state` here in case it is not
           # in the cabal.project file. This will further restrict the
           # packages used by the solver (cached-index-state >= index-state-max).
@@ -676,16 +751,19 @@ let
     # proper relative paths.
     (cd $out${subDir'} && plan-to-nix --full ${if ignorePackageYaml then "--ignore-package-yaml" else ""} --plan-json $tmp${subDir'}/dist-newstyle/cache/plan.json -o .)
 
+    substituteInPlace $tmp${subDir'}/dist-newstyle/cache/plan.json --replace "$out" "."
+    substituteInPlace $tmp${subDir'}/dist-newstyle/cache/plan.json --replace "$CABAL_DIR" ""
+
     # Replace the /nix/store paths to minimal git repos with indexes (that will work with materialization).
     ${fixedProject.replaceLocations}
-
-    # Make the plan.json file available in case we need to debug plan-to-nix
-    cp $tmp${subDir'}/dist-newstyle/cache/plan.json $json
 
     # Remove the non nix files ".project" ".cabal" "package.yaml" files
     # as they should not be in the output hash (they may change slightly
     # without affecting the nix).
     find $out \( -type f -or -type l \) ! -name '*.nix' -delete
+
+    # Make the plan.json file available in case we need to debug plan-to-nix
+    cp $tmp${subDir'}/dist-newstyle/cache/plan.json $out
 
     # Make the revised cabal files available (after the delete step avove)
     echo "Moving cabal files from $tmp${subDir'}/dist-newstyle/cabal-files to $out${subDir'}/cabal-files"
@@ -698,7 +776,7 @@ let
     mv $out${subDir'}/pkgs.nix $out${subDir'}/default.nix
   '');
 in {
-  projectNix = plan-nix;
+  projectNix = plan-json;
   inherit index-state-max src;
   inherit (fixedProject) sourceRepos extra-hackages;
 }

@@ -48,7 +48,7 @@ let
         static-nix-tools-for-default-setup = static-nix-tools' ../nix-tools-static-for-default-setup.nix;
 
         # Version of nix-tools built with a pinned version of haskell.nix.
-        pinned-nix-tools-lib = (import (final.haskell-nix.sources.flake-compat) {
+        pinned-nix-tools-lib = (import final.haskell-nix.sources.flake-compat {
             pkgs = final;
             inherit (final) system;
             src = ../nix-tools;
@@ -63,7 +63,7 @@ let
           prev.haskell-nix // {
             inherit (nix-tools-pkgs) nix-tools nix-tools-set;
             # either nix-tools from its overlay or from the tarball.
-            nix-tools-unchecked = static-nix-tools// {
+            nix-tools-unchecked = static-nix-tools // {
               exes =  static-nix-tools.exes // {
                 inherit (static-nix-tools-for-default-setup.exes) default-setup default-setup-ghcjs;
               };
@@ -78,7 +78,6 @@ let
     compiler-llvm = import ./compiler-llvm.nix;
     ghc = import ./ghc.nix;
     ghc-packages = import ./ghc-packages.nix;
-    hydra = import ./hydra.nix { inherit sources; };
     darwin = import ./darwin.nix;
     windows = import ./windows.nix;
     armv6l-linux = import ./armv6l-linux.nix;
@@ -129,7 +128,6 @@ let
     cabalPkgConfig
     gobject-introspection
     hix
-    hydra
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
     cacheCompilerDeps

@@ -14,7 +14,8 @@ let
     if builtins.compareVersions version v >= 0
       then patch
       else null;
-in {
+  addPackageKeys = x: x // { package-keys = builtins.attrNames x.packages; };
+in addPackageKeys {
   # terminfo doesn't list libtinfo in its cabal file. We could ignore
   # this if we used the terminfo shipped with GHC, but this package is
   # reinstallable so we'd rather have it defined in the plan.
@@ -76,6 +77,7 @@ in {
     (fromUntil "9.2.0.0" "9.3" ../overlays/patches/ghc-lib-parser-9.2-global-unique-counters-in-rts.patch)
     (fromUntil "9.4.0.0" "9.7" ../overlays/patches/ghc-lib-parser-9.4-global-unique-counters-in-rts.patch)
   ];
+  packages.ghc-lib-parser.components.library.pre-existing = ["ghc-boot-th"];
 
   # See https://github.com/haskell-nix/hnix/pull/1053
   packages.hnix.patches = [
@@ -167,15 +169,6 @@ in {
   packages.ghc.flags.internal-interpreter = true;
   packages.ghci.flags.ghci = true;
   packages.ghci.flags.internal-interpreter = true;
-
-  # These flags are set by hadrian.  This would be fine if:
-  # * Haskell.nix respected `pre-existing` packages in `plan.json` and used the hadrian built version.
-  # * If `plan.json` included the flag settings used by `pre-existing` packages.
-  # For now the work around is to set the flags that hadrian does (see hadrian/src/Settings/Packages.hs).
-  packages.unix.flags      = pkgs.lib.optionalAttrs (builtins.compareVersions config.compiler.version "9.9" > 0) { os-string = true; };
-  packages.directory.flags = pkgs.lib.optionalAttrs (builtins.compareVersions config.compiler.version "9.9" > 0) { os-string = true; };
-  packages.Win32.flags     = pkgs.lib.optionalAttrs (builtins.compareVersions config.compiler.version "9.9" > 0) { os-string = true; };
-  packages.hashable.flags  = pkgs.lib.optionalAttrs (builtins.compareVersions config.compiler.version "9.9" > 0) { os-string = true; };
 
   # See https://github.com/Bodigrim/bitvec/pull/61
   packages.bitvec.patches = [

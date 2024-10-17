@@ -2,7 +2,7 @@ final: prev:
 {
   haskell-nix = prev.haskell-nix // ({
     defaultModules = prev.haskell-nix.defaultModules ++ final.lib.optional final.stdenv.hostPlatform.isGhcjs (
-      ({ pkgs, buildModules, config, lib, ... }: {
+      ({ pkgs, buildModules, config, lib, ... }: prev.haskell-nix.haskellLib.addPackageKeys {
         # Apply the patches that came with `ghcjs`
         # Also add a "Keep alive" message to prevent hydra timeouts when hsc2hs runs
         packages = pkgs.lib.genAttrs ["base" "directory" "filepath" "ghc-prim" "integer-gmp" "process" "template-haskell" "time" "unix" "Win32" ]

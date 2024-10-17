@@ -1,4 +1,4 @@
-{ config, pkgs, lib, haskellLib, buildModules, ... }:
+{ config, options, pkgs, lib, haskellLib, buildModules, ... }:
 let
   builder = haskellLib.weakCallPackage pkgs ../builder {
     inherit haskellLib;
@@ -120,6 +120,6 @@ in
       pkgsBuildBuild = buildModules.config.hsPkgs;
     } //
     lib.mapAttrs
-      (_name: pkg: if pkg == null then null else builder.build-package config pkg)
+      (name: pkg: if !(options.packages.${name}.isDefined or true) || pkg == null then null else builder.build-package config pkg)
       (config.packages // lib.genAttrs (config.nonReinstallablePkgs ++ config.bootPkgs) (_: null));
 }

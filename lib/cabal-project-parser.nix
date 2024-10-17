@@ -46,6 +46,8 @@ let
     let
       # Look for a new attribute name
       pair = builtins.match "([^ :]*): *(.*)" s;
+      trim = x: let m = builtins.match "(.*[^ \t])[ \t]*" x;
+        in pkgs.lib.optionalString (m != null) (builtins.head m);
 
       # Function to build the next parse state when the attribute name is known
       nextState = name: value: {
@@ -62,7 +64,7 @@ let
       if pair != null
         then
           # First line of a new attribute
-          nextState (builtins.head pair) (builtins.elemAt pair 1)
+          nextState (builtins.head pair) (trim (builtins.elemAt pair 1))
         else
           if name != null
             then nextState name s # Append another line to the current attribute

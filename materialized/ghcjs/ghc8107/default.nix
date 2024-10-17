@@ -389,11 +389,11 @@
       {
         packages = {
           "ghcjs-th" = {
-            flags = { "use-host-template-haskell" = lib.mkOverride 900 false; };
+            flags = { "use-host-template-haskell" = lib.mkOverride 900 true; };
           };
           "ghcjs" = {
             flags = {
-              "no-wrapper-install" = lib.mkOverride 900 false;
+              "no-wrapper-install" = lib.mkOverride 900 true;
               "debug" = lib.mkOverride 900 false;
               "ghci" = lib.mkOverride 900 true;
               "stage2" = lib.mkOverride 900 true;
