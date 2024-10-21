@@ -5149,7 +5149,7 @@ pkgs:
     "svrcore" = [ "svrcore" ];
     "SvtAv1Dec" = [ "svt-av1" ];
     "SvtAv1Enc" = [ "svt-av1" ];
-    "swipl" = [ "swiProlog" ];
+    "swipl" = [ "swi-prolog" ];
 #    "swipl" = [ "swiPrologWithGui" ];
     "sword" = [ "sword" ];
     "syncthingconnector" = [ "syncthingtray" ];
