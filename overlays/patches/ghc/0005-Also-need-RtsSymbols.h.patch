@@ -1,0 +1,26 @@
+From cc35bd8fc67f5ced12fc8800b50210509d1358eb Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Thu, 20 Jun 2024 02:41:58 +0000
+Subject: [PATCH 05/12] Also need RtsSymbols.h
+
+---
+ rts/RtsSymbols.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/rts/RtsSymbols.h b/rts/RtsSymbols.h
+index b17c56e..4476006 100644
+--- a/rts/RtsSymbols.h
++++ b/rts/RtsSymbols.h
+@@ -21,7 +21,8 @@
+ typedef struct _RtsSymbolVal {
+     const SymbolName* lbl;
+     SymbolAddr* addr;
+-    bool weak;
++    SymStrength strength;
++    SymType type;
+ } RtsSymbolVal;
+ 
+ extern RtsSymbolVal rtsSyms[];
+-- 
+2.33.0
+
