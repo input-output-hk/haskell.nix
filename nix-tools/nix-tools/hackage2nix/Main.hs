@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
@@ -6,10 +7,14 @@ module Main (main) where
 
 import           Cabal2Nix
 import           Cabal2Nix.Util                           ( quoted )
+#if !MIN_VERSION_base(4, 17, 0)
+import           Control.Applicative                      ( liftA2 )
+#endif
 import           Control.Monad.Trans.State.Strict
 import           Crypto.Hash.SHA256                       ( hash )
 import qualified Data.ByteString.Base16        as Base16
 import qualified Data.ByteString.Char8         as BS
+import           Data.Char                                ( isUpper )
 import           Data.Foldable                            ( toList
                                                           , for_
                                                           )
@@ -49,7 +54,6 @@ import           System.Environment                       ( getArgs )
 import           System.FilePath                          ( (</>)
                                                           , (<.>)
                                                           )
-import Data.Char (isUpper)
 
 -- Avoid issues with case insensitive file systems by escaping upper case
 -- characters with a leading _ character.
@@ -74,17 +78,20 @@ main = do
   let (nixFiles, cabalFiles) =
         runState (fmap (toList . (Seq.sortOn fst)) $ foldMapWithKeyA package2nix db) mempty
   createDirectoryIfMissing False out
-  writeFile (out </> "default.nix") $
-    "with builtins; mapAttrs (_: mapAttrs (_: data: rec {\n\
-     \ inherit (data) sha256;\n\
-     \ revisions = data.revisions // {\n\
-     \  default = revisions.\"${data.revisions.default}\";\n\
-     \ };\n\
-     \})) {\n"
-     -- Import all the per package nix files
-     <> mconcat (map (\(pname, _) ->
-       "  " <> quoted pname <> " = import ./nix/" <> escapeUpperCase pname <> ".nix;\n") nixFiles)
-     <> "}\n"
+  writeFile (out </> "default.nix") $ unlines [
+      "with builtins; mapAttrs (_: mapAttrs (_: data: rec {",
+      " inherit (data) sha256;",
+      " revisions = data.revisions // {",
+      "  default = revisions.\"${data.revisions.default}\";",
+      " };",
+      "})) {",
+      -- Import all the per package nix files
+      unlines [
+         "  " <> quoted pname <> " = import ./nix/" <> escapeUpperCase pname <> ".nix;"
+        | (pname, _) <- nixFiles
+      ],
+      "}"
+    ]
 
   createDirectoryIfMissing False (out </> "nix")
   for_ nixFiles $ \(pname, nix) ->
