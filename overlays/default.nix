@@ -93,6 +93,7 @@ let
     cacheCompilerDeps = import ./cache-compiler-deps.nix;
     fetch-source = import ./fetch-source.nix;
     lazy-inputs = import ../lazy-inputs;
+    rcodesign = import ./rcodesign.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -133,6 +134,7 @@ let
     cacheCompilerDeps
     fetch-source
     lazy-inputs
+    rcodesign
   ];
   combined = builtins.foldl' composeExtensions (_: _: { }) ordered;
 in overlays // { inherit combined; }
