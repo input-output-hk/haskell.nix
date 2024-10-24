@@ -90,7 +90,7 @@
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (
          (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc91320241022"]) # Including GHC HEAD here because the patches for rts/RtsSymbols.c no longer apply and mingwW64 GHC build fails without them
+      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc91220241014" "ghc91320241022"]) # Including GHC HEAD here because the patches for rts/RtsSymbols.c no longer apply and mingwW64 GHC build fails without them
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
