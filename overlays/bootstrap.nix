@@ -224,8 +224,10 @@ in {
                      && final.stdenv.targetPlatform.is32bit
                      || final.stdenv.targetPlatform.isMusl)
                   (until "9.11" ./patches/ghc/ghc-9.6-missing-symbols-deadbeef.patch)
-                ++ onAarch64Musl (fromUntil "9.6" "9.11" ./patches/ghc/ghc-9.6-linker-pool-allocator.patch)
-                ++ onAarch64Musl (fromUntil "9.6" "9.11" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
+                ++ onAarch64Musl (fromUntil "9.6" "9.8.3" ./patches/ghc/ghc-9.6-linker-pool-allocator.patch)
+                ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-linker-pool-allocator.patch)
+                ++ onAarch64Musl (fromUntil "9.6" "9.8.3" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
+                ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
 
                 ++ onMusl (fromUntil "9.6" "9.8" ./patches/ghc/ghc-9.6-0001-Refactor-IServ.hs.patch)
                 ++ onMusl (fromUntil "9.6" "9.11" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
