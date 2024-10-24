@@ -230,7 +230,8 @@ in {
                 ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
 
                 ++ onMusl (fromUntil "9.6" "9.8" ./patches/ghc/ghc-9.6-0001-Refactor-IServ.hs.patch)
-                ++ onMusl (fromUntil "9.6" "9.11" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
+                ++ onMusl (fromUntil "9.6" "9.8.3" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
+                ++ onMusl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
                 ++ onAarch64Musl (fromUntil "9.6" "9.11" ./patches/ghc/ghc-9.6-0003-Better-pool-alignment.-We-still-hardcode-section-ali.patch)
                 ++ onAarch64Musl (fromUntil "9.6" "9.11" ./patches/ghc/ghc-9.6-0007-fixup-Better-pool-alignment.-We-still-hardcode-secti.patch)
                 ++ onAarch64Musl (fromUntil "9.6" "9.11" ./patches/ghc/ghc-9.6-0008-pool-improvements.patch)
