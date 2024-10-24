@@ -185,7 +185,8 @@ in {
                 ++ onAarch64 (until "9.0" ./patches/ghc/ghc-8.10-aarch64-handle-none-rela.patch)
                 ++ onWindows (until "9.0" ./patches/ghc/5b08e0c06e038448a63aa9bd7f163b23d824ba4b.patch)
                 ++ onAarch64 (fromUntil "9.0" "9.11" ./patches/ghc/ghc-9.0-better-symbol-addr-debug.patch)
-                ++ onAarch64 (fromUntil "9.0" "9.11" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
+                ++ onAarch64 (fromUntil "9.0" "9.8.3" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
+                ++ onAarch64 (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
 
                 ++ onWindows (fromUntil "9.6.3" "9.6.4" ./patches/ghc/ghc-9.6-hadrian-splitsections.patch)
                 ++ onWindows (fromUntil "9.8.1" "9.8.2" ./patches/ghc/ghc-9.6-hadrian-splitsections.patch)
@@ -216,7 +217,8 @@ in {
 
                 # Allow loading static external plugins into cross compilers
                 ++ onCross (fromUntil "9.6.1" "9.11" ./patches/ghc/5c80a27488acfe3610ddfcb99a1e961002e386d0.patch)
-                ++ onCross (fromUntil "9.6.1" "9.11" ./patches/ghc/f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch)
+                ++ onCross (fromUntil "9.6.1" "9.8.3" ./patches/ghc/f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch)
+                ++ onCross (fromUntil "9.8.3" "9.11"  ./patches/ghc/ghc-9.8.3-f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch)
                 ++ final.lib.optionals (
                         final.stdenv.targetPlatform.isAndroid
                      && final.stdenv.targetPlatform.is32bit
