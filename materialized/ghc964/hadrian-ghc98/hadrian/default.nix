@@ -17,9 +17,9 @@
         pretty.revision = hackage.pretty."1.1.3.6".revisions.default;
         hashable.revision = import ./cabal-files/hashable.nix;
         hashable.flags.random-initial-seed = false;
-        hashable.flags.integer-gmp = true;
+        hashable.flags.arch-native = false;
         heaps.revision = import ./cabal-files/heaps.nix;
-        Cabal-syntax.revision = import ./cabal-files/Cabal-syntax.nix;
+        Cabal-syntax.revision = hackage.Cabal-syntax."3.10.1.0".revisions.default;
         process.revision = hackage.process."1.6.17.0".revisions.default;
         primitive.revision = import ./cabal-files/primitive.nix;
         stm.revision = hackage.stm."2.5.1.0".revisions.default;
@@ -31,6 +31,7 @@
         deepseq.revision = hackage.deepseq."1.4.8.1".revisions.default;
         utf8-string.revision = import ./cabal-files/utf8-string.nix;
         js-jquery.revision = import ./cabal-files/js-jquery.nix;
+        os-string.revision = import ./cabal-files/os-string.nix;
         text.revision = hackage.text."2.0.2".revisions.default;
         QuickCheck.revision = import ./cabal-files/QuickCheck.nix;
         QuickCheck.flags.old-random = false;
@@ -40,12 +41,13 @@
         containers.revision = hackage.containers."0.6.7".revisions.default;
         array.revision = hackage.array."0.5.6.0".revisions.default;
         shake.revision = import ./cabal-files/shake.nix;
+        shake.flags.threaded = true;
         shake.flags.cloud = false;
         shake.flags.embed-files = false;
         shake.flags.portable = false;
         random.revision = import ./cabal-files/random.nix;
         bytestring.revision = hackage.bytestring."0.11.5.3".revisions.default;
-        Cabal.revision = import ./cabal-files/Cabal.nix;
+        Cabal.revision = hackage.Cabal."3.10.1.0".revisions.default;
         directory.revision = hackage.directory."1.3.8.1".revisions.default;
         js-flot.revision = import ./cabal-files/js-flot.nix;
         cryptohash-sha256.revision = import ./cabal-files/cryptohash-sha256.nix;
@@ -69,10 +71,12 @@
           "containers" = "0.6.7";
           "ghc-prim" = "0.10.0";
           "mtl" = "2.3.1";
+          "Cabal" = "3.10.1.0";
           "ghc-boot-th" = "9.6.4";
           "base" = "4.18.2.0";
           "time" = "1.12.2";
           "stm" = "2.5.1.0";
+          "Cabal-syntax" = "3.10.1.0";
           "ghc-bignum" = "1.3";
           "directory" = "1.3.8.1";
           "template-haskell" = "2.20.0.0";
@@ -100,6 +104,7 @@
         "ghc-boot-th"
         "mtl"
         "pretty"
+        "Cabal-syntax"
         "process"
         "stm"
         "template-haskell"
@@ -111,6 +116,7 @@
         "containers"
         "array"
         "bytestring"
+        "Cabal"
         "directory"
         "ghc-bignum"
         "binary"
@@ -150,6 +156,7 @@
           "hashable".components.library.planned = lib.mkOverride 900 true;
           "primitive".components.library.planned = lib.mkOverride 900 true;
           "Cabal-syntax".components.library.planned = lib.mkOverride 900 true;
+          "os-string".components.library.planned = lib.mkOverride 900 true;
           "QuickCheck".components.library.planned = lib.mkOverride 900 true;
           "js-jquery".components.library.planned = lib.mkOverride 900 true;
           "mtl".components.library.planned = lib.mkOverride 900 true;
