@@ -168,7 +168,7 @@ in {
                 ++ onGhcjs (fromUntil "9.6.3" "9.8"   ./patches/ghc/ghc-9.6.3-JS-implement-TH-support.patch)
                 ++ fromUntil "9.8.1"  "9.8.2"  ./patches/ghc/ghc-9.8-cabal-c-soures-fix.patch
                 ++ fromUntil "9.6.3"  "9.6.5"  ./patches/ghc/ghc-9.6.3-Cabal-9384.patch
-                ++ fromUntil "9.8.1"  "9.9"    ./patches/ghc/ghc-9.6.3-Cabal-9384.patch
+                ++ fromUntil "9.8.1"  "9.8.3"    ./patches/ghc/ghc-9.6.3-Cabal-9384.patch
 
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
                 ++ onAarch64 (until "9.0" ./patches/ghc/mmap-next.patch)
@@ -245,10 +245,10 @@ in {
                 ++ onWindowsOrMusl (fromUntil "9.8.2"  "9.11" ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch)
                 ++ onWindowsOrMusl (fromUntil "9.6"    "9.7"  ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch)
                 ++ onWindowsOrMusl (fromUntil "9.8.2"  "9.11" ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch)
-                ++ fromUntil "9.9"  "9.11" ./patches/ghc/ghc-9.9-Cabal-3.11.patch
-                ++ fromUntil "9.8"  "9.9"  ./patches/ghc/ghc-9.8-text-upper-bound.patch
-                ++ fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.10-containers-upper-bound.patch
-                ++ fromUntil "9.10" "9.14" ./patches/ghc/ghc-9.10-merge-objects.patch
+                ++ fromUntil "9.9"  "9.11"  ./patches/ghc/ghc-9.9-Cabal-3.11.patch
+                ++ fromUntil "9.8"  "9.8.3" ./patches/ghc/ghc-9.8-text-upper-bound.patch
+                ++ fromUntil "9.10" "9.11"  ./patches/ghc/ghc-9.10-containers-upper-bound.patch
+                ++ fromUntil "9.10" "9.14"  ./patches/ghc/ghc-9.10-merge-objects.patch
 
                 # This patch will make windows stop emitting absolute relocations. This is one way in which binutils 2.36+ (with ASLR enabled), will just choke on the
                 # assembly we generate because it's always absolute (32bit) addressing modes.
