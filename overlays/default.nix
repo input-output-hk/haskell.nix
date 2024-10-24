@@ -91,7 +91,6 @@ let
     ghcjs = import ./ghcjs.nix;
     cabalPkgConfig = import ./cabal-pkg-config.nix;
     cacheCompilerDeps = import ./cache-compiler-deps.nix;
-    fetch-source = import ./fetch-source.nix;
     lazy-inputs = import ../lazy-inputs;
     rcodesign = import ./rcodesign.nix;
   };
@@ -132,7 +131,6 @@ let
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
     cacheCompilerDeps
-    fetch-source
     lazy-inputs
     rcodesign
   ];
