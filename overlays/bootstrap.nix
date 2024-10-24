@@ -7,7 +7,7 @@ let
       "9.2" = "9.2.8";
       "9.4" = "9.4.8";
       "9.6" = "9.6.6";
-      "9.8" = "9.8.2";
+      "9.8" = "9.8.3";
       "9.10" = "9.10.1";
     };
     gitInputs = {
@@ -814,13 +814,40 @@ in {
 
                 ghc-patches = ghc-patches "9.8.2";
             });
+            ghc983 = traceWarnOld "9.8" (final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc983; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc966
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc966
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc965
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc964
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec.file = final.haskell-nix.sources.ghc983;
+                src-spec.version = "9.8.3";
+                src-spec.needsBooting = true;
+
+                ghc-patches = ghc-patches "9.8.3";
+            });
             ghc9101 = traceWarnOld "9.10" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9101; };
 
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc9101
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc982
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc983
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc982
                           or final.buildPackages.buildPackages.haskell.compiler.ghc981
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
@@ -856,7 +883,8 @@ in {
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc9101 # TODO use ${compiler-nix-name}
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc982
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc983
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc982
                           or final.buildPackages.buildPackages.haskell.compiler.ghc981
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
