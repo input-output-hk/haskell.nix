@@ -219,7 +219,8 @@ in {
                 # Allow loading static external plugins into cross compilers
                 ++ onCross (fromUntil "9.6.1" "9.11" ./patches/ghc/5c80a27488acfe3610ddfcb99a1e961002e386d0.patch)
                 ++ onCross (fromUntil "9.6.1" "9.8.3" ./patches/ghc/f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch)
-                ++ onCross (fromUntil "9.8.3" "9.11"  ./patches/ghc/ghc-9.8.3-f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch)
+                ++ onCross (fromUntil "9.8.3" "9.10"  ./patches/ghc/ghc-9.8.3-f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch)
+                ++ onCross (fromUntil "9.10"  "9.11" ./patches/ghc/f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch)
                 ++ final.lib.optionals (
                         final.stdenv.targetPlatform.isAndroid
                      && final.stdenv.targetPlatform.is32bit
