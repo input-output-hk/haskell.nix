@@ -17,7 +17,7 @@
         pretty.revision = hackage.pretty."1.1.3.6".revisions.default;
         hashable.revision = import ./cabal-files/hashable.nix;
         hashable.flags.random-initial-seed = false;
-        hashable.flags.integer-gmp = true;
+        hashable.flags.arch-native = false;
         heaps.revision = import ./cabal-files/heaps.nix;
         Cabal-syntax.revision = import ./cabal-files/Cabal-syntax.nix;
         process.revision = hackage.process."1.6.17.0".revisions.default;
@@ -30,6 +30,7 @@
         deepseq.revision = hackage.deepseq."1.4.8.1".revisions.default;
         utf8-string.revision = import ./cabal-files/utf8-string.nix;
         js-jquery.revision = import ./cabal-files/js-jquery.nix;
+        os-string.revision = import ./cabal-files/os-string.nix;
         text.revision = hackage.text."2.0.2".revisions.default;
         QuickCheck.revision = import ./cabal-files/QuickCheck.nix;
         QuickCheck.flags.old-random = false;
@@ -39,6 +40,7 @@
         containers.revision = hackage.containers."0.6.7".revisions.default;
         array.revision = hackage.array."0.5.6.0".revisions.default;
         shake.revision = import ./cabal-files/shake.nix;
+        shake.flags.threaded = true;
         shake.flags.cloud = false;
         shake.flags.embed-files = false;
         shake.flags.portable = false;
@@ -145,6 +147,7 @@
           "hashable".components.library.planned = lib.mkOverride 900 true;
           "primitive".components.library.planned = lib.mkOverride 900 true;
           "Cabal-syntax".components.library.planned = lib.mkOverride 900 true;
+          "os-string".components.library.planned = lib.mkOverride 900 true;
           "QuickCheck".components.library.planned = lib.mkOverride 900 true;
           "js-jquery".components.library.planned = lib.mkOverride 900 true;
           "mtl".components.library.planned = lib.mkOverride 900 true;
