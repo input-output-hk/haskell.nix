@@ -3,11 +3,6 @@
     src = testSrc "external-static-plugin";
     inherit compiler-nix-name evalPackages;
     modules = [ {
-      packages.prog.components.exes.prog.plugins = [ {
-        inherit (project.hsPkgs.plugin.components) library;
-        moduleName = "Plugin";
-        args = [ "f1" "f2" ];
-      } ];
       packages.prog.postInstall = ''
         test -f f1
         test -f f2
