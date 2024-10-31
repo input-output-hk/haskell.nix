@@ -33,7 +33,7 @@ in recurseIntoAttrs {
   test-shell = (project.shellFor {
       tools = {
         cabal = { cabalProjectLocal = builtins.readFile ../cabal.project.local; };
-        hoogle = { cabalProjectLocal = builtins.readFile ../cabal.project.local; index-state = "2024-10-01T00:00:00Z"; };
+        hoogle = { cabalProjectLocal = builtins.readFile ../cabal.project.local; index-state = "2024-10-26T00:00:00Z"; };
       };
       withHoogle = true;
     }).overrideAttrs (_: _: {
