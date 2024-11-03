@@ -30,6 +30,14 @@ in [
     { _file = "haskell.nix/overlays/hackage-quirks.nix#${n}"; } //
     lib.mkIf (n == config.name) v) {
 
+    # See https://github.com/input-output-hk/haskell.nix/issues/2277
+    hoogle = {
+      cabalProject = ''
+        packages: .
+        constraints: data-default-class >=0.2.0.0
+      '';
+    };
+
     lsp-test = {
       cabalProject = ''
         packages: .

@@ -10,7 +10,7 @@ let
   };
 
   env = project.shellFor {
-    tools.hoogle = { cabalProjectLocal = builtins.readFile ../cabal.project.local; index-state = "2024-10-26T00:00:00Z"; };
+    tools.hoogle = { cabalProjectLocal = builtins.readFile ../cabal.project.local; };
     withHoogle = true;
   };
 

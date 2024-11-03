@@ -22,7 +22,6 @@ let
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = {
       cabal.cabalProjectLocal = builtins.readFile ../cabal.project.local;
-      hoogle.index-state = "2024-10-26T00:00:00Z";
     };
     exactDeps = true;
     # Avoid duplicate package issues when runghc looks for packages
@@ -36,7 +35,6 @@ let
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = {
       cabal.cabalProjectLocal = builtins.readFile ../cabal.project.local;
-      hoogle.index-state = "2024-10-26T00:00:00Z";
     };
     exactDeps = true;
     # Avoid duplicate package issues when runghc looks for packages
@@ -51,7 +49,6 @@ let
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = {
       cabal.cabalProjectLocal = builtins.readFile ../cabal.project.local;
-      hoogle.index-state = "2024-10-26T00:00:00Z";
     };
     # Avoid duplicate package issues when runghc looks for packages
     packageSetupDeps = false;
