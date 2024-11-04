@@ -34,7 +34,7 @@ in [
     hoogle = {
       cabalProject = ''
         packages: .
-        constraints: data-default-class >=0.2.0.0
+        allow-newer: hoogle:crypton-connection
       '';
     };
 
