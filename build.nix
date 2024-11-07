@@ -77,14 +77,14 @@ in rec {
   maintainer-scripts = pkgs.dontRecurseIntoAttrs {
     update-hackage = import ./scripts/update-hackage.nix {
       inherit (pkgs) stdenv lib writeScript coreutils glibc git
-        openssh nixFlakes gawk bash curl findutils;
+        openssh nixVersions gawk bash curl findutils;
       # Update scripts use the internal nix-tools (compiled with a fixed GHC version)
       nix-tools = haskell.nix-tools-unchecked;
       inherit (haskell) update-index-state-hashes cabal-issue-8352-workaround;
     };
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {
       inherit (pkgs) stdenv lib writeScript coreutils glibc git
-        openssh nixFlakes gawk bash curl findutils;
+        openssh nixVersions gawk bash curl findutils;
       # Update scripts use the internal nix-tools (compiled with a fixed GHC version)
       nix-tools = haskell.nix-tools-unchecked;
       inherit (haskell) cabal-issue-8352-workaround;
