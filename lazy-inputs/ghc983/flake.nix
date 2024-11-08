@@ -2,9 +2,9 @@
   description = "Lazy Input for Haskell.nix";
 
   inputs = {
-    ghc911 = {
+    ghc983 = {
       flake = false;
-      url = "git+https://gitlab.haskell.org/ghc/ghc?submodules=1";
+      url = "git+https://github.com/stable-haskell/ghc?ref=ghc-9.8.3-iog&submodules=1";
     };
   };
 

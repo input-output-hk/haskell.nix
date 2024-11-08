@@ -1,18 +1,19 @@
 {
   "nodes": {
-    "ghc911": {
+    "ghc912X": {
       "flake": false,
       "locked": {
-        "lastModified": 1726660620,
-        "narHash": "sha256-A+vKrnt0dC9mA6vIUjeAneo6oHL/5JHmnFw/zD2K/q0=",
-        "ref": "refs/heads/master",
-        "rev": "35eb4f428ab72b712ea78d6ef86b956e321c3bb2",
-        "revCount": 67241,
+        "lastModified": 1728948341,
+        "narHash": "sha256-yeIet7pwSkOngSTcm/E9XJAZhOalrfSbjVMOri/m1Ak=",
+        "ref": "ghc-9.12",
+        "rev": "ca2b21c3429a5ff780cb6c58c33c171a3c0af82b",
+        "revCount": 67355,
         "submodules": true,
         "type": "git",
         "url": "https://gitlab.haskell.org/ghc/ghc"
       },
       "original": {
+        "ref": "ghc-9.12",
         "submodules": true,
         "type": "git",
         "url": "https://gitlab.haskell.org/ghc/ghc"
@@ -20,7 +21,7 @@
     },
     "root": {
       "inputs": {
-        "ghc911": "ghc911"
+        "ghc912X": "ghc912X"
       }
     }
   },

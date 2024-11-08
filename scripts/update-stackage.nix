@@ -1,5 +1,5 @@
 { stdenv, lib, writeScript, coreutils, glibc, git, openssh
-, nix-tools, nixFlakes
+, nix-tools, nixVersions
 , gawk, bash, curl, findutils, cabal-issue-8352-workaround }@args:
 
 import ./update-external.nix args {
