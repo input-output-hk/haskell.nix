@@ -197,6 +197,9 @@ let
         "--with-gcc=${pkgsBuildBuild.emscripten}/bin/emcc"
         "--with-ld=${pkgsBuildBuild.emscripten}/bin/emcc"
       ]
+      ++ lib.optionals (stdenv.hostPlatform.isGhcjs && stdenv.buildPlatform.isDarwin) [
+        "--ar-options=--format=gnu" # Avoid `--format=darwin` it can cause `section too large` errors
+      ]
       ++ [ # other flags
       (disableFeature dontStrip "executable-stripping")
       (disableFeature dontStrip "library-stripping")

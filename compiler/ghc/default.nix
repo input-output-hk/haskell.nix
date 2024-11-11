@@ -9,7 +9,7 @@ let self =
 # build-tools
 , bootPkgs
 , buildPackages
-, autoconf, automake, coreutils, fetchurl, fetchpatch, perl, python3, m4, sphinx, numactl, elfutils, libcxx, libcxxabi
+, autoconf, automake, coreutils, fetchurl, fetchpatch, perl, python3, m4, sphinx, numactl, elfutils, libcxx, libcxxabi ? throw "No libcxxabi"
 , autoreconfHook
 , bash
 

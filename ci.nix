@@ -74,7 +74,8 @@
         ghc98llvm = false;
         ghc910 = true;
         ghc910llvm = true;
-        ghc911 = true;
+        ghc912X = true;
+        ghc913 = true;
       })));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values
@@ -82,15 +83,15 @@
     let lib = nixpkgs.lib;
     in lib.optionalAttrs (nixpkgsName == "unstable"
       && (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"])
-       || (system == "aarch64-linux" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"])
-       || (system == "x86_64-darwin" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948" "ghc966" "ghc982"])
-       || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948" "ghc966" "ghc982"])
+      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"])
+       || (system == "aarch64-linux" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"])
+       || (system == "x86_64-darwin" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948" "ghc966" "ghc982" "ghc983"])
+       || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948" "ghc966" "ghc982" "ghc983"])
        )) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (
          (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc91120240918"]) # Including GHC HEAD here because the patches for rts/RtsSymbols.c no longer apply and mingwW64 GHC build fails without them
+      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc91220241014" "ghc91320241101"]) # Including GHC HEAD here because the patches for rts/RtsSymbols.c no longer apply and mingwW64 GHC build fails without them
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (nixpkgsName == "unstable"

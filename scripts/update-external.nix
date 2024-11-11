@@ -1,5 +1,5 @@
 { stdenv, lib, writeScript, glibc, coreutils, git, openssh
-, nix-tools, nixFlakes
+, nix-tools, nixVersions
 , bash, curl, findutils, gawk, cabal-issue-8352-workaround }:
 
 { name, script }:
@@ -15,7 +15,7 @@ in
 
     set -euo pipefail
 
-    export PATH="${makeBinPath ([ coreutils curl findutils gawk bash git openssh nix-tools nixFlakes ] ++ cabal-issue-8352-workaround ++ optional stdenv.isLinux glibc)}"
+    export PATH="${makeBinPath ([ coreutils curl findutils gawk bash git openssh nix-tools nixVersions.stable ] ++ cabal-issue-8352-workaround ++ optional stdenv.isLinux glibc)}"
 
     ${script}
 

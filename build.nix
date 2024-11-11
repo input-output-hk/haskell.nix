@@ -28,7 +28,7 @@ in rec {
     pkgs.recurseIntoAttrs ({
       cabal-latest = tool compiler-nix-name "cabal" ({
         inherit evalPackages;
-      } // pkgs.lib.optionalAttrs (ghcFromTo "9.10" "9.12") {
+      } // pkgs.lib.optionalAttrs (ghcFromTo "9.12" "9.13") {
         cabalProjectLocal = builtins.readFile ./test/cabal.project.local;
       });
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0) {
@@ -62,7 +62,7 @@ in rec {
         inherit evalPackages;
         src = pkgs.haskell-nix.sources."hls-2.2";
       };
-    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.11") {
+    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.8.3" || ghcFromTo "9.10" "9.11") {
       "hls-29" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
         src = pkgs.haskell-nix.sources."hls-2.9";
@@ -77,14 +77,14 @@ in rec {
   maintainer-scripts = pkgs.dontRecurseIntoAttrs {
     update-hackage = import ./scripts/update-hackage.nix {
       inherit (pkgs) stdenv lib writeScript coreutils glibc git
-        openssh nixFlakes gawk bash curl findutils;
+        openssh nixVersions gawk bash curl findutils;
       # Update scripts use the internal nix-tools (compiled with a fixed GHC version)
       nix-tools = haskell.nix-tools-unchecked;
       inherit (haskell) update-index-state-hashes cabal-issue-8352-workaround;
     };
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {
       inherit (pkgs) stdenv lib writeScript coreutils glibc git
-        openssh nixFlakes gawk bash curl findutils;
+        openssh nixVersions gawk bash curl findutils;
       # Update scripts use the internal nix-tools (compiled with a fixed GHC version)
       nix-tools = haskell.nix-tools-unchecked;
       inherit (haskell) cabal-issue-8352-workaround;
