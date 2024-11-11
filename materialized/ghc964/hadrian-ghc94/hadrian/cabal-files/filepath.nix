@@ -31,7 +31,7 @@
           (hsPkgs."exceptions" or (errorHandler.buildDepError "exceptions"))
           (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
         ];
-        build-tools = pkgs.lib.optional (flags.cpphs) (hsPkgs.buildPackages.cpphs.components.exes.cpphs or (pkgs.buildPackages.cpphs or (errorHandler.buildToolDepError "cpphs:cpphs")));
+        build-tools = pkgs.lib.optional (flags.cpphs) (hsPkgs.pkgsBuildBuild.cpphs.components.exes.cpphs or (pkgs.pkgsBuildBuild.cpphs or (errorHandler.buildToolDepError "cpphs:cpphs")));
         buildable = true;
       };
       tests = {

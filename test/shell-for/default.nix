@@ -10,9 +10,6 @@ let
       pkgb = ./.plan.nix/pkgb.nix;
     }];
     modules = [{
-      # Package has no exposed modules which causes
-      #   haddock: No input file(s)
-      packages.bytestring-builder.doHaddock = false;
       inherit evalPackages;
     }];
   };
@@ -23,7 +20,9 @@ let
     packages = ps: with ps; [ pkga pkgb ];
     # This adds cabal-install to the shell, which helps tests because
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
-    tools = { cabal = { cabalProjectLocal = builtins.readFile ../cabal.project.local; }; };
+    tools = {
+      cabal.cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    };
     exactDeps = true;
     # Avoid duplicate package issues when runghc looks for packages
     packageSetupDeps = false;
@@ -34,7 +33,9 @@ let
     packages = ps: with ps; [ pkga ];
     # This adds cabal-install to the shell, which helps tests because
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
-    tools = { cabal = { cabalProjectLocal = builtins.readFile ../cabal.project.local; }; };
+    tools = {
+      cabal.cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    };
     exactDeps = true;
     # Avoid duplicate package issues when runghc looks for packages
     packageSetupDeps = false;
@@ -46,7 +47,9 @@ let
     #   packages = ps: with ps; [ pkga pkgb ];
     # This adds cabal-install to the shell, which helps tests because
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
-    tools = { cabal = { cabalProjectLocal = builtins.readFile ../cabal.project.local; }; };
+    tools = {
+      cabal.cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    };
     # Avoid duplicate package issues when runghc looks for packages
     packageSetupDeps = false;
   };

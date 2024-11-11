@@ -15,7 +15,7 @@ final: prev: {
         extraPkgconfigMappings = prev.haskell-nix.extraPkgconfigMappings or {};
         # Nix Flake based source pins.
         # To update all inputs, get unstable Nix and then `nix flake update --recreate-lock-file`
-        # Or `nix-shell -p nixUnstable --run "nix --experimental-features 'nix-command flakes' flake update --recreate-lock-file"`
+        # Or `nix-shell -p nixVersions.latest --run "nix --experimental-features 'nix-command flakes' flake update --recreate-lock-file"`
         sources = sources;
 
         # We provide a `callPackage` function to consumers for
@@ -151,24 +151,11 @@ final: prev: {
                 pkg-def = excludeBootPackages compiler-nix-name plan-pkgs.pkgs;
                 patchesModule = ghcHackagePatches.${compiler-nix-name'} or {};
                 package.compiler-nix-name.version = (compilerSelection final.buildPackages).${compiler-nix-name'}.version;
-                plan.compiler-nix-name.version = (compilerSelection final.buildPackages).${(plan-pkgs.pkgs hackage).compiler.nix-name}.version;
                 withMsg = final.lib.assertMsg;
             in
-              # Check that the GHC version of the selected compiler matches the one of the plan
-              assert (withMsg
-                (package.compiler-nix-name.version
-                  == plan.compiler-nix-name.version)
-                ''
-                The compiler versions for the package (${package.compiler-nix-name.version}) and the plan (${plan.compiler-nix-name.version}) don't match.
-                       Make sure you didn't forget to update plan-sha256.''
-              );
               mkPkgSet {
                 inherit pkg-def;
-                pkg-def-extras = [ plan-pkgs.extras
-                                   # Using the -unchecked version here to avoid infinite
-                                   # recursion issues when checkMaterialization = true
-                                   final.ghc-boot-packages-unchecked.${compiler-nix-name'}
-                                 ]
+                pkg-def-extras = [ plan-pkgs.extras ]
                              ++ pkg-def-extras;
                 # set doExactConfig = true, as we trust cabals resolution for
                 # the plan.
@@ -446,7 +433,7 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2023-11-19T00:00:00Z"; # Remember to also update ../nix-tools/cabal.project and ../nix-tools/flake.lock
+        internalHackageIndexState = "2024-10-17T00:00:00Z"; # Remember to also update ../nix-tools/cabal.project and ../nix-tools/flake.lock
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
@@ -622,6 +609,12 @@ final: prev: {
             pkgs = final.buildPackages.pkgs;
         };
 
+        # Loads a plan and filters the package directories using cleanSourceWith
+        loadCabalPlan = import ../lib/load-cabal-plan.nix {
+            inherit (final.buildPackages.haskell-nix) haskellLib;
+            pkgs = final.buildPackages.pkgs;
+        };
+
         # References to the unpacked sources, for caching in a Hydra jobset.
         source-pins = import ../lib/make-source-pins.nix {
             inherit (final) lib writeTextFile;
@@ -653,13 +646,22 @@ final: prev: {
             { config, options, ... }:
             let
               inherit (config) compiler-nix-name compilerSelection evalPackages;
-
+              selectedCompiler = (compilerSelection final.buildPackages).${compiler-nix-name};
               callProjectResults = callCabalProjectToNix config;
-              plan-pkgs = importAndFilterProject {
-                inherit (callProjectResults) projectNix sourceRepos src;
-              };
+              plan-pkgs = if !builtins.pathExists (callProjectResults.projectNix + "/plan.json")
+                then
+                  # If there is no `plan.json` file assume this is a materialized
+                  # `plan-nix` and use the old code path.
+                  # TODO remove this once all the materialized files are updated
+                  importAndFilterProject {
+                    inherit (callProjectResults) projectNix sourceRepos src;
+                  }
+                else
+                  loadCabalPlan {
+                    inherit selectedCompiler callProjectResults;
+                  };
               buildProject = if final.stdenv.hostPlatform != final.stdenv.buildPlatform
-                then final.buildPackages.haskell-nix.cabalProject' projectModule
+                then final.pkgsBuildBuild.haskell-nix.cabalProject' projectModule
                 else project;
               pkg-set = if plan-pkgs ? configurationError
                 then {
@@ -682,7 +684,7 @@ final: prev: {
                         else if config.ghc != null
                           then config.ghc
                         else
-                          final.lib.mkDefault (config.compilerSelection final.buildPackages).${compiler-nix-name};
+                          final.lib.mkDefault selectedCompiler;
                       compiler.nix-name = final.lib.mkForce config.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
                     } ];
@@ -746,7 +748,7 @@ final: prev: {
                             else components.${haskellLib.prefixComponent.${builtins.elemAt m 0}}.${builtins.elemAt m 1};
 
                       coverageReport = haskellLib.coverageReport ({
-                        name = package.identifier.name + "-" + package.identifier.version;
+                        name = package.identifier.id;
                         # Include the checks for a single package.
                         checks = final.lib.filter (final.lib.isDerivation) (final.lib.attrValues package'.checks);
                         # Checks from that package may provide coverage information for any library in the project.
@@ -937,7 +939,7 @@ final: prev: {
                 cache = if config.cache != null then config.cache else generatedCache;
             in let
               buildProject = if final.stdenv.hostPlatform != final.stdenv.buildPlatform
-                then final.buildPackages.haskell-nix.stackProject' projectModule
+                then final.pkgsBuildBuild.haskell-nix.stackProject' projectModule
                 else project;
               pkg-set = mkStackPkgSet
                 { stack-pkgs = importAndFilterProject callProjectResults;
@@ -1073,7 +1075,9 @@ final: prev: {
         roots' = compiler-nix-name: ifdLevel:
           	final.recurseIntoAttrs ({
             # Things that require no IFD to build
-            inherit (final.buildPackages.haskell-nix) source-pins;
+            source-pin-hackage = hackageSrc;
+            source-pin-stackage = stackageSrc;
+            source-pin-haskell-nix = final.path;
             # Double buildPackages is intentional,
             # see comment in lib/default.nix for details.
             # Using buildPackages rather than evalPackages so both darwin and linux

@@ -1,7 +1,6 @@
 module Plugin (plugin) where
 
-import GhcPlugins
-import MonadUtils
+import GHC.Plugins
 import System.IO
 import Control.Monad
 

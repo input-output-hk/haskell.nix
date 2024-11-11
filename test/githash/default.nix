@@ -17,7 +17,7 @@ let
     cabalProjectLocal = builtins.readFile ../cabal.project.local;
     # Mock the .git dir to avoid rebuilding on every commit.
     modules = [{
-      packages.githash-test.src =
+      packages.githash-test.src = mkForce
         rec {
           origSrc = evalPackages.runCommand "githash-test-src" { nativeBuildInputs = [ evalPackages.gitReallyMinimal ]; } ''
             mkdir -p $out/test/githash

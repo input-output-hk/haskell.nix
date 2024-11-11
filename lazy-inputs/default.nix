@@ -3,7 +3,7 @@ let
   callFlake = import prev.haskell-nix.sources.flake-compat;
 in {
   haskell-nix = prev.haskell-nix // {
-    sources = prev.haskell-nix.sources // {
+    sources = {
       inherit ((callFlake { pkgs = final; src = ./ghc8107; }).defaultNix) ghc8107;
       inherit ((callFlake { pkgs = final; src = ./ghc901; }).defaultNix) ghc901;
       inherit ((callFlake { pkgs = final; src = ./ghc902; }).defaultNix) ghc902;
@@ -31,7 +31,10 @@ in {
       inherit ((callFlake { pkgs = final; src = ./ghc966; }).defaultNix) ghc966;
       inherit ((callFlake { pkgs = final; src = ./ghc981; }).defaultNix) ghc981;
       inherit ((callFlake { pkgs = final; src = ./ghc982; }).defaultNix) ghc982;
+      inherit ((callFlake { pkgs = final; src = ./ghc983; }).defaultNix) ghc983;
       inherit ((callFlake { pkgs = final; src = ./ghc9101; }).defaultNix) ghc9101;
-    };
+      inherit ((callFlake { pkgs = final; src = ./ghc912X; }).defaultNix) ghc912X;
+      inherit ((callFlake { pkgs = final; src = ./ghc913; }).defaultNix) ghc913;
+    } // prev.haskell-nix.sources;
   };
 }

@@ -13,6 +13,8 @@ library
                      , template-haskell
                      , text
                      , double-conversion
+                     , unix-time
+                     , th-orphans
   exposed-modules:     Lib
   hs-source-dirs:      src
   default-language:    Haskell2010

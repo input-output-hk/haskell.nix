@@ -139,49 +139,40 @@ jobs:
 
   hydra-ifdLevel-0-and-1:
     runs-on: [self-hosted, linux]
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: "Check that jobset will evaluate in Hydra at ifdLevel 0 and 1"
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
-          ./check-hydra.sh --arg ifdLevel 0
-          ./check-hydra.sh --arg ifdLevel 1
+          sed -i 's/runningHydraEvalTest = false;/runningHydraEvalTest = true;/' flake.nix
+          sed -i 's/ifdLevel = 3;/ifdLevel = 0;/' flake.nix
+          ./check-hydra.sh
+          sed -i 's/ifdLevel = 0;/ifdLevel = 1;/' flake.nix
+          ./check-hydra.sh
 
   hydra-ifdLevel-2:
     runs-on: [self-hosted, linux]
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: "Check that jobset will evaluate in Hydra at ifdLevel 2"
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
-          ./check-hydra.sh --arg ifdLevel 2
+          sed -i 's/runningHydraEvalTest = false;/runningHydraEvalTest = true;/' flake.nix
+          sed -i 's/ifdLevel = 3;/ifdLevel = 2;/' flake.nix
+          ./check-hydra.sh
 
-  hydra-ifdLevel-3-and-ghc-8-10:
+  hydra-ifdLevel-3:
     runs-on: [self-hosted, linux]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: "Check that jobset will evaluate in Hydra at ifdLevel 3 and ghc 8.10"
+      - name: "Check that jobset will evaluate in Hydra at ifdLevel 3"
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
-          ./check-hydra.sh --arg ifdLevel 3 --arg include 'x: __substring 0 6 x == "ghc810"'
-
-  hydra-ifdLevel-3-and-ghc-9-2:
-    runs-on: [self-hosted, linux]
-    steps:
-      - uses: actions/checkout@v4
-      - name: "Check that jobset will evaluate in Hydra at ifdLevel 3 and ghc 9.2"
-        run: |
-          nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
-          ./check-hydra.sh --arg ifdLevel 3 --arg include 'x: __substring 0 5 x == "ghc92"'
-
-  hydra-ifdLevel-3-and-not-ghc-8-10-or-9-2:
-    runs-on: [self-hosted, linux]
-    steps:
-      - uses: actions/checkout@v4
-      - name: "Check that jobset will evaluate in Hydra at ifdLevel 3 and not (ghc 8.10 or ghc 9.2)"
-        run: |
-          nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
-          ./check-hydra.sh --arg ifdLevel 3 --arg include 'x: !(__substring 0 6 x == "ghc810" || __substring 0 5 x == "ghc92")'
+          sed -i 's/runningHydraEvalTest = false;/runningHydraEvalTest = true;/' flake.nix
+          ./check-hydra.sh
 
   closure-size:
     runs-on: [self-hosted, linux]
@@ -227,12 +218,19 @@ jobs:
       - name: "Check that the haskell.nix roots do not require IFDs"
         run: nix build .#roots.x86_64-linux --accept-flake-config --option allow-import-from-derivation false
 
-  hydra-without-remote-builders:
+  hydra-without-remote-builders-ghc8107:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Check that evaluation of hydra jobs works without using remote builders"
+      - name: "Check that evaluation of hydra jobs works without using remote builders for GHC 8.10.7"
         run: nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc8107-native --show-trace --builders ''
+
+  hydra-without-remote-builders-ghc9101:
+    runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Check that evaluation of hydra jobs works without using remote builders for GHC 9.10.1"
+        run: nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc9101-native --show-trace --builders ''
 
   hix-cabal:
     runs-on: [self-hosted, linux]

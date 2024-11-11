@@ -1,22 +1,20 @@
-{ stdenv, glibc, lib, writeScript, coreutils, time, gnutar, gzip, hydra-unstable, jq, gitMinimal }:
+{ stdenv, lib, writeScript, coreutils, time, gnutar, gzip, hydra_unstable, jq, gitMinimal }:
 
 with lib;
 
 writeScript "check-hydra.sh" ''
-  #! /usr/bin/env nix-shell
-  #! nix-shell -i bash --pure -p glibc coreutils time gnutar gzip hydra-unstable jq gitMinimal
+  #!${stdenv.shell}
 
   set -euo pipefail
 
+  export PATH="${makeBinPath [ coreutils time gnutar gzip hydra_unstable jq gitMinimal ]}"
   export NIX_PATH=
 
   echo '~~~ Evaluating release.nix with' "$@"
-  command time --format '%e' -o eval-time.txt \
+  HYDRA_CONFIG= command time --format '%e' -o eval-time.txt \
       hydra-eval-jobs \
-      --option allowed-uris "https://github.com/NixOS https://github.com/input-output-hk" \
-      --arg supportedSystems '[ builtins.currentSystem ]' \
-      "$@" \
-      -I $(realpath .) release.nix > eval.json
+      --option allowed-uris "https://github.com/NixOS/ https://github.com/input-output-hk/ github:NixOS/nixpkgs/ github:input-output-hk/hackage.nix/ github:input-output-hk/stackage.nix/ github:input-output-hk/flake-compat/ github:stable-haskell/iserv-proxy/ github:haskell/haskell-language-server/" \
+      --flake $(pwd) > eval.json
   EVAL_EXIT_CODE="$?"
   if [ "$EVAL_EXIT_CODE" != 0 ]
   then
