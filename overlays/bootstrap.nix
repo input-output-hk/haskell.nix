@@ -230,7 +230,8 @@ in {
                 ++ onMusl (onAarch64 (fromUntil "9.8"  "9.10" ./patches/ghc/ghc-9.8-hadrian-strip-cmd.patch))
                 ++ onMusl (onAarch64 (fromUntil "9.10" "9.12" ./patches/ghc/ghc-9.10-hadrian-strip-cmd.patch))
                 ++ on32bit (fromUntil "9.0" "9.4" ./patches/ghc/ghc-9.6-32bit-cmm.patch)
-                ++ onAndroid (fromUntil "9.6.3" "9.10" ./patches/ghc/ghc-9.6-iog.patch)
+                ++ onAndroid (fromUntil "9.6.3" "9.8.3" ./patches/ghc/ghc-9.6-iog.patch)
+                ++ onAndroid (fromUntil "9.8.3" "9.10"  ./patches/ghc/ghc-9.8.3-iog.patch)
                 ++ onAndroid (fromUntil "9.6" "9.9" ./patches/ghc/ghc-9.6-debug-secno.patch)
 
                 # Allow loading static external plugins into cross compilers
