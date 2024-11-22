@@ -204,6 +204,7 @@ in {
                 ++ onWindows (fromUntil "9.8" "9.8.2" ./patches/ghc/ghc-9.6-fix-code-symbol-jumps.patch)
                 # this one is to allow linking extra symbols from iserv.
                 # ++ fromUntil "9.6.1" "9.10"                                                                                       ./patches/ghc/iserv-syms.patch
+                ++ on32bit   (fromUntil "9.6" "9.14" ./patches/ghc/ghc-9.6-genapply-cross-arch.patch)
                 # Fix the bad fixups: https://gitlab.haskell.org/ghc/ghc/-/commit/2adc050857a9c1b992040fbfd55fbe65b2851b19
                 ++ onAarch64 (fromUntil "9.6" "9.6.4" ./patches/ghc/2adc050857a9c1b992040fbfd55fbe65b2851b19.patch)
 
@@ -229,7 +230,7 @@ in {
                 ++ onMusl (onAarch64 (fromUntil "9.4"  "9.8"  ./patches/ghc/ghc-9.6-hadrian-strip-cmd.patch))
                 ++ onMusl (onAarch64 (fromUntil "9.8"  "9.10" ./patches/ghc/ghc-9.8-hadrian-strip-cmd.patch))
                 ++ onMusl (onAarch64 (fromUntil "9.10" "9.12" ./patches/ghc/ghc-9.10-hadrian-strip-cmd.patch))
-                ++ on32bit (fromUntil "9.0" "9.4" ./patches/ghc/ghc-9.6-32bit-cmm.patch)
+                ++ on32bit (fromUntil "9.0" "9.14" ./patches/ghc/ghc-9.6-32bit-cmm.patch)
                 ++ onAndroid (fromUntil "9.6.3" "9.8.3" ./patches/ghc/ghc-9.6-iog.patch)
                 ++ onAndroid (fromUntil "9.8.3" "9.10"  ./patches/ghc/ghc-9.8.3-iog.patch)
                 ++ onAndroid (fromUntil "9.6" "9.9" ./patches/ghc/ghc-9.6-debug-secno.patch)
@@ -889,8 +890,8 @@ in {
                 };
                 inherit sphinx;
 
-                buildLlvmPackages = final.buildPackages.llvmPackages_15;
-                llvmPackages = final.llvmPackages_15;
+                buildLlvmPackages = final.buildPackages.xllvmPackages_18;
+                llvmPackages = final.xllvmPackages_18;
 
                 src-spec.file = final.haskell-nix.sources.ghc9101;
                 src-spec.version = "9.10.1";

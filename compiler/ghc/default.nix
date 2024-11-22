@@ -236,7 +236,7 @@ let
     if targetPlatform.isGhcjs
       then [ buildPackages.emscripten ]
     else if hostPlatform == buildPlatform
-      then [ targetPackages.stdenv.cc ] ++ lib.optionals useLLVM [llvmPackages.llvm llvmPackages.clang]
+      then [ targetPackages.stdenv.cc ] ++ lib.optional useLLVM llvmPackages.llvm
     else assert targetPlatform == hostPlatform; # build != host == target
       [ stdenv.cc ] ++ lib.optional useLLVM buildLlvmPackages.llvm;
 
