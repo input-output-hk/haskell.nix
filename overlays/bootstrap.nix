@@ -890,8 +890,8 @@ in {
                 };
                 inherit sphinx;
 
-                buildLlvmPackages = final.buildPackages.xllvmPackages_18;
-                llvmPackages = final.xllvmPackages_18;
+                buildLlvmPackages = final.buildPackages.llvmPackages_15;
+                llvmPackages = final.llvmPackages_15;
 
                 src-spec.file = final.haskell-nix.sources.ghc9101;
                 src-spec.version = "9.10.1";
