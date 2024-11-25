@@ -1,4 +1,18 @@
-_final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isAndroid ({
+_final: prev: {
+  pkgsCross = prev.pkgsCross // {
+    aarch64-android = import prev.path {
+      inherit system;
+      inherit (prev) overlays;
+      crossSystem = prev.lib.systems.examples.aarch64-android // { sdkVer = "26"; };
+    };
+    armv7a-android-prebuilt = import prev.path {
+      inherit system;
+      inherit (prev) overlays;
+      crossSystem = prev.lib.systems.examples.armv7a-android-prebuilt // { sdkVer = "26"; };
+    };
+  };
+} // prev.lib.optionalAttrs prev.stdenv.hostPlatform.isAndroid ({
+
   # we really only want the static one.
   libiconv = (prev.libiconv.override { enableStatic = true; enableShared = false; }).overrideAttrs(_: {
     hardeningDisable = [ "fortify" "stackprotector" "format" ];
