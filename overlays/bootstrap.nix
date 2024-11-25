@@ -204,7 +204,7 @@ in {
                 ++ onWindows (fromUntil "9.8" "9.8.2" ./patches/ghc/ghc-9.6-fix-code-symbol-jumps.patch)
                 # this one is to allow linking extra symbols from iserv.
                 # ++ fromUntil "9.6.1" "9.10"                                                                                       ./patches/ghc/iserv-syms.patch
-                ++ on32bit   (fromUntil "9.6" "9.14" ./patches/ghc/ghc-9.6-genapply-cross-arch.patch)
+                ++ on32bit   (fromUntil "9.6" "9.6.5" ./patches/ghc/ghc-9.6-genapply-cross-arch.patch)
                 # Fix the bad fixups: https://gitlab.haskell.org/ghc/ghc/-/commit/2adc050857a9c1b992040fbfd55fbe65b2851b19
                 ++ onAarch64 (fromUntil "9.6" "9.6.4" ./patches/ghc/2adc050857a9c1b992040fbfd55fbe65b2851b19.patch)
 
