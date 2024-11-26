@@ -5,12 +5,14 @@ _final: prev: {
       inherit (prev) system overlays;
       crossSystem = prev.lib.systems.examples.aarch64-android // {
         androidSdkVersion = "26";
+        androidNdkVersion = "24";
       };
     };
     armv7a-android-prebuilt = import prev.path {
       inherit (prev) system overlays;
       crossSystem = prev.lib.systems.examples.armv7a-android-prebuilt // {
         androidSdkVersion = "26";
+        androidNdkVersion = "24";
       };
     };
   };
