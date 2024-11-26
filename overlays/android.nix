@@ -2,16 +2,14 @@ _final: prev: {
   # Use android SDK version 26
   pkgsCross = prev.pkgsCross // {
     aarch64-android = import prev.path {
-      inherit system;
-      inherit (prev) overlays;
+      inherit (prev) system overlays;
       crossSystem = prev.lib.systems.examples.aarch64-android // {
         sdkVer = "26"; # Old name for old nixpkgs
         androidSdkVersion = "26";
       };
     };
     armv7a-android-prebuilt = import prev.path {
-      inherit system;
-      inherit (prev) overlays;
+      inherit (prev) system overlays;
       crossSystem = prev.lib.systems.examples.armv7a-android-prebuilt // {
         sdkVer = "26"; # Old name for old nixpkgs
         androidSdkVersion = "26";
