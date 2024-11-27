@@ -1,18 +1,16 @@
-_final: prev: {
+final: prev: {
   # Use android SDK version 26
-  pkgsCross = prev.pkgsCross // {
-    aarch64-android = import prev.path {
-      inherit (prev) system overlays;
-      crossSystem = prev.lib.systems.examples.aarch64-android // {
-        androidSdkVersion = "26";
-        androidNdkVersion = "24";
-      };
-    };
-    armv7a-android-prebuilt = import prev.path {
-      inherit (prev) system overlays;
-      crossSystem = prev.lib.systems.examples.armv7a-android-prebuilt // {
-        androidSdkVersion = "26";
-        androidNdkVersion = "24";
+  lib = prev.lib // {
+    systems = prev.lib.systems // {
+      examples = prev.lib.systems.examples // {
+        aarch64-android = prev.lib.systems.examples.aarch64-android // {
+          androidSdkVersion = "26";
+          androidNdkVersion = "24";
+        };
+        armv7a-android-prebuilt = prev.lib.systems.examples.armv7a-android-prebuilt // {
+          androidSdkVersion = "26";
+          androidNdkVersion = "24";
+        };
       };
     };
   };
