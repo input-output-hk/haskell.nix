@@ -434,7 +434,11 @@ stdenv.mkDerivation (rec {
         export STRIP="${bintoolsFor.strip}/bin/${bintoolsFor.strip.targetPrefix}strip"
     '' + lib.optionalString (stdenv.targetPlatform.linker == "cctools") ''
         export OTOOL="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}otool"
-        export INSTALL_NAME_TOOL="${bintoolsFor.install_name_tool}/bin/${bintoolsFor.install_name_tool.targetPrefix}install_name_tool"
+        if [ -f ${targetCC}/bin/install_name_tool ]; then
+            export INSTALL_NAME_TOOL="${targetCC}/bin/${targetCC.targetPrefix}install_name_tool"
+        else
+          export INSTALL_NAME_TOOL="${bintoolsFor.install_name_tool}/bin/${bintoolsFor.install_name_tool.targetPrefix}install_name_tool"
+        fi
     '') + lib.optionalString (targetPlatform == hostPlatform && useLdGold)
     # set LD explicitly if we want gold even if we aren't cross compiling
     ''
