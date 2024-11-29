@@ -348,9 +348,9 @@ let
       + lib.optionalString (stdenv.targetPlatform.isDarwin && stdenv.targetPlatform.isAarch64)
         " '*.*.ghc.c.opts += -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc'"
       + lib.optionalString (targetPlatform.isAndroid && targetPlatform.isAarch32)
-        " '*.*.ghc.c.opts += -optc-march=armv7-a -optc-mfloat-abi=softfp -optc-mfpu=vfpv3-d16'"
+        " 'stage1.*.ghc.c.opts += -optc-march=armv7-a -optc-mfloat-abi=softfp -optc-mfpu=vfpv3-d16'"
       + lib.optionalString (targetPlatform.isAndroid && targetPlatform.isAarch64)
-        " '*.*.ghc.c.opts += -optc-march=armv8-a'"
+        " 'stage1.*.ghc.c.opts += -optc-march=armv8-a'"
       # For GHC versions in the 9.x range that don't support the +native_bignum flavour transformer yet
       + lib.optionalString ((enableNativeBignum && !hadrianHasNativeBignumFlavour))
         " --bignum=native"
