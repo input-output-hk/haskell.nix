@@ -781,7 +781,7 @@ stdenv.mkDerivation (rec {
   dontStrip = true;
   dontPatchELF = true;
   noAuditTmpdir = true;
-} // lib.optionalAttrs (stdenv.buildPlatform.isDarwin || stdenv.targetPlatform.isWindows) {
+} // {
   # ghc install on macOS wants to run `xattr -r -c`
   # The macOS version fails because it wants python 2.
   # The nix version of xattr does not support those args.
@@ -805,6 +805,11 @@ stdenv.mkDerivation (rec {
     if [[ -f rts/win32/ThrIOManager.c ]]; then
       substituteInPlace rts/win32/ThrIOManager.c --replace rts\\OSThreads.h rts/OSThreads.h
     fi
+  ''
+  + lib.optionalString (targetPlatform.isAndroid && targetPlatform.isAarch32) ''
+    export NIX_CFLAGS_COMPILE_${
+        lib.replaceStrings ["-" "."] ["_" "_"] stdenv.targetPlatform.config
+      }+=" -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16"
   '';
   # Same hack as 'preBuild'
   preInstall = lib.optionalString stdenv.buildPlatform.isDarwin ''
@@ -827,6 +832,7 @@ stdenv.mkDerivation (rec {
                 'cross-compiling       = NO'
   '';
   buildPhase = ''
+    runHook preBuild
     ${hadrian}/bin/hadrian ${hadrianArgs}
   '' + lib.optionalString (installStage1 && !stdenv.targetPlatform.isGhcjs && builtins.compareVersions ghc-version "9.8" < 0) ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:libiserv
@@ -841,6 +847,8 @@ stdenv.mkDerivation (rec {
       mv $exe ${targetPrefix}$exe
     done
     popd
+  '' + ''
+    runHook postBuild
   '';
 
   # Hadrian's installation only works for native compilers, and is broken for cross compilers.
