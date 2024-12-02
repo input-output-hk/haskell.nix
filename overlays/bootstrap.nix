@@ -227,6 +227,7 @@ in {
                 ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10.7-bionic-libc.patch))
                 ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10.7-cross-dont-build-stage2-tools.patch))
                 ++ onAndroid (fromUntil "9.0" "9.10" ./patches/ghc/ghc-9.6-hadrian-android.patch)
+                ++ onAndroid (from "9.10" ./patches/ghc/ghc-9.10-hadrian-android.patch)
                 ++ onMusl (onAarch64 (fromUntil "9.4"  "9.8"  ./patches/ghc/ghc-9.6-hadrian-strip-cmd.patch))
                 ++ onMusl (onAarch64 (fromUntil "9.8"  "9.10" ./patches/ghc/ghc-9.8-hadrian-strip-cmd.patch))
                 ++ onMusl (onAarch64 (fromUntil "9.10" "9.12" ./patches/ghc/ghc-9.10-hadrian-strip-cmd.patch))
