@@ -4,7 +4,7 @@ final: prev: {
     systems = prev.lib.systems // {
       examples = prev.lib.systems.examples // {
         aarch64-android = prev.lib.systems.examples.aarch64-android // {
-          androidSdkVersion = "26";
+          androidSdkVersion = "269";
           androidNdkVersion = "24";
         };
         armv7a-android-prebuilt = prev.lib.systems.examples.armv7a-android-prebuilt // {
