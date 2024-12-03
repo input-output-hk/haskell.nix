@@ -230,9 +230,6 @@ index bd21243..e3bd3cb 100644
  
      return EXIT_SUCCESS;
  }
-diff --git a/utils/check-sphinx/dist/.doctrees/environment.pickle b/utils/check-sphinx/dist/.doctrees/environment.pickle
-index 98df77f..a7b10a7 100644
-Binary files a/utils/check-sphinx/dist/.doctrees/environment.pickle and b/utils/check-sphinx/dist/.doctrees/environment.pickle differ
 diff --git a/utils/genapply/Main.hs b/utils/genapply/Main.hs
 index 8c194f1..24514e1 100644
 --- a/utils/genapply/Main.hs
