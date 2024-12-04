@@ -271,8 +271,12 @@ in {
                 ++ fromUntil "9.8" "9.9" ./patches/ghc/docs-sphinx-7-ghc98.patch
 
                 # These two patches are needed for libblst, which has now hidden symbols, which the linker doesn't know how to deal with.
-                ++ until "9.0" ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols.patch
-                ++ until "9.0" ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols-2.patch
+                ++ (
+                  if final.stdenv.targetPlatform.isAndroid
+                      then until "9.0" ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols-android.patch
+                      else until "9.0" ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols.patch
+                        ++ until "9.0" ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols-2.patch
+                )
                 ++ onWindowsOrMusl (fromUntil "9.6"    "9.7"  ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch)
                 ++ onWindowsOrMusl (fromUntil "9.8.2"  "9.11" ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch)
                 ++ onWindowsOrMusl (fromUntil "9.6"    "9.7"  ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch)
