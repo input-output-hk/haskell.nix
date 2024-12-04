@@ -47,10 +47,10 @@ in builtins.listToAttrs (builtins.concatMap (system: builtins.concatMap (compile
   { name = "${prefix}-iserv-int-arm-musl"; value = pkgs.pkgsCross.aarch64-multiplatform-musl.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.iserv-proxy-interpreter.project.plan-nix; }
   { name = "${prefix}-hello-arm-musl";     value = (pkgs.pkgsCross.aarch64-multiplatform-musl.haskell-nix.tool compiler-nix-name "hello" {}).project.plan-nix; }
 ] ++ eval.lib.optionals (
-        (system == "x86_64-linux"   && __elem compiler-nix-name ["ghc8107" "ghc961" "ghc962" "ghc963" "ghc964" "ghc965" "ghc981" "ghc982" "ghc983" "ghc9101"])
-     || (system == "aarch64-linux"  && __elem compiler-nix-name ["ghc961" "ghc962" "ghc963" "ghc964" "ghc965" "ghc981" "ghc982" "ghc983" "ghc9101"])
-     || (system == "x86_64-darwin"  && __elem compiler-nix-name ["ghc8107" "ghc961" "ghc962" "ghc963" "ghc964" "ghc964" "ghc981" "ghc982" "ghc983" "ghc9101"])
-     || (system == "aarch64-darwin" && __elem compiler-nix-name ["ghc961" "ghc962" "ghc963" "ghc964" "ghc981" "ghc965" "ghc982" "ghc983" "ghc9101"])) [
+        (system == "x86_64-linux"   && __elem compiler-nix-name ["ghc8107" "ghc961" "ghc962" "ghc963" "ghc964" "ghc965" "ghc981" "ghc982" "ghc983" "ghc984" "ghc9101"])
+     || (system == "aarch64-linux"  && __elem compiler-nix-name ["ghc961" "ghc962" "ghc963" "ghc964" "ghc965" "ghc981" "ghc982" "ghc983" "ghc984" "ghc9101"])
+     || (system == "x86_64-darwin"  && __elem compiler-nix-name ["ghc8107" "ghc961" "ghc962" "ghc963" "ghc964" "ghc964" "ghc981" "ghc982" "ghc983" "ghc984" "ghc9101"])
+     || (system == "aarch64-darwin" && __elem compiler-nix-name ["ghc961" "ghc962" "ghc963" "ghc964" "ghc981" "ghc965" "ghc982" "ghc983" "ghc984" "ghc9101"])) [
   { name = "${prefix}-boot-ghcjs";         value = pkgs.pkgsCross.ghcjs.ghc-boot-packages-nix.${compiler-nix-name}; }
   { name = "${prefix}-ghcjs";              value = (pkgs.pkgsCross.ghcjs.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
   { name = "${prefix}-hello-ghcjs";        value = (pkgs.pkgsCross.ghcjs.haskell-nix.tool compiler-nix-name "hello" {}).project.plan-nix; }
