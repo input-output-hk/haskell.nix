@@ -11,7 +11,7 @@ let
       "9.10" = "9.10.1";
     };
     gitInputs = {
-      ghc912X = "9.12";
+      ghc912X = "9.12.0";
       ghc913 = "9.13";
     };
     versionToNixName = v: "ghc${builtins.replaceStrings ["."] [""] v}";
