@@ -1,0 +1,29 @@
+diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
+index a447f126bd..93af0f511f 100644
+--- a/rts/RtsSymbols.c
++++ b/rts/RtsSymbols.c
+@@ -165,15 +165,21 @@ extern char **environ;
+       SymI_HasProto(rts_ConsoleHandlerDone)              \
+       SymI_NeedsProto(__mingw_module_is_dll)             \
+       RTS_WIN64_ONLY(SymI_NeedsProto(___chkstk_ms))      \
+-      SymI_HasProto(__stdio_common_vswprintf_s)          \
+-      SymI_HasProto(__stdio_common_vswprintf)            \
+       SymI_HasProto(_errno)                              \
+       /* see Note [Symbols for MinGW's printf] */        \
+       SymI_HasProto(_lock_file)                          \
+       SymI_HasProto(_unlock_file)                        \
+       /* See Note [_iob_func symbol] */                  \
+       SymI_HasProto_redirect(                            \
+-         __imp___acrt_iob_func, __rts_iob_func, STRENGTH_WEAK, SYM_TYPE_INDIRECT_DATA)
++         __imp___acrt_iob_func, __rts_iob_func, STRENGTH_WEAK, SYM_TYPE_INDIRECT_DATA) \
++      SymI_HasProto(__mingw_vsnwprintf)                  \
++      SymI_HasProto(__mingw_vfprintf)                    \
++      SymI_HasProto(closure_sizeW_)                      \
++      SymI_NeedsProto(_tzset)                            \
++      /* ^^ This one needed for time, tzset deprecated */\
++      SymI_NeedsProto(tzset)                             \
++      SymI_HasProto(strtoll)
++      /* ^^ These two are needed for unix-time         */
+ #else
+ #define RTS_MINGW_ONLY_SYMBOLS /**/
+ #endif
