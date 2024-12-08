@@ -30,6 +30,8 @@ in recurseIntoAttrs rec {
     || builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc928" "ghc948"] && stdenv.hostPlatform.isAarch64
     # Cross compilation to aarch64 is also broken
     || stdenv.hostPlatform.isAarch64 && !stdenv.buildPlatform.isAarch64
+    # glu is marked ase broken for isAndroid
+    || stdenv.hostPlatform.isAndroid
     # Building profiled version of Cabal for haskell-gi is currently broken for GHC head
     || compiler-nix-name == "ghc91320241101";
 
