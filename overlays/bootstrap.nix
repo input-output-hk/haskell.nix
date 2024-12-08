@@ -157,6 +157,7 @@ in {
                 ++ onWindows (fromUntil "9.8.1"  "9.8.2"  ./patches/ghc/win-linker-no-null-deref-9.6.patch)
                 ++ onWindows (until              "9.0"    ./patches/ghc/ghc-8.10-windres-invocation.patch)
                 ++ onWindows (fromUntil "9.0"    "9.4"    ./patches/ghc/ghc-9.0-windres-invocation.patch)
+                ++ onWindows (from      "9.12"            ./patches/ghc/ghc-9.12-windows-rts-symbols.patch)
                 ++ fromUntil "9.4.5"  "9.4.9"         ./patches/ghc/ghc-9.4.5-include-order-fix.patch
                 ++ fromUntil "9.6.2"  "9.8"           ./patches/ghc/ghc-9.4.5-include-order-fix.patch
                 ++ fromUntil "9.6.1"  "9.9.20231203"  ./patches/ghc/MR10116.patch
