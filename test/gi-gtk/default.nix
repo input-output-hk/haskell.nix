@@ -31,7 +31,7 @@ in recurseIntoAttrs rec {
     # Cross compilation to aarch64 is also broken
     || stdenv.hostPlatform.isAarch64 && !stdenv.buildPlatform.isAarch64
     # Building profiled version of Cabal for haskell-gi is currently broken for GHC head
-    || compiler-nix-name == "ghc91320241101";
+    || compiler-nix-name == "ghc91320241204";
 
   ifdInputs = {
     inherit (project) plan-nix;
