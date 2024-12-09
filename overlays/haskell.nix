@@ -353,7 +353,7 @@ final: prev: {
               #    urls there will allow us to know from where to fetch the packages tarballs at build
               #    time.
               # 3. We don't want to leak the nix path of the index into the derivation of the component
-              #    builder since this will cause unnecesary recompilation. In other words, the recipe to
+              #    builder since this will cause unnecessary recompilation. In other words, the recipe to
               #    compile a package has to only depend on its content, not on where the recipe is from
               #    or how it is obtained.
               #

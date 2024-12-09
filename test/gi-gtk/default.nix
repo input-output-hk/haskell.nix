@@ -33,7 +33,7 @@ in recurseIntoAttrs rec {
     # glu is marked ase broken for isAndroid
     || stdenv.hostPlatform.isAndroid
     # Building profiled version of Cabal for haskell-gi is currently broken for GHC head
-    || compiler-nix-name == "ghc91320241101";
+    || compiler-nix-name == "ghc91320241204";
 
   ifdInputs = {
     inherit (project) plan-nix;
