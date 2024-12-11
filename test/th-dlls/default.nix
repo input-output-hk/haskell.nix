@@ -28,7 +28,7 @@ in recurseIntoAttrs {
     || (compiler-nix-name == "ghc8107" && stdenv.hostPlatform.isWindows)
     # We need to update GHC HEAD to get a version of ghc-internal compatible
     # with th-lift from head.hackage.
-    || builtins.elem compiler-nix-name [ "ghc91220241014" "ghc91320241101" ]
+    || builtins.elem compiler-nix-name [ "ghc91320241204" ]
     ;
 
   ifdInputs = {
