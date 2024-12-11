@@ -22,6 +22,11 @@ in recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs
     # On aarch64 this test also breaks form musl builds (including cross compiles on x86_64-linux)
     || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl)
+    # On for aarch64 cross compile on GHC 9.8.4 this test is fails sometimes for non profiled builds
+    # (and always for the profiled builds).
+    # This may be related to the memory allocation changes made in 9.8.4 that
+    # replace the pool allocator patches we used in earlier versions.
+    || (compiler-nix-name == "ghc984" && stdenv.buildPlatform.isx86_64 && stdenv.hostPlatform.isAarch64)
     # Failed to lookup symbol: __aarch64_swp8_acq_rel
     || (builtins.elem compiler-nix-name ["ghc947" "ghc948"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
     # We have been unable to get windows cross compilation of th-orphans to work for GHC 8.10 using the latest nixpkgs
