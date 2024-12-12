@@ -39,7 +39,7 @@ jobs:
       - name: Wait for nix-tools meta job
         uses: input-output-hk/actions/wait-for-hydra@angerman/support-prs
         with:
-          status: 'ci/hydra-build:nix-tools'
+          check: 'ci/hydra-build:nix-tools'
 
       - name: "Pull nix-tools"
         run: |
