@@ -73,7 +73,15 @@ let
     '';
 
   x = ghc-src:
-    runCommand "x" {
+    let
+      ## GHC version
+      flags = (lib.optional stdenv.targetPlatform.isx86_64 "--arch x86_64")
+        ++ (lib.optional stdenv.targetPlatform.isAarch64 "--arch aarch64")
+        ++ (lib.optional stdenv.targetPlatform.isLinux "--os linux")
+        ++ (lib.optional stdenv.targetPlatform.isDarwin "--os osx")
+        ++ (lib.optional stdenv.targetPlatform.isGhcjs "--arch javascript");
+
+    in runCommand "x" {
       nativeBuildInputs = [
         # FIXME: for testing
         haskell-nix.nix-tools.exes.cabal2json
@@ -82,26 +90,32 @@ let
       ];
     } ''
       set -euo pipefail
+      shopt -s globstar
 
       mkdir -p $out
       cd $out
 
-      # Copy the cabal.in files
-      pushd ${ghc-src}
-      CABAL_IN_FILES=(*/*.cabal.in libraries/*/*.cabal.in)
-      cp --no-preserve all --parents "''${CABAL_IN_FILES[@]}" "$out"
-      popd
-
       # Run configure script (only for the project version)
       ${configure ghc-src}/configure --srcdir=${ghc-src}
 
+      # Copy the cabal.in files
+      pushd ${ghc-src}
+      cp --no-preserve all --parents */*.cabal */*.cabal.in libraries/*/*.cabal libraries/*/*.cabal.in "$out"
+      popd
+
+      find
+
       # Substitute config variables in the cabal files
-      CABAL_FILES=(''${CABAL_IN_FILES[@]%.in})
-      ./config.status $(printf -- '--file %s ' "''${CABAL_FILES[@]}")
+      FILES=( **/*.cabal.in )
+      ./config.status $(printf -- '--file %s ' ''${FILES[@]%.in})
 
       # Convert to json
-      for f in ''${CABAL_FILES[@]}; do
-        cabal2json --out="$f.json" "$f"
+      for f in **/*.cabal; do
+        # FIXME
+        if [[ $f == rts/rts.cabal ]]; then
+          continue
+        fi
+        cabal2json ${lib.concatStringsSep " " flags} --out="$f.json" "$f"
       done
     '';
 
