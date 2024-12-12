@@ -417,8 +417,7 @@ let
     '';
   };
 
-  dummy-ghc-pkg-dump = import ./dummy-ghc-pkg-dump {
-    inherit evalPackages;
+  dummy-ghc-pkg-dump = evalPackages.callPackage ./dummy-ghc-pkg-dump {
     ghc-src = (ghc.raw-src or ghc.buildGHC.raw-src) evalPackages;
     ghc-version = ghc.version;
   };

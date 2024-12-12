@@ -594,9 +594,8 @@ final: prev: {
 
             };
 
-        dummy-ghc-pkg-dump = import ../lib/dummy-ghc-pkg-dump {
+        dummy-ghc-pkg-dump = final.callPackage ../lib/dummy-ghc-pkg-dump {
           # FIXME: just for testing
-          evalPackages = final;
           ghc-version = "0.0.0";
           ghc-src = final.ghc.src;
         };

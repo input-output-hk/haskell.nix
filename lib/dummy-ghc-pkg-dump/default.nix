@@ -1,8 +1,7 @@
-{ evalPackages, ghc-version, ghc-src }:
+{ lib, stdenv, runCommand, autoconf, automake, coreutils, findutils, jq
+, haskell-nix, ghc-version, ghc-src }:
 
 let
-  inherit (evalPackages) lib stdenv;
-
   varname = builtins.replaceStrings [ "-" ] [ "_" ];
 
   ghc-pkgs = [
@@ -60,13 +59,8 @@ let
         path = ghc-src;
         name = "ghc-src-m4";
       };
-    in evalPackages.runCommand "configure" {
-      nativeBuildInputs = with evalPackages; [
-        autoconf
-        automake
-        coreutils
-        findutils
-      ];
+    in runCommand "configure" {
+      nativeBuildInputs = [ autoconf automake coreutils findutils ];
     } ''
       set -euo pipefail
 
@@ -78,22 +72,14 @@ let
       autoconf --verbose 
     '';
 
-  # config-status = ghc-src:
-  #   evalPackages.runCommand "config.status" {
-  #     nativeBuildInputs = [ (configure ghc-src) ];
-  #   } ''
-  #     mkdir -p $out/bin
-  #     cp -v config.status $out/bin/config.status
-  #   '';
-
   x = ghc-src:
-    evalPackages.runCommand "x" {
-
+    runCommand "x" {
       nativeBuildInputs = [
-        evalPackages.haskell-nix.nix-tools-unchecked.exes.cabal2json
-        evalPackages.jq
+        # FIXME: for testing
+        haskell-nix.nix-tools.exes.cabal2json
+        # haskell-nix.nix-tools-unchecked.exes.cabal2json
+        jq
       ];
-
     } ''
       set -euo pipefail
 
@@ -113,19 +99,14 @@ let
       CABAL_FILES=(''${CABAL_IN_FILES[@]%.in})
       ./config.status $(printf -- '--file %s ' "''${CABAL_FILES[@]}")
 
-      cabal2json --help
-
       # Convert to json
       for f in ''${CABAL_FILES[@]}; do
         cabal2json --out="$f.json" "$f"
       done
     '';
 
-in evalPackages.runCommand "dummy-ghc-pkg-dump" {
-  nativeBuildInputs = [
-    evalPackages.haskell-nix.nix-tools-unchecked.exes.cabal2json
-    evalPackages.jq
-  ];
+in runCommand "dummy-ghc-pkg-dump" {
+  nativeBuildInputs = [ haskell-nix.nix-tools-unchecked.exes.cabal2json jq ];
   passthru = { inherit configure x; };
 } ''
   PACKAGE_VERSION=${ghc-version}
