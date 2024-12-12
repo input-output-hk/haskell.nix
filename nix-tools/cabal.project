@@ -36,5 +36,5 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/andreabedini/Cabal-syntax-json.git
-    tag: c6c01db076117c309f8ec2e0b8f58b105479f391
-    --sha256: sha256-Vj66Sdeq3lizcZxSBJ8QQhPVJ7QDXRdpvDX65RF51oY=
+    tag: 7a80221047fb5dd66a091f4a7248e0afa3bcc248
+    --sha256: sha256-R55nljZMnc6s+Apc4uaZal9ExDauxYq/pV7RxQHwzVc=
