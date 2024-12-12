@@ -595,28 +595,31 @@ final: prev: {
             };
 
         dummy-ghc-pkg-dump = import ../lib/dummy-ghc-pkg-dump {
-          pkgs = final.buildPackages.pkgs;
+          # FIXME: just for testing
+          evalPackages = final;
+          ghc-version = "0.0.0";
+          ghc-src = final.ghc.src;
         };
-
+        
         # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
         # Resulting nix files are added to nix-plan subdirectory.
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
+            pkgs = final.buildPackages.pkgs;
             index-state-hashes = import indexStateHashesPath;
             inherit (final.buildPackages.haskell-nix) haskellLib;
-            pkgs = final.buildPackages.pkgs;
             inherit (final.buildPackages.pkgs) cacert;
         };
 
         # Loads a plan and filters the package directories using cleanSourceWith
         importAndFilterProject = import ../lib/import-and-filter-project.nix {
-            inherit (final.buildPackages.haskell-nix) haskellLib;
             pkgs = final.buildPackages.pkgs;
+            inherit (final.buildPackages.haskell-nix) haskellLib;
         };
 
         # Loads a plan and filters the package directories using cleanSourceWith
         loadCabalPlan = import ../lib/load-cabal-plan.nix {
-            inherit (final.buildPackages.haskell-nix) haskellLib;
             pkgs = final.buildPackages.pkgs;
+            inherit (final.buildPackages.haskell-nix) haskellLib;
         };
 
         # References to the unpacked sources, for caching in a Hydra jobset.

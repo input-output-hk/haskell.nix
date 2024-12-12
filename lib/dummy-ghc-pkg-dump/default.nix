@@ -1,7 +1,7 @@
-{ pkgs, evalPackages, ghc-version, ghc-src }:
+{ evalPackages, ghc-version, ghc-src }:
 
 let
-  inherit (pkgs) lib stdenv;
+  inherit (evalPackages) lib stdenv;
 
   varname = builtins.replaceStrings [ "-" ] [ "_" ];
 
@@ -53,23 +53,80 @@ let
     ] ++ lib.optionals (!stdenv.targetPlatform.isGhcjs) [ "terminfo" ]
     ++ (if stdenv.targetPlatform.isWindows then [ "Win32" ] else [ "unix" ]);
 
-  configure = evalPackages.runCommand "autoreconf" {
-    nativeBuildInputs = with evalPackages; [ autotools coreutils findutils ];
-  } ''
-    mkdir -p $out
-    cd $out
-    cp ./configure.ac .
-    ln -s ${ghc-src}/m4 .
-    autoreconf -i
-    rm m4
-  '';
+  configure = ghc-src:
+    let
+      ghc-m4-src = builtins.path {
+        filter = path: type: lib.hasPrefix "${ghc-src}/m4" path;
+        path = ghc-src;
+        name = "ghc-src-m4";
+      };
+    in evalPackages.runCommand "configure" {
+      nativeBuildInputs = with evalPackages; [
+        autoconf
+        automake
+        coreutils
+        findutils
+      ];
+    } ''
+      set -euo pipefail
+
+      mkdir -p $out
+      cd $out
+
+      cp -v ${./configure.ac} configure.ac
+      aclocal --verbose -I "${ghc-m4-src}/m4"
+      autoconf --verbose 
+    '';
+
+  # config-status = ghc-src:
+  #   evalPackages.runCommand "config.status" {
+  #     nativeBuildInputs = [ (configure ghc-src) ];
+  #   } ''
+  #     mkdir -p $out/bin
+  #     cp -v config.status $out/bin/config.status
+  #   '';
+
+  x = ghc-src:
+    evalPackages.runCommand "x" {
+
+      nativeBuildInputs = [
+        evalPackages.haskell-nix.nix-tools-unchecked.exes.cabal2json
+        evalPackages.jq
+      ];
+
+    } ''
+      set -euo pipefail
+
+      mkdir -p $out
+      cd $out
+
+      # Copy the cabal.in files
+      pushd ${ghc-src}
+      CABAL_IN_FILES=(*/*.cabal.in libraries/*/*.cabal.in)
+      cp --no-preserve all --parents "''${CABAL_IN_FILES[@]}" "$out"
+      popd
+
+      # Run configure script (only for the project version)
+      ${configure ghc-src}/configure --srcdir=${ghc-src}
+
+      # Substitute config variables in the cabal files
+      CABAL_FILES=(''${CABAL_IN_FILES[@]%.in})
+      ./config.status $(printf -- '--file %s ' "''${CABAL_FILES[@]}")
+
+      cabal2json --help
+
+      # Convert to json
+      for f in ''${CABAL_FILES[@]}; do
+        cabal2json --out="$f.json" "$f"
+      done
+    '';
 
 in evalPackages.runCommand "dummy-ghc-pkg-dump" {
   nativeBuildInputs = [
     evalPackages.haskell-nix.nix-tools-unchecked.exes.cabal2json
     evalPackages.jq
   ];
-  passthru = { inherit configure; };
+  passthru = { inherit configure x; };
 } ''
   PACKAGE_VERSION=${ghc-version}
   ProjectVersion=${ghc-version}
@@ -92,14 +149,6 @@ in evalPackages.runCommand "dummy-ghc-pkg-dump" {
 
   # The project patchlevel is zero unless stated otherwise
   test -z "$ProjectPatchLevel" && ProjectPatchLevel=0
-
-  # Save split version of ProjectPatchLevel
-  ProjectPatchLevel1=`echo $ProjectPatchLevel | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\1/'`
-  ProjectPatchLevel2=`echo $ProjectPatchLevel | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\3/'`
-
-  # The project patchlevel1/2 is zero unless stated otherwise
-  test -z "$ProjectPatchLevel1" && ProjectPatchLevel1=0
-  test -z "$ProjectPatchLevel2" && ProjectPatchLevel2=0
 
   # AC_SUBST([ProjectPatchLevel1])
   # AC_SUBST([ProjectPatchLevel2])
@@ -137,6 +186,15 @@ in evalPackages.runCommand "dummy-ghc-pkg-dump" {
     ??) ProjectVersionForLibUpperHalf=''${VERSION_MAJOR}.''${VERSION_MINOR} ;;
     *) echo bad minor version in $PACKAGE_VERSION; exit 1 ;;
   esac
+
+  # Save split version of ProjectPatchLevel
+  ProjectPatchLevel1=`echo $ProjectPatchLevel | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\1/'`
+  ProjectPatchLevel2=`echo $ProjectPatchLevel | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\3/'`
+
+  # The project patchlevel1/2 is zero unless stated otherwise
+  test -z "$ProjectPatchLevel1" && ProjectPatchLevel1=0
+  test -z "$ProjectPatchLevel2" && ProjectPatchLevel2=0
+
   # GHC HEAD uses patch level version > 20000000
   case $ProjectPatchLevel1 in
     ?) ProjectVersionForLib=''${ProjectVersionForLibUpperHalf}0''${ProjectPatchLevel1} ;;
