@@ -51,16 +51,25 @@ let
       "stm"
       "xhtml"
     ] ++ lib.optionals (!stdenv.targetPlatform.isGhcjs) [ "terminfo" ]
-    ++ (if stdenv.targetPlatform.isWindows then
-      [ "Win32" ]
-    else
-      [ "unix" ]);
+    ++ (if stdenv.targetPlatform.isWindows then [ "Win32" ] else [ "unix" ]);
+
+  configure = evalPackages.runCommand "autoreconf" {
+    nativeBuildInputs = with evalPackages; [ autotools coreutils findutils ];
+  } ''
+    mkdir -p $out
+    cd $out
+    cp ./configure.ac .
+    ln -s ${ghc-src}/m4 .
+    autoreconf -i
+    rm m4
+  '';
 
 in evalPackages.runCommand "dummy-ghc-pkg-dump" {
   nativeBuildInputs = [
     evalPackages.haskell-nix.nix-tools-unchecked.exes.cabal2json
     evalPackages.jq
   ];
+  passthru = { inherit configure; };
 } ''
   PACKAGE_VERSION=${ghc-version}
   ProjectVersion=${ghc-version}

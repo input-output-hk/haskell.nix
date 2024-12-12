@@ -594,7 +594,7 @@ final: prev: {
 
             };
 
-        dummy-ghc-pkg-dump = import ../lib/dummy-ghc-pkg-dump.nix {
+        dummy-ghc-pkg-dump = import ../lib/dummy-ghc-pkg-dump {
           pkgs = final.buildPackages.pkgs;
         };
 
