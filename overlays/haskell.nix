@@ -594,13 +594,17 @@ final: prev: {
 
             };
 
+        dummy-ghc-pkg-dump = import ../lib/dummy-ghc-pkg-dump.nix {
+          pkgs = final.buildPackages.pkgs;
+        };
+
         # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
         # Resulting nix files are added to nix-plan subdirectory.
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
             index-state-hashes = import indexStateHashesPath;
             inherit (final.buildPackages.haskell-nix) haskellLib;
             pkgs = final.buildPackages.pkgs;
-            inherit (final.buildPackages.pkgs) runCommand cacert;
+            inherit (final.buildPackages.pkgs) cacert;
         };
 
         # Loads a plan and filters the package directories using cleanSourceWith
