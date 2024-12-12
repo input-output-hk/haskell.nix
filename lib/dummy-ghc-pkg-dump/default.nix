@@ -109,6 +109,10 @@ let
       FILES=( **/*.cabal.in )
       ./config.status $(printf -- '--file %s ' ''${FILES[@]%.in})
 
+      FLAGS=(${lib.concatStringsSep " " flags})
+      VERSION=$(cabal2json  ghc/ghc-bin.cabal | jq .version)
+      FLAGS+=(--compiler ghc-$VERSION)
+
       # Convert to json
       for f in **/*.cabal; do
         # FIXME
