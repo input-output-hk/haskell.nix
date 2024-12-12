@@ -271,6 +271,9 @@ in {
 
                 # Fix issue loading windows dll using `.dll.a` file
                 ++ onWindows (fromUntil "9.4" "9.14" ./patches/ghc/ghc-9.10-windows-dll-dependent-symbol-type-fix.patch)
+
+                # See https://gitlab.haskell.org/ghc/ghc/-/merge_requests/13709
+                ++ fromUntil "9.8.4" "9.8.5" ./patches/ghc/ghc-9.8.4-remove-unused-containers-h-include13709.diff
                 ;
         in ({
             ghc8107 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
