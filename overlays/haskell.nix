@@ -167,7 +167,11 @@ final: prev: {
             };
 
         # Package sets for all stackage snapshots.
-        snapshots = import ../snapshots.nix { inherit (final) lib ghc-boot-packages; inherit mkPkgSet stackage excludeBootPackages; };
+        snapshots = import ../snapshots.nix {
+          inherit (final) lib ghc-boot-packages;
+          inherit mkPkgSet stackage excludeBootPackages;
+        };
+
         # Pick a recent LTS snapshot to be our "default" package set.
         haskellPackages =
             if final.stdenv.targetPlatform.isAarch64 && final.stdenv.buildPlatform.isAarch64
@@ -595,19 +599,12 @@ final: prev: {
 
             };
 
-        dummy-ghc-pkg-dump = final.callPackage ../lib/dummy-ghc-pkg-dump {
-          # FIXME: just for testing
-          ghc-version = final.ghc.version;
-          ghc-src = final.ghc.src;
-        };
+        dummy-ghc-pkg-dump = final.callPackage ../lib/dummy-ghc-pkg-dump { };
         
         # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
         # Resulting nix files are added to nix-plan subdirectory.
-        callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
+        callCabalProjectToNix = final.buildPackages.callPackage ../lib/call-cabal-project-to-nix.nix {
             index-state-hashes = import indexStateHashesPath;
-            inherit (final.buildPackages.haskell-nix) haskellLib;
-            pkgs = final.buildPackages.pkgs;
-            inherit (final.buildPackages.pkgs) cacert;
         };
 
         # Loads a plan and filters the package directories using cleanSourceWith

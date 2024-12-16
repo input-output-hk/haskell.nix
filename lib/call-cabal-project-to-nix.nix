@@ -1,4 +1,12 @@
-{ pkgs, runCommand, cacert, index-state-hashes, haskellLib }:
+{ pkgs
+, cacert
+, index-state-hashes
+, haskell-nix
+}:
+
+let inherit (haskell-nix) haskellLib; 
+in
+
 { name          ? src.name or null # optional name for better error messages
 , src
 , materialized-dir ? ../materialized
@@ -65,7 +73,7 @@
 , ...
 }@args:
 let
-  inherit (evalPackages.haskell-nix) materialize dotCabal;
+  inherit (evalPackages.haskell-nix) dummy-ghc-pkg-dump materialize dotCabal;
 
   # These defaults are here rather than in modules/cabal-project.nix to make them
   # lazy enough to avoid infinite recursion issues.
@@ -102,6 +110,7 @@ in let
   ghc = if ghc' ? latestVersion
     then __trace "WARNING: ${ghc'.version} is out of date, consider using upgrading to ${ghc'.latestVersion}." ghc'
     else ghc';
+
   subDir' = src.origSubDir or "";
   subDir = pkgs.lib.strings.removePrefix "/" subDir';
 
@@ -295,8 +304,6 @@ let
 
   fixedProject = replaceSourceRepos rawCabalProject;
 
-  ghcSrc = (ghc.raw-src or ghc.buildGHC.raw-src) evalPackages;
-
   platformString = p: with p.parsed; "${cpu.name}-${vendor.name}-${kernel.name}";
 
   # Dummy `ghc` that uses the captured output
@@ -366,11 +373,6 @@ let
     '';
   };
 
-  dummy-ghc-pkg-dump = evalPackages.callPackage ./dummy-ghc-pkg-dump {
-    ghc-src = (ghc.raw-src or ghc.buildGHC.raw-src) evalPackages;
-    ghc-version = ghc.version;
-  };
-  
   # Dummy `ghc-pkg` that uses the captured output
   dummy-ghc-pkg = evalPackages.writeTextFile {
     name = "dummy-pkg-" + ghc.name;
@@ -388,7 +390,12 @@ let
           ;;
       ''}
         'dump --global -v0')
-          cat ${dummy-ghc-pkg-dump}
+          cat ${
+            dummy-ghc-pkg-dump {
+              ghc-src = (ghc.raw-src or ghc.buildGHC.raw-src) evalPackages;
+              ghc-version = ghc.version;
+            }
+          }
           ;;
         *)
           echo "Unknown argument '$*'. " >&2

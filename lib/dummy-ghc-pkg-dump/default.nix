@@ -1,15 +1,20 @@
 {
   autoconf,
-  cabal2json,
   coreutils,
   findutils,
-  ghc-src,
-  ghc-version,
+  haskell-nix,
   jq,
   lib,
   runCommand,
   stdenv,
+  writeText,
 }:
+
+let
+  inherit (haskell-nix.nix-tools-unchecked.exes) cabal2json;
+in
+
+{ ghc-src, ghc-version }:
 
 let
   ghc-m4-src = builtins.path {
@@ -17,6 +22,41 @@ let
     path = ghc-src;
     name = "ghc-src-m4";
   };
+
+  configure-ac = writeText "configure.ac" ''
+    m4_include([fp_check_prog.m4])
+    m4_include([fp_prog_find.m4])
+    m4_include([fp_prog_sort.m4])
+    m4_include([fp_setup_project_version.m4])
+
+    AC_INIT([The Glorious Glasgow Haskell Compilation System],
+            [${ghc-version}],
+    		[glasgow-haskell-bugs@haskell.org],
+    		[ghc])
+
+    # Set this to YES for a released version, otherwise NO
+    : ''${RELEASE=NO}
+
+    dnl ** Make sure we do not have a bogus source directory
+    AC_CONFIG_SRCDIR(ghc/Main.hs)
+
+    dnl ----------------------------------------------------------
+    dnl ** Find unixy sort and find commands,
+    dnl ** which are needed by FP_SETUP_PROJECT_VERSION
+
+    FP_PROG_FIND
+    FP_PROG_SORT
+
+    dnl ----------------------------------------------------------
+    pushd ''${srcdir}
+    FP_SETUP_PROJECT_VERSION
+    popd
+
+    dnl ** Output code to perform substitutions
+    AC_CONFIG_FILES
+
+    AC_OUTPUT
+  '';
 
   configure =
     runCommand "dummy-ghc-configure"
@@ -28,14 +68,8 @@ let
         ];
       }
       ''
-        set -euo pipefail
-        autoconf --warnings all --include "${ghc-m4-src}/m4" --output=$out ${./configure.ac}
+        autoconf --warnings all --include "${ghc-m4-src}/m4" --output=$out ${configure-ac}
       '';
-
-  # cabal2json = builtins.fetchClosure {
-  #   fromStore = "https://cache.zw3rk.com";
-  #   fromPath = /nix/store/q1kqwvqmwqcqaq82gaf951mq39v4sc91-Cabal-syntax-json-exe-cabal2json-0.1.0.0;
-  # };
 
   cabal2json-flags =
     with stdenv.targetPlatform;
@@ -60,7 +94,7 @@ let
         cd $out
 
         # Run configure script (only for the project version)
-        ${configure} --srcdir=${ghc-src} PACKAGE_VERSION=${ghc-version}
+        ${configure} --srcdir=${ghc-src}
 
         # Copy the cabal.in files
         pushd ${ghc-src}
@@ -68,8 +102,8 @@ let
         popd
 
         # Substitute config variables in the cabal files
-        FILES=( **/*.cabal.in )
-        ./config.status $(printf -- '--file %s ' "''${FILES[@]%.in}")
+        CABAL_IN=( **/*.cabal.in )
+        ./config.status $(printf -- '--file %s ' "''${CABAL_IN[@]%.in}")
 
         # Convert to json
         for f in **/*.cabal; do
