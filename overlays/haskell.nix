@@ -13,6 +13,7 @@ final: prev: {
 
         # Additional user-provided mappings to augment ./../lib/pkgconf-nixpkgs-map.nix
         extraPkgconfigMappings = prev.haskell-nix.extraPkgconfigMappings or {};
+
         # Nix Flake based source pins.
         # To update all inputs, get unstable Nix and then `nix flake update --recreate-lock-file`
         # Or `nix-shell -p nixVersions.latest --run "nix --experimental-features 'nix-command flakes' flake update --recreate-lock-file"`
@@ -596,29 +597,29 @@ final: prev: {
 
         dummy-ghc-pkg-dump = final.callPackage ../lib/dummy-ghc-pkg-dump {
           # FIXME: just for testing
-          ghc-version = "0.0.0";
+          ghc-version = final.ghc.version;
           ghc-src = final.ghc.src;
         };
         
         # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
         # Resulting nix files are added to nix-plan subdirectory.
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
-            pkgs = final.buildPackages.pkgs;
             index-state-hashes = import indexStateHashesPath;
             inherit (final.buildPackages.haskell-nix) haskellLib;
+            pkgs = final.buildPackages.pkgs;
             inherit (final.buildPackages.pkgs) cacert;
         };
 
         # Loads a plan and filters the package directories using cleanSourceWith
         importAndFilterProject = import ../lib/import-and-filter-project.nix {
-            pkgs = final.buildPackages.pkgs;
             inherit (final.buildPackages.haskell-nix) haskellLib;
+            pkgs = final.buildPackages.pkgs;
         };
 
         # Loads a plan and filters the package directories using cleanSourceWith
         loadCabalPlan = import ../lib/load-cabal-plan.nix {
-            pkgs = final.buildPackages.pkgs;
             inherit (final.buildPackages.haskell-nix) haskellLib;
+            pkgs = final.buildPackages.pkgs;
         };
 
         # References to the unpacked sources, for caching in a Hydra jobset.

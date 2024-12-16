@@ -61,14 +61,13 @@ let
 
       warning = final.lib.mapAttrs
         (_: _:
-          final.lib.warn
+          abort
             ''
               The package nix-tools is now compiled with a single GHC version.
               You can use the function nix-tools-set to compile nix-tools using a specific compiler:
 
                 nix-tools-set { compiler-nix-name = " "ghcXYZ" "; }
             ''
-            toolset
         )
         final.haskell-nix.compiler;
 
