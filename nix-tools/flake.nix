@@ -1,33 +1,36 @@
 {
   inputs = {
-    nixpkgs.follows = "haskellNix/nixpkgs";
     haskellNix.url = "github:input-output-hk/haskell.nix";
   };
 
-  outputs = inputs@{ self, nixpkgs, haskellNix, ... }:
+  outputs = inputs@{ self, haskellNix, ... }:
     let
       systems =
         [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
 
-      inherit (nixpkgs) lib;
+      inherit (haskellNix) lib;
 
       # keep it simple (from https://ayats.org/blog/no-flake-utils/)
       forAllSystems = f:
-        nixpkgs.lib.genAttrs systems (system:
-          f (haskellNix.legacyPackages.${system}.extend self.overlays.default));
+        lib.genAttrs systems (system:
+          let
+            # NOTE: this instantiation of nixpkgs already includes haskell.nix
+            # configuration and overlays.
+            pkgs = haskellNix.legacyPackages.${system};
+            # Here we add our own overlay
+          in f (pkgs.extend self.overlays.default));
 
       mkTarball = pkgs:
         let
-          toolset = let
-            pkgs' = pkgs.extend self.overlays.default;
-            # We need to use haskell.nix compilers here
-          in pkgs'.nix-tools-set {
+          # We need to use haskell.nix compilers here
+          toolset = pkgs.nix-tools-set {
             compilerSelection = lib.mkForce (p: p.haskell-nix.compiler);
           };
 
           # tarball filename e.g. nix-tools-0.1.0.0-x86_64-unknown-linux-musl.tar.gz
           tarball-filename =
             "${toolset.name}-${pkgs.hostPlatform.config}.tar.gz";
+
         in pkgs.runCommand tarball-filename { preferLocalBuild = true; } ''
           mkdir -p ${toolset.name}/bin
           cp --verbose --target-directory ${toolset.name}/bin ${toolset}/bin/*
