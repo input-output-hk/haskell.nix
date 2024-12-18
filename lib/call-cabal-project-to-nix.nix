@@ -1,4 +1,4 @@
-{ pkgs, runCommand, cacert, index-state-hashes, haskellLib }:
+{ pkgs, cacert, index-state-hashes, haskellLib }:
 { name          ? src.name or null # optional name for better error messages
 , src
 , materialized-dir ? ../materialized
@@ -14,7 +14,6 @@
 , cabalProjectFreeze   ? null
 , caller               ? "callCabalProjectToNix" # Name of the calling function for better warning messages
 , compilerSelection    ? p: p.haskell-nix.compiler
-, ghc           ? null # Deprecated in favour of `compiler-nix-name`
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
 , configureArgs ? "" # Extra arguments to pass to `cabal v2-configure`.
                      # `--enable-tests --enable-benchmarks` are included by default.
@@ -74,29 +73,22 @@ let
   nix-tools = if args.nix-tools or null != null
     then args.nix-tools
     else evalPackages.haskell-nix.nix-tools-unchecked;
-  forName = pkgs.lib.optionalString (name != null) (" for " + name);
+
   nameAndSuffix = suffix: if name == null then suffix else name + "-" + suffix;
 
   ghc' =
     if ghcOverride != null
       then ghcOverride
       else
-        if ghc != null
-          then __trace ("WARNING: A `ghc` argument was passed" + forName
-            + " this has been deprecated in favour of `compiler-nix-name`. "
-            + "Using `ghc` will break cross compilation setups, as haskell.nix cannot "
-            + "pick the correct `ghc` package from the respective buildPackages. "
-            + "For example, use `compiler-nix-name = \"ghc865\";` for GHC 8.6.5.") ghc
-          else
-              # Do note that `pkgs = final.buildPackages` in the `overlays/haskell.nix`
-              # call to this file. And thus `pkgs` here is the proper `buildPackages`
-              # set and we do not need, nor should pick the compiler from another level
-              # of `buildPackages`, lest we want to get confusing errors about the Win32
-              # package.
-              #
-              # > The option `packages.Win32.package.identifier.name' is used but not defined.
-              #
-              (compilerSelection pkgs)."${compiler-nix-name}";
+      # Do note that `pkgs = final.buildPackages` in the `overlays/haskell.nix`
+      # call to this file. And thus `pkgs` here is the proper `buildPackages`
+      # set and we do not need, nor should pick the compiler from another level
+      # of `buildPackages`, lest we want to get confusing errors about the Win32
+      # package.
+      #
+      # > The option `packages.Win32.package.identifier.name' is used but not defined.
+      #
+      (compilerSelection pkgs)."${compiler-nix-name}";
 
 in let
   ghc = if ghc' ? latestVersion
