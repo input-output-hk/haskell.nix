@@ -463,7 +463,6 @@ stdenv.mkDerivation (rec {
     '' + lib.optionalString useLLVM ''
         export LLC="${llvmPackages.llvm}/bin/llc"
         export OPT="${llvmPackages.llvm}/bin/opt"
-        export LLVMAS="${targetCC}/bin/${targetCC.targetPrefix}cc"
     '' + lib.optionalString (!stdenv.isDarwin) ''
         export NIX_LDFLAGS+=" -rpath $out/lib/${targetPrefix}ghc-${ghc-version}"
     '' + lib.optionalString stdenv.isDarwin ''
