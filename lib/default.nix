@@ -256,9 +256,9 @@ in {
   isCrossTarget = stdenv.targetPlatform != stdenv.hostPlatform
     && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && stdenv.hostPlatform.linuxArch == stdenv.targetPlatform.linuxArch);
   # Native musl build-host-target combo
-  isNativeMusl = stdenv.hostPlatform.isMusl
-    && stdenv.buildPlatform == stdenv.hostPlatform
-    && stdenv.hostPlatform == stdenv.targetPlatform;
+  isNativeMusl = stdenv.targetPlatform.isMusl
+    && stdenv.buildPlatform.linuxArch == stdenv.hostPlatform.linuxArch
+    && stdenv.hostPlatform.linuxArch == stdenv.targetPlatform.linuxArch;
 
   # Takes a version number, module or list of modules (for cabalProject)
   # and converts it to an list of project modules.  This allows
@@ -593,6 +593,8 @@ in {
     then "arm"
     else if hostPlatform.isAarch64
     then "aarch64"
+    else if hostPlatform.isi686
+    then "i386"
     else abort "Don't know which QEMU to use for hostPlatform ${hostPlatform.config}. Please provide qemuSuffix";
 
   # How to run ldd when checking for static linking
