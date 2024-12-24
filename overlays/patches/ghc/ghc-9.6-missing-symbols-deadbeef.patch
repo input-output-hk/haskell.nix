@@ -8,7 +8,7 @@ index 4d0c978..96a9d60 100644
                                             symbol->name);
 -                                return EXIT_FAILURE;
 +                                // return EXIT_FAILURE;
-+                                symbol->addr = 0xDEADBEEF;
++                                symbol->addr = (void*)0xDEADBEEF;
                              }
                          }
                      } else {
@@ -20,7 +20,7 @@ index 2356818..727e845 100644
                     "See top entry above.\n", lbl);
          IF_DEBUG(linker, printLoadedObjects());
          fflush(stderr);
-+        r = 0xDEADBEEF;
++        r = (void*)0xDEADBEEF;
      }
 
      if (!runPendingInitializers()) {
