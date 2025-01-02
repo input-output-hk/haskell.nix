@@ -9,6 +9,7 @@ let
       "9.6" = "9.6.6";
       "9.8" = "9.8.4";
       "9.10" = "9.10.1";
+      "9.12" = "9.12.1";
     };
     gitInputs = {
       ghc912X = "9.12.0";
@@ -910,6 +911,38 @@ in {
                 src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.10.1";
+            });
+            ghc9121 = traceWarnOld "9.12" (final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9121; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc9121
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc9121
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc9101
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc984
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc983
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc982
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc965
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc964
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_15;
+                llvmPackages = final.llvmPackages_15;
+
+                src-spec.file = final.haskell-nix.sources.ghc9121;
+                src-spec.version = "9.12.1";
+                src-spec.needsBooting = true;
+
+                ghc-patches = ghc-patches "9.12.1";
             });
         } // (__listToAttrs (final.lib.mapAttrsToList (source-name: ver:
           let
