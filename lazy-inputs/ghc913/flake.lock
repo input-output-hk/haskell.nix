@@ -3,11 +3,11 @@
     "ghc913": {
       "flake": false,
       "locked": {
-        "lastModified": 1733355534,
-        "narHash": "sha256-kCiFiMIsOQWfXP73qWjhfvGv8OdFBg7nz6InQc/xhhQ=",
+        "lastModified": 1735577639,
+        "narHash": "sha256-1Rbx6NrCza6VGzFfi+9kL7zaSRqqOsZYfcter8Tce6Q=",
         "ref": "refs/heads/master",
-        "rev": "cad6fede4252aeff3a0a93e81c2188a825ab39c6",
-        "revCount": 67629,
+        "rev": "278a53ee698d961d97afb60be9db2d8bf60b4074",
+        "revCount": 67713,
         "submodules": true,
         "type": "git",
         "url": "https://gitlab.haskell.org/ghc/ghc"
