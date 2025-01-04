@@ -83,7 +83,7 @@
     let
       callFlake = import flake-compat;
 
-      ifdLevel = 1;
+      ifdLevel = 2;
       runningHydraEvalTest = false;
       defaultCompiler = "ghc928";
       config = import ./config.nix;
