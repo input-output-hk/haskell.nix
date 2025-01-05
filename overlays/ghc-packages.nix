@@ -86,6 +86,8 @@ let
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.9" >= 0) {
       ghc-platform = "libraries/ghc-platform";
       ghc-internal = "libraries/ghc-internal";
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.10" >= 0) {
+      ghc-toolchain = "utils/ghc-toolchain";
     };
 
   # The nix produced by `cabalProject` differs slightly depending on
