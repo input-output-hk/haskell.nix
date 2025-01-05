@@ -516,13 +516,13 @@ let
 
                 # FIXME This is a bandaid. Rather than doing this, conditionals should be interpreted.
                 ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isGhcjs ''
-                exposed_modules+=" $(jq -r '.library."exposed-modules"[]|select(type=="object" and .if.arch == "javascript")|.then[]' $json_cabal_file)"
+                exposed_modules+=" $(jq -r '.library."exposed-modules"//[]|.[]|select(type=="object" and .if.arch == "javascript")|.then[]' $json_cabal_file)"
                 ''}
                 ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
-                exposed_modules+=" $(jq -r '.library."exposed-modules"[]|select(type=="object" and .if.os == "windows")|.then[]' $json_cabal_file)"
+                exposed_modules+=" $(jq -r '.library."exposed-modules"//[]|.[]|select(type=="object" and .if.os == "windows")|.then[]' $json_cabal_file)"
                 ''}
                 ${pkgs.lib.optionalString (!pkgs.stdenv.targetPlatform.isWindows) ''
-                exposed_modules+=" $(jq -r '.library."exposed-modules"[]|select(type=="object" and .if.not.os == "windows")|.then[]' $json_cabal_file)"
+                exposed_modules+=" $(jq -r '.library."exposed-modules"//[]|.[]|select(type=="object" and .if.not.os == "windows")|.then[]' $json_cabal_file)"
                 ''}
 
                 EXPOSED_MODULES_${varname name}="$(tr '\n' ' ' <<< "$exposed_modules $reexported_modules")"
