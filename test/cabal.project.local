@@ -15,9 +15,6 @@ if impl(ghc > 9.13)
 -- This prevents hsc2hs from causing old versions of packages from being added to plan.json
 allow-newer: hsc2hs:*
 
-if impl(ghc >=9.10.1)
-  extra-packages: process
-
 repository head.hackage.ghc.haskell.org
   url: https://ghc.gitlab.haskell.org/head.hackage/
   secure: True
