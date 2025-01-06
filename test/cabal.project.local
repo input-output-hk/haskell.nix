@@ -1,12 +1,12 @@
-if impl(ghc>=9.10.1)
+if impl(ghc>=9.12.1)
   -- allow newer packages, that are bound to be newer due to
   -- being shipped with a newer compiler.  If you extend this
   -- be very careful to only extend it for absolutely necessary packages
   -- otherwise we risk running into broken build-plans down the line.
-  allow-newer: *:base, *:template-haskell, *:bytestring, *:text, *:ghc-prim, *:deepseq, *:Cabal
+  allow-newer: *:base, *:template-haskell, *:ghc-prim
 
 if impl(ghc > 9.13)
-  allow-newer: *:containers, *:time
+  allow-newer: *:containers, *:time, *:ghc-bignum
   constraints: base-compat >=0.14.0, aeson >=2.2.1.0
   -- From https://ghc.gitlab.haskell.org/head.hackage/cabal.constraints
   constraints: extra ==1.7.14
