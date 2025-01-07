@@ -6,7 +6,10 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "buildable";
-    modules = [ { packages.buildable-test.flags.exclude-broken = true; } ];
+    cabalProjectLocal = ''
+      package buildable-test
+        flags: +exclude-broken
+    '';
   };
   packages = project.hsPkgs;
 

@@ -56,7 +56,7 @@ final: prev:
           # Therefore let's enable doCrossCheck here!
           doCrossCheck = pkgs.stdenv.hostPlatform.isWindows;
         };
-      in {
+      in prev.haskell-nix.haskellLib.addPackageKeys {
         packages = {
 
           # Apply https://github.com/haskell/cabal/pull/6055

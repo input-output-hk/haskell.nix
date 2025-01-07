@@ -8,8 +8,8 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "gi-gtk";
     cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
-      if impl(ghc >=9.11)
-        constraints: filepath source
+      -- The overloading feature of haskell-gi makes build times very long
+      constraints: haskell-gi-overloading ==0.0
     '';
   };
 

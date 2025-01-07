@@ -1,0 +1,24 @@
+diff --git a/linters/lint-commit-msg/lint-commit-msg.cabal b/linters/lint-commit-msg/lint-commit-msg.cabal
+index 7d1dbd0fcb..861ad6f03d 100644
+--- a/linters/lint-commit-msg/lint-commit-msg.cabal
++++ b/linters/lint-commit-msg/lint-commit-msg.cabal
+@@ -26,4 +26,4 @@ executable lint-commit-msg
+     base
+        >= 4.14 && < 5,
+     text
+-       >= 1.2  && < 2.1
++       >= 1.2  && < 2.2
+diff --git a/linters/lint-submodule-refs/lint-submodule-refs.cabal b/linters/lint-submodule-refs/lint-submodule-refs.cabal
+index ce4012adfc..9ff85d2731 100644
+--- a/linters/lint-submodule-refs/lint-submodule-refs.cabal
++++ b/linters/lint-submodule-refs/lint-submodule-refs.cabal
+@@ -15,7 +15,7 @@ executable lint-submodule-refs
+     base
+        >= 4.14 && < 5,
+     text
+-       >= 1.2  && < 2.1,
++       >= 1.2  && < 2.2,
+     linters-common
+ 
+   ghc-options:
+ 

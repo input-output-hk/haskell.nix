@@ -1,4 +1,4 @@
-{ lib, stdenv, mkShell, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, pkgsBuildBuild, evalPackages, compiler }:
+{ lib, stdenv, mkShell, glibcLocales, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, pkgsBuildBuild, evalPackages, compiler }:
 
 { # `packages` function selects packages that will be worked on in the shell itself.
   # These packages will not be built by `shellFor`, but their
@@ -68,7 +68,8 @@ let
   selectedComponents =
     lib.filter isSelectedComponent  (lib.attrValues transitiveDependenciesComponents);
 
-  allHsPkgsComponents = lib.concatMap haskellLib.getAllComponents (builtins.attrValues hsPkgs);
+  allHsPkgsComponents = lib.concatMap haskellLib.getAllComponents
+    (lib.filter (x: !(x.isRedirect or false)) (builtins.attrValues hsPkgs));
 
   # Given a list of `depends`, removes those which are selected components
   removeSelectedInputs =
@@ -114,9 +115,10 @@ let
   # Set up a "dummy" component to use with ghcForComponent.
   component = {
     depends = packageInputs;
-    libs = [];
-    pkgconfig = [];
-    frameworks = [];
+    pre-existing = lib.concatMap (x: (haskellLib.dependToLib x).config.pre-existing or []) packageInputs;
+    libs         = lib.concatMap (x: (haskellLib.dependToLib x).config.libs or []) packageInputs;
+    pkgconfig    = lib.concatMap (x: (haskellLib.dependToLib x).config.pkgconfig or []) packageInputs;
+    frameworks   = lib.concatMap (x: (haskellLib.dependToLib x).config.frameworks or []) packageInputs;
     doExactConfig = false;
   };
   configFiles = makeConfigFiles {

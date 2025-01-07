@@ -17,7 +17,7 @@ let
     cabalProjectLocal = builtins.readFile ../cabal.project.local;
     # Mock the .git dir to avoid rebuilding on every commit.
     modules = [{
-      packages.githash-test.src =
+      packages.githash-test.src = mkForce
         rec {
           origSrc = evalPackages.runCommand "githash-test-src" { nativeBuildInputs = [ evalPackages.gitReallyMinimal ]; } ''
             mkdir -p $out/test/githash
@@ -42,7 +42,7 @@ let
 
 in recurseIntoAttrs {
   # githash runs git from TH code and this needs a cross compiled git exe
-  # to work correctly.  Cross compiling git is currently brocken.
+  # to work correctly.  Cross compiling git is currently broken.
   meta.disabled = __elem compiler-nix-name ["ghc901" "ghc902"] || haskellLib.isCrossHost ||
     # TODO find out why TH fails for this
     (__elem compiler-nix-name ["ghc927" "ghc928"] && stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl);

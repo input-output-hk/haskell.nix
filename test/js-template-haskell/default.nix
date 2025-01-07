@@ -7,9 +7,11 @@ let
   project = project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "js-template-haskell";
-    cabalProjectLocal = ''
+    cabalProjectLocal = builtins.readFile ../cabal.project.local
+      + ''
       if arch(javascript)
         extra-packages: ghci
+        constraints: ghcjs installed
       constraints: text -simdutf, text source
     '';
   };
@@ -21,7 +23,8 @@ in recurseIntoAttrs {
     inherit (project) plan-nix;
   };
 
-  meta.disabled = stdenv.buildPlatform != stdenv.hostPlatform && stdenv.hostPlatform.isAarch64;
+  meta.disabled = stdenv.buildPlatform != stdenv.hostPlatform && stdenv.hostPlatform.isAarch64
+    || builtins.elem compiler-nix-name ["ghc91320241204"];
 
   build = packages.js-template-haskell.components.library;
   check = packages.js-template-haskell.checks.test;

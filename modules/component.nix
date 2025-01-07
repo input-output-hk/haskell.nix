@@ -38,6 +38,11 @@ in
       default = [ ];
     };
 
+    pre-existing = lib.mkOption {
+      type = types.listOf types.str;
+      default = [ ];
+    };
+
     libs = lib.mkOption {
       type = listOfFilteringNulls (types.either (types.nullOr types.package) (listOfFilteringNulls types.package));
       default = [ ];

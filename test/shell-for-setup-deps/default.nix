@@ -7,15 +7,11 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "shell-for-setup-deps";
     cabalProjectLocal = builtins.readFile ../cabal.project.local;
-    modules = [{
-      # Package has no exposed modules which causes
-      #   haddock: No input file(s)
-      packages.bytestring-builder.doHaddock = false;
-    }];
   };
 
   env = project.shellFor {
-    withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc927"];
+    tools.hoogle = { cabalProjectLocal = builtins.readFile ../cabal.project.local; };
+    withHoogle = true;
   };
 
 in recurseIntoAttrs ({
@@ -44,7 +40,8 @@ in recurseIntoAttrs ({
       cp ${./pkg/src}/*.hs .
 
       printf "checking that the shell env has the dependencies...\n" >& 2
-      ${env.ghc}/bin/${env.ghc.targetPrefix}ghc-pkg list
+      ${env.ghc}/bin/${env.ghc.targetPrefix}ghc-pkg list -v
+      ${env.ghc}/bin/${env.ghc.targetPrefix}ghc-pkg check
       ${env.ghc}/bin/${env.ghc.targetPrefix}runghc conduit-test.hs
 
       touch $out

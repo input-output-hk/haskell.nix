@@ -28,8 +28,8 @@ let self =
     # (not just the one we are building).
     # Enable for tests in packages that use cabal-doctest.
     ( haskellLib.isTest componentId &&
-      lib.any (x: x.identifier.name or "" == "cabal-doctest") package.setup-depends &&
-      lib.any (x: x.identifier.name or "" == "doctest") component.depends
+      lib.any (x: x.identifier.name or "" == "cabal-doctest") (package.setup-depends ++ setup.config.depends or []) &&
+      lib.any (x: x.identifier.name or "" == "doctest") (package.setup-depends ++ setup.config.depends or [])
     )
 , allComponent # Used when `configureAllComponents` is set to get a suitable configuration.
 
@@ -197,6 +197,9 @@ let
       ++ lib.optionals (stdenv.hostPlatform.isGhcjs) [
         "--with-gcc=${pkgsBuildBuild.emscripten}/bin/emcc"
         "--with-ld=${pkgsBuildBuild.emscripten}/bin/emcc"
+      ]
+      ++ lib.optionals (stdenv.hostPlatform.isGhcjs && stdenv.buildPlatform.isDarwin) [
+        "--ar-options=--format=gnu" # Avoid `--format=darwin` it can cause `section too large` errors
       ]
       ++ [ # other flags
       (disableFeature dontStrip "executable-stripping")
