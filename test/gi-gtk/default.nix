@@ -8,12 +8,8 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "gi-gtk";
     cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
-      -- haskell-gi 0.26.12 breaks gi-gtkpixbuf
-      index-state: 2024-09-30T00:00:00Z
       -- The overloading feature of haskell-gi makes build times very long
       constraints: haskell-gi-overloading ==0.0
-      if impl(ghc >=9.11)
-        constraints: filepath source
     '';
   };
 
@@ -31,9 +27,7 @@ in recurseIntoAttrs rec {
     # Cross compilation to aarch64 is also broken
     || stdenv.hostPlatform.isAarch64 && !stdenv.buildPlatform.isAarch64
     # glu is marked ase broken for isAndroid
-    || stdenv.hostPlatform.isAndroid
-    # Building profiled version of Cabal for haskell-gi is currently broken for GHC head
-    || compiler-nix-name == "ghc91320241204";
+    || stdenv.hostPlatform.isAndroid;
 
   ifdInputs = {
     inherit (project) plan-nix;
