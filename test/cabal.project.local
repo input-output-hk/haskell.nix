@@ -3,7 +3,7 @@ if impl(ghc>=9.12.1)
   -- being shipped with a newer compiler.  If you extend this
   -- be very careful to only extend it for absolutely necessary packages
   -- otherwise we risk running into broken build-plans down the line.
-  allow-newer: *:base, *:template-haskell, *:ghc-prim
+  allow-newer: *:base, *:template-haskell, *:ghc-prim, uuid-types:random, QuickCheck:random, cabal-install:random
 
 if impl(ghc > 9.13)
   allow-newer: *:containers, *:time, *:ghc-bignum
