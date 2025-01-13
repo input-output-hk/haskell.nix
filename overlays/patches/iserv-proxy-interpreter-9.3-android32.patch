@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000..9974c73
 --- /dev/null
 +++ b/cbits/symbols.c
-@@ -0,0 +1,447 @@
+@@ -0,0 +1,456 @@
 +#include <stddef.h>
 +#include <stdio.h>
 +#include <string.h>
@@ -167,6 +167,9 @@ index 0000000..9974c73
 +extern void mmap64(void);
 +extern void mremap(void);
 +extern void readlink(void);
++extern void flock(void);
++extern void times(void);
++extern void getrusage(void);
 +
 +#define MISSING_FUN(f) void (f)(void) { printf("Unknown call to %s\n", #f); exit(1); }
 +
@@ -237,6 +240,7 @@ index 0000000..9974c73
 +    SYM(raise),
 +    SYM(strcmp),
 +    SYM(strerror),
++    SYM(setenv),
 +    SYM(unsetenv),
 +    SYM(waitpid),
 +    SYM(dup2),
@@ -445,6 +449,11 @@ index 0000000..9974c73
 +    SYM(mmap64),
 +    SYM(mremap),
 +    SYM(readlink),
++    SYM(times),
++    SYM(strerror_r),
++    SYM(flock),
++    SYM(puts),
++    SYM(getrusage),
 +    { 0, 0, STRENGTH_NORMAL, 1 } /* sentinel */
 +};
 +
