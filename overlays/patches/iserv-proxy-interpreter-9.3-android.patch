@@ -3,7 +3,8 @@ new file mode 100644
 index 0000000..d447895
 --- /dev/null
 +++ b/cbits/symbols.c
-@@ -0,0 +1,318 @@
+@@ -0,0 +1,327 @@
++#define BIONIC_IOCTL_NO_SIGNEDNESS_OVERLOAD
 +#include <stddef.h>
 +#include <stdio.h>
 +#include <string.h>
@@ -67,6 +68,9 @@ index 0000000..d447895
 +extern void __multf3(void);
 +extern void __subtf3(void);
 +extern void __trunctfdf2(void);
++
++extern void flock(void);
++extern void times(void);
 +
 +#define MISSING_FUN(f) void (f)(void) { printf("Unknown call to `%s'\n", #f); exit(1); }
 +
@@ -173,6 +177,7 @@ index 0000000..d447895
 +    SYM(stdout),
 +    SYM(strftime),
 +    SYM(utimes),
++    SYM(times),
 +    SYM(setenv),
 +    SYM(fpathconf),
 +    SYM(exit),
@@ -230,6 +235,7 @@ index 0000000..d447895
 +    SYM(openat),SYM(__open_2),
 +    // string.h
 +    SYM(strerror),
++    SYM(strerror_r),
 +    SYM(strcmp),
 +    SYM(memchr),SYM(strcpy),SYM(strchr),SYM(strncpy),SYM(strrchr),
 +    SYM(strcat),SYM(strncmp),SYM(strdup),
@@ -266,6 +272,7 @@ index 0000000..d447895
 +    SYM(fprintf),
 +    SYM(vfprintf),
 +    SYM(fopen), SYM(fclose),
++    SYM(flock),
 +    SYM(getegid),SYM(getgid),
 +    SYM(getpwent),
 +    SYM(getgrent),
@@ -283,6 +290,7 @@ index 0000000..d447895
 +    SYM(ferror),
 +    SYM(fflush),
 +    SYM(fgets),SYM(fputc),SYM(fputs),
++    SYM(puts),
 +    SYM(fseek),SYM(ftell),
 +    SYM(sscanf),
 +    SYM(shutdown),
@@ -316,6 +324,7 @@ index 0000000..d447895
 +    SYM(__multf3),
 +    SYM(__subtf3),
 +    SYM(__trunctfdf2),
++    SYM(getrusage),
 +    { 0, 0, STRENGTH_NORMAL, 1 } /* sentinel */
 +};
 +
@@ -324,14 +333,17 @@ index 0000000..d447895
 +}
 \ No newline at end of file
 diff --git a/iserv-proxy.cabal b/iserv-proxy.cabal
-index a0eeaeb..a146108 100644
+index 5f1449a..328b000 100644
 --- a/iserv-proxy.cabal
 +++ b/iserv-proxy.cabal
-@@ -103,6 +103,7 @@ Executable iserv-proxy
+@@ -106,9 +106,7 @@ Executable iserv-proxy-interpreter
     -- We need to pass -fkeep-cafs to ensure that the interpreter retains CAFs
     -- Iserv and GHC do something similar.
     ghc-options: -fkeep-cafs
+-   -- no idea how to check for musl :-/
+-   if os(linux) && arch(aarch64)
+-     c-sources: cbits/symbols.aarch64-musl.c
 +   c-sources: cbits/symbols.c
+
     Build-Depends: base       >= 4   && < 5,
                    iserv-proxy
-
