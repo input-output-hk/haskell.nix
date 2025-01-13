@@ -75,9 +75,9 @@ let
        # Also for GHC #15275
     ++ lib.optionals hostPlatform.isAarch64 ["--gcc-option=-fPIC"];
 
-  # Wrapper to output a warning for aarch64 Android
+  # Wrapper to output a warning for Android
   qemuNotSupportedWarning = writeShellScriptBin "warning-wrapper" ''
-    echo "Warning: Running aarch64 Android apps on Linux using qemu is not supported." >&2
+    echo "Warning: Running Android apps on Linux using qemu is not supported." >&2
   '';
 
   # Wrapper for qemu testing
@@ -88,7 +88,7 @@ let
 
   # Choose the appropriate test wrapper
   testWrapper = lib.optional isLinuxCross
-    (if hostPlatform.isAndroid && hostPlatform.isAarch64
+    (if hostPlatform.isAndroid
       then "${qemuNotSupportedWarning}/bin/warning-wrapper"
       else "${qemuTestWrapper}/bin/test-wrapper");
 
