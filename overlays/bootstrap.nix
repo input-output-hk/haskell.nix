@@ -1,6 +1,8 @@
 final: prev:
 let
-    buildBootstrapper.compilerNixName = "ghc8107";
+    buildBootstrapper.compilerNixName =
+      if final.buildPackages.haskell.compiler ? ghc964 then "ghc964"
+      else "ghc8107";
     latestVerMap = {
       "8.10" = "8.10.7";
       "9.0" = "9.0.2";
@@ -45,18 +47,22 @@ in {
                 ghc = final.buildPackages.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
                 inherit (final.haskell-nix.bootstrap.packages) alex happy hscolour;
             };
+            # ghc 9.0.2 is no longer cached for nixpkgs-unstable and it seems to be broken
+            nixpkgsBootCompiler =
+              if final.buildPackages.haskell.compiler ? ghc964 then "ghc964"
+              else "ghc902";
             bootPkgsGhc94 = bootPkgs // {
-                alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" {
+                alex = final.buildPackages.haskell-nix.tool nixpkgsBootCompiler "alex" {
                   compilerSelection = p: p.haskell.compiler;
                   version = "3.2.7.1";
                   index-state = final.haskell-nix.internalHackageIndexState;
-                  materialized = ../materialized/alex-3.2.7.1;
+                  materialized = ../materialized/alex-3.2.7.1/${nixpkgsBootCompiler};
                 };
-                happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" {
+                happy = final.buildPackages.haskell-nix.tool nixpkgsBootCompiler "happy" {
                   compilerSelection = p: p.haskell.compiler;
                   version = "1.20.0";
                   index-state = final.haskell-nix.internalHackageIndexState;
-                  materialized = ../materialized/happy-1.20.0;
+                  materialized = ../materialized/happy-1.20.0/${nixpkgsBootCompiler};
                 };
             };
             sphinx = final.buildPackages.sphinx;

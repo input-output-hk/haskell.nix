@@ -3158,8 +3158,8 @@ pkgs:
     "libsodium" = [ "libsodium" ];
     "libsolvext" = [ "libsolv" ];
     "libsolv" = [ "libsolv" ];
-    "libsoup-2.4" = [ "libsoup" ];
-    "libsoup-gnome-2.4" = [ "libsoup" ];
+    "libsoup-2.4" = [ "libsoup_2_4" ];
+    "libsoup-gnome-2.4" = [ "libsoup_2_4" ];
     "libsoup-3.0" = [ "libsoup_3" ];
     "spatialaudio" = [ "libspatialaudio" ];
     "libspatialindex" = [ "libspatialindex" ];
@@ -5255,8 +5255,8 @@ pkgs:
     "tss2-tcti-pcap" = [ "tpm2-tss" ];
     "tss2-tcti-swtpm" = [ "tpm2-tss" ];
     "libtracecmd" = [ "trace-cmd" ];
-    "tracker-sparql-3.0" = [ "tracker" ];
-    "tracker-testutils-3.0" = [ "tracker" ];
+    "tracker-sparql-3.0" = [ "tinysparql" ];
+    "tracker-testutils-3.0" = [ "tinysparql" ];
     "trafficserver" = [ "trafficserver" ];
     "tre" = [ "tre" ];
     "tree-sitter" = [ "tree-sitter" ];
