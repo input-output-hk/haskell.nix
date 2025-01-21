@@ -23,6 +23,7 @@
     "R2305" = inputs.nixpkgs-2305;
     "R2311" = inputs.nixpkgs-2311;
     "R2405" = inputs.nixpkgs-2405;
+    "R2411" = inputs.nixpkgs-2411;
     "unstable" = inputs.nixpkgs-unstable;
   };
 
@@ -61,13 +62,13 @@
       # cabal-install and nix-tools plans.  When removing a ghc version
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
-      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2405") {
-        ghc96 = false;
-        ghc98 = false;
-      } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
+      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2411") {
         ghc810 = true;
         ghc92 = false;
         ghc94 = false;
+        ghc96 = false;
+        ghc98 = false;
+      } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc96 = true;
         ghc98 = true;
         ghc98llvm = false;

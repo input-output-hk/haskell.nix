@@ -295,6 +295,7 @@ let
       src = haskell-nix.haskellLib.cleanSourceWith {
         src = {
           outPath = buildPackages.srcOnly {
+            stdenv = buildPackages.stdenvNoCC;
             name = "hadrian";
             inherit src;
           };
