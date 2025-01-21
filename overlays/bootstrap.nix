@@ -1110,13 +1110,13 @@ in {
             # hackage with haskell.nix.  For alex and happy we
             # need to use the boot strap compiler as we need them
             # to build ghcs from source.
-            alex = final.haskell-nix.tool buildBootstrapper.compilerNixName "alex" ({config, pkgs, ...}: {
+            alex = final.haskell-nix.tool "ghc8107" "alex" ({config, pkgs, ...}: {
                 compilerSelection = p: p.haskell.compiler;
                 version = "3.2.4";
                 inherit ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
             });
-            happy = final.haskell-nix.tool buildBootstrapper.compilerNixName "happy"
+            happy = final.haskell-nix.tool "ghc8107" "happy"
               ({config, pkgs, ...}: {
                 compilerSelection = p: p.haskell.compiler;
                 version = "1.19.12";
