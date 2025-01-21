@@ -27,7 +27,7 @@ let
           (builtins.attrNames latestVerMap));
     traceWarnOld = v: x:
       let
-        bootstrapGhc = final.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
+        bootstrapGhc = final.buildPackages.haskell-nix.bootstrap.compiler.ghc8107;
       in
       if builtins.compareVersions x.version bootstrapGhc.version < 0 then
           throw "Desired GHC (${x.version}) is older than the bootstrap GHC (${bootstrapGhc.version}) for this platform (${final.stdenv.targetPlatform.config})."
