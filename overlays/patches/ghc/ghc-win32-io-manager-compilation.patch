@@ -103,10 +103,11 @@ diff --git a/rts/win32/ThrIOManager.c b/rts/win32/ThrIOManager.c
 index 023aee4c1922..61ccd5379c28 100644
 --- a/rts/win32/ThrIOManager.c
 +++ b/rts/win32/ThrIOManager.c
-@@ -9,6 +9,7 @@
+@@ -9,6 +9,8 @@
   * ---------------------------------------------------------------------------*/
  
  #include "Rts.h"
++#include "RtsFlags.h"
 +#include "IOManager.h"
  #include "ThrIOManager.h"
  #include "MIOManager.h"
