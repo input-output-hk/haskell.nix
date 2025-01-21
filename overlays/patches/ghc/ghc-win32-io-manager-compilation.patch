@@ -1,0 +1,126 @@
+From 710665bdd48b055d763c30b88d690fadd46a03af Mon Sep 17 00:00:00 2001
+From: Cheng Shao <terrorjack@type.dance>
+Date: Mon, 6 May 2024 19:25:32 +0000
+Subject: [PATCH] rts: fix I/O manager compilation errors for win32 target
+
+This patch fixes I/O manager compilation errors for win32 target
+discovered when cross-compiling to win32 using recent clang:
+
+```
+rts/win32/ThrIOManager.c:117:7: error:
+     error: call to undeclared function 'is_io_mng_native_p'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+      117 |   if (is_io_mng_native_p ()) {
+          |       ^
+    |
+117 |   if (is_io_mng_native_p ()) {
+    |       ^
+
+1 error generated.
+`x86_64-w64-mingw32-clang' failed in phase `C Compiler'. (Exit code: 1)
+
+rts/fs.c:143:28: error:
+     error: a function declaration without a prototype is deprecated in all versions of C [-Werror,-Wstrict-prototypes]
+      143 | int setErrNoFromWin32Error () {
+          |                            ^
+          |                             void
+    |
+143 | int setErrNoFromWin32Error () {
+    |                            ^
+
+1 error generated.
+`x86_64-w64-mingw32-clang' failed in phase `C Compiler'. (Exit code: 1)
+
+rts/win32/ConsoleHandler.c:227:9: error:
+     error: call to undeclared function 'interruptIOManagerEvent'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+      227 |         interruptIOManagerEvent ();
+          |         ^
+    |
+227 |         interruptIOManagerEvent ();
+    |         ^
+
+rts/win32/ConsoleHandler.c:227:9: error:
+     note: did you mean 'getIOManagerEvent'?
+    |
+227 |         interruptIOManagerEvent ();
+    |         ^
+
+rts/include/rts/IOInterface.h:27:10: error:
+     note: 'getIOManagerEvent' declared here
+       27 | void *   getIOManagerEvent  (void);
+          |          ^
+   |
+27 | void *   getIOManagerEvent  (void);
+   |          ^
+
+1 error generated.
+`x86_64-w64-mingw32-clang' failed in phase `C Compiler'. (Exit code: 1)
+
+rts/win32/ConsoleHandler.c:196:9: error:
+     error: call to undeclared function 'setThreadLabel'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+      196 |         setThreadLabel(cap, t, "signal handler thread");
+          |         ^
+    |
+196 |         setThreadLabel(cap, t, "signal handler thread");
+    |         ^
+
+rts/win32/ConsoleHandler.c:196:9: error:
+     note: did you mean 'postThreadLabel'?
+    |
+196 |         setThreadLabel(cap, t, "signal handler thread");
+    |         ^
+
+rts/eventlog/EventLog.h:118:6: error:
+     note: 'postThreadLabel' declared here
+      118 | void postThreadLabel(Capability    *cap,
+          |      ^
+    |
+118 | void postThreadLabel(Capability    *cap,
+    |      ^
+
+1 error generated.
+`x86_64-w64-mingw32-clang' failed in phase `C Compiler'. (Exit code: 1)
+```
+---
+ rts/win32/ConsoleHandler.c | 2 ++
+ rts/win32/ThrIOManager.c   | 1 +
+ utils/fs/fs.c              | 2 +-
+ 3 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/rts/win32/ConsoleHandler.c b/rts/win32/ConsoleHandler.c
+index 848d29288d8a..f6018f34a8cd 100644
+--- a/rts/win32/ConsoleHandler.c
++++ b/rts/win32/ConsoleHandler.c
+@@ -5,6 +5,8 @@
+  *       For the WINIO manager see base in the GHC.Event modules.
+  */
+ #include "Rts.h"
++#include "MIOManager.h"
++#include "ThreadLabels.h"
+ #include <windows.h>
+ #include "ConsoleHandler.h"
+ #include "Schedule.h"
+diff --git a/rts/win32/ThrIOManager.c b/rts/win32/ThrIOManager.c
+index 023aee4c1922..61ccd5379c28 100644
+--- a/rts/win32/ThrIOManager.c
++++ b/rts/win32/ThrIOManager.c
+@@ -9,6 +9,7 @@
+  * ---------------------------------------------------------------------------*/
+ 
+ #include "Rts.h"
++#include "IOManager.h"
+ #include "ThrIOManager.h"
+ #include "MIOManager.h"
+ #include "rts/OSThreads.h"
+diff --git a/utils/fs/fs.c b/utils/fs/fs.c
+index a5377af7e2bc..d64094cae158 100644
+--- a/utils/fs/fs.c
++++ b/utils/fs/fs.c
+@@ -140,7 +140,7 @@ static int setErrNoFromWin32Error (void);
+    This function should only be called when the creation of the fd actually
+    failed and you want to return -1 for the fd.  */
+ static
+-int setErrNoFromWin32Error () {
++int setErrNoFromWin32Error (void) {
+   switch (GetLastError()) {
+     case ERROR_SUCCESS:
+       errno = 0;

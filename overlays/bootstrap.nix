@@ -281,6 +281,9 @@ in {
 
                 # See https://gitlab.haskell.org/ghc/ghc/-/merge_requests/13709
                 ++ fromUntil "9.8.4" "9.8.5" ./patches/ghc/ghc-9.8.4-remove-unused-containers-h-include13709.diff
+
+                # See https://gitlab.haskell.org/ghc/ghc/-/merge_requests/12586
+                ++ onWindows (until "9.12" ./patches/ghc/ghc-win32-io-manager-compilation.patch)
                 ;
         in ({
             ghc8107 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
