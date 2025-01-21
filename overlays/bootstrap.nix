@@ -894,9 +894,10 @@ in {
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc9101
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc984
-                          or final.buildPackages.buildPackages.haskell.compiler.ghc983
-                          or final.buildPackages.buildPackages.haskell.compiler.ghc982
+                    else # GHC 9.10.1 does not seem to build with ghc 9.8.4
+                         # final.buildPackages.buildPackages.haskell.compiler.ghc984
+                         # or final.buildPackages.buildPackages.haskell.compiler.ghc983
+                             final.buildPackages.buildPackages.haskell.compiler.ghc982
                           or final.buildPackages.buildPackages.haskell.compiler.ghc981
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
