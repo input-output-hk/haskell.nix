@@ -333,6 +333,11 @@ let
       # `-fexternal-dynamic-refs` causes `undefined reference` errors when building GHC cross compiler for windows
       + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64 && !targetPlatform.isWindows)
         " '*.*.ghc.*.opts += -fexternal-dynamic-refs'"
+      # With the latest nixpkgs mixing `struct utimbuf` and `struct _utimbuf` causes an error without this
+      + lib.optionalString (targetPlatform.isWindows) (
+        if builtins.compareVersions ghc-version "9.10" >= 0
+          then " '*.ghc-internal.ghc.*.opts += -optc-Wno-incompatible-pointer-types'"
+          else " '*.base.ghc.*.opts += -optc-Wno-incompatible-pointer-types'")
       # The fact that we need to set this here is pretty idiotic. GHC should figure this out on it's own.
       # Either have a runtime flag/setting to disable it or if dlopen fails, remember that it failed and
       # fall back to non-dynamic. We only have dynamic linker with musl if host and target arch match.
