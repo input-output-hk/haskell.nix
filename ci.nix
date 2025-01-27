@@ -73,6 +73,7 @@
         ghc98llvm = false;
         ghc910 = true;
         ghc910llvm = true;
+        ghc9121 = true;
         ghc912X = true;
         ghc913 = true;
       })));

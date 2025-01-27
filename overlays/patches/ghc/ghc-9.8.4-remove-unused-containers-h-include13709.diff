@@ -1,0 +1,156 @@
+diff --git a/.gitlab/rel_eng/mk-ghcup-metadata/mk_ghcup_metadata.py b/.gitlab/rel_eng/mk-ghcup-metadata/mk_ghcup_metadata.py
+index 6d97bda61c3037cecbe5f7fad42115927aa1a787..90b52076f37089e9bce8c1a55d49f757a6d178ff 100755
+--- a/.gitlab/rel_eng/mk-ghcup-metadata/mk_ghcup_metadata.py
++++ b/.gitlab/rel_eng/mk-ghcup-metadata/mk_ghcup_metadata.py
+@@ -36,6 +36,7 @@ import os
+ import yaml
+ import gitlab
+ from urllib.request import urlopen
++from urllib.parse import urlparse
+ import hashlib
+ import sys
+ import json
+@@ -80,7 +81,7 @@ source_artifact = Artifact('source-tarball'
+ test_artifact = Artifact('source-tarball'
+                         , 'ghc-{version}-testsuite.tar.xz'
+                         , 'ghc-{version}-testsuite.tar.xz'
+-                        , 'ghc-{version}' )
++                        , 'ghc-{version}/testsuite' )
+ 
+ def debian(arch, n):
+     return linux_platform(arch, "{arch}-linux-deb{n}".format(arch=arch, n=n))
+@@ -156,13 +157,18 @@ def mk_one_metadata(release_mode, version, job_map, artifact):
+     eprint(f"Bindist URL: {url}")
+     eprint(f"Download URL: {final_url}")
+ 
+-    #Download and hash from the release pipeline, this must not change anyway during upload.
++    # Download and hash from the release pipeline, this must not change anyway during upload.
+     h = download_and_hash(url)
+ 
+     res = { "dlUri": final_url
+           , "dlSubdir": artifact.subdir.format(version=version)
+-          , "dlOutput": artifact.output_name.format(version=version)
+           , "dlHash" : h }
++
++    # Only add dlOutput if it is inconsistent with the filename inferred from the URL
++    output = artifact.output_name.format(version=version)
++    if Path(urlparse(final_url).path).name != output:
++        res["dlOutput"] = output
++
+     eprint(res)
+     return res
+ 
+diff --git a/compiler/GHC/Data/Word64Map.hs b/compiler/GHC/Data/Word64Map.hs
+index 3893313b5e9e79748f7595ecc1cb03c6536fa54f..b5034ca9f528d77c5571f4bd771edc5e6184d8c5 100644
+--- a/compiler/GHC/Data/Word64Map.hs
++++ b/compiler/GHC/Data/Word64Map.hs
+@@ -8,7 +8,6 @@
+ {-# LANGUAGE MonoLocalBinds #-}
+ #endif
+ 
+-#include "containers.h"
+ 
+ -----------------------------------------------------------------------------
+ -- |
+diff --git a/compiler/GHC/Data/Word64Map/Internal.hs b/compiler/GHC/Data/Word64Map/Internal.hs
+index 6e60b7f5464aba8f4971ab876ccc698c2415b997..9dd92fb9efdd4b9f402cc595ca1e326bd60803dd 100644
+--- a/compiler/GHC/Data/Word64Map/Internal.hs
++++ b/compiler/GHC/Data/Word64Map/Internal.hs
+@@ -14,7 +14,6 @@
+ {-# OPTIONS_HADDOCK not-home #-}
+ {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
+ 
+-#include "containers.h"
+ 
+ -----------------------------------------------------------------------------
+ -- |
+diff --git a/compiler/GHC/Data/Word64Map/Lazy.hs b/compiler/GHC/Data/Word64Map/Lazy.hs
+index 0df84842e2a7ce2c6aacb91c404b8a8f3f5c512e..0c09f62937f4115f50cced65f0ba3c35090c2f7b 100644
+--- a/compiler/GHC/Data/Word64Map/Lazy.hs
++++ b/compiler/GHC/Data/Word64Map/Lazy.hs
+@@ -3,7 +3,6 @@
+ {-# LANGUAGE Safe #-}
+ #endif
+ 
+-#include "containers.h"
+ 
+ -----------------------------------------------------------------------------
+ -- |
+diff --git a/compiler/GHC/Data/Word64Map/Strict.hs b/compiler/GHC/Data/Word64Map/Strict.hs
+index 4de68d7f7c39560fffd7c5935042446311054574..ab7c1471fba741ab070f3ee47a0e13ccd7b615d1 100644
+--- a/compiler/GHC/Data/Word64Map/Strict.hs
++++ b/compiler/GHC/Data/Word64Map/Strict.hs
+@@ -4,8 +4,6 @@
+ {-# LANGUAGE Trustworthy #-}
+ #endif
+ 
+-#include "containers.h"
+-
+ -----------------------------------------------------------------------------
+ -- |
+ -- Module      :  Data.Word64Map.Strict
+diff --git a/compiler/GHC/Data/Word64Map/Strict/Internal.hs b/compiler/GHC/Data/Word64Map/Strict/Internal.hs
+index 1605565c9fd7a527fac61dbf162ce0a805f4f920..d998e6b6a9778e4aa3750d01b8b38a7a3eb6f104 100644
+--- a/compiler/GHC/Data/Word64Map/Strict/Internal.hs
++++ b/compiler/GHC/Data/Word64Map/Strict/Internal.hs
+@@ -4,8 +4,6 @@
+ 
+ {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
+ 
+-#include "containers.h"
+-
+ -----------------------------------------------------------------------------
+ -- |
+ -- Module      :  Data.Word64Map.Strict.Internal
+diff --git a/compiler/GHC/Data/Word64Set.hs b/compiler/GHC/Data/Word64Set.hs
+index 81cfcbd4efbab00fc203a5da905c0c0ccd9abb11..3c5c047d948e339de596d0fc729ae0534a229b7a 100644
+--- a/compiler/GHC/Data/Word64Set.hs
++++ b/compiler/GHC/Data/Word64Set.hs
+@@ -3,8 +3,6 @@
+ {-# LANGUAGE Safe #-}
+ #endif
+ 
+-#include "containers.h"
+-
+ -----------------------------------------------------------------------------
+ -- |
+ -- Module      :  Data.Word64Set
+diff --git a/compiler/GHC/Data/Word64Set/Internal.hs b/compiler/GHC/Data/Word64Set/Internal.hs
+index b2df095adfb1f363ed0fdfebc1516c5b699b8106..569c312840a4bd8cadefb05a0e29210eef75d2c5 100644
+--- a/compiler/GHC/Data/Word64Set/Internal.hs
++++ b/compiler/GHC/Data/Word64Set/Internal.hs
+@@ -12,8 +12,6 @@
+ 
+ {-# OPTIONS_HADDOCK not-home #-}
+ 
+-#include "containers.h"
+-
+ -----------------------------------------------------------------------------
+ -- |
+ -- Module      :  Data.Word64Set.Internal
+diff --git a/compiler/GHC/Utils/Containers/Internal/BitUtil.hs b/compiler/GHC/Utils/Containers/Internal/BitUtil.hs
+index b7484cfc2e07b00b717e64f507aed0779c39f649..3d938b64e434ccdd4de7fbb0aa6c1651d911ee27 100644
+--- a/compiler/GHC/Utils/Containers/Internal/BitUtil.hs
++++ b/compiler/GHC/Utils/Containers/Internal/BitUtil.hs
+@@ -6,8 +6,6 @@
+ {-# LANGUAGE Safe #-}
+ #endif
+ 
+-#include "containers.h"
+-
+ -----------------------------------------------------------------------------
+ -- |
+ -- Module      :  Utils.Containers.Internal.BitUtil
+diff --git a/compiler/GHC/Utils/Containers/Internal/StrictPair.hs b/compiler/GHC/Utils/Containers/Internal/StrictPair.hs
+index 65d3780ef071f2b9fc2f4b3ff5502314f6426abd..9a2cf89ca20588c7ecd919072d328673f7888828 100644
+--- a/compiler/GHC/Utils/Containers/Internal/StrictPair.hs
++++ b/compiler/GHC/Utils/Containers/Internal/StrictPair.hs
+@@ -3,8 +3,6 @@
+ {-# LANGUAGE Safe #-}
+ #endif
+ 
+-#include "containers.h"
+-
+ -- | A strict pair
+ 
+ module GHC.Utils.Containers.Internal.StrictPair (StrictPair(..), toPair) where
