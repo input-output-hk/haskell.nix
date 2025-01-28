@@ -1,6 +1,7 @@
 { lib, config, pkgs, haskellLib, ... }:
 let
-  inherit (config) name version revision;
+  inherit (config) name version;
+  fullName = name + lib.optionalString (version != "latest") "-${version}";
 in {
   _file = "haskell.nix/modules/hackage-project.nix";
   options = {
@@ -11,9 +12,14 @@ in {
     };
   };
   config = {
-    cabalProject = ''
-      extra-packages: ${config.name}${lib.optionalString (config.version != "latest") "-${config.version}"}
-    '';
-    src = lib.mkDefault { outPath = pkgs.pkgsBuildBuild.runCommand "empty" {} "mkdir $out; touch $out/.not-completely-empty"; filterPath = { path, ... }: path; };
+    src = lib.mkDefault {
+      outPath =
+        pkgs.pkgsBuildBuild.runCommand "from-hackage-${fullName}" {} ''
+          mkdir $out
+          echo "extra-packages: ${fullName}" > $out/cabal.project
+        '';
+      # Disable git cleanSourceWith filtering
+      filterPath = { path, ... }: path;
+    };
   };
 }

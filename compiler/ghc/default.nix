@@ -290,7 +290,6 @@ let
           cd hadrian
         '';
       }];
-      cabalProject = builtins.readFile (src + "/hadrian/cabal.project");
       cabalProjectLocal = null;
       cabalProjectFreeze = null;
       src = haskell-nix.haskellLib.cleanSourceWith {
