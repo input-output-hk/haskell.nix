@@ -9,6 +9,7 @@
         deepseq.revision = hackage.deepseq."1.4.5.0".revisions.default;
         containers.revision = hackage.containers."0.6.4.1".revisions.default;
         array.revision = hackage.array."0.5.4.0".revisions.default;
+        happy.revision = import ./cabal-files/happy.nix;
         ghc-bignum.revision = hackage.ghc-bignum."1.1".revisions.default;
       };
       compiler = {
@@ -27,7 +28,7 @@
       };
     };
   extras = hackage:
-    { packages = { happy = ./.plan.nix/happy.nix; }; };
+    { packages = {}; };
   modules = [
     {
       preExistingPkgs = [
@@ -42,7 +43,7 @@
       ];
     }
     ({ lib, ... }:
-      { packages = { "happy" = { flags = {}; }; }; })
+      { packages = {}; })
     ({ lib, ... }:
       {
         packages = {

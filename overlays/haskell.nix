@@ -46,7 +46,7 @@ final: prev: {
 
         # All packages from Hackage as Nix expressions
         hackageSrc = sources.hackage;
-        hackage = import hackageSrc;
+        hackage = {}; # TODO remove completely
 
         # Contains the hashes of the cabal 01-index.tar.gz for given
         # index states.  Starting from April 1st 2019.
