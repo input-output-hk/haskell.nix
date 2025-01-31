@@ -59,11 +59,7 @@ let
 
 
   hoogleLocal = let
-    # Use hoogle.nix from at least nixpkgs 22.05
-    nixpkgs = if lib.versionAtLeast lib.trivial.release "22.05"
-      then pkgs.path
-      else pkgs.haskell-nix.sources.nixpkgs-2205;
-    nixpkgsHoogle = import (nixpkgs + /pkgs/development/haskell-modules/hoogle.nix);
+    nixpkgsHoogle = import "${pkgs.path}/pkgs/development/haskell-modules/hoogle.nix";
   in { packages ? [], hoogle }:
     let
       haskellPackages = {
