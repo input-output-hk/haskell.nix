@@ -1,34 +1,27 @@
-{ stdenv, lib, haskellLib, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
 let
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = import ./pkgs.nix;
-    pkg-def-extras = [{
-      pkga = ./.plan.nix/pkga.nix;
-      pkgb = ./.plan.nix/pkgb.nix;
-    }];
-    modules = [{
-      inherit evalPackages;
-    }];
+  project = project' {
+    inherit compiler-nix-name evalPackages;
+    src = testSrc "shell-for";
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    modules = [{ inherit evalPackages; }];
   };
 
-  env = pkgSet.config.hsPkgs.shellFor {
-    # Shell will provide the dependencies of pkga and pkgb, but not
-    # pkga and pkgb themselves.
+  packages = project.hsPkgs;
+
+  env = project.shellFor {
     packages = ps: with ps; [ pkga pkgb ];
-    # This adds cabal-install to the shell, which helps tests because
-    # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = {
       cabal.cabalProjectLocal = builtins.readFile ../cabal.project.local;
     };
     exactDeps = true;
-    # Avoid duplicate package issues when runghc looks for packages
     packageSetupDeps = false;
   };
 
-  envPkga = pkgSet.config.hsPkgs.shellFor {
+  envPkga = project.shellFor {
     # Shell will provide the dependencies of pkga
     packages = ps: with ps; [ pkga ];
     # This adds cabal-install to the shell, which helps tests because
@@ -41,7 +34,7 @@ let
     packageSetupDeps = false;
   };
 
-  envDefault = pkgSet.config.hsPkgs.shellFor {
+  envDefault = project.shellFor {
     # The default implementation of packages should use isLocal and the
     # result should be the same as:
     #   packages = ps: with ps; [ pkga pkgb ];
@@ -57,8 +50,10 @@ let
 in recurseIntoAttrs {
   # Does not work on ghcjs because it needs zlib.
   # Does not work on windows because it needs mintty.
-  meta.disabled = stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWindows || (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
-    || compiler-nix-name != ((import ./pkgs.nix).pkgs null).compiler.nix-name;
+  meta.disabled = stdenv.hostPlatform.isMusl
+    || stdenv.hostPlatform.isGhcjs
+    || stdenv.hostPlatform.isWindows
+    || (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64);
   inherit env envPkga envDefault;
   run = stdenv.mkDerivation {
     name = "shell-for-test";
@@ -67,7 +62,7 @@ in recurseIntoAttrs {
       ########################################################################
       # test shell-for with an example program
 
-      cp ${./pkgb/src}/*.hs .
+      cp ${testSrc "shell-for" + "/pkgb/src"}/*.hs .
 
       printf "checking that the shell env has the dependencies...\n" >& 2
       ${env.ghc}/bin/${env.ghc.targetPrefix}runghc conduit-test.hs
@@ -83,8 +78,7 @@ in recurseIntoAttrs {
     };
 
     passthru = {
-      # Used for debugging with nix repl
-      inherit pkgSet;
+      inherit project packages;
 
       # Used for testing externally with nix-shell (../tests.sh).
       inherit env envPkga envDefault;
