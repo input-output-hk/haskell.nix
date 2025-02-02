@@ -27,7 +27,7 @@ let
   #
   # Manually fetch nixpkgs
   nixpkgs =
-    with lock.nodes.nixpkgs.locked;
+    with lock.nodes.nixpkgs-unstable.locked;
     builtins.fetchTarball {
       url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
       sha256 = narHash;
