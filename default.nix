@@ -27,7 +27,7 @@ let
   #
   # Manually fetch nixpkgs
   nixpkgs =
-    with lock.nodes.nixpkgs.locked;
+    with lock.nodes.nixpkgs-unstable.locked;
     builtins.fetchTarball {
       url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
       sha256 = narHash;
@@ -92,6 +92,9 @@ self // {
     localSystem = { inherit system; };
   });
   pkgs-2405 = import self.inputs.nixpkgs-2405 (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
+  pkgs-2411 = import self.inputs.nixpkgs-2411 (nixpkgsArgs // {
     localSystem = { inherit system; };
   });
   pkgs-unstable = import self.inputs.nixpkgs-unstable (nixpkgsArgs // {

@@ -1088,9 +1088,6 @@ final: prev: {
             inherit (final) glibcLocales;
           } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
-            boot-alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;
-            boot-happy = final.buildPackages.haskell-nix.bootstrap.packages.happy;
-            boot-hscolour = final.buildPackages.haskell-nix.bootstrap.packages.hscolour;
             ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name};
             ghc-boot-packages-nix = final.recurseIntoAttrs
               final.ghc-boot-packages-nix.${compiler-nix-name};

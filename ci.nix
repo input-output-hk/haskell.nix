@@ -18,11 +18,7 @@
 
   # short names for nixpkgs versions
   nixpkgsVersions = {
-    "R2205" = inputs.nixpkgs-2205;
-    "R2211" = inputs.nixpkgs-2211;
-    "R2305" = inputs.nixpkgs-2305;
-    "R2311" = inputs.nixpkgs-2311;
-    "R2405" = inputs.nixpkgs-2405;
+    "R2411" = inputs.nixpkgs-2411;
     "unstable" = inputs.nixpkgs-unstable;
   };
 
@@ -61,13 +57,11 @@
       # cabal-install and nix-tools plans.  When removing a ghc version
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
-      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2405") {
-        ghc96 = false;
-        ghc98 = false;
+      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2411") {
+        # TODO perhaps these
+        # ghc96 = false;
+        # ghc98 = false;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
-        ghc810 = true;
-        ghc92 = false;
-        ghc94 = false;
         ghc96 = true;
         ghc98 = true;
         ghc98llvm = false;
@@ -91,7 +85,7 @@
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (
          (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928"]) # Including GHC HEAD here because the patches for rts/RtsSymbols.c no longer apply and mingwW64 GHC build fails without them
+      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc966"]) # Not sure why GHC 9.6.6 TH code now wants `log1pf`
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
