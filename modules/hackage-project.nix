@@ -14,7 +14,7 @@ in {
   config = {
     src = lib.mkDefault {
       outPath =
-        pkgs.pkgsBuildBuild.runCommand "from-hackage-${fullName}" {} ''
+        config.evalPackages.runCommand "from-hackage-${fullName}" {} ''
           mkdir $out
           echo "extra-packages: ${fullName}" > $out/cabal.project
         '';
