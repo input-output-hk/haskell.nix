@@ -4,6 +4,7 @@
       packages = {
         ghc-prim.revision = hackage.ghc-prim."0.10.0".revisions.default;
         base.revision = hackage.base."4.18.2.0".revisions.default;
+        hscolour.revision = import ./cabal-files/hscolour.nix;
         ghc-boot-th.revision = hackage.ghc-boot-th."9.6.4".revisions.default;
         pretty.revision = hackage.pretty."1.1.3.6".revisions.default;
         template-haskell.revision = hackage.template-haskell."2.20.0.0".revisions.default;
@@ -29,7 +30,7 @@
       };
     };
   extras = hackage:
-    { packages = { hscolour = ./.plan.nix/hscolour.nix; }; };
+    { packages = {}; };
   modules = [
     {
       preExistingPkgs = [
@@ -45,7 +46,7 @@
       ];
     }
     ({ lib, ... }:
-      { packages = { "hscolour" = { flags = {}; }; }; })
+      { packages = {}; })
     ({ lib, ... }:
       {
         packages = {
