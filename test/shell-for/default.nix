@@ -16,6 +16,7 @@ let
     packages = ps: with ps; [ pkga pkgb ];
     tools = {
       cabal.cabalProjectLocal = builtins.readFile ../cabal.project.local;
+      hoogle.cabalProjectLocal = builtins.readFile ../cabal.project.local;
     };
     exactDeps = true;
     packageSetupDeps = false;
