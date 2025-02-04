@@ -1,4 +1,4 @@
-{ stackProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, stackProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 let
   project = stackProject' {
