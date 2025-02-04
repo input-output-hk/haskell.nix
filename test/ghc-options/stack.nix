@@ -20,7 +20,7 @@ let
 
 in recurseIntoAttrs {
   # This test is somehow broken for ghcjs
-  meta.disabled = stdenv.hostPlatform.isGhcjs || compiler-nix-name != "ghc865";
+  meta.disabled = stdenv.hostPlatform.isGhcjs || compiler-nix-name != "ghc984";
 
   ifdInputs = {
     inherit (project) stack-nix;
