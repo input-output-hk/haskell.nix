@@ -82,7 +82,7 @@ in recurseIntoAttrs ({
         fi
       }
 
-      ${concatStringsSep "\n" (map (project: ''
+      ${let check = project: inplaceSuffix: ''
         pkga_basedir="${project.hsPkgs.pkga.coverageReport}/share/hpc/vanilla"
         findFileExistsNonEmpty $pkga_basedir/mix/pkga-0.1.0.0* "PkgA.mix"
         dirExists "$pkga_basedir/tix/pkga-0.1.0.0"
@@ -106,19 +106,23 @@ in recurseIntoAttrs ({
 
         project_basedir="${project.projectCoverageReport}/share/hpc/vanilla"
         fileExistsNonEmpty "$project_basedir/html/index.html"
-        dirExists "$project_basedir/html/pkga-0.1.0.0-inplace"
-        dirExists "$project_basedir/html/pkgb-0.1.0.0-inplace"
+        dirExists "$project_basedir/html/pkga-0.1.0.0${inplaceSuffix}"
+        dirExists "$project_basedir/html/pkgb-0.1.0.0${inplaceSuffix}"
         findFileExistsNonEmpty "$project_basedir/mix/" "PkgA.mix"
         findFileExistsNonEmpty "$project_basedir/mix/" "PkgB.mix"
         findFileExistsNonEmpty "$project_basedir/mix/" "ConduitExample.mix"
         dirExists "$project_basedir/tix/all"
         fileExistsNonEmpty "$project_basedir/tix/all/all.tix"
-        dirExists "$project_basedir/tix/pkga-0.1.0.0-inplace"
-        dirExists "$project_basedir/tix/pkgb-0.1.0.0-inplace"
-        fileExistsNonEmpty "$project_basedir/tix/pkgb-0.1.0.0-inplace/pkgb-0.1.0.0-inplace.tix"
+        dirExists "$project_basedir/tix/pkga-0.1.0.0${inplaceSuffix}"
+        dirExists "$project_basedir/tix/pkgb-0.1.0.0${inplaceSuffix}"
+        fileExistsNonEmpty "$project_basedir/tix/pkgb-0.1.0.0${inplaceSuffix}/pkgb-0.1.0.0${inplaceSuffix}.tix"
         dirExists "$project_basedir/tix/pkgb-test-tests${crossSuffix}-0.1.0.0-check${crossSuffix}"
         fileExistsNonEmpty "$project_basedir/tix/pkgb-test-tests${crossSuffix}-0.1.0.0-check${crossSuffix}/tests${exeExt}.tix"
-      '') ([cabalProj] ++ optional (compiler-nix-name == "ghc984") stackProj))}
+      '';
+      in ''
+        ${check cabalProj "-inplace"}
+        ${optionalString (compiler-nix-name == "ghc984") (check stackProj "")}
+      ''}
 
       touch $out
     '';
