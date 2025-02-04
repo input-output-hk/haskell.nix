@@ -29,6 +29,7 @@ let
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = {
       cabal.cabalProjectLocal = builtins.readFile ../cabal.project.local;
+      hoogle.cabalProjectLocal = builtins.readFile ../cabal.project.local;
     };
     exactDeps = true;
     # Avoid duplicate package issues when runghc looks for packages
@@ -43,6 +44,7 @@ let
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = {
       cabal.cabalProjectLocal = builtins.readFile ../cabal.project.local;
+      hoogle.cabalProjectLocal = builtins.readFile ../cabal.project.local;
     };
     # Avoid duplicate package issues when runghc looks for packages
     packageSetupDeps = false;
