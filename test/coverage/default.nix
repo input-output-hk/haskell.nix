@@ -6,7 +6,6 @@ let
   projectArgs = {
     inherit evalPackages;
     src = testSrc "coverage";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
     modules = [{
       # Coverage
       packages.pkga.components.library.doCoverage = true;
@@ -16,7 +15,10 @@ let
 
   # We can easily select a different compiler when using cabal,
   # but for stack we would need a different resolver to be used..
-  cabalProj = (cabalProject' (projectArgs // { inherit compiler-nix-name; }));
+  cabalProj = (cabalProject' (projectArgs // {
+    inherit compiler-nix-name;
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
+  }));
   stackProj = (stackProject' projectArgs);
 
   exeExt = stdenv.hostPlatform.extensions.executable;
