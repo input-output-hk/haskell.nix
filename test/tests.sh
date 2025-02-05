@@ -1,5 +1,5 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -I "nixpkgs=channel:nixos-22.11" -i bash -p bash jq nix gnused
+#! nix-shell -I "nixpkgs=channel:nixos-24.11" -i bash -p bash jq nix gnused
 
 set -euo pipefail
 
