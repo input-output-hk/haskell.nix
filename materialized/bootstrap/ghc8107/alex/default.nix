@@ -3,6 +3,8 @@
     {
       packages = {
         ghc-prim.revision = hackage.ghc-prim."0.6.1".revisions.default;
+        alex.revision = import ./cabal-files/alex.nix;
+        alex.flags.small_base = true;
         time.revision = hackage.time."1.9.3".revisions.default;
         base.revision = hackage.base."4.14.3.0".revisions.default;
         unix.revision = hackage.unix."2.7.2.2".revisions.default;
@@ -33,7 +35,7 @@
       };
     };
   extras = hackage:
-    { packages = { alex = ./.plan.nix/alex.nix; }; };
+    { packages = {}; };
   modules = [
     {
       preExistingPkgs = [
@@ -51,11 +53,7 @@
       ];
     }
     ({ lib, ... }:
-      {
-        packages = {
-          "alex" = { flags = { "small_base" = lib.mkOverride 900 true; }; };
-        };
-      })
+      { packages = {}; })
     ({ lib, ... }:
       {
         packages = {

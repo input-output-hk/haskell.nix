@@ -2,7 +2,7 @@
 # versions of macOS (one of the tests fails validating signatures
 # in `/usr/bin`).
 final: prev: {
-  rcodesign = prev.rcodesign.override (old: {
+  rcodesign = prev.rcodesign.override (old: final.lib.optionalAttrs (prev.rcodesign.version == "0.22.0") {
     rustPlatform = old.rustPlatform // {
       buildRustPackage = args: old.rustPlatform.buildRustPackage (args // {
         version = "0.27.0";

@@ -1,4 +1,4 @@
-name: "Run tests with ghc8107"
+name: "Run tests with ghc966"
 
 on:
   pull_request:
@@ -22,120 +22,120 @@ jobs:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Run tests with ghc8107: Running the nix-build tests..."
-        run: "./test/tests.sh ghc8107 nix-build"
+      - name: "Run tests with ghc966: Running the nix-build tests..."
+        run: "./test/tests.sh ghc966 nix-build"
 
   unit-tests:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Run tests with ghc8107: Running the unit tests..."
-        run: "./test/tests.sh ghc8107 unit-tests"
+      - name: "Run tests with ghc966: Running the unit tests..."
+        run: "./test/tests.sh ghc966 unit-tests"
 
   runghc:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Run tests with ghc8107: Checking that a nix-shell works for runghc..."
-        run: "./test/tests.sh ghc8107 runghc"
+      - name: "Run tests with ghc966: Checking that a nix-shell works for runghc..."
+        run: "./test/tests.sh ghc966 runghc"
 
   cabal:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Run tests with ghc8107: Checking that a nix-shell works for cabal..."
-        run: "./test/tests.sh ghc8107 cabal"
+      - name: "Run tests with ghc966: Checking that a nix-shell works for cabal..."
+        run: "./test/tests.sh ghc966 cabal"
 
   cabal-doExactConfig:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Run tests with ghc8107: Checking that a nix-shell works for cabal (doExactConfig component)..."
-        run: "./test/tests.sh ghc8107 cabal-doExactConfig"
+      - name: "Run tests with ghc966: Checking that a nix-shell works for cabal (doExactConfig component)..."
+        run: "./test/tests.sh ghc966 cabal-doExactConfig"
 
   tests-benchmarks:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Run tests with ghc8107: Checking that a nix-shell works for a project with test-suite build-tools and benchmarks..."
-        run: "./test/tests.sh ghc8107 tests-benchmarks"
+      - name: "Run tests with ghc966: Checking that a nix-shell works for a project with test-suite build-tools and benchmarks..."
+        run: "./test/tests.sh ghc966 tests-benchmarks"
 
   multi-target:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Run tests with ghc8107: Checking that a nix-shell works for a multi-target project..."
-        run: "./test/tests.sh ghc8107 multi-target"
+      - name: "Run tests with ghc966: Checking that a nix-shell works for a multi-target project..."
+        run: "./test/tests.sh ghc966 multi-target"
 
   shellFor-single-package:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Run tests with ghc8107: Checking shellFor works for a cabal project, multiple packages..."
-        run: "./test/tests.sh ghc8107 shellFor-single-package"
+      - name: "Run tests with ghc966: Checking shellFor works for a cabal project, multiple packages..."
+        run: "./test/tests.sh ghc966 shellFor-single-package"
 
   shellFor-multiple-package:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Run tests with ghc8107: Checking shellFor works for a cabal project, single package...y"
-        run: "./test/tests.sh ghc8107 shellFor-multiple-package"
+      - name: "Run tests with ghc966: Checking shellFor works for a cabal project, single package...y"
+        run: "./test/tests.sh ghc966 shellFor-multiple-package"
 
   shellFor-hoogle:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Run tests with ghc8107: Checking shellFor works for a cabal project, single package..."
-        run: "./test/tests.sh ghc8107 shellFor-hoogle"
+      - name: "Run tests with ghc966: Checking shellFor works for a cabal project, single package..."
+        run: "./test/tests.sh ghc966 shellFor-hoogle"
 
   shellFor-not-depends:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Run tests with ghc8107: Checking shellFor does not depend on given packages...y"
-        run: "./test/tests.sh ghc8107 shellFor-not-depends"
+      - name: "Run tests with ghc966: Checking shellFor does not depend on given packages...y"
+        run: "./test/tests.sh ghc966 shellFor-not-depends"
 
   maintainer-scripts:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Run tests with ghc8107: Checking the maintainer scripts...y"
-        run: "./test/tests.sh ghc8107 maintainer-scripts"
+      - name: "Run tests with ghc966: Checking the maintainer scripts...y"
+        run: "./test/tests.sh ghc966 maintainer-scripts"
 
   plan-extra-hackages:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Run tests with ghc8107: Checking that plan construction works with extra Hackages..."
-        run: "./test/tests.sh ghc8107 plan-extra-hackages"
+      - name: "Run tests with ghc966: Checking that plan construction works with extra Hackages..."
+        run: "./test/tests.sh ghc966 plan-extra-hackages"
 
   build-extra-hackages:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Run tests with ghc8107: Checking that package with extra Hackages can be build..."
-        run: "./test/tests.sh ghc8107 build-extra-hackages"
+      - name: "Run tests with ghc966: Checking that package with extra Hackages can be build..."
+        run: "./test/tests.sh ghc966 build-extra-hackages"
 
   hix:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Run tests with ghc8107: End-2-end test of hix project initialization and flakes development shell ..."
-        run: "./test/tests.sh ghc8107 hix"
+      - name: "Run tests with ghc966: End-2-end test of hix project initialization and flakes development shell ..."
+        run: "./test/tests.sh ghc966 hix"
 
 #  template:
 #    runs-on: [self-hosted, linux]
 #    steps:
 #      - uses: actions/checkout@v4
-#      - name: "Run tests with ghc8107: End-2-end test of hix project initialization and flakes development shell ..."
-#        run: "./test/tests.sh ghc8107 template"
+#      - name: "Run tests with ghc966: End-2-end test of hix project initialization and flakes development shell ..."
+#        run: "./test/tests.sh ghc966 template"
 
   docs:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
       - name: "Test examples in documentation ..."
-        run: "./test/tests.sh ghc8107 docs"
+        run: "./test/tests.sh ghc966 docs"
 
   hydra-ifdLevel-0-and-1:
     runs-on: [self-hosted, linux]
@@ -178,9 +178,9 @@ jobs:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
-      - name: "Check closure size with ghc8107"
+      - name: "Check closure size with ghc966"
         run: |
-          nix-build build.nix -A maintainer-scripts.check-closure-size --argstr compiler-nix-name ghc8107 -o check-closure-size.sh
+          nix-build build.nix -A maintainer-scripts.check-closure-size --argstr compiler-nix-name ghc966 -o check-closure-size.sh
           echo "+++ Closure size (MB)"
           ./check-closure-size.sh
 
@@ -208,7 +208,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: "Make sure non store paths like can be used as src"
         run: |
-          nix-build build.nix -A maintainer-scripts.check-path-support --argstr compiler-nix-name ghc8107 -o check-path-support.sh
+          nix-build build.nix -A maintainer-scripts.check-path-support --argstr compiler-nix-name ghc966 -o check-path-support.sh
           ./check-path-support.sh
 
   haskell-nix-roots-do-not-require-IFDs:
@@ -218,12 +218,12 @@ jobs:
       - name: "Check that the haskell.nix roots do not require IFDs"
         run: nix build .#roots.x86_64-linux --accept-flake-config --option allow-import-from-derivation false
 
-  hydra-without-remote-builders-ghc8107:
+  hydra-without-remote-builders-ghc966:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
       - name: "Check that evaluation of hydra jobs works without using remote builders for GHC 8.10.7"
-        run: nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc8107-native --show-trace --builders ''
+        run: nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc966-native --show-trace --builders ''
 
   hydra-without-remote-builders-ghc9101:
     runs-on: [self-hosted, linux]

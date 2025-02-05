@@ -10,6 +10,8 @@
         integer-gmp.revision = hackage.integer-gmp."1.0.3.0".revisions.default;
         containers.revision = hackage.containers."0.6.5.1".revisions.default;
         array.revision = hackage.array."0.5.4.0".revisions.default;
+        happy.revision = import ./cabal-files/happy.nix;
+        happy.flags.small_base = true;
       };
       compiler = {
         version = "8.10.7";
@@ -27,7 +29,7 @@
       };
     };
   extras = hackage:
-    { packages = { happy = ./.plan.nix/happy.nix; }; };
+    { packages = {}; };
   modules = [
     {
       preExistingPkgs = [
@@ -42,11 +44,7 @@
       ];
     }
     ({ lib, ... }:
-      {
-        packages = {
-          "happy" = { flags = { "small_base" = lib.mkOverride 900 true; }; };
-        };
-      })
+      { packages = {}; })
     ({ lib, ... }:
       {
         packages = {
