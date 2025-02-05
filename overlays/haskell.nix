@@ -23,11 +23,6 @@ final: prev: {
         # here and be explicit about imports and dependencies.
         callPackage = prev.lib.callPackageWith (final // final.haskell-nix);
 
-        # You can provide different pins for hackage.nix and stackage.nix if required.
-        # It's also possible to override these sources with NIX_PATH.
-        hackageSourceJSON = ../hackage-src.json;
-        stackageSourceJSON = ../stackage-src.json;
-
         # ghc hackage patches.
         # these are patches that turn hackage packages into the same as the ones
         # ghc ships with the supposedly same version. See GHC Track Issue: 16199
@@ -47,7 +42,7 @@ final: prev: {
         # All packages from Hackage as Nix expressions
         hackageSrc = sources.hackage;
         # The only stack projects need hackage.nix now
-        hackageForStack = import hackageSrc;
+        hackageForStack = import sources.hackage-for-stackage;
 
         # Contains the hashes of the cabal 01-index.tar.gz for given
         # index states.  Starting from April 1st 2019.
