@@ -7,12 +7,8 @@
         transformers.revision = hackage.transformers."0.5.6.2".revisions.default;
         time.revision = hackage.time."1.9.3".revisions.default;
         hackage-security.revision = import ./cabal-files/hackage-security.nix;
-        hackage-security.flags.base48 = true;
-        hackage-security.flags.mtl21 = false;
         hackage-security.flags.cabal-syntax = true;
         hackage-security.flags.lukko = true;
-        hackage-security.flags.old-directory = false;
-        hackage-security.flags.use-network-uri = true;
         base.revision = hackage.base."4.14.3.0".revisions.default;
         base64-bytestring.revision = import ./cabal-files/base64-bytestring.nix;
         splitmix.revision = import ./cabal-files/splitmix.nix;
@@ -24,6 +20,7 @@
         hashable.revision = import ./cabal-files/hashable.nix;
         hashable.flags.random-initial-seed = false;
         hashable.flags.integer-gmp = true;
+        hashable.flags.arch-native = false;
         Cabal-syntax.revision = import ./cabal-files/Cabal-syntax.nix;
         data-array-byte.revision = import ./cabal-files/data-array-byte.nix;
         process.revision = import ./cabal-files/process.nix;
@@ -45,6 +42,9 @@
         lukko.revision = import ./cabal-files/lukko.nix;
         lukko.flags.ofd-locking = true;
         containers.revision = hackage.containers."0.6.5.1".revisions.default;
+        cabal-install.revision = import ./cabal-files/cabal-install.nix;
+        cabal-install.flags.lukko = true;
+        cabal-install.flags.native-dns = true;
         array.revision = hackage.array."0.5.4.0".revisions.default;
         echo.revision = import ./cabal-files/echo.nix;
         echo.flags.example = false;
@@ -115,7 +115,7 @@
       };
     };
   extras = hackage:
-    { packages = { cabal-install = ./.plan.nix/cabal-install.nix; }; };
+    { packages = {}; };
   modules = [
     {
       preExistingPkgs = [
@@ -143,16 +143,7 @@
       ];
     }
     ({ lib, ... }:
-      {
-        packages = {
-          "cabal-install" = {
-            flags = {
-              "lukko" = lib.mkOverride 900 true;
-              "native-dns" = lib.mkOverride 900 true;
-            };
-          };
-        };
-      })
+      { packages = {}; })
     ({ lib, ... }:
       {
         packages = {

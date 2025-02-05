@@ -1,5 +1,5 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -I "nixpkgs=channel:nixos-22.11" -i bash -p bash jq nix gnused
+#! nix-shell -I "nixpkgs=channel:nixos-24.11" -i bash -p bash jq nix gnused
 
 set -euo pipefail
 
@@ -107,7 +107,7 @@ fi
 
 # These tests still use manually generated `pkgs`.  They were left that way
 # so that we would still be testing that workflow.
-SHELL_FOR_GHC="ghc8107"
+SHELL_FOR_GHC="ghc966"
 if [ "$TESTS" == "shellFor-single-package" ] || [ "$TESTS" == "all" ]; then
   printf "*** Checking shellFor works for a cabal project, multiple packages...\n" >& 2
   nix-shell $NIX_BUILD_ARGS \

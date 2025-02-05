@@ -4,6 +4,7 @@
       packages = {
         ghc-prim.revision = hackage.ghc-prim."0.6.1".revisions.default;
         base.revision = hackage.base."4.14.3.0".revisions.default;
+        hscolour.revision = import ./cabal-files/hscolour.nix;
         deepseq.revision = hackage.deepseq."1.4.4.0".revisions.default;
         integer-gmp.revision = hackage.integer-gmp."1.0.3.0".revisions.default;
         containers.revision = hackage.containers."0.6.5.1".revisions.default;
@@ -23,7 +24,7 @@
       };
     };
   extras = hackage:
-    { packages = { hscolour = ./.plan.nix/hscolour.nix; }; };
+    { packages = {}; };
   modules = [
     {
       preExistingPkgs = [
@@ -36,7 +37,7 @@
       ];
     }
     ({ lib, ... }:
-      { packages = { "hscolour" = { flags = {}; }; }; })
+      { packages = {}; })
     ({ lib, ... }:
       {
         packages = {

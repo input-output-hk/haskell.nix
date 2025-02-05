@@ -1,6 +1,8 @@
 final: prev:
 let
-    buildBootstrapper.compilerNixName = "ghc8107";
+    buildBootstrapper.compilerNixName =
+      if final.buildPackages.haskell.compiler ? ghc964 then "ghc964"
+      else "ghc8107";
     latestVerMap = {
       "8.10" = "8.10.7";
       "9.0" = "9.0.2";
@@ -25,7 +27,7 @@ let
           (builtins.attrNames latestVerMap));
     traceWarnOld = v: x:
       let
-        bootstrapGhc = final.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
+        bootstrapGhc = final.buildPackages.haskell.compiler.ghc8107;
       in
       if builtins.compareVersions x.version bootstrapGhc.version < 0 then
           throw "Desired GHC (${x.version}) is older than the bootstrap GHC (${bootstrapGhc.version}) for this platform (${final.stdenv.targetPlatform.config})."
@@ -45,18 +47,22 @@ in {
                 ghc = final.buildPackages.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
                 inherit (final.haskell-nix.bootstrap.packages) alex happy hscolour;
             };
+            # ghc 9.0.2 is no longer cached for nixpkgs-unstable and it seems to be broken
+            nixpkgsBootCompiler =
+              if final.buildPackages.haskell.compiler ? ghc964 then "ghc964"
+              else "ghc902";
             bootPkgsGhc94 = bootPkgs // {
-                alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" {
+                alex = final.buildPackages.haskell-nix.tool nixpkgsBootCompiler "alex" {
                   compilerSelection = p: p.haskell.compiler;
                   version = "3.2.7.1";
                   index-state = final.haskell-nix.internalHackageIndexState;
-                  materialized = ../materialized/alex-3.2.7.1;
+                  materialized = ../materialized/alex-3.2.7.1/${nixpkgsBootCompiler};
                 };
-                happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" {
+                happy = final.buildPackages.haskell-nix.tool nixpkgsBootCompiler "happy" {
                   compilerSelection = p: p.haskell.compiler;
                   version = "1.20.0";
                   index-state = final.haskell-nix.internalHackageIndexState;
-                  materialized = ../materialized/happy-1.20.0;
+                  materialized = ../materialized/happy-1.20.0/${nixpkgsBootCompiler};
                 };
             };
             sphinx = final.buildPackages.sphinx;
@@ -303,6 +309,9 @@ in {
 
                 # See https://gitlab.haskell.org/ghc/ghc/-/merge_requests/13709
                 ++ fromUntil "9.8.4" "9.8.5" ./patches/ghc/ghc-9.8.4-remove-unused-containers-h-include13709.diff
+
+                # See https://gitlab.haskell.org/ghc/ghc/-/merge_requests/12586
+                ++ onWindows (fromUntil "9.6.6" "9.12" ./patches/ghc/ghc-win32-io-manager-compilation.patch)
                 ;
         in ({
             ghc8107 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
@@ -916,9 +925,10 @@ in {
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc9101
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc984
-                          or final.buildPackages.buildPackages.haskell.compiler.ghc983
-                          or final.buildPackages.buildPackages.haskell.compiler.ghc982
+                    else # GHC 9.10.1 does not seem to build with ghc 9.8.4
+                         # final.buildPackages.buildPackages.haskell.compiler.ghc984
+                         # or final.buildPackages.buildPackages.haskell.compiler.ghc983
+                             final.buildPackages.buildPackages.haskell.compiler.ghc982
                           or final.buildPackages.buildPackages.haskell.compiler.ghc981
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
@@ -1115,34 +1125,24 @@ in {
     # hence we'll use 844 for bootstrapping for now.
 
     # the bootstrap infrastructure (pre-compiled ghc; bootstrapped cabal-install, ...)
-    bootstrap =
-      let
-        # This compiler-nix-name will only be used to build nix-tools and cabal-install
-        # when checking materialization of alex, happy and hscolour.
-        compiler-nix-name = buildBootstrapper.compilerNixName;
-        # The ghc boot compiler to use to compile alex, happy and hscolour
-        ghcOverride = final.buildPackages.haskell-nix.bootstrap.compiler.${compiler-nix-name};
-        index-state = final.haskell-nix.internalHackageIndexState;
-      in {
-        compiler = final.haskell.compiler;
-        packages = {
+    bootstrap.packages = {
             # now that we have nix-tools and hpack, we can just
             # use `hackage-package` to build any package from
             # hackage with haskell.nix.  For alex and happy we
             # need to use the boot strap compiler as we need them
             # to build ghcs from source.
-            alex = final.haskell-nix.tool buildBootstrapper.compilerNixName "alex" ({config, pkgs, ...}: {
+            alex = final.haskell-nix.tool "ghc8107" "alex" ({config, pkgs, ...}: {
                 compilerSelection = p: p.haskell.compiler;
                 version = "3.2.4";
-                inherit ghcOverride index-state;
-                materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
+                index-state = final.haskell-nix.internalHackageIndexState;
+                materialized = ../materialized/bootstrap/ghc8107/alex;
             });
-            happy = final.haskell-nix.tool buildBootstrapper.compilerNixName "happy"
+            happy = final.haskell-nix.tool "ghc8107" "happy"
               ({config, pkgs, ...}: {
                 compilerSelection = p: p.haskell.compiler;
                 version = "1.19.12";
-                inherit ghcOverride index-state;
-                materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-1.19.12";
+                index-state = final.haskell-nix.internalHackageIndexState;
+                materialized = ../materialized/bootstrap/ghc8107/happy-1.19.12;
               });
             hscolour = (final.haskell-nix.hackage-package
               ({config, pkgs, ...}: {
@@ -1150,10 +1150,9 @@ in {
                 compiler-nix-name = buildBootstrapper.compilerNixName;
                 name = "hscolour";
                 version = "1.24.4";
-                inherit ghcOverride index-state;
+                index-state = final.haskell-nix.internalHackageIndexState;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/hscolour";
             })).getComponent "exe:HsColour";
-        };
     };
   };
 }

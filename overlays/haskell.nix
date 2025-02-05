@@ -23,11 +23,6 @@ final: prev: {
         # here and be explicit about imports and dependencies.
         callPackage = prev.lib.callPackageWith (final // final.haskell-nix);
 
-        # You can provide different pins for hackage.nix and stackage.nix if required.
-        # It's also possible to override these sources with NIX_PATH.
-        hackageSourceJSON = ../hackage-src.json;
-        stackageSourceJSON = ../stackage-src.json;
-
         # ghc hackage patches.
         # these are patches that turn hackage packages into the same as the ones
         # ghc ships with the supposedly same version. See GHC Track Issue: 16199
@@ -46,7 +41,8 @@ final: prev: {
 
         # All packages from Hackage as Nix expressions
         hackageSrc = sources.hackage;
-        hackage = import hackageSrc;
+        # The only stack projects need hackage.nix now
+        hackageForStack = import sources.hackage-for-stackage;
 
         # Contains the hashes of the cabal 01-index.tar.gz for given
         # index states.  Starting from April 1st 2019.
@@ -70,6 +66,7 @@ final: prev: {
             , pkg-def-extras ? [] # Additional packages to augment the Base package set `pkg-def` with.
             , modules ? []
             , extra-hackages ? [] # Extra Hackage repositories to use besides main one.
+            , hackage
             }@args:
 
             let
@@ -131,6 +128,7 @@ final: prev: {
                 modules = [ { doExactConfig = true; } patchesModule ]
                        ++ modules
                        ++ map removeStackSpecial (stack-pkgs.modules or []);
+                hackage = hackageForStack;
             };
 
         # Create a Haskell package set based on a Cabal configuration.
@@ -163,6 +161,7 @@ final: prev: {
                        ++ modules
                        ++ plan-pkgs.modules or [];
                 inherit extra-hackages;
+                hackage = {};
             };
 
         # Package sets for all stackage snapshots.
@@ -1088,9 +1087,6 @@ final: prev: {
             inherit (final) glibcLocales;
           } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
-            boot-alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;
-            boot-happy = final.buildPackages.haskell-nix.bootstrap.packages.happy;
-            boot-hscolour = final.buildPackages.haskell-nix.bootstrap.packages.hscolour;
             ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name};
             ghc-boot-packages-nix = final.recurseIntoAttrs
               final.ghc-boot-packages-nix.${compiler-nix-name};

@@ -8,7 +8,7 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "th-dlls";
     cabalProjectLocal = builtins.readFile ../cabal.project.local;
-    modules = [({pkgs, ...}: lib.optionalAttrs externalInterpreter {
+    modules = import ../modules.nix ++ [({pkgs, ...}: lib.optionalAttrs externalInterpreter {
       packages.th-dlls.components.library.ghcOptions = [ "-fexternal-interpreter" ];
       # Static openssl seems to fail to load in iserv for musl
       packages.HsOpenSSL.components.library.libs = lib.optional pkgs.stdenv.hostPlatform.isMusl (pkgs.openssl.override { static = false; });
@@ -37,7 +37,7 @@ in recurseIntoAttrs {
   build-ei = packages-ei.th-dlls.components.library;
   just-template-haskell-ei = packages-ei.th-dlls.components.exes.just-template-haskell;
 } // optionalAttrs
-    (!(builtins.elem compiler-nix-name ["ghc984" "ghc9121" "ghc912120241215"]  && stdenv.buildPlatform.isx86_64 && stdenv.hostPlatform.isAarch64)) {
+    (!(builtins.elem compiler-nix-name ["ghc984" "ghc9121" "ghc912120241215" "ghc91320241230"]  && stdenv.buildPlatform.isx86_64 && stdenv.hostPlatform.isAarch64)) {
   # On for aarch64 cross compile on GHC this test is fails sometimes for non profiled builds
   # (and always for the profiled builds).
   # This may be related to the memory allocation changes made in 9.8.4 that
