@@ -3,11 +3,6 @@
 
   inputs = {
     nixpkgs.follows = "nixpkgs-unstable";
-    nixpkgs-2003 = { url = "github:NixOS/nixpkgs/nixpkgs-20.03-darwin"; };
-    nixpkgs-2105 = { url = "github:NixOS/nixpkgs/nixpkgs-21.05-darwin"; };
-    nixpkgs-2111 = { url = "github:NixOS/nixpkgs/nixpkgs-21.11-darwin"; };
-    nixpkgs-2205 = { url = "github:NixOS/nixpkgs/nixpkgs-22.05-darwin"; };
-    nixpkgs-2211 = { url = "github:NixOS/nixpkgs/nixpkgs-22.11-darwin"; };
     nixpkgs-2305 = { url = "github:NixOS/nixpkgs/nixpkgs-23.05-darwin"; };
     nixpkgs-2311 = { url = "github:NixOS/nixpkgs/nixpkgs-23.11-darwin"; };
     nixpkgs-2405 = { url = "github:NixOS/nixpkgs/nixpkgs-24.05-darwin"; };
@@ -26,6 +21,10 @@
     "hls-2.9" = { url = "github:haskell/haskell-language-server/2.9.0.1"; flake = false; };
     hackage = {
       url = "github:input-output-hk/hackage.nix";
+      flake = false;
+    };
+    hackage-for-stackage = {
+      url = "github:input-output-hk/hackage.nix/for-stackage";
       flake = false;
     };
     stackage = {
