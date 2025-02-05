@@ -12,7 +12,7 @@ with lib;
 let
   # Grab the compiler name from stack-to-nix output.
   # compiler = (stack-pkgs.extras {}).compiler.nix-name;
-  compiler = "ghc865";  # fixme
+  compiler = "ghc984";  # fixme
 
   # IFD stack-to-nix
   project = { gpl ? true }: stackProject' {
@@ -31,7 +31,7 @@ let
   packagesIntegerSimple = (project { gpl = false; }).hsPkgs;
 
 in recurseIntoAttrs {
-  meta.disabled = stdenv.hostPlatform.isGhcjs || compiler-nix-name != "ghc865";
+  meta.disabled = stdenv.hostPlatform.isGhcjs || compiler-nix-name != compiler;
 
   ifdInputs = {
     stack-nix-gmp = (project { gpl = true; }).stack-nix;

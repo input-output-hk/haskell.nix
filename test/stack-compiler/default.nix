@@ -8,7 +8,7 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  meta.disabled = compiler-nix-name != "ghc947";
+  meta.disabled = compiler-nix-name != "ghc9101";
   ifdInputs = {
     inherit (project) stack-nix;
   };

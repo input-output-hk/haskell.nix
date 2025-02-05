@@ -46,7 +46,8 @@ final: prev: {
 
         # All packages from Hackage as Nix expressions
         hackageSrc = sources.hackage;
-        hackage = import hackageSrc;
+        # The only stack projects need hackage.nix now
+        hackageForStack = import hackageSrc;
 
         # Contains the hashes of the cabal 01-index.tar.gz for given
         # index states.  Starting from April 1st 2019.
@@ -70,6 +71,7 @@ final: prev: {
             , pkg-def-extras ? [] # Additional packages to augment the Base package set `pkg-def` with.
             , modules ? []
             , extra-hackages ? [] # Extra Hackage repositories to use besides main one.
+            , hackage
             }@args:
 
             let
@@ -131,6 +133,7 @@ final: prev: {
                 modules = [ { doExactConfig = true; } patchesModule ]
                        ++ modules
                        ++ map removeStackSpecial (stack-pkgs.modules or []);
+                hackage = hackageForStack;
             };
 
         # Create a Haskell package set based on a Cabal configuration.
@@ -163,6 +166,7 @@ final: prev: {
                        ++ modules
                        ++ plan-pkgs.modules or [];
                 inherit extra-hackages;
+                hackage = {};
             };
 
         # Package sets for all stackage snapshots.
