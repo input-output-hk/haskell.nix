@@ -284,6 +284,8 @@ in {
 
                 # See https://gitlab.haskell.org/ghc/ghc/-/merge_requests/12586
                 ++ onWindows (fromUntil "9.6.6" "9.12" ./patches/ghc/ghc-win32-io-manager-compilation.patch)
+
+                ++ from "9.8.4" ./patches/ghc/ghc-9.8-threaded-rts-timer.patch
                 ;
         in ({
             ghc8107 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {

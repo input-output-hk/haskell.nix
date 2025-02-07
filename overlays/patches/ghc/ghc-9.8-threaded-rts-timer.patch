@@ -1,0 +1,26 @@
+diff --git a/rts/posix/Ticker.c b/rts/posix/Ticker.c
+index 18bf1179dd..9ecfb1ff97 100644
+--- a/rts/posix/Ticker.c
++++ b/rts/posix/Ticker.c
+@@ -62,7 +62,7 @@
+ #endif
+
+ /*
+- * On Linux we can use timerfd_* (introduced in Linux
++ * On Linux in the threaded RTS we can use timerfd_* (introduced in Linux
+  * 2.6.25) and a thread instead of alarm signals. It avoids the risk of
+  * interrupting syscalls (see #10840) and the risk of being accidentally
+  * modified in user code using signals. NetBSD has also added timerfd
+@@ -71,11 +71,11 @@
+  * For older version of linux/netbsd without timerfd we fall back to the
+  * pthread based implementation.
+  */
+-#if defined(HAVE_SYS_TIMERFD_H)
++#if defined(HAVE_SYS_TIMERFD_H) && defined(THREADED_RTS)
+ #define USE_TIMERFD_FOR_ITIMER
+ #endif
+
+-#if defined(linux_HOST_OS)
++#if defined(linux_HOST_OS) && defined(THREADED_RTS)
+ #define USE_PTHREAD_FOR_ITIMER
+ #endif
