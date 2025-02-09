@@ -58,9 +58,10 @@
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
       nixpkgs.lib.optionalAttrs (nixpkgsName == "R2411") {
-        # TODO perhaps these
-        # ghc96 = false;
-        # ghc98 = false;
+        ghc96 = true;
+        ghc98 = true;
+        ghc910 = true;
+        ghc9121 = true;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc96 = true;
         ghc98 = true;
@@ -83,8 +84,8 @@
        || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948" "ghc966" "ghc982" "ghc983" "ghc984"])
        )) {
     inherit (lib.systems.examples) ghcjs;
-  } // lib.optionalAttrs (
-         (__match ".*llvm" compiler-nix-name == null)
+  } // lib.optionalAttrs (nixpkgsName == "unstable"
+      && (__match ".*llvm" compiler-nix-name == null)
       && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc966"]) # Not sure why GHC 9.6.6 TH code now wants `log1pf`
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
@@ -97,7 +98,7 @@
     # Musl cross only works on linux
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl32 musl64 aarch64-multiplatform;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "R2411" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
     inherit (lib.systems.examples) aarch64-android-prebuilt armv7a-android-prebuilt;
   } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc8107" "ghc902"]) {
     # TODO fix this for the compilers we build with hadrian (ghc >=9.4)
