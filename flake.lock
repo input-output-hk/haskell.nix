@@ -339,11 +339,11 @@
     "iserv-proxy": {
       "flake": false,
       "locked": {
-        "lastModified": 1739237905,
-        "narHash": "sha256-OCeEI92yuNFXOCZdhImrzPa3DgMqantxlbq5VA43o/w=",
+        "lastModified": 1739244093,
+        "narHash": "sha256-vUfp2fBG9dR0mT6jaD2pev41sCZfr3jcT8g9estsHlY=",
         "owner": "stable-haskell",
         "repo": "iserv-proxy",
-        "rev": "3890af9b0881dd63cbae805cdbf4f0c610e02085",
+        "rev": "756f4552822b70e077f7f7121f4439db250588a0",
         "type": "github"
       },
       "original": {
