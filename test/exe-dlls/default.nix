@@ -8,7 +8,10 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "exe-dlls";
     cabalProjectLocal = builtins.readFile ../cabal.project.local;
-    modules = import ../modules.nix;
+    modules = import ../modules.nix ++ optional stdenv.hostPlatform.isAndroid { 
+      packages.libsodium.configureFlags = [ "--c2hs-option=--cppopts=-D_Null_unspecified=" ];
+      packages.libsodium.components.library.hardeningDisable = ["fortify"];
+    };
   };
 
   packages = project.hsPkgs;
