@@ -53,6 +53,15 @@ let self =
   enableNUMA ? true
 
 , enableDocs ? false # Choose between --docs=none and --docs=no-sphinx
+                     # Turning this off saves around 600MB for each GHC build
+                     # If you need GHC docs use an overlay like this:
+                     #   final: prev: {
+                     #     haskell-nix = prev.haskell-nix // {
+                     #       compiler = final.lib.mapAttrs (_: x: x.override ({
+                     #         enableDocs = true;
+                     #       })) prev.haskell-nix.compiler;
+                     #     };
+                     #   }
 
 , # What flavour to build. An empty string indicates no
   # specific flavour and falls back to ghc default values.
