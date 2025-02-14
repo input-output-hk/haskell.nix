@@ -52,6 +52,8 @@ let self =
 , # Wheter to build in NUMA support
   enableNUMA ? true
 
+, enableDocs ? false # Choose between --docs=none and --docs=no-sphinx
+
 , # What flavour to build. An empty string indicates no
   # specific flavour and falls back to ghc default values.
   ghcFlavour ? lib.optionalString haskell-nix.haskellLib.isCrossTarget (
@@ -317,7 +319,7 @@ let
           + lib.optionalString enableDWARF "+debug_info"
           + lib.optionalString ((enableNativeBignum && hadrianHasNativeBignumFlavour) || targetPlatform.isGhcjs) "+native_bignum"
           + lib.optionalString targetPlatform.isGhcjs "+no_profiled_libs"
-      } --docs=no-sphinx -j --verbose"
+      } --docs=${if enableDocs then "no-sphinx" else "none"} -j --verbose"
       # This is needed to prevent $GCC from emitting out of line atomics.
       # Those would then result in __aarch64_ldadd1_sync and others being referenced, which
       # we don't handle in the RTS properly yet. Until we figure out how to _properly_ deal
