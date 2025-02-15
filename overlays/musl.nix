@@ -37,7 +37,7 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
       NIX_LDFLAGS = "--push-state --as-needed -lstdc++ --pop-state";
       # without this collate.icu.utf8, and foreign_data will fail.
       LC_CTYPE = "C";
-    })).override { enableSystemd = false; gssSupport = false; };
+    })).override { systemdSupport = false; gssSupport = false; };
 
   openssl = prev.openssl.override { static = true; };
 
