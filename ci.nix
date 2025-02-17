@@ -58,16 +58,17 @@
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
       nixpkgs.lib.optionalAttrs (nixpkgsName == "R2411") {
-        # TODO perhaps these
-        # ghc96 = false;
-        # ghc98 = false;
+        ghc96 = false;
+        ghc98 = false;
+        ghc910 = false;
+        ghc912 = true;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc96 = true;
         ghc98 = true;
         ghc98llvm = false;
         ghc910 = true;
         ghc910llvm = true;
-        ghc9121 = true;
+        ghc912 = true;
         ghc912X = true;
         ghc913 = true;
       })));
