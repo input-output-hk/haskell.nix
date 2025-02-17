@@ -19,7 +19,6 @@
   # short names for nixpkgs versions
   nixpkgsVersions = {
     "unstable" = inputs.nixpkgs-unstable;
-  } // lib.optionalAttrs (system != "x86_64-darwin") {
     "R2411" = inputs.nixpkgs-2411;
   };
 
