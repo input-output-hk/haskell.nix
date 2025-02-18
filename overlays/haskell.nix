@@ -823,7 +823,7 @@ final: prev: {
             shellFor = shellArgs:
               let
                 # These are the args we will pass to the main shell.
-                args' = builtins.removeAttrs shellArgs [ "crossPlatforms" ];
+                args' = builtins.removeAttrs (rawProject.args.shell // shellArgs) [ "crossPlatforms" ];
                 # These are the args we will pass to the shells for the corss compiler
                 argsCross =
                   # These things should match main shell
@@ -847,7 +847,7 @@ final: prev: {
                 });
 
             # Default shell
-            shell = shellFor rawProject.args.shell;
+            shell = shellFor {};
 
             # Like `.hsPkgs.${packageName}` but when compined with `getComponent` any
             # cabal configure errors are defered until the components derivation builds.
