@@ -110,7 +110,7 @@ final: prev: {
                 You may need to update haskell.nix to one that includes a newer stackage.nix.
                 '');
                 # The compiler referenced in the stack config
-                compiler = (stack-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
+                compiler = (stack-pkgs.extras hackageForStack).compiler or (pkg-def hackageForStack).compiler;
                 patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
                 # Remove fake packages generated from stack keywords used in ghc-options
                 removeStackSpecial = module: if builtins.typeOf module == "set"
@@ -823,7 +823,7 @@ final: prev: {
             shellFor = shellArgs:
               let
                 # These are the args we will pass to the main shell.
-                args' = builtins.removeAttrs shellArgs [ "crossPlatforms" ];
+                args' = builtins.removeAttrs (rawProject.args.shell // shellArgs) [ "crossPlatforms" ];
                 # These are the args we will pass to the shells for the corss compiler
                 argsCross =
                   # These things should match main shell
@@ -847,7 +847,7 @@ final: prev: {
                 });
 
             # Default shell
-            shell = shellFor rawProject.args.shell;
+            shell = shellFor {};
 
             # Like `.hsPkgs.${packageName}` but when compined with `getComponent` any
             # cabal configure errors are defered until the components derivation builds.

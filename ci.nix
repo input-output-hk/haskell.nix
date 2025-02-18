@@ -18,8 +18,8 @@
 
   # short names for nixpkgs versions
   nixpkgsVersions = {
-    "unstable" = inputs.nixpkgs-unstable;
     "R2411" = inputs.nixpkgs-2411;
+    "unstable" = inputs.nixpkgs-unstable;
   };
 
   nixpkgsArgs = {
@@ -68,7 +68,7 @@
         ghc98llvm = false;
         ghc910 = true;
         ghc910llvm = true;
-        ghc9121 = true;
+        ghc912 = true;
         ghc912X = true;
         ghc913 = true;
       })));
