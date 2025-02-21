@@ -6,6 +6,7 @@
 , qemuSuffix ? (haskellLib.qemuByHostPlatform hostPlatform)
 , iserv-proxy
 , iserv-proxy-interpreter
+, iserv-proxy-interpreter-prof
 , gmp
 , buildPlatform
 , hostPlatform
@@ -36,7 +37,7 @@ let
     let
       interpreter =
         if enableProfiling
-          then iserv-proxy-interpreter.override { inherit enableProfiling; }
+          then iserv-proxy-interpreter-prof
           else iserv-proxy-interpreter;
     in
       writeShellScriptBin ("iserv-wrapper" + lib.optionalString enableProfiling "-prof") ''
@@ -48,11 +49,7 @@ let
     unset configureFlags
     PORT=$((5000 + $RANDOM % 5000))
     (>&2 echo "---> Starting ${interpreter.exeName} on port $PORT")
-    ${qemu}/bin/qemu-${qemuSuffix} ${interpreter.override
-      (lib.optionalAttrs hostPlatform.isAndroid {
-        setupBuildFlags = ["--ghc-option=-optl-static" ] ++ lib.optional hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";
-        enableDebugRTS = true;
-       })}/bin/${interpreter.exeName} tmp $PORT $ISERV_ARGS &
+    ${qemu}/bin/qemu-${qemuSuffix} ${interpreter}/bin/${interpreter.exeName} tmp $PORT $ISERV_ARGS &
     (>&2 echo "---| ${interpreter.exeName} should have started on $PORT")
     RISERV_PID="$!"
     ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT" $PROXY_ARGS
