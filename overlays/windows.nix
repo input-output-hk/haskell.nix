@@ -50,7 +50,7 @@ final: prev:
           inherit (pkgs.pkgsBuildBuild) symlinkJoin;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
-          inherit (final.haskell-nix.iserv-proxy-exes.${config.compiler.nix-name}) iserv-proxy iserv-proxy-interpreter iserv-prox-interpreter-prof;
+          inherit (final.haskell-nix.iserv-proxy-exes.${config.compiler.nix-name}) iserv-proxy iserv-proxy-interpreter iserv-proxy-interpreter-prof;
         } // {
           # we can perform testing of cross compiled test-suites by using wine.
           # Therefore let's enable doCrossCheck here!
