@@ -191,3 +191,52 @@ index adba60b53c..351103fd4c 100644
  loadObj :: FilePath -> IO ArchiveEntry
  loadObj fp = do
    payload <- B.readFile fp
+diff --git a/compiler/GHC/Linker/Loader.hs b/compiler/GHC/Linker/Loader.hs
+index 5cb73b1..99e7d01 100644
+--- a/compiler/GHC/Linker/Loader.hs
++++ b/compiler/GHC/Linker/Loader.hs
+@@ -61,6 +61,7 @@ import GHC.ByteCode.Asm
+ import GHC.ByteCode.Types
+
+ import GHC.SysTools
++import GHC.SysTools.Ar (loadArchiveOrScript, ArchiveOrScript(..), LinkerScript(..))
+
+ import GHC.Types.Basic
+ import GHC.Types.Name
+@@ -1151,7 +1152,7 @@ loadPackage interp hsc_env pkg
+ #endif
+             objs       = [ obj  | Objects objs    <- classifieds
+                                 , obj <- objs ]
+-            archs      = [ arch | Archive arch   <- classifieds ]
++            archPaths  = [ arch | Archive arch   <- classifieds ]
+
+         -- Add directories to library search paths
+         let dll_paths  = map takeDirectory known_dlls
+@@ -1175,7 +1176,8 @@ loadPackage interp hsc_env pkg
+         -- Ordering isn't important here, because we do one final link
+         -- step to resolve everything.
+         mapM_ (loadObj interp) objs
+-        mapM_ (loadArchive interp) archs
++        resolvedArchives <- resolveArchives interp hsc_env dirs_env gcc_paths archPaths
++        mapM_ (loadArchive interp) resolvedArchives
+
+         maybePutStr logger "linking ... "
+         ok <- resolveObjs interp
+@@ -1194,6 +1196,16 @@ loadPackage interp hsc_env pkg
+                              <> pprUnitInfoForUser pkg <> text "'"
+                  in throwGhcExceptionIO (InstallationError (showSDoc dflags errmsg))
+
++resolveArchives :: Interp -> HscEnv -> [FilePath] -> [FilePath] -> [FilePath] -> IO [FilePath]
++resolveArchives interp hsc_env dirs_env gcc_paths paths = fmap concat $ forM paths $ \path -> do
++    arOrScript <- loadArchiveOrScript path
++    case arOrScript of
++        Ar _ -> return [path]
++        ImplicitLinkerScript (INPUT libs) -> do
++            classifiedLibs <- mapM (locateLib interp hsc_env False dirs_env gcc_paths) libs
++            let resolvedPaths = [arch | Archive arch <- classifiedLibs]
++            resolveArchives interp hsc_env dirs_env gcc_paths resolvedPaths
++
+ {-
+ Note [Crash early load_dyn and locateLib]
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
