@@ -1,0 +1,242 @@
+diff --git a/compiler/GHC/Linker/Static.hs b/compiler/GHC/Linker/Static.hs
+index aa51a2b7d6..04ae43cdae 100644
+--- a/compiler/GHC/Linker/Static.hs
++++ b/compiler/GHC/Linker/Static.hs
+@@ -32,6 +32,8 @@ import GHC.Linker.Static.Utils
+ import GHC.Driver.Config.Linker
+ import GHC.Driver.Session
+ 
++import qualified GHC.Data.ShortText as ST
++
+ import System.FilePath
+ import System.Directory
+ import Control.Monad
+@@ -294,11 +296,9 @@ linkStaticLib logger dflags unit_env o_files dep_units = do
+         | otherwise
+         = filter ((/= rtsUnitId) . unitId) pkg_cfgs_init
+ 
+-  archives <- concatMapM (collectArchives namever ways_) pkg_cfgs
+-
+-  ar <- foldl mappend
+-        <$> (Archive <$> mapM loadObj modules)
+-        <*> mapM loadAr archives
++  arFromArchives <- mconcat <$> mapM (loadArchives namever ways_) pkg_cfgs
++  arFromObjects <- Archive <$> mapM loadObj modules
++  let ar = arFromObjects `mappend` arFromArchives
+ 
+   if toolSettings_ldIsGnuLd (toolSettings dflags)
+     then writeGNUAr output_fn $ afilter (not . isGNUSymdef) ar
+@@ -306,3 +306,18 @@ linkStaticLib logger dflags unit_env o_files dep_units = do
+ 
+   -- run ranlib over the archive. write*Ar does *not* create the symbol index.
+   runRanlib logger dflags [GHC.SysTools.FileOption "" output_fn]
++
++loadArchives :: GhcNameVersion -> Ways -> UnitInfo -> IO Archive
++loadArchives namever ways pc = loadArchivesFromLibs libs
++  where
++    libs = unitHsLibs namever ways pc ++ map ST.unpack (unitExtDepLibsSys pc)
++    loadArchivesFromLibs :: [LibName] -> IO Archive
++    loadArchivesFromLibs libs = do
++      arPaths <- collectArchivesFromLibs namever ways pc libs
++      fmap mconcat $ forM arPaths $ \arPath -> do
++        arOrScript <- loadArchiveOrScript arPath
++        case arOrScript of
++          Ar ar -> return ar
++          ImplicitLinkerScript linkerScript ->
++            case linkerScript of
++              INPUT libNames -> loadArchivesFromLibs libNames
+\ No newline at end of file
+diff --git a/compiler/GHC/Linker/Unit.hs b/compiler/GHC/Linker/Unit.hs
+index 6965edd707..7266bd0082 100644
+--- a/compiler/GHC/Linker/Unit.hs
++++ b/compiler/GHC/Linker/Unit.hs
+@@ -2,7 +2,7 @@
+ -- | Linking Haskell units
+ module GHC.Linker.Unit
+    ( collectLinkOpts
+-   , collectArchives
++   , collectArchivesFromLibs
+    , getUnitLinkOpts
+    , getLibs
+    )
+@@ -39,13 +39,12 @@ collectLinkOpts namever ways ps =
+         concatMap (map ST.unpack . unitLinkerOptions) ps
+     )
+ 
+-collectArchives :: GhcNameVersion -> Ways -> UnitInfo -> IO [FilePath]
+-collectArchives namever ways pc =
++collectArchivesFromLibs :: GhcNameVersion -> Ways -> UnitInfo -> [String] -> IO [FilePath]
++collectArchivesFromLibs namever ways pc libs =
+   filterM doesFileExist [ searchPath </> ("lib" ++ lib ++ ".a")
+                         | searchPath <- searchPaths
+                         , lib <- libs ]
+   where searchPaths = ordNub . filter notNull . libraryDirsForWay ways $ pc
+-        libs        = unitHsLibs namever ways pc ++ map ST.unpack (unitExtDepLibsSys pc)
+ 
+ -- | Either the 'unitLibraryDirs' or 'unitLibraryDynDirs' as appropriate for the way.
+ libraryDirsForWay :: Ways -> UnitInfo -> [String]
+diff --git a/compiler/GHC/SysTools/Ar.hs b/compiler/GHC/SysTools/Ar.hs
+index adba60b53c..351103fd4c 100644
+--- a/compiler/GHC/SysTools/Ar.hs
++++ b/compiler/GHC/SysTools/Ar.hs
+@@ -20,11 +20,15 @@ of libtool across different platforms.
+ module GHC.SysTools.Ar
+   (ArchiveEntry(..)
+   ,Archive(..)
++  ,ArchiveOrScript(..)
++  ,LinkerScript(..)
++  ,LibName
+   ,afilter
+ 
+   ,parseAr
+ 
+   ,loadAr
++  ,loadArchiveOrScript
+   ,loadObj
+   ,writeBSDAr
+   ,writeGNUAr
+@@ -45,6 +49,7 @@ import Control.Applicative
+ import qualified Data.ByteString as B
+ import qualified Data.ByteString.Char8 as C
+ import qualified Data.ByteString.Lazy as L
++import qualified Text.ParserCombinators.ReadP as R
+ #if !defined(mingw32_HOST_OS)
+ import qualified System.Posix.Files as POSIX
+ #endif
+@@ -230,6 +235,68 @@ putGNUArch (Archive as) = do
+     processEntries =
+       uncurry (:) . mapAccumL processEntry (ArchiveEntry "//" 0 0 0 0 0 mempty)
+ 
++-- | Some systems have archives that are not really archives but contain so
++-- called linker scripts. These scripts contain textual commands to the
++-- linker. This data type represents this choice between an actual archive or
++-- implicit linker script.
++--
++-- See: https://sourceware.org/binutils/docs/ld/Implicit-Linker-Scripts.html#Implicit-Linker-Scripts
++data ArchiveOrScript = Ar Archive | ImplicitLinkerScript LinkerScript
++                       deriving (Eq, Show)
++
++-- | An AST for a linker script.
++--
++-- At the moment this AST only supports linker scripts of the form:
++--
++-- @INPUT(-lc++_static -lc++abi)@
++--
++-- Since this is exactly what is used in @nixpkgs@ for @libc++.a@.
++--
++-- For more information on linker scripts see:
++-- https://sourceware.org/binutils/docs/ld/Scripts.html
++data LinkerScript = INPUT [LibName]
++                    deriving (Eq, Show)
++
++-- | Name of a library to link with.
++--
++-- This is everything after the @-l@ prefix.
++type LibName = String
++
++linkerScriptReadP :: R.ReadP LinkerScript
++linkerScriptReadP = skipSpaceChars *> inputReadP <* R.skipSpaces
++  where
++    inputReadP :: R.ReadP LinkerScript
++    inputReadP = fmap INPUT $ R.between (symbol "INPUT(") (symbol ")") $
++                   R.sepBy libReadP sep <* skipSpaceChars
++      where
++        libReadP :: R.ReadP LibName
++        libReadP = R.string "-l" *> R.many1 (R.satisfy isLibNameChar)
++          where
++            isLibNameChar c = c /= ')' && c /= ',' && c /= ' '
++
++        sep :: R.ReadP ()
++        sep = R.char ' ' *> skipSpaceChars
++
++        symbol :: String -> R.ReadP ()
++        symbol str = R.string str *> skipSpaceChars
++
++    skipSpaceChars :: R.ReadP ()
++    skipSpaceChars = do
++        s <- R.look
++        skip s
++      where
++        skip (' ':s) = do _ <- R.get; skip s
++        skip _       = do return ()
++
++parseArOrScript :: B.ByteString -> Either (ByteOffset, String) ArchiveOrScript
++parseArOrScript bs =
++    case runGetOrFail getArch $ L.fromChunks $ pure bs of
++      Left (_, pos, msg) ->
++        case R.readP_to_S linkerScriptReadP $ C.unpack bs of
++          [(linkerScript, "")] -> Right $ ImplicitLinkerScript linkerScript
++          _ -> Left (pos, msg)
++      Right (_, _, ar) -> Right $ Ar ar
++
+ parseAr :: B.ByteString -> Archive
+ parseAr = runGet getArch . L.fromChunks . pure
+ 
+@@ -240,6 +307,18 @@ writeGNUAr fp = L.writeFile fp . runPut . putGNUArch
+ loadAr :: FilePath -> IO Archive
+ loadAr fp = parseAr <$> B.readFile fp
+ 
++loadArchiveOrScript :: FilePath -> IO ArchiveOrScript
++loadArchiveOrScript fp = do
++  bs <- B.readFile fp
++  case parseArOrScript bs of
++    Left (pos, msg) ->
++      error $
++        "Error while decoding archive: " <> fp <>
++        " is neither an archive because decoding failed at position " <>
++        show pos <> " with error " <> msg <>
++        ", nor is it an implicit linker script!"
++    Right arOrScript -> return arOrScript
++
+ loadObj :: FilePath -> IO ArchiveEntry
+ loadObj fp = do
+   payload <- B.readFile fp
+diff --git a/compiler/GHC/Linker/Loader.hs b/compiler/GHC/Linker/Loader.hs
+index 5cb73b1..99e7d01 100644
+--- a/compiler/GHC/Linker/Loader.hs
++++ b/compiler/GHC/Linker/Loader.hs
+@@ -61,6 +61,7 @@ import GHC.ByteCode.Asm
+ import GHC.ByteCode.Types
+
+ import GHC.SysTools
++import GHC.SysTools.Ar (loadArchiveOrScript, ArchiveOrScript(..), LinkerScript(..))
+
+ import GHC.Types.Basic
+ import GHC.Types.Name
+@@ -1151,7 +1152,7 @@ loadPackage interp hsc_env pkg
+ #endif
+             objs       = [ obj  | Objects objs    <- classifieds
+                                 , obj <- objs ]
+-            archs      = [ arch | Archive arch   <- classifieds ]
++            archPaths  = [ arch | Archive arch   <- classifieds ]
+
+         -- Add directories to library search paths
+         let dll_paths  = map takeDirectory known_dlls
+@@ -1175,7 +1176,8 @@ loadPackage interp hsc_env pkg
+         -- Ordering isn't important here, because we do one final link
+         -- step to resolve everything.
+         mapM_ (loadObj interp) objs
+-        mapM_ (loadArchive interp) archs
++        resolvedArchives <- resolveArchives interp hsc_env dirs_env gcc_paths archPaths
++        mapM_ (loadArchive interp) resolvedArchives
+
+         maybePutStr logger "linking ... "
+         ok <- resolveObjs interp
+@@ -1194,6 +1196,16 @@ loadPackage interp hsc_env pkg
+                              <> pprUnitInfoForUser pkg <> text "'"
+                  in throwGhcExceptionIO (InstallationError (showSDoc dflags errmsg))
+
++resolveArchives :: Interp -> HscEnv -> [FilePath] -> [FilePath] -> [FilePath] -> IO [FilePath]
++resolveArchives interp hsc_env dirs_env gcc_paths paths = fmap concat $ forM paths $ \path -> do
++    arOrScript <- loadArchiveOrScript path
++    case arOrScript of
++        Ar _ -> return [path]
++        ImplicitLinkerScript (INPUT libs) -> do
++            classifiedLibs <- mapM (locateLib interp hsc_env False dirs_env gcc_paths) libs
++            let resolvedPaths = [arch | Archive arch <- classifiedLibs]
++            resolveArchives interp hsc_env dirs_env gcc_paths resolvedPaths
++
+ {-
+ Note [Crash early load_dyn and locateLib]
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
