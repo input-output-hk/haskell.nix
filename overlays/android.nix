@@ -55,4 +55,20 @@ final: prev: {
   # We also link iserv against the static libs, so that we have a fully static
   # android (bionic/linux) iserv we can execute on glibc/linux.
   bionic = prev.bionic.override { enableStatic = true; enableShared = true; };
-})
+}) //
+# See https://github.com/NixOS/nixpkgs/pull/385722
+builtins.mapAttrs (name: ndkPkg: ndkPkg // {
+  clang = ndkPkg.clang.override (oldAttrs: prev.lib.optionalAttrs (oldAttrs ? extraBuildCommands) {
+    extraBuildCommands = builtins.replaceStrings ["-target arm-linux-androideabi"] ["-target armv7a-linux-androideabi"] oldAttrs.extraBuildCommands;
+  });
+}) {
+  inherit (prev)
+    androidndkPkgs
+    androidndkPkgs_21
+    androidndkPkgs_23
+    androidndkPkgs_23b
+    androidndkPkgs_24
+    androidndkPkgs_25
+    androidndkPkgs_26
+    androidndkPkgs_30;
+}
