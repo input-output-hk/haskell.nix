@@ -24,7 +24,6 @@ in recurseIntoAttrs {
     || stdenv.hostPlatform.isMusl
     || stdenv.hostPlatform.isGhcjs
     || stdenv.hostPlatform.isWindows
-    || (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
-    || (haskellLib.isCrossHost && stdenv.hostPlatform.isArmv7);
+    || (haskellLib.isCrossHost && (stdenv.hostPlatform.isAarch64 || stdenv.hostPlatform.isAarch32));
   build = packages.test.components.library;
 }
