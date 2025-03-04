@@ -199,7 +199,7 @@ in addPackageKeys {
   # for whatever reason nixpkgs 24.11 defines x86_64-darwin
   # to be sdk-10.12.2, and aarch64-darwin to be sdk-11.
   # nixpkgs 25.05 will drop sdk-10.12, and unify aarch64 and x86 at last.
-  packages.network.components.library.libs = lib.mkIf (pkgs.stdenv.hostPlatform.isDarwin && lib.versionOlder pkgs.apple-sdk.version "11") [
+  packages.network.components.library.libs = lib.mkIf (pkgs.stdenv.hostPlatform.isDarwin && pkgs ? apple-sdk && lib.versionOlder pkgs.apple-sdk.version "11") [
     pkgs.apple-sdk_11
     (pkgs.darwinMinVersionHook "11.0")
   ];
