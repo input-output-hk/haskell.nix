@@ -83,7 +83,7 @@ pkgs:
     "stdc++.dll"                         = []; # What is that?
     "systemd-journal"                    = [ "systemd" ];
     "tag_c"                              = [ "taglib" ];
-    "webkit2gtk"                         = [ "webkitgtk" ];
+    "webkit2gtk"                         = [ "webkitgtk_4_0" ];
     "xml2"                               = [ "libxml2" ];
     "yaml"                               = [ "libyaml" ];
     "z"                                  = [ "zlib" ];
