@@ -23,8 +23,9 @@ in recurseIntoAttrs {
     inherit (project) plan-nix;
   };
 
-  meta.disabled = stdenv.buildPlatform != stdenv.hostPlatform && stdenv.hostPlatform.isAarch64
-    || builtins.elem compiler-nix-name ["ghc91320241204"];
+  meta.disabled = builtins.elem compiler-nix-name ["ghc91320241204"]
+    # unhandled ELF relocation(Rel) type 10
+    || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_32);
 
   build = packages.js-template-haskell.components.library;
   check = packages.js-template-haskell.checks.test;

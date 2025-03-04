@@ -1,0 +1,13 @@
+diff --git a/configure.ac b/configure.ac
+index 1bf37789c7..3f91701dbe 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -492,7 +492,7 @@ AC_SUBST(InstallNameToolCmd)
+ # versions of LLVM simultaneously, but that stopped working around
+ # 3.5/3.6 release of LLVM.
+ LlvmMinVersion=13  # inclusive
+-LlvmMaxVersion=16 # not inclusive
++LlvmMaxVersion=18 # not inclusive
+ AC_SUBST([LlvmMinVersion])
+ AC_SUBST([LlvmMaxVersion])
+ 
