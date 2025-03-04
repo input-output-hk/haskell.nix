@@ -1,0 +1,13 @@
+allow-newer:
+  , unpacked-containers:*
+  , unpacked-unordered-containers:*
+
+source-repository-package
+  type: git
+  location: https://github.com/ekmett/unpacked-containers
+  tag: 7dc56993a57511b58257b5d389473e638a7082d2
+  --sha256: 1vijp2hs9ynfm8k2yrv06ccpfi1n2s2b5bqvzrjdd3gqn4bi66q4
+  subdir:
+    unpacked-containers
+    unpacked-unordered-containers
+  
