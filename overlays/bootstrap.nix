@@ -318,6 +318,7 @@ in {
                 ++ onAndroid (from      "9.12.1"       ./patches/ghc/ghc-9.12-static-linker-script-support.patch)
 
                 ++ onAndroid (from      "9.6"          ./patches/ghc/ghc-9.6-COMPAT_R_ARM_PREL31.patch)
+                ++ onAndroid (from      "9.10"         ./patches/ghc/ghc-9.10-ignore-libc.patch)
                 ;
         in ({
             ghc8107 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
