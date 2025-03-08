@@ -1,0 +1,13 @@
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index 007daedb2f..0555abac72 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -1295,6 +1295,7 @@ do_Elf_Rel_relocations ( ObjectCode* oc, char* ehdrC,
+            break;
+
+        case COMPAT_R_ARM_REL32:     /* ((S + A) | T) – P */
++       case COMPAT_R_ARM_PREL31:
+            *(Elf32_Word *)P += S;
+            *(Elf32_Word *)P |= T;
+            *(Elf32_Word *)P -= P;
+

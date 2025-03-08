@@ -25,7 +25,9 @@ in recurseIntoAttrs rec {
     # error: incompatible pointer to integer conversion assigning to 'ffi_arg' (aka 'unsigned long') from 'HsPtr' (aka 'void *') [-Wint-conversion]
     || builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc928" "ghc948"] && stdenv.hostPlatform.isAarch64
     # Cross compilation to aarch64 is also broken
-    || stdenv.hostPlatform.isAarch64 && !stdenv.buildPlatform.isAarch64;
+    || stdenv.hostPlatform.isAarch64 && !stdenv.buildPlatform.isAarch64
+    # glu is marked ase broken for isAndroid
+    || stdenv.hostPlatform.isAndroid;
 
   ifdInputs = {
     inherit (project) plan-nix;

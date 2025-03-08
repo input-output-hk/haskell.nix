@@ -1,7 +1,10 @@
 { stdenv, lib, haskellLib, buildPackages }:
-let self = drv:
+let self = drvOrig:
 
 let
+  # Work around problem running dynamicially linked Android executables with qemu.
+  drv = drvOrig.override (lib.optionalAttrs stdenv.hostPlatform.isAndroid { setupBuildFlags = ["--ghc-option=-optl-static" ]; });
+
   component = drv.config;
 
 # This derivation can be used to execute test component.
