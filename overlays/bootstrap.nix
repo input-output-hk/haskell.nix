@@ -178,7 +178,8 @@ in {
                 ++ onGhcjs (fromUntil "9.6.3" "9.8"   ./patches/ghc/ghc-9.6.3-Merge-libiserv-with-ghci.patch)
                 ++ onGhcjs (fromUntil "9.6.1" "9.8"   ./patches/ghc/ghc-9.6-Assorted-changes-to-avoid-head-tail.patch)
                 ++ onGhcjs (fromUntil "9.6.1" "9.6.3" ./patches/ghc/ghc-9.6-JS-implement-TH-support.patch)
-                ++ onGhcjs (fromUntil "9.6.3" "9.8"   ./patches/ghc/ghc-9.6.3-JS-implement-TH-support.patch)
+                ++ onGhcjs (fromUntil "9.6.3" "9.6.7" ./patches/ghc/ghc-9.6.3-JS-implement-TH-support.patch)
+                ++ onGhcjs (fromUntil "9.6.7" "9.8"   ./patches/ghc/ghc-9.6.7-JS-implement-TH-support.patch)
                 ++ fromUntil "9.8.1"  "9.8.2"  ./patches/ghc/ghc-9.8-cabal-c-soures-fix.patch
                 ++ fromUntil "9.6.3"  "9.6.5"  ./patches/ghc/ghc-9.6.3-Cabal-9384.patch
                 ++ fromUntil "9.8.1"  "9.8.3"    ./patches/ghc/ghc-9.6.3-Cabal-9384.patch
