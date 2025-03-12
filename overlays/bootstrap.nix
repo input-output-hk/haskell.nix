@@ -14,6 +14,7 @@ let
       "9.12" = "9.12.1";
     };
     gitInputs = {
+      ghc96X = "9.6.7";
       ghc912X = "9.12.1";
       ghc913 = "9.13";
     };
@@ -168,8 +169,9 @@ in {
                 ++ onWindows (fromUntil "9.0"    "9.4"    ./patches/ghc/ghc-9.0-windres-invocation.patch)
                 ++ onWindows (from      "9.12"            ./patches/ghc/ghc-9.12-windows-rts-symbols.patch)
                 ++ fromUntil "9.4.5"  "9.4.9"         ./patches/ghc/ghc-9.4.5-include-order-fix.patch
-                ++ fromUntil "9.6.2"  "9.8"           ./patches/ghc/ghc-9.4.5-include-order-fix.patch
-                ++ fromUntil "9.6.1"  "9.9.20231203"  ./patches/ghc/MR10116.patch
+                ++ fromUntil "9.6.2"  "9.6.7"         ./patches/ghc/ghc-9.4.5-include-order-fix.patch
+                ++ fromUntil "9.6.1"  "9.6.7"         ./patches/ghc/MR10116.patch
+                ++ fromUntil "9.8.1"  "9.9.20231203"  ./patches/ghc/MR10116.patch
                 ++ onNative (fromUntil "9.4.1" "9.6"   ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc94.patch)
                 ++ onNative (fromUntil "9.6.1" "9.14"  ./patches/ghc/hadrian-build-deriveConstants-genprimopcode.patch)
                 ++ onGhcjs (fromUntil "9.6.1" "9.6.3" ./patches/ghc/ghc-9.6-Merge-libiserv-with-ghci.patch)
@@ -199,7 +201,8 @@ in {
                 ++ onAarch64 (until "9.0" ./patches/ghc/ghc-8.10-aarch64-handle-none-rela.patch)
                 ++ onWindows (until "9.0" ./patches/ghc/5b08e0c06e038448a63aa9bd7f163b23d824ba4b.patch)
                 ++ onAarch64 (fromUntil "9.0" "9.11" ./patches/ghc/ghc-9.0-better-symbol-addr-debug.patch)
-                ++ onAarch64 (fromUntil "9.0" "9.8.3" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
+                ++ onAarch64 (fromUntil "9.0" "9.6.7" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
+                ++ onAarch64 (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
                 ++ onAarch64 (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
 
                 ++ onWindows (fromUntil "9.6.3" "9.6.4" ./patches/ghc/ghc-9.6-hadrian-splitsections.patch)
@@ -258,27 +261,33 @@ in {
                      && final.stdenv.targetPlatform.is32bit
                      || final.stdenv.targetPlatform.isMusl)
                   (until "9.11" ./patches/ghc/ghc-9.6-missing-symbols-deadbeef.patch)
-                ++ onAarch64Musl (fromUntil "9.6" "9.8.3" ./patches/ghc/ghc-9.6-linker-pool-allocator.patch)
+                ++ onAarch64Musl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-linker-pool-allocator.patch)
+                ++ onAarch64Musl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-linker-pool-allocator.patch)
                 ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-linker-pool-allocator.patch)
-                ++ onAarch64Musl (fromUntil "9.6" "9.8.3" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
+                ++ onAarch64Musl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
+                ++ onAarch64Musl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
                 ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
 
                 ++ onMusl (fromUntil "9.6" "9.8" ./patches/ghc/ghc-9.6-0001-Refactor-IServ.hs.patch)
-                ++ onMusl (fromUntil "9.6" "9.8.3" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
+                ++ onMusl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
+                ++ onMusl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
                 ++ onMusl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
-                ++ onAarch64Musl (fromUntil "9.6" "9.8.3" ./patches/ghc/ghc-9.6-0003-Better-pool-alignment.-We-still-hardcode-section-ali.patch)
+                ++ onAarch64Musl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-0003-Better-pool-alignment.-We-still-hardcode-section-ali.patch)
+                ++ onAarch64Musl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-0003-Better-pool-alignment.-We-still-hardcode-section-ali.patch)
                 ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-0003-Better-pool-alignment.-We-still-hardcode-section-ali.patch)
-                ++ onAarch64Musl (fromUntil "9.6" "9.8.3" ./patches/ghc/ghc-9.6-0007-fixup-Better-pool-alignment.-We-still-hardcode-secti.patch)
+                ++ onAarch64Musl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-0007-fixup-Better-pool-alignment.-We-still-hardcode-secti.patch)
+                ++ onAarch64Musl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-0007-fixup-Better-pool-alignment.-We-still-hardcode-secti.patch)
                 ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-0007-fixup-Better-pool-alignment.-We-still-hardcode-secti.patch)
-                ++ onAarch64Musl (fromUntil "9.6" "9.8.3" ./patches/ghc/ghc-9.6-0008-pool-improvements.patch)
+                ++ onAarch64Musl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-0008-pool-improvements.patch)
+                ++ onAarch64Musl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-0008-pool-improvements.patch)
                 ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-0008-pool-improvements.patch)
                 # these two are abit questionable. They are pretty rough, and assume static binary as well as posix.
                 # onMusl (fromUntil "9.6" "9.11" ./patches/ghc/ghc-9.6-0004-ghcidladdr.patch)
                 # onMusl (fromUntil "9.6" "9.11" ./patches/ghc/ghc-9.6-0005-Better-interpreter-debugging.-Needs-ghcidladdr.patch)
 
                 # Fix docs/users_guide/rtd-theme/layout.html to work with sphinx 7
-                ++ fromUntil "9.0" "9.8" ./patches/ghc/docs-sphinx-7.patch
-                ++ fromUntil "9.8" "9.9" ./patches/ghc/docs-sphinx-7-ghc98.patch
+                ++ fromUntil "9.0" "9.6.7" ./patches/ghc/docs-sphinx-7.patch
+                ++ fromUntil "9.6.7" "9.9" ./patches/ghc/docs-sphinx-7-ghc98.patch
 
                 # These two patches are needed for libblst, which has now hidden symbols, which the linker doesn't know how to deal with.
                 ++ (
@@ -997,7 +1006,7 @@ in {
             compiler-nix-name = versionToNixName version;
           in {
             name = compiler-nix-name;
-            value = final.callPackage ../compiler/ghc {
+            value = final.callPackage ../compiler/ghc ({
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -1030,7 +1039,21 @@ in {
                 ghc-patches = ghc-patches version;
                 ghc-version-date = version-date;
                 ghc-commit-id = src.rev;
-            };
+            } // final.lib.optionalAttrs (builtins.compareVersions version "9.7" <0) {
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc966
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc966
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc965
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc964
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944;
+                };
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+            });
           }) gitInputs))
         // final.lib.optionalAttrs (final.stdenv.targetPlatform.isGhcjs or false) (
          if final.stdenv.hostPlatform.isGhcjs
