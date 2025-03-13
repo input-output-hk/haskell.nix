@@ -259,7 +259,7 @@ index 651f9bf8a2..24bfd5dfc4 100644
 +                              ml_hie_file  = panic "hscCompileCoreExpr':ml_hie_file" }
 +
 +  let ictxt = (hsc_IC hsc_env) {
-+                ic_mod_index = getKey u
++                ic_mod_index = fromIntegral (getKey u)
 +                  -- Ensure module uniqueness ("GhciNNNN") by reusing the unique
 +                  -- we've used for the binding. If ic_mod_index was mutable, we
 +                  -- would simply bump it here after its use.
