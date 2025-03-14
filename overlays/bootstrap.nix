@@ -232,7 +232,7 @@ in {
                 ++ final.lib.optionals (
                         (final.stdenv.targetPlatform.isAndroid || final.stdenv.targetPlatform.isLinux)
                      && (final.stdenv.targetPlatform.isAarch64 || final.stdenv.targetPlatform.is32bit))
-                  (from "9.6.1" ./patches/ghc/iserv-syms.patch)
+                  (fromUntil "9.6.1" "9.11" ./patches/ghc/iserv-syms.patch)
                 ++ onAndroid (until "9.0" ./patches/ghc/ghc-8.10.7-weak-symbols-2.patch)
                 ++ onDarwin (onAarch64 (until "9.0" ./patches/ghc/ghc-8.10.7-rts-aarch64-darwin.patch))
                 ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10-android.patch))
