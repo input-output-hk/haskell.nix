@@ -11,7 +11,9 @@ let
 in recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs
     # Failed to lookup symbol: __aarch64_swp8_acq_rel
-    || (builtins.elem compiler-nix-name ["ghc947" "ghc948"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64);
+    || (builtins.elem compiler-nix-name ["ghc947" "ghc948"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
+    # unhandled ELF relocation(Rel) type 10
+    || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_32);
   ifdInputs = {
     inherit (project) plan-nix;
   };

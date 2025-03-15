@@ -19,32 +19,22 @@ in builtins.listToAttrs (builtins.concatMap (system: builtins.concatMap (compile
   # given GHC version are checked.
   { name = "${prefix}-extra";         value = (pkgs.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
   { name = "${prefix}-boot";          value = pkgs.ghc-boot-packages-nix.${compiler-nix-name}; }
-  { name = "${prefix}-iserv";         value = pkgs.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.iserv-proxy.project.plan-nix; }
-  { name = "${prefix}-iserv-int";     value = pkgs.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.iserv-proxy-interpreter.project.plan-nix; }
   { name = "${prefix}-hello";         value = (pkgs.haskell-nix.tool compiler-nix-name "hello" {}).project.plan-nix; }
 ] ++ eval.lib.optionals (!__elem system ["aarch64-darwin" "aarch64-linux" "x86_64-darwin"]) [
   { name = "${prefix}-windows";            value = (pkgsForWindows.pkgsCross.mingwW64.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
-  { name = "${prefix}-iserv-windows";      value = pkgsForWindows.pkgsCross.mingwW64.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.iserv-proxy.project.plan-nix; }
-  { name = "${prefix}-iserv-int-windows";  value = pkgsForWindows.pkgsCross.mingwW64.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.iserv-proxy-interpreter.project.plan-nix; }
   { name = "${prefix}-hello-windows";      value = (pkgsForWindows.pkgsCross.mingwW64.haskell-nix.tool compiler-nix-name "hello" {}).project.plan-nix; }
 ] ++ eval.lib.optionals (system == "x86_64-linux") [
   # In some cased you may need comment out one or more of these if the GHC version needed cannot be built.
   { name = "${prefix}-musl";               value = (pkgs.pkgsCross.musl64.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
-  { name = "${prefix}-iserv-musl";         value = pkgs.pkgsCross.musl64.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.iserv-proxy.project.plan-nix; }
-  { name = "${prefix}-iserv-int-musl";     value = pkgs.pkgsCross.musl64.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.iserv-proxy-interpreter.project.plan-nix; }
   { name = "${prefix}-hello-musl";         value = (pkgs.pkgsCross.musl64.haskell-nix.tool compiler-nix-name "hello" {}).project.plan-nix; }
 ] ++ eval.lib.optionals (system == "x86_64-linux" && !__elem compiler-nix-name ["ghc901" "ghc921" "ghc941" "ghc942" "ghc943"]) [
   { name = "${prefix}-arm";                value = (pkgs.pkgsCross.aarch64-multiplatform.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
-  { name = "${prefix}-iserv-arm";          value = pkgs.pkgsCross.aarch64-multiplatform.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.iserv-proxy.project.plan-nix; }
-  { name = "${prefix}-iserv-int-arm";      value = pkgs.pkgsCross.aarch64-multiplatform.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.iserv-proxy-interpreter.project.plan-nix; }
   { name = "${prefix}-hello-arm";          value = (pkgs.pkgsCross.aarch64-multiplatform.haskell-nix.tool compiler-nix-name "hello" {}).project.plan-nix; }
 ] ++ eval.lib.optionals (
         (system == "aarch64-linux" && !__elem compiler-nix-name ["ghc8107" "ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc941" "ghc942" "ghc943"])
      || (system == "x86_64-linux"  && !__elem compiler-nix-name ["ghc8107" "ghc901" "ghc902"
      "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc941" "ghc942" "ghc943" "ghc944" "ghc945" "ghc947" "ghc961" "ghc962" "ghc963" "ghc964" "ghc965"])) [
   { name = "${prefix}-arm-musl";           value = (pkgs.pkgsCross.aarch64-multiplatform-musl.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
-  { name = "${prefix}-iserv-arm-musl";     value = pkgs.pkgsCross.aarch64-multiplatform-musl.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.iserv-proxy.project.plan-nix; }
-  { name = "${prefix}-iserv-int-arm-musl"; value = pkgs.pkgsCross.aarch64-multiplatform-musl.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.iserv-proxy-interpreter.project.plan-nix; }
   { name = "${prefix}-hello-arm-musl";     value = (pkgs.pkgsCross.aarch64-multiplatform-musl.haskell-nix.tool compiler-nix-name "hello" {}).project.plan-nix; }
 ] ++ eval.lib.optionals (
         (system == "x86_64-linux"   && __elem compiler-nix-name ["ghc8107" "ghc961" "ghc962" "ghc963" "ghc964" "ghc965" "ghc981" "ghc982" "ghc983" "ghc984" "ghc9101"])

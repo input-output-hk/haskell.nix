@@ -26,6 +26,8 @@ in recurseIntoAttrs {
     || (builtins.elem compiler-nix-name ["ghc947" "ghc948"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
     # We have been unable to get windows cross compilation of th-orphans to work for GHC 8.10 using the latest nixpkgs
     || (compiler-nix-name == "ghc8107" && stdenv.hostPlatform.isWindows)
+    # unhandled ELF relocation(Rel) type 10
+    || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_32)
     ;
 
   ifdInputs = {

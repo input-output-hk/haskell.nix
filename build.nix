@@ -57,10 +57,15 @@ in rec {
         inherit evalPackages;
         src = pkgs.haskell-nix.sources."hls-2.2";
       };
-    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.8.3" || ghcFromTo "9.10" "9.11") {
-      "hls-29" = tool compiler-nix-name "haskell-language-server" {
+    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.11") {
+      "hls" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
-        src = pkgs.haskell-nix.sources."hls-2.9";
+        src = pkgs.haskell-nix.sources.hls;
+        cabalProjectLocal = ''
+          if impl(ghc >=9.6.7) && impl(ghc <9.7) || impl(ghc >=9.8.3)
+            constraints: ghc-lib-parser >=9.8.4
+            allow-older: ghc-lib-parser:filepath
+        '';
       };
     })
   );
