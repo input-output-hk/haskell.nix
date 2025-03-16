@@ -29,7 +29,12 @@ in recurseIntoAttrs {
 
   build = packages.js-template-haskell.components.library;
   check = packages.js-template-haskell.checks.test;
-} // optionalAttrs (!stdenv.hostPlatform.isGhcjs) {
+} // optionalAttrs (!(
+         stdenv.hostPlatform.isGhcjs
+      || (stdenv.hostPlatform.isAarch64
+          && stdenv.hostPlatform.isMusl
+          && compiler-nix-name == "ghc9101")
+    )) {
   build-profiled = packages.js-template-haskell.components.library.profiled;
   check-profiled = packages.js-template-haskell.checks.test.profiled;
 }
