@@ -39,7 +39,7 @@ in recurseIntoAttrs {
   build-ei = packages-ei.th-dlls.components.library;
   just-template-haskell-ei = packages-ei.th-dlls.components.exes.just-template-haskell;
 } // optionalAttrs
-    (!(builtins.elem compiler-nix-name ["ghc984" "ghc9121" "ghc912120241215" "ghc91320241230"]  && stdenv.buildPlatform.isx86_64 && stdenv.hostPlatform.isAarch64)) {
+    (!(builtins.elem compiler-nix-name ["ghc984" "ghc9121" "ghc912120241215" "ghc91320241230" "ghc912120250219"]  && stdenv.buildPlatform.isx86_64 && stdenv.hostPlatform.isAarch64)) {
   # On for aarch64 cross compile on GHC this test is fails sometimes for non profiled builds
   # (and always for the profiled builds).
   # This may be related to the memory allocation changes made in 9.8.4 that
