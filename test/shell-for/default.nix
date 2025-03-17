@@ -56,7 +56,7 @@ in recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isMusl
     || stdenv.hostPlatform.isGhcjs
     || stdenv.hostPlatform.isWindows
-    || (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64);
+    || (haskellLib.isCrossHost && (stdenv.hostPlatform.isAarch64 || stdenv.hostPlatform.isAarch32));
   inherit env envPkga envDefault;
   run = stdenv.mkDerivation {
     name = "shell-for-test";

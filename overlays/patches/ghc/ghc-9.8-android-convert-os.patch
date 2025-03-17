@@ -1,0 +1,13 @@
+diff --git a/m4/ghc_convert_os.m4 b/m4/ghc_convert_os.m4
+index 586b33d09b..275bd997eb 100644
+--- a/m4/ghc_convert_os.m4
++++ b/m4/ghc_convert_os.m4
+@@ -10,7 +10,7 @@ AC_DEFUN([GHC_CONVERT_OS],[
+       ios|watchos|tvos)
+         $3="ios"
+         ;;
+-      linux-android*)
++      linux-android*|android)
+         $3="linux-android"
+         ;;
+       linux-*|linux)

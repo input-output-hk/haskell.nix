@@ -14,6 +14,7 @@ let
       "9.12" = "9.12.1";
     };
     gitInputs = {
+      ghc96X = "9.6.7";
       ghc912X = "9.12.1";
       ghc913 = "9.13";
     };
@@ -80,12 +81,14 @@ in {
                 onMusl = final.lib.optionals final.stdenv.targetPlatform.isMusl;
                 onWindows = final.lib.optionals final.stdenv.targetPlatform.isWindows;
                 onWindowsOrMusl = final.lib.optionals (final.stdenv.targetPlatform.isWindows || final.stdenv.targetPlatform.isMusl);
+                onAarch32 = final.lib.optionals final.stdenv.targetPlatform.isAarch32;
                 onAarch64 = final.lib.optionals final.stdenv.targetPlatform.isAarch64;
                 onAarch64Musl = final.lib.optionals (final.stdenv.targetPlatform.isAarch64 && final.stdenv.targetPlatform.isMusl);
                 onAndroid = final.lib.optionals final.stdenv.targetPlatform.isAndroid;
                 onNative = final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform);
                 onCross = final.lib.optionals (final.stdenv.targetPlatform != final.stdenv.hostPlatform);
                 onGhcjs = final.lib.optionals final.stdenv.targetPlatform.isGhcjs;
+                on32bit = final.lib.optionals final.stdenv.targetPlatform.is32bit;
                 # Try to avoid reordering the patches unless a patch is added or changed that
                 # will be applied to most versions of the GHC anyway (reordering the patches
                 # results in rebuilds of GHC and reduces sharing in /nix/store).
@@ -100,8 +103,8 @@ in {
                 ++ onDarwin (until             "9.0.2" ./patches/ghc/ghc-8.10-darwin-gcc-version-fix.patch)
 
                 # See https://github.com/input-output-hk/haskell.nix/issues/1027
+                ++ onAarch32 (until             "9.2" ./patches/ghc/ghc-8.10-3434-armv7a.patch)
                 ++ onAarch64 (until             "9.2" ./patches/ghc/ghc-8.10-3434.patch)
-                ++ onAarch64 (fromUntil "9.2.1" "9.4" ./patches/ghc/ghc-9.2-3434.patch)
 
                 ++ until              "9.4"    ./patches/ghc/ghc-acrt-iob-func.patch
                 ++ until              "9.2"    ./patches/ghc/ghc-mprotect-nonzero-len.patch
@@ -134,7 +137,8 @@ in {
                 ++ onWindows (fromUntil "9.6.3"  "9.11"   ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
                 # support R_X86_64_PC64 (ELF constant 24) - IMAGE_REL_AMD64_SREL32 (PE constant 14), which seems to appear with 9.6 more frequently, and
                 # results in "unhandled PEi386 relocation type 14".
-                ++ onWindows (fromUntil "9.4.1"    "9.8.3"  ./patches/ghc/win-reloc-x86_64-pc64.patch)
+                ++ onWindows (fromUntil "9.4.1"    "9.6.7"  ./patches/ghc/win-reloc-x86_64-pc64.patch)
+                ++ onWindows (fromUntil "9.8.1"    "9.8.3"  ./patches/ghc/win-reloc-x86_64-pc64.patch)
                 ++ onWindows (fromUntil "9.10"     "9.11"   ./patches/ghc/win-reloc-x86_64-pc64.patch)
                 # ++ onWindows (fromUntil "9.4.1"  "9.10"   ./patches/ghc/Win32-depends-on-mingwex.patch)
                 # if the host system provides ucrt (e.g. wine with ucrtbase.dll), we may end up linking against symbols from ucrtbase, instead of msvcrt,
@@ -166,15 +170,17 @@ in {
                 ++ onWindows (fromUntil "9.0"    "9.4"    ./patches/ghc/ghc-9.0-windres-invocation.patch)
                 ++ onWindows (from      "9.12"            ./patches/ghc/ghc-9.12-windows-rts-symbols.patch)
                 ++ fromUntil "9.4.5"  "9.4.9"         ./patches/ghc/ghc-9.4.5-include-order-fix.patch
-                ++ fromUntil "9.6.2"  "9.8"           ./patches/ghc/ghc-9.4.5-include-order-fix.patch
-                ++ fromUntil "9.6.1"  "9.9.20231203"  ./patches/ghc/MR10116.patch
+                ++ fromUntil "9.6.2"  "9.6.7"         ./patches/ghc/ghc-9.4.5-include-order-fix.patch
+                ++ fromUntil "9.6.1"  "9.6.7"         ./patches/ghc/MR10116.patch
+                ++ fromUntil "9.8.1"  "9.9.20231203"  ./patches/ghc/MR10116.patch
                 ++ onNative (fromUntil "9.4.1" "9.6"   ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc94.patch)
                 ++ onNative (fromUntil "9.6.1" "9.14"  ./patches/ghc/hadrian-build-deriveConstants-genprimopcode.patch)
                 ++ onGhcjs (fromUntil "9.6.1" "9.6.3" ./patches/ghc/ghc-9.6-Merge-libiserv-with-ghci.patch)
                 ++ onGhcjs (fromUntil "9.6.3" "9.8"   ./patches/ghc/ghc-9.6.3-Merge-libiserv-with-ghci.patch)
                 ++ onGhcjs (fromUntil "9.6.1" "9.8"   ./patches/ghc/ghc-9.6-Assorted-changes-to-avoid-head-tail.patch)
                 ++ onGhcjs (fromUntil "9.6.1" "9.6.3" ./patches/ghc/ghc-9.6-JS-implement-TH-support.patch)
-                ++ onGhcjs (fromUntil "9.6.3" "9.8"   ./patches/ghc/ghc-9.6.3-JS-implement-TH-support.patch)
+                ++ onGhcjs (fromUntil "9.6.3" "9.6.7" ./patches/ghc/ghc-9.6.3-JS-implement-TH-support.patch)
+                ++ onGhcjs (fromUntil "9.6.7" "9.8"   ./patches/ghc/ghc-9.6.7-JS-implement-TH-support.patch)
                 ++ fromUntil "9.8.1"  "9.8.2"  ./patches/ghc/ghc-9.8-cabal-c-soures-fix.patch
                 ++ fromUntil "9.6.3"  "9.6.5"  ./patches/ghc/ghc-9.6.3-Cabal-9384.patch
                 ++ fromUntil "9.8.1"  "9.8.3"    ./patches/ghc/ghc-9.6.3-Cabal-9384.patch
@@ -186,15 +192,19 @@ in {
                 ++ onAndroid (until "9.0" ./patches/ghc/stack-protector-symbols.patch)
                 ++ onAndroid (until "9.0" ./patches/ghc/libraries-prim-os-android.patch)
                 ++ onAndroid (until "9.0" ./patches/ghc/ghc-rts-linker-condbr.patch)
-                ++ onAndroid (until "9.0" ./patches/ghc/ghc-8.10.7-linker-weak-and-common.patch)
-                ++ onAndroid (until "9.0" ./patches/ghc/libc-memory-symbols.patch)
+                # due to mmap-next renaming we need different ones for aarch64 and aarch32 m(
+                ++ onAndroid (onAarch32 (until "9.0" ./patches/ghc/ghc-8.10.7-linker-weak-and-common-armv7a.patch))
+                ++ onAndroid (onAarch64 (until "9.0" ./patches/ghc/ghc-8.10.7-linker-weak-and-common.patch))
+                ++ onAndroid (onAarch32 (until "9.0" ./patches/ghc/libc-memory-symbols-armv7a.patch))
+                ++ onAndroid (onAarch64 (until "9.0" ./patches/ghc/libc-memory-symbols.patch))
                 ++ onAndroid (until "9.0" ./patches/ghc/android-base-needs-iconv.patch)
                 ++ onCross   (until "9.4" ./patches/ghc/ghc-make-stage-1-lib-ghc.patch)
                 ++ onAarch64 (until "9.0" ./patches/ghc/ghc-8.10-better-symbol-addr-debug.patch)
                 ++ onAarch64 (until "9.0" ./patches/ghc/ghc-8.10-aarch64-handle-none-rela.patch)
                 ++ onWindows (until "9.0" ./patches/ghc/5b08e0c06e038448a63aa9bd7f163b23d824ba4b.patch)
                 ++ onAarch64 (fromUntil "9.0" "9.11" ./patches/ghc/ghc-9.0-better-symbol-addr-debug.patch)
-                ++ onAarch64 (fromUntil "9.0" "9.8.3" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
+                ++ onAarch64 (fromUntil "9.0" "9.6.7" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
+                ++ onAarch64 (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
                 ++ onAarch64 (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
 
                 ++ onWindows (fromUntil "9.6.3" "9.6.4" ./patches/ghc/ghc-9.6-hadrian-splitsections.patch)
@@ -207,6 +217,7 @@ in {
                 ++ onWindows (fromUntil "9.8" "9.8.2" ./patches/ghc/ghc-9.6-fix-code-symbol-jumps.patch)
                 # this one is to allow linking extra symbols from iserv.
                 # ++ fromUntil "9.6.1" "9.10"                                                                                       ./patches/ghc/iserv-syms.patch
+                ++ on32bit   (fromUntil "9.6" "9.6.5" ./patches/ghc/ghc-9.6-genapply-cross-arch.patch)
                 # Fix the bad fixups: https://gitlab.haskell.org/ghc/ghc/-/commit/2adc050857a9c1b992040fbfd55fbe65b2851b19
                 ++ onAarch64 (fromUntil "9.6" "9.6.4" ./patches/ghc/2adc050857a9c1b992040fbfd55fbe65b2851b19.patch)
 
@@ -219,10 +230,28 @@ in {
                 # This one will lead to segv's on darwin, when calling `strlen` during lookupStrHashTable. `strlen` ends up being called with 0x0.
                 # This patch will allow adding additional symbols to iserv, instead of having to patch them into GHC all the time.
                 ++ final.lib.optionals (
-                        final.stdenv.targetPlatform != final.stdenv.hostPlatform
-                     && (final.stdenv.targetPlatform.isAndroid || final.stdenv.targetPlatform.isLinux)
+                        (final.stdenv.targetPlatform.isAndroid || final.stdenv.targetPlatform.isLinux)
                      && (final.stdenv.targetPlatform.isAarch64 || final.stdenv.targetPlatform.is32bit))
                   (fromUntil "9.6.1" "9.11" ./patches/ghc/iserv-syms.patch)
+                ++ onAndroid (until "9.0" ./patches/ghc/ghc-8.10.7-weak-symbols-2.patch)
+                ++ onDarwin (onAarch64 (until "9.0" ./patches/ghc/ghc-8.10.7-rts-aarch64-darwin.patch))
+                ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10-android.patch))
+                ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10.7-android-bionic-symbols.patch))
+                ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10.7-bionic-libc.patch))
+                ++ onAndroid (onAarch32 (until "9.2" ./patches/ghc/ghc-8.10.7-cross-dont-build-stage2-tools.patch))
+                ++ onAndroid (fromUntil "9.0" "9.10" ./patches/ghc/ghc-9.6-hadrian-android.patch)
+                ++ onAndroid (from "9.10" ./patches/ghc/ghc-9.10-hadrian-android.patch)
+                ++ onAndroid (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.10-relax-llvm-max-version.patch)
+                ++ onAndroid (from "9.12" ./patches/ghc/ghc-define-undefined-elf-st-visibility.patch)
+                ++ onMusl (onAarch64 (fromUntil "9.4"  "9.8"  ./patches/ghc/ghc-9.6-hadrian-strip-cmd.patch))
+                ++ onMusl (onAarch64 (fromUntil "9.8"  "9.10" ./patches/ghc/ghc-9.8-hadrian-strip-cmd.patch))
+                ++ onMusl (onAarch64 (fromUntil "9.10" "9.12" ./patches/ghc/ghc-9.10-hadrian-strip-cmd.patch))
+                ++ on32bit (fromUntil "9.0" "9.4.8" ./patches/ghc/ghc-9.6-32bit-cmm.patch)
+                ++ on32bit (fromUntil "9.6" "9.6.4" ./patches/ghc/ghc-9.6-32bit-cmm.patch)
+                ++ onAndroid (fromUntil "9.6.3" "9.8.3" ./patches/ghc/ghc-9.6-iog.patch)
+                ++ onAndroid (fromUntil "9.8.3" "9.10"  ./patches/ghc/ghc-9.8.3-iog.patch)
+                ++ onAndroid (fromUntil "9.6" "9.9" ./patches/ghc/ghc-9.6-debug-secno.patch)
+                ++ onAndroid (from "9.8.1" ./patches/ghc/ghc-9.8-android-convert-os.patch)
 
                 # Allow loading static external plugins into cross compilers
                 ++ onCross (fromUntil "9.6.1" "9.11" ./patches/ghc/5c80a27488acfe3610ddfcb99a1e961002e386d0.patch)
@@ -234,31 +263,41 @@ in {
                      && final.stdenv.targetPlatform.is32bit
                      || final.stdenv.targetPlatform.isMusl)
                   (until "9.11" ./patches/ghc/ghc-9.6-missing-symbols-deadbeef.patch)
-                ++ onAarch64Musl (fromUntil "9.6" "9.8.3" ./patches/ghc/ghc-9.6-linker-pool-allocator.patch)
+                ++ onAarch64Musl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-linker-pool-allocator.patch)
+                ++ onAarch64Musl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-linker-pool-allocator.patch)
                 ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-linker-pool-allocator.patch)
-                ++ onAarch64Musl (fromUntil "9.6" "9.8.3" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
+                ++ onAarch64Musl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
+                ++ onAarch64Musl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
                 ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
 
                 ++ onMusl (fromUntil "9.6" "9.8" ./patches/ghc/ghc-9.6-0001-Refactor-IServ.hs.patch)
-                ++ onMusl (fromUntil "9.6" "9.8.3" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
+                ++ onMusl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
+                ++ onMusl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
                 ++ onMusl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
-                ++ onAarch64Musl (fromUntil "9.6" "9.8.3" ./patches/ghc/ghc-9.6-0003-Better-pool-alignment.-We-still-hardcode-section-ali.patch)
+                ++ onAarch64Musl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-0003-Better-pool-alignment.-We-still-hardcode-section-ali.patch)
+                ++ onAarch64Musl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-0003-Better-pool-alignment.-We-still-hardcode-section-ali.patch)
                 ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-0003-Better-pool-alignment.-We-still-hardcode-section-ali.patch)
-                ++ onAarch64Musl (fromUntil "9.6" "9.8.3" ./patches/ghc/ghc-9.6-0007-fixup-Better-pool-alignment.-We-still-hardcode-secti.patch)
+                ++ onAarch64Musl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-0007-fixup-Better-pool-alignment.-We-still-hardcode-secti.patch)
+                ++ onAarch64Musl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-0007-fixup-Better-pool-alignment.-We-still-hardcode-secti.patch)
                 ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-0007-fixup-Better-pool-alignment.-We-still-hardcode-secti.patch)
-                ++ onAarch64Musl (fromUntil "9.6" "9.8.3" ./patches/ghc/ghc-9.6-0008-pool-improvements.patch)
+                ++ onAarch64Musl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-0008-pool-improvements.patch)
+                ++ onAarch64Musl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-0008-pool-improvements.patch)
                 ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-0008-pool-improvements.patch)
                 # these two are abit questionable. They are pretty rough, and assume static binary as well as posix.
                 # onMusl (fromUntil "9.6" "9.11" ./patches/ghc/ghc-9.6-0004-ghcidladdr.patch)
                 # onMusl (fromUntil "9.6" "9.11" ./patches/ghc/ghc-9.6-0005-Better-interpreter-debugging.-Needs-ghcidladdr.patch)
 
                 # Fix docs/users_guide/rtd-theme/layout.html to work with sphinx 7
-                ++ fromUntil "9.0" "9.8" ./patches/ghc/docs-sphinx-7.patch
-                ++ fromUntil "9.8" "9.9" ./patches/ghc/docs-sphinx-7-ghc98.patch
+                ++ fromUntil "9.0" "9.6.7" ./patches/ghc/docs-sphinx-7.patch
+                ++ fromUntil "9.6.7" "9.9" ./patches/ghc/docs-sphinx-7-ghc98.patch
 
                 # These two patches are needed for libblst, which has now hidden symbols, which the linker doesn't know how to deal with.
-                ++ until "9.0" ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols.patch
-                ++ until "9.0" ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols-2.patch
+                ++ (
+                  if final.stdenv.targetPlatform.isAndroid
+                      then until "9.0" ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols-android.patch
+                      else until "9.0" ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols.patch
+                        ++ until "9.0" ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols-2.patch
+                )
                 ++ onWindowsOrMusl (fromUntil "9.6"    "9.7"  ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch)
                 ++ onWindowsOrMusl (fromUntil "9.8.2"  "9.11" ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch)
                 ++ onWindowsOrMusl (fromUntil "9.6"    "9.7"  ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch)
@@ -284,6 +323,13 @@ in {
 
                 # See https://gitlab.haskell.org/ghc/ghc/-/merge_requests/12586
                 ++ onWindows (fromUntil "9.6.6" "9.12" ./patches/ghc/ghc-win32-io-manager-compilation.patch)
+
+                # See https://gitlab.haskell.org/ghc/ghc/-/issues/16130
+                ++ onAndroid (fromUntil "9.6.6" "9.12" ./patches/ghc/ghc-9.6-static-linker-script-support.patch)
+                ++ onAndroid (from      "9.12.1"       ./patches/ghc/ghc-9.12-static-linker-script-support.patch)
+
+                ++ onAndroid (from      "9.6"          ./patches/ghc/ghc-9.6-COMPAT_R_ARM_PREL31.patch)
+                ++ onAndroid (from      "9.10"         ./patches/ghc/ghc-9.10-ignore-libc.patch)
                 ;
         in ({
             ghc8107 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
@@ -962,7 +1008,7 @@ in {
             compiler-nix-name = versionToNixName version;
           in {
             name = compiler-nix-name;
-            value = final.callPackage ../compiler/ghc {
+            value = final.callPackage ../compiler/ghc ({
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}; };
 
                 bootPkgs = bootPkgsGhc94 // {
@@ -995,7 +1041,21 @@ in {
                 ghc-patches = ghc-patches version;
                 ghc-version-date = version-date;
                 ghc-commit-id = src.rev;
-            };
+            } // final.lib.optionalAttrs (builtins.compareVersions version "9.7" <0) {
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc966
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc966
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc965
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc964
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944;
+                };
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+            });
           }) gitInputs))
         // final.lib.optionalAttrs (final.stdenv.targetPlatform.isGhcjs or false) (
          if final.stdenv.hostPlatform.isGhcjs

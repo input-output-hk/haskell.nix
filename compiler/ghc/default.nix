@@ -45,9 +45,9 @@ let self =
 
 , enableDWARF ? false
 
-, enableTerminfo ?
+, enableTerminfo ? !stdenv.targetPlatform.isAndroid &&
     # Terminfo does not work on older ghc cross arm and windows compilers
-     (!haskell-nix.haskellLib.isCrossTarget || !(stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isWindows) || builtins.compareVersions ghc-version "8.10" >= 0)
+     (!haskell-nix.haskellLib.isCrossTarget || !(stdenv.targetPlatform.isAarch32 || stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isWindows) || builtins.compareVersions ghc-version "8.10" >= 0)
 
 , # Wheter to build in NUMA support
   enableNUMA ? true
@@ -62,7 +62,7 @@ let self =
 
 , # Whether to disable the large address space allocator
   # necessary fix for iOS: https://www.reddit.com/r/haskell/comments/4ttdz1/building_an_osxi386_to_iosarm64_cross_compiler/d5qvd67/
-  disableLargeAddressSpace ? stdenv.targetPlatform.isDarwin && stdenv.targetPlatform.isAarch64
+  disableLargeAddressSpace ? stdenv.targetPlatform.isDarwin && stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isAndroid
 
 , useLdGold ?
     # might be better check to see if cc is clang/llvm?
@@ -169,8 +169,9 @@ let
     WITH_TERMINFO=NO
   ''
   # musl doesn't have a system-linker. Only on x86, and on x86 we need it, as
-  # our elf linker for x86_64 is broken.
-  + lib.optionalString (targetPlatform.isAndroid || (targetPlatform.isMusl && !targetPlatform.isx86)) ''
+  # our elf linker for x86_64 is broken. The i686 one seems also to not exist.
+  # So it's really _just_ x86_64.
+  + lib.optionalString (targetPlatform.isAndroid || (targetPlatform.isMusl && !targetPlatform.isx86_64)) ''
     compiler_CONFIGURE_OPTS += --flags=-dynamic-system-linker
   ''
   # While split sections are now enabled by default in ghc 8.8 for windows,
@@ -183,12 +184,14 @@ let
     SplitSections = NO
   '' + lib.optionalString (!enableLibraryProfiling) ''
     BUILD_PROF_LIBS = NO
+  '' + lib.optionalString (disableLargeAddressSpace) ''
+    libraries/base_CONFIGURE_OPTS += --configure-option=--with-libcharset=no
   '';
 
   # `--with` flags for libraries needed for RTS linker
   configureFlags = [
         "--datadir=$doc/share/doc/ghc"
-    ] ++ lib.optionals (!targetPlatform.isGhcjs) ["--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
+    ] ++ lib.optionals (!targetPlatform.isGhcjs && !targetPlatform.isAndroid) ["--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
     ] ++ lib.optionals (targetLibffi != null && !targetPlatform.isGhcjs) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
     ] ++ lib.optionals (!enableIntegerSimple && !targetPlatform.isGhcjs) [
         "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
@@ -216,23 +219,24 @@ let
         # https://gitlab.haskell.org/ghc/ghc/-/issues/23188
         # https://github.com/haskell/cabal/issues/8882
         "fp_cv_prog_ar_supports_dash_l=no"
-    ] ++ lib.optional (targetPlatform.isGhcjs) "--target=javascript-unknown-ghcjs"; # TODO use configurePlatforms once tripple is updated in nixpkgs
+    ] ++ lib.optionals (targetPlatform.isDarwin) [
+        "--without-libcharset"
+    ] ++ lib.optional (targetPlatform.isGhcjs) "--target=javascript-unknown-ghcjs" # TODO use configurePlatforms once tripple is updated in nixpkgs
+    ;
 
   # Splicer will pull out correct variations
-  libDeps = platform: lib.optional (enableTerminfo && !targetPlatform.isGhcjs) [ targetPackages.ncurses targetPackages.ncurses.dev ]
+  libDeps = platform: lib.optional (enableTerminfo && !targetPlatform.isGhcjs && !targetPlatform.isAndroid) [ targetPackages.ncurses targetPackages.ncurses.dev ]
     ++ lib.optional (!targetPlatform.isGhcjs) targetLibffi
     ++ lib.optional (!enableIntegerSimple && !targetPlatform.isGhcjs) gmp
     ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv
     ++ lib.optional (enableNUMA && platform.isLinux && !platform.isAarch32 && !platform.isAndroid) numactl
-    # Even with terminfo disabled some older ghc cross arm and windows compilers do not build unless `ncurses` is found and they seem to want the buildPlatform version
-    ++ lib.optional (!enableTerminfo && haskell-nix.haskellLib.isCrossTarget && (stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isWindows) && builtins.compareVersions ghc-version "8.10" < 0) ncurses.dev
     ++ lib.optional enableDWARF (lib.getLib elfutils);
 
   toolsForTarget =
     if targetPlatform.isGhcjs
       then [ buildPackages.emscripten ]
     else if hostPlatform == buildPlatform
-      then [ targetPackages.stdenv.cc ] ++ lib.optionals useLLVM [llvmPackages.llvm llvmPackages.clang]
+      then [ targetPackages.stdenv.cc ] ++ lib.optionals useLLVM ([llvmPackages.llvm] ++ lib.optional (!targetPlatform.useAndroidPrebuilt) llvmPackages.clang)
     else assert targetPlatform == hostPlatform; # build != host == target
       [ stdenv.cc ] ++ lib.optional useLLVM buildLlvmPackages.llvm;
 
@@ -244,7 +248,7 @@ let
   # for musl only; but I'd like to stay far away from the unnecessary
   # bindist logic as we can. It's slow, and buggy, and doesn't provide any
   # value for us.
-  installStage1 = useHadrian && (haskell-nix.haskellLib.isCrossTarget || stdenv.targetPlatform.isMusl);
+  installStage1 = useHadrian && (with haskell-nix.haskellLib; isCrossTarget || isNativeMusl);
 
   hadrian =
     let
@@ -345,7 +349,14 @@ let
         " '*.ghc.cabal.configure.opts += --flags=-dynamic-system-linker'"
       # The following is required if we build on aarch64-darwin for aarch64-iOS. Otherwise older
       # iPhones/iPads/... won't understand the compiled code, as the compiler will emit LDSETALH
-      # + lib.optionalString (targetPlatform.???) "'*.rts.ghc.c.opts += -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc'"
+      # FIXME: we should have iOS as an argument to this derivation, and then make this, as well as
+      #        disableLargeAddress space conditional on iOS = true.
+      + lib.optionalString (stdenv.targetPlatform.isDarwin && stdenv.targetPlatform.isAarch64)
+        " '*.*.ghc.c.opts += -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc'"
+      + lib.optionalString (targetPlatform.isAndroid && targetPlatform.isAarch32)
+        " 'stage1.*.ghc.c.opts += -optc-march=armv7-a -optc-mfloat-abi=softfp -optc-mfpu=vfpv3-d16'"
+      + lib.optionalString (targetPlatform.isAndroid && targetPlatform.isAarch64)
+        " 'stage1.*.ghc.c.opts += -optc-march=armv8-a'"
       # For GHC versions in the 9.x range that don't support the +native_bignum flavour transformer yet
       + lib.optionalString ((enableNativeBignum && !hadrianHasNativeBignumFlavour))
         " --bignum=native"
@@ -462,7 +473,10 @@ stdenv.mkDerivation (rec {
         export NIX_LDFLAGS+=" -rpath $out/lib/${targetPrefix}ghc-${ghc-version}"
     '' + lib.optionalString stdenv.isDarwin ''
         export NIX_LDFLAGS+=" -no_dtrace_dof"
-    '' + lib.optionalString targetPlatform.useAndroidPrebuilt ''
+    '' +
+    # we really want "+armv7-a,+soft-float,+neon" as features, but llvm will
+    # fail with those :facepalm:
+    lib.optionalString targetPlatform.useAndroidPrebuilt ''
         sed -i -e '5i ,("armv7a-unknown-linux-androideabi", ("e-m:e-p:32:32-i64:64-v128:64:128-a:0:32-n32-S64", "cortex-a8", ""))' llvm-targets
     '' + lib.optionalString targetPlatform.isMusl ''
         echo "patching llvm-targets for musl targets..."
@@ -537,7 +551,7 @@ stdenv.mkDerivation (rec {
                    ++ lib.optional stdenv.targetPlatform.isMusl "pie"
                    ++ lib.optional enableDWARF "fortify";
 
-  postInstall = lib.optionalString (enableNUMA && targetPlatform.isLinux) ''
+  postInstall = lib.optionalString (enableNUMA && targetPlatform.isLinux && !targetPlatform.isAarch32 && !targetPlatform.isAndroid) ''
     # Patch rts.conf to ensure libnuma can be found
 
     for file in $(find "$out/lib" -name "rts*.conf"); do
@@ -731,7 +745,7 @@ stdenv.mkDerivation (rec {
           --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
         find . -name 'system*.conf*'
         cat mk/system-cxx-std-lib-1.0.conf
-      '' + lib.optionalString (installStage1 && stdenv.targetPlatform.isMusl) ''
+      '' + lib.optionalString (installStage1 && haskell-nix.haskellLib.isNativeMusl) ''
         substituteInPlace hadrian/cfg/system.config \
           --replace 'cross-compiling       = YES' \
                     'cross-compiling       = NO'
@@ -781,7 +795,7 @@ stdenv.mkDerivation (rec {
   dontStrip = true;
   dontPatchELF = true;
   noAuditTmpdir = true;
-} // lib.optionalAttrs (stdenv.buildPlatform.isDarwin || stdenv.targetPlatform.isWindows) {
+} // {
   # ghc install on macOS wants to run `xattr -r -c`
   # The macOS version fails because it wants python 2.
   # The nix version of xattr does not support those args.
@@ -821,12 +835,13 @@ stdenv.mkDerivation (rec {
       --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
     find . -name 'system*.conf*'
     cat mk/system-cxx-std-lib-1.0.conf
-  '' + lib.optionalString (installStage1 && !haskell-nix.haskellLib.isCrossTarget && stdenv.targetPlatform.isMusl) ''
+  '' + lib.optionalString (installStage1 && haskell-nix.haskellLib.isNativeMusl) ''
     substituteInPlace hadrian/cfg/system.config \
       --replace 'cross-compiling       = YES' \
                 'cross-compiling       = NO'
   '';
   buildPhase = ''
+    runHook preBuild
     ${hadrian}/bin/hadrian ${hadrianArgs}
   '' + lib.optionalString (installStage1 && !stdenv.targetPlatform.isGhcjs && builtins.compareVersions ghc-version "9.8" < 0) ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:libiserv
@@ -841,6 +856,8 @@ stdenv.mkDerivation (rec {
       mv $exe ${targetPrefix}$exe
     done
     popd
+  '' + ''
+    runHook postBuild
   '';
 
   # Hadrian's installation only works for native compilers, and is broken for cross compilers.

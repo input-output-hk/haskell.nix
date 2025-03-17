@@ -25,6 +25,9 @@ let
     inherit modules;
   };
 
+  exe = (project.getComponent "cabal-simple:exe:cabal-simple")
+    .override (lib.optionalAttrs stdenv.hostPlatform.isAndroid { setupBuildFlags = ["--ghc-option=-optl-static" ]; });
+
 in recurseIntoAttrs {
   # This test seeems to be broken on 8.6 and 8.8 and ghcjs
   meta.disabled = compiler-nix-name == "ghc865" || compiler-nix-name == "ghc884" || stdenv.hostPlatform.isGhcjs;
@@ -35,7 +38,7 @@ in recurseIntoAttrs {
     name = "cabal-simple-prof-test";
 
     buildCommand = ''
-      exe="${(project.getComponent "cabal-simple:exe:cabal-simple").exePath}"
+      exe="${exe.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
@@ -45,7 +48,7 @@ in recurseIntoAttrs {
       # Curiosity: cross compilers prodcing profiling with `+RTS -p -h` lead to the following cryptic message:
       #   cabal-simple: invalid heap profile option: -h*
       # Hence we pass `-hc`.
-      ${toString (project.getComponent "cabal-simple:exe:cabal-simple").config.testWrapper} $exe +RTS -p -hc
+      ${toString exe.config.testWrapper} $exe +RTS -p -hc
 
       touch $out
     '';

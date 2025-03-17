@@ -20,7 +20,7 @@
         hashable.flags.arch-native = false;
         heaps.revision = import ./cabal-files/heaps.nix;
         Cabal-syntax.revision = import ./cabal-files/Cabal-syntax.nix;
-        process.revision = hackage.process."1.6.17.0".revisions.default;
+        process.revision = import ./cabal-files/process.nix;
         primitive.revision = import ./cabal-files/primitive.nix;
         stm.revision = hackage.stm."2.5.1.0".revisions.default;
         template-haskell.revision = hackage.template-haskell."2.20.0.0".revisions.default;
@@ -47,7 +47,10 @@
         random.revision = import ./cabal-files/random.nix;
         bytestring.revision = hackage.bytestring."0.11.5.3".revisions.default;
         Cabal.revision = import ./cabal-files/Cabal.nix;
-        directory.revision = hackage.directory."1.3.8.1".revisions.default;
+        directory.revision = import ./cabal-files/directory.nix;
+        directory.flags.os-string = false;
+        file-io.revision = import ./cabal-files/file-io.nix;
+        file-io.flags.os-string = false;
         js-flot.revision = import ./cabal-files/js-flot.nix;
         ghc-bignum.revision = hackage.ghc-bignum."1.3".revisions.default;
         binary.revision = hackage.binary."0.8.9.1".revisions.default;
@@ -72,9 +75,7 @@
           "time" = "1.12.2";
           "stm" = "2.5.1.0";
           "ghc-bignum" = "1.3";
-          "directory" = "1.3.8.1";
           "template-haskell" = "2.20.0.0";
-          "process" = "1.6.17.0";
           "binary" = "0.8.9.1";
           "pretty" = "1.1.3.6";
           "text" = "2.0.2";
@@ -98,7 +99,6 @@
         "ghc-boot-th"
         "mtl"
         "pretty"
-        "process"
         "stm"
         "template-haskell"
         "exceptions"
@@ -109,7 +109,6 @@
         "containers"
         "array"
         "bytestring"
-        "directory"
         "ghc-bignum"
         "binary"
         "filepath"
@@ -135,6 +134,7 @@
           "unordered-containers".components.library.planned = lib.mkOverride 900 true;
           "text".components.library.planned = lib.mkOverride 900 true;
           "base".components.library.planned = lib.mkOverride 900 true;
+          "file-io".components.library.planned = lib.mkOverride 900 true;
           "js-flot".components.library.planned = lib.mkOverride 900 true;
           "splitmix".components.library.planned = lib.mkOverride 900 true;
           "filepath".components.library.planned = lib.mkOverride 900 true;

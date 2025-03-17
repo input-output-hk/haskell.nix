@@ -334,8 +334,14 @@ let
           echo ',("target arch","${
               if pkgs.stdenv.targetPlatform.isx86_64
                 then "ArchX86_64"
+              else if pkgs.stdenv.targetPlatform.isx86
+                then "ArchX86"
+              else if pkgs.stdenv.targetPlatform.isRiscV64
+                then "ArchRISCV64"
               else if pkgs.stdenv.targetPlatform.isAarch64
                 then "ArchAArch64"
+              else if pkgs.stdenv.targetPlatform.isAarch32
+                then "ArchAArch32"
               else if pkgs.stdenv.targetPlatform.isJavaScript
                 then "ArchJavaScript"
               else throw "Unknown target arch ${pkgs.stdenv.targetPlatform.config}"
@@ -681,8 +687,8 @@ let
         cabal.project.freeze
       chmod +w cabal.project.freeze
     ''}
-    export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
-    export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
+    export SSL_CERT_FILE=${evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
+    export GIT_SSL_CAINFO=${evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
 
     export CABAL_DIR=${
       # This creates `.cabal` directory that is as it would have

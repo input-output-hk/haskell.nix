@@ -1056,10 +1056,20 @@ final: prev: {
                     allow-newer: *:base, *:bytestring
                   '';
                 })).hsPkgs.iserv-proxy.components.exes;
-            in {
+            in rec {
               # We need the proxy for the build system and the interpreter for the target
               inherit (exes final.pkgsBuildBuild) iserv-proxy;
-              inherit (exes final) iserv-proxy-interpreter;
+              iserv-proxy-interpreter = (exes final).iserv-proxy-interpreter.override
+                (final.lib.optionalAttrs final.stdenv.hostPlatform.isAndroid {
+                  setupBuildFlags = ["--ghc-option=-optl-static" ] ++ final.lib.optional final.stdenv.hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";
+                  enableDebugRTS = true;
+                } // final.lib.optionalAttrs final.stdenv.hostPlatform.isWindows {
+                  setupBuildFlags = ["--ghc-option=-optl-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000" ];
+                  enableDebugRTS = true;
+                });
+              iserv-proxy-interpreter-prof = iserv-proxy-interpreter.override {
+                enableProfiling = true;
+              };
             }) final.haskell-nix.compiler;
 
         # Add this to your tests to make all the dependencies of haskell.nix

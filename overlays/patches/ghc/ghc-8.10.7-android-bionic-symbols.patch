@@ -1,0 +1,31 @@
+diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
+index 29ef159..3cb0fc0 100644
+--- a/rts/RtsSymbols.c
++++ b/rts/RtsSymbols.c
+@@ -1093,14 +1093,18 @@
+       SymI_HasProto(strerror)
+ #if defined(linux_android_HOST_OS) && SIZEOF_VOID_P <= 4
+ #define RTS_BIONIC_LIBC_SYMBOLS \
+-      // SymI_NeedsProto(reallocarray) \
+-      // SymI_NeedsProto(__svfscanf) \
+-      // SymI_NeedsProto(__vfwscanf) \
+-      // SymI_NeedsProto(__memset_chk_fail) \
+-      // SymI_NeedsProto(__strcpy_chk_generic) \
+-      // SymI_NeedsProto(__strcat_chk_generic) \
+-      // SymI_NeedsProto(__libc_globals) \
+-      // SymI_NeedsProto(__rel_iplt_start)
++      SymI_NeedsProto(reallocarray) \
++      SymI_NeedsProto(dlopen) \
++      SymI_NeedsProto(dlerror) \
++      SymI_NeedsProto(dlclose) \
++      SymI_NeedsProto(dlsym) \
++      SymI_NeedsProto(__svfscanf) \
++      SymI_NeedsProto(__vfwscanf) \
++      SymI_NeedsProto(__memset_chk_fail) \
++      SymI_NeedsProto(__strcpy_chk_generic) \
++      SymI_NeedsProto(__strcat_chk_generic) \
++      SymI_NeedsProto(__libc_globals) \
++      SymI_NeedsProto(__rel_iplt_start)
+ #else
+ #define RTS_BIONIC_LIBC_SYMBOLS
+ #endif
