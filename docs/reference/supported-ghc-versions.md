@@ -25,7 +25,7 @@ really should use an instance of Nixpkgs provided by `haskell.nix` itself.
 | unstable         | `nixpkgs-unstable` | 9.6.6       | `ghc96` or `ghc966`   | Yes           |
 | unstable         | `nixpkgs-unstable` | 9.8.4       | `ghc98` or `ghc984`   | Yes           |
 | unstable         | `nixpkgs-unstable` | 9.10.1      | `ghc910` or `ghc9101` | Yes           |
-| unstable         | `nixpkgs-unstable` | 9.12.1      | `ghc912` or `ghc9121` | Yes           |
+| unstable         | `nixpkgs-unstable` | 9.12.2      | `ghc912` or `ghc9122` | Yes           |
 
 See [ci.nix](https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix)
 for the source of truth about what is built and tested (in the off chance this

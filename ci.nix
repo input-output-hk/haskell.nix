@@ -61,7 +61,7 @@
         ghc96 = true;
         ghc98 = true;
         ghc910 = true;
-        ghc9121 = true;
+        ghc912 = true;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc96 = false;
         ghc96X = true;
@@ -70,7 +70,6 @@
         ghc910 = true;
         ghc910llvm = true;
         ghc912 = true;
-        ghc912X = true;
         ghc913 = true;
       })));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
