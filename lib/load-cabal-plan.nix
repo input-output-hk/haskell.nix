@@ -75,7 +75,9 @@ let
           buildable = true;
         } // lookupDependencies hsPkgs.pkgsBuildBuild (components.setup.depends or []) (components.setup.exe-depends or []);
       };
-  nixFilesDir = callProjectResults.projectNix + callProjectResults.src.origSubDir or "";
+  # We use unsafeDiscardStringContext to ensure that we don't query this derivation when importing
+  # each package. The cost can be very high when using a remote store, as we need to do a network call.
+  nixFilesDir = builtins.unsafeDiscardStringContext callProjectResults.projectNix.outPath + callProjectResults.src.origSubDir or "";
 in {
   # This replaces the `plan-nix/default.nix`
   pkgs = (hackage: {
