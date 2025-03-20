@@ -1,7 +1,7 @@
 final: prev:
 let
     buildBootstrapper.compilerNixName =
-      if final.buildPackages.haskell.compiler ? ghc964 then "ghc964"
+      if final.buildPackages.haskell.compiler ? ghc966 then "ghc966"
       else "ghc8107";
     latestVerMap = {
       "8.10" = "8.10.7";
@@ -50,7 +50,7 @@ in {
             };
             # ghc 9.0.2 is no longer cached for nixpkgs-unstable and it seems to be broken
             nixpkgsBootCompiler =
-              if final.buildPackages.haskell.compiler ? ghc964 then "ghc964"
+              if final.buildPackages.haskell.compiler ? ghc966 then "ghc966"
               else "ghc902";
             bootPkgsGhc94 = bootPkgs // {
                 alex = final.buildPackages.haskell-nix.tool nixpkgsBootCompiler "alex" {

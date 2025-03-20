@@ -105,6 +105,7 @@
       ] ++ (if runningHydraEvalTest then [ ] else [
         "x86_64-darwin"
         "aarch64-darwin"
+        "aarch64-linux"
       ]);
 
       nixpkgsArgs = {
