@@ -165,7 +165,11 @@ final: prev: {
             };
 
         # Package sets for all stackage snapshots.
-        snapshots = import ../snapshots.nix { inherit (final) lib ghc-boot-packages; inherit mkPkgSet stackage excludeBootPackages; };
+        snapshots = import ../snapshots.nix {
+          inherit (final) lib ghc-boot-packages;
+          inherit mkPkgSet stackage excludeBootPackages;
+          hackage = hackageForStack;
+        };
         # Pick a recent LTS snapshot to be our "default" package set.
         haskellPackages =
             if final.stdenv.targetPlatform.isAarch64 && final.stdenv.buildPlatform.isAarch64

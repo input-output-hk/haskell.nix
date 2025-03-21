@@ -6,12 +6,13 @@
 # A particular package in a snapshot would be accessed with:
 #   snapshots."lts-13.18".conduit
 
-{ lib, mkPkgSet, stackage, excludeBootPackages, ghc-boot-packages }:
+{ lib, mkPkgSet, stackage, excludeBootPackages, ghc-boot-packages, hackage }:
 
 with lib;
 
 let
   mkSnapshot = name: pkg-def: (let pkgSet = mkPkgSet {
+    inherit hackage;
     pkg-def = excludeBootPackages null pkg-def;
     # ghc-boot-packages are needed for the reinstallable ghc library and
     # are constructed from the patched ghc source.
