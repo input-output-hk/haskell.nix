@@ -527,7 +527,7 @@ stdenv.mkDerivation (rec {
 
   checkTarget = "test";
 
-  hardeningDisable = [ "format" ]
+  hardeningDisable = [ "format" "stackprotector" ]
                    ++ lib.optional stdenv.targetPlatform.isAarch32 "pic"
                    ++ lib.optional stdenv.targetPlatform.isMusl "pie"
                    ++ lib.optional enableDWARF "fortify";
