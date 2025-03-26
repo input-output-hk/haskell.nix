@@ -1,6 +1,5 @@
 { lib, runCommand }:
-let
-  makeCompilerDeps = ghc: ghc // {
+ghc: ghc // {
     cachedDeps = runCommand "${ghc.name}-deps" {}
       # First checks that ghc-pkg runs first with `--version` as failures in the `for` and
       # `if` statements will be masked.
@@ -34,9 +33,4 @@ let
         fi
       done
       '';
-  } // lib.optionalAttrs (ghc ? dwarf) {
-    dwarf = makeCompilerDeps ghc.dwarf;
-  } // lib.optionalAttrs (ghc ? smallAddressSpace) {
-    smallAddressSpace = makeCompilerDeps ghc.smallAddressSpace;
-  };
-in makeCompilerDeps
+  }

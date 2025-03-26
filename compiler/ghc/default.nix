@@ -85,6 +85,8 @@ let self =
 
 # extra values we want to have available as passthru values.
 , extra-passthru ? {}
+
+, hadrianEvalPackages ? buildPackages
 }@args:
 
 assert !(enableIntegerSimple || enableNativeBignum) -> gmp != null;
@@ -262,6 +264,7 @@ let
     buildPackages.haskell-nix.tool compiler-nix-name "hadrian" {
       compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
+      evalPackages = hadrianEvalPackages;
       modules = [{
         reinstallableLibGhc = false;
         # Apply the patches in a way that does not require using something
@@ -370,7 +373,7 @@ let
   };
 
 in
-stdenv.mkDerivation (rec {
+haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
   version = ghc-version;
   name = "${targetPrefix}ghc-${version}" + lib.optionalString (useLLVM) "-llvm";
 
@@ -658,7 +661,7 @@ stdenv.mkDerivation (rec {
     '';
 
   passthru = {
-    inherit bootPkgs targetPrefix libDir llvmPackages enableShared useLLVM;
+    inherit bootPkgs targetPrefix libDir llvmPackages enableShared useLLVM hadrian;
 
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";
@@ -896,5 +899,5 @@ stdenv.mkDerivation (rec {
         cd ../../..
         runHook postInstall
       '';
-});
+}));
 in self
