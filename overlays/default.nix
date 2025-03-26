@@ -76,7 +76,6 @@ let
 
     bootstrap = import ./bootstrap.nix;
     compiler-llvm = import ./compiler-llvm.nix;
-    ghc = import ./ghc.nix;
     ghc-packages = import ./ghc-packages.nix;
     darwin = import ./darwin.nix;
     windows = import ./windows.nix;
@@ -114,7 +113,6 @@ let
     nix-tools
     bootstrap
     compiler-llvm
-    ghc
     ghc-packages
     darwin
     windows
