@@ -101,7 +101,9 @@ let
   inherit (stdenv) buildPlatform hostPlatform targetPlatform;
   inherit (haskell-nix.haskellLib) isCrossTarget;
 
-  inherit (bootPkgs) ghc;
+  ghc = if bootPkgs.ghc.isHaskellNixCompiler or false
+    then bootPkgs.ghc.override { inherit hadrianEvalPackages; }
+    else bootPkgs.ghc;
 
   ghcHasNativeBignum = builtins.compareVersions ghc-version "9.0" >= 0;
   hadrianHasNativeBignumFlavour = builtins.compareVersions ghc-version "9.6" >= 0;

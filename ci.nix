@@ -122,7 +122,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
         # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
         native = pkgs.recurseIntoAttrs ({
           roots = pkgs.haskell-nix.roots' compiler-nix-name ifdLevel;
-          ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name};
+          ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { hadrianEvalPackages = evalPackages; };
         } // pkgs.lib.optionalAttrs runTests {
           inherit (build) tests tools maintainer-scripts maintainer-script-cache;
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) rec {
@@ -143,7 +143,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
             build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };
         in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
             roots = pkgs.haskell-nix.roots' compiler-nix-name ifdLevel;
-            ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name};
+            ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { hadrianEvalPackages = evalPackages; };
             # TODO: look into cross compiling ghc itself
             # ghc = pkgs.haskell-nix.compiler.${compiler-nix-name};
             # TODO: look into making tools work when cross compiling
