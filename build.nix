@@ -28,11 +28,9 @@ in rec {
       });
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.4" >= 0) {
       # Make sure the plan for hadrian is cached (we need it to instanciate ghc).
-      hadrian-plan = (pkgs.haskell-nix.compiler.${compiler-nix-name}.hadrian.project.appendModule [{
-        compilerSelection = p: builtins.mapAttrs.override { hadiranEvalPackages = evalPackages; } p.haskell-nix.compiler;
-      }]).plan-nix;
+      hadrian-plan = pkgs.haskell-nix.compiler.${compiler-nix-name}.hadrianProject.plan-nix;
       # Also include the same plan evaluated on the eval system (probably x86_64-linux).
-      hadrian-plan-eval = (pkgs.haskell-nix.compiler.${compiler-nix-name}.override { hadrianEvalPackages = evalPackages; }).hadrian.project.plan-nix;
+      hadrian-plan-eval = (pkgs.haskell-nix.compiler.${compiler-nix-name}.override { hadrianEvalPackages = evalPackages; }).hadrianProject.plan-nix;
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0) {
       hlint-latest = tool compiler-nix-name "hlint" {
         inherit evalPackages;

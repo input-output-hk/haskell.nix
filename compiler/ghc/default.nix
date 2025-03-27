@@ -254,7 +254,8 @@ let
   # value for us.
   installStage1 = useHadrian && (with haskell-nix.haskellLib; isCrossTarget || isNativeMusl);
 
-  hadrian =
+  hadrianProject =
+    assert (hadrianEvalPackages.system == "x86_64-linux");
     let
       compiler-nix-name =
         if builtins.compareVersions ghc-version "9.4.7" < 0
@@ -263,7 +264,9 @@ let
           then "ghc964"
         else "ghc962";
     in
-    buildPackages.haskell-nix.tool compiler-nix-name "hadrian" {
+    buildPackages.haskell-nix.cabalProject' {
+      inherit compiler-nix-name;
+      name = "hadrian";
       compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
       evalPackages = hadrianEvalPackages;
@@ -295,6 +298,8 @@ let
         includeSiblings = true;
       };
     };
+
+  hadrian = hadrianProject.hsPkgs.hadrian.components.exes.hadrian;
 
   # For a discription of hadrian command line args
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/README.md
@@ -663,7 +668,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     '';
 
   passthru = {
-    inherit bootPkgs targetPrefix libDir llvmPackages enableShared useLLVM hadrian;
+    inherit bootPkgs targetPrefix libDir llvmPackages enableShared useLLVM hadrian hadrianProject;
 
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";
