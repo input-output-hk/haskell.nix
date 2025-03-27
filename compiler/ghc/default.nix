@@ -284,8 +284,8 @@ let
       cabalProjectFreeze = null;
       src = haskell-nix.haskellLib.cleanSourceWith {
         src = {
-          outPath = hadrianEvalPackages.srcOnly {
-            stdenv = hadrianEvalPackages.stdenvNoCC;
+          outPath = buildPackages.srcOnly {
+            stdenv = buildPackages.stdenvNoCC;
             name = "hadrian";
             inherit src;
           };
@@ -757,7 +757,9 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     smallAddressSpace = lib.makeOverridable self (args // {
       disableLargeAddressSpace = true;
     });
-  } // extra-passthru;
+  } // extra-passthru // {
+    buildGHC = extra-passthru.buildGHC.override { inherit hadrianEvalPackages; };
+  };
 
   meta = {
     homepage = "https://haskell.org/ghc";
