@@ -121,7 +121,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
         # Native builds
         # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
         native = pkgs.recurseIntoAttrs ({
-          roots = pkgs.haskell-nix.roots' { inherit compiler-nix-name evalPackages; } ifdLevel
+          roots = pkgs.haskell-nix.roots' { inherit compiler-nix-name evalPackages; } ifdLevel;
         } // pkgs.lib.optionalAttrs runTests {
           inherit (build) tests tools maintainer-scripts maintainer-script-cache;
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) rec {
