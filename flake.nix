@@ -163,7 +163,7 @@
         # for core of haskell.nix E.g. this should always work:
         #   nix build .#roots.x86_64-linux --accept-flake-config --option allow-import-from-derivation false
         roots = forEachSystem (system:
-          self.legacyPackagesUnstable.${system}.haskell-nix.roots defaultCompiler);
+          self.legacyPackagesUnstable.${system}.haskell-nix.roots { compiler-nix-name = defaultCompiler; });
 
         # Note: `nix flake check` evaluates outputs for all platforms, and haskell.nix
         # uses IFD heavily, you have to have the ability to build for all platforms

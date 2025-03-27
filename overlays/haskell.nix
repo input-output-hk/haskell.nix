@@ -1082,12 +1082,12 @@ final: prev: {
         # are tested and cached. Consider using `p.roots` where `p` is a
         # project as it will automatically match the `compiler-nix-name`
         # of the project.
-        roots = { compiler-nix-name, evalPackages ? final.pkgsBuildBuild }: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
+        roots = { compiler-nix-name, evalPackages ? final.pkgsBuildBuild }@args: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
           (final.lib.filter (x: x.name != "recurseForDerivations")
             (final.lib.mapAttrsToList (name: path: { inherit name path; })
-              (roots' compiler-nix-name 2)));
+              (roots' args 2)));
 
-        roots' = { compiler-nix-name, evalPackages ? final.pkgsBuildBuild }: ifdLevel: evalPackages:
+        roots' = { compiler-nix-name, evalPackages ? final.pkgsBuildBuild }: ifdLevel:
           let
             ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { hadrianEvalPackages = evalPackages; };
           in
@@ -1099,7 +1099,7 @@ final: prev: {
             inherit (evalPackages) nix gitMinimal nix-prefetch-git;
           } // final.lib.optionalAttrs (final.stdenv.hostPlatform.libc == "glibc") {
             inherit (final) glibcLocales;
-          } // pkgs.lib.optionalAttrs (builtins.compareVersions ghc.version "9.4" >= 0) {
+          } // final.lib.optionalAttrs (builtins.compareVersions ghc.version "9.4" >= 0) {
             # Make sure the plan for hadrian is cached (we need it to instanciate ghc).
             hadrian-plan = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.hadrianProject.plan-nix;
             # Also include the same plan evaluated on the eval system.
