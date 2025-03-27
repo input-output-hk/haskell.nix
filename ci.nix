@@ -63,7 +63,7 @@
         ghc910 = true;
         ghc912 = true;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
-        ghc96 = false;
+        ghc96 = true;
         ghc96X = true;
         ghc98 = true;
         ghc98llvm = false;

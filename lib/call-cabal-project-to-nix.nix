@@ -13,7 +13,7 @@
 , cabalProjectLocal    ? null
 , cabalProjectFreeze   ? null
 , caller               ? "callCabalProjectToNix" # Name of the calling function for better warning messages
-, compilerSelection    ? p: p.haskell-nix.compiler
+, compilerSelection    ? p: builtins.mapAttrs (_: x: x.override { hadrianEvalPackages = evalPackages; }) p.haskell-nix.compiler
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
 , configureArgs ? "" # Extra arguments to pass to `cabal v2-configure`.
                      # `--enable-tests --enable-benchmarks` are included by default.

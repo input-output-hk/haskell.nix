@@ -682,12 +682,14 @@ final: prev: {
                     ++ (config.modules or [])
                     ++ [ {
                       ghc.package =
-                        if config.ghcOverride != null
-                          then config.ghcOverride
-                        else if config.ghc != null
-                          then config.ghc
-                        else
-                          final.lib.mkDefault selectedCompiler;
+                        let ghc =
+                          if config.ghcOverride != null
+                            then config.ghcOverride
+                          else if config.ghc != null
+                            then config.ghc
+                          else
+                            final.lib.mkDefault selectedCompiler;
+                        in if ghc.isHaskellNixCompiler or false then ghc.override { hadrianEvalPackages = evalPackages; } else ghc;
                       compiler.nix-name = final.lib.mkForce config.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
                     } ];
@@ -950,7 +952,7 @@ final: prev: {
                   modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; }
                       (mkCacheModule cache) ]
                     ++ (config.modules or [])
-                    ++ final.lib.optional (config.ghc != null) { ghc.package = config.ghc; }
+                    ++ final.lib.optional (config.ghc != null) { ghc.package = config.ghc.override { hadrianEvalPackages = evalPackages; }; }
                     ++ final.lib.optional (config.compiler-nix-name != null)
                         { compiler.nix-name = final.lib.mkForce config.compiler-nix-name; }
                     ++ [ { evalPackages = final.lib.mkDefault evalPackages; } ];
