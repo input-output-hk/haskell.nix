@@ -63,7 +63,6 @@
 , ignorePackageYaml ? false # Ignore package.yaml files even if they exist
 , ...
 }@args:
-assert (evalPackages.system != "x86_64-darwin" || materialized != null);
 let
   inherit (evalPackages.haskell-nix) materialize dotCabal;
 
