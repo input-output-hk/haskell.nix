@@ -33,7 +33,7 @@ in recurseIntoAttrs {
          stdenv.hostPlatform.isGhcjs
       || (stdenv.hostPlatform.isAarch64
           && stdenv.hostPlatform.isMusl
-          && compiler-nix-name == "ghc9101")
+          && builtins.elem compiler-nix-name ["ghc9101" "ghc966"])
     )) {
   build-profiled = packages.js-template-haskell.components.library.profiled;
   check-profiled = packages.js-template-haskell.checks.test.profiled;
