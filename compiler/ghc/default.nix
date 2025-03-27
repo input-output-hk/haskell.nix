@@ -255,7 +255,6 @@ let
   installStage1 = useHadrian && (with haskell-nix.haskellLib; isCrossTarget || isNativeMusl);
 
   hadrianProject =
-    assert (hadrianEvalPackages.system == "x86_64-linux");
     let
       compiler-nix-name =
         if builtins.compareVersions ghc-version "9.4.7" < 0
