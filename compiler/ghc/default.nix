@@ -284,8 +284,8 @@ let
       cabalProjectFreeze = null;
       src = haskell-nix.haskellLib.cleanSourceWith {
         src = {
-          outPath = buildPackages.srcOnly {
-            stdenv = buildPackages.stdenvNoCC;
+          outPath = hadrianEvalPackages.srcOnly {
+            stdenv = hadrianEvalPackages.stdenvNoCC;
             name = "hadrian";
             inherit src;
           };
