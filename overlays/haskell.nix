@@ -682,12 +682,14 @@ final: prev: {
                     ++ (config.modules or [])
                     ++ [ {
                       ghc.package =
-                        if config.ghcOverride != null
-                          then config.ghcOverride
-                        else if config.ghc != null
-                          then config.ghc
-                        else
-                          final.lib.mkDefault selectedCompiler;
+                        let ghc =
+                          if config.ghcOverride != null
+                            then config.ghcOverride
+                          else if config.ghc != null
+                            then config.ghc
+                          else
+                            final.lib.mkDefault selectedCompiler;
+                        in if ghc.isHaskellNixCompiler or false then ghc.override { hadrianEvalPackages = evalPackages; } else ghc;
                       compiler.nix-name = final.lib.mkForce config.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
                     } ];
@@ -703,7 +705,7 @@ final: prev: {
                   inherit (callProjectResults) index-state-max;
                   tool = final.buildPackages.haskell-nix.tool' evalPackages pkg-set.config.compiler.nix-name;
                   tools = final.buildPackages.haskell-nix.tools' evalPackages pkg-set.config.compiler.nix-name;
-                  roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
+                  roots = final.haskell-nix.roots { compiler-nix-name = pkg-set.config.compiler.nix-name; inherit evalPackages; };
                   projectFunction = haskell-nix: haskell-nix.cabalProject';
                   inherit projectModule buildProject;
                 };
@@ -950,7 +952,7 @@ final: prev: {
                   modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; }
                       (mkCacheModule cache) ]
                     ++ (config.modules or [])
-                    ++ final.lib.optional (config.ghc != null) { ghc.package = config.ghc; }
+                    ++ final.lib.optional (config.ghc != null) { ghc.package = config.ghc.override { hadrianEvalPackages = evalPackages; }; }
                     ++ final.lib.optional (config.compiler-nix-name != null)
                         { compiler.nix-name = final.lib.mkForce config.compiler-nix-name; }
                     ++ [ { evalPackages = final.lib.mkDefault evalPackages; } ];
@@ -964,7 +966,7 @@ final: prev: {
                   stack-nix = callProjectResults.projectNix;
                   tool = final.buildPackages.haskell-nix.tool' evalPackages pkg-set.config.compiler.nix-name;
                   tools = final.buildPackages.haskell-nix.tools' evalPackages pkg-set.config.compiler.nix-name;
-                  roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
+                  roots = final.haskell-nix.roots { compiler-nix-name = pkg-set.config.compiler.nix-name; inherit evalPackages; };
                   projectFunction = haskell-nix: haskell-nix.stackProject';
                   inherit projectModule buildProject;
                 };
@@ -1080,28 +1082,31 @@ final: prev: {
         # are tested and cached. Consider using `p.roots` where `p` is a
         # project as it will automatically match the `compiler-nix-name`
         # of the project.
-        roots = compiler-nix-name: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
+        roots = { compiler-nix-name, evalPackages ? final.pkgsBuildBuild }@args: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
           (final.lib.filter (x: x.name != "recurseForDerivations")
             (final.lib.mapAttrsToList (name: path: { inherit name path; })
-              (roots' compiler-nix-name 2)));
+              (roots' args 2)));
 
-        roots' = compiler-nix-name: ifdLevel:
+        roots' = { compiler-nix-name, evalPackages ? final.pkgsBuildBuild }: ifdLevel:
+          let
+            ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { hadrianEvalPackages = evalPackages; };
+          in
           	final.recurseIntoAttrs ({
             # Things that require no IFD to build
             source-pin-hackage = hackageSrc;
             source-pin-stackage = stackageSrc;
             source-pin-haskell-nix = final.path;
-            # Double buildPackages is intentional,
-            # see comment in lib/default.nix for details.
-            # Using buildPackages rather than evalPackages so both darwin and linux
-            # versions will get pinned (evalPackages on darwin systems will be for darwin).
-            inherit (final.buildPackages.buildPackages) gitMinimal nix-prefetch-git;
-            inherit (final.buildPackages) nix;
+            inherit (evalPackages) nix gitMinimal nix-prefetch-git;
           } // final.lib.optionalAttrs (final.stdenv.hostPlatform.libc == "glibc") {
             inherit (final) glibcLocales;
+          } // final.lib.optionalAttrs (builtins.compareVersions ghc.version "9.4" >= 0) {
+            # Make sure the plan for hadrian is cached (we need it to instanciate ghc).
+            hadrian-plan = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.hadrianProject.plan-nix;
+            # Also include the same plan evaluated on the eval system.
+            hadrian-plan-eval = ghc.hadrianProject.plan-nix;
           } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
-            ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name};
+            inherit ghc;
             ghc-boot-packages-nix = final.recurseIntoAttrs
               final.ghc-boot-packages-nix.${compiler-nix-name};
           } // final.lib.optionalAttrs (ifdLevel > 1) {

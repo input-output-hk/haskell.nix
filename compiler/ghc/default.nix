@@ -85,6 +85,8 @@ let self =
 
 # extra values we want to have available as passthru values.
 , extra-passthru ? {}
+
+, hadrianEvalPackages ? buildPackages
 }@args:
 
 assert !(enableIntegerSimple || enableNativeBignum) -> gmp != null;
@@ -99,7 +101,9 @@ let
   inherit (stdenv) buildPlatform hostPlatform targetPlatform;
   inherit (haskell-nix.haskellLib) isCrossTarget;
 
-  inherit (bootPkgs) ghc;
+  ghc = if bootPkgs.ghc.isHaskellNixCompiler or false
+    then bootPkgs.ghc.override { inherit hadrianEvalPackages; }
+    else bootPkgs.ghc;
 
   ghcHasNativeBignum = builtins.compareVersions ghc-version "9.0" >= 0;
   hadrianHasNativeBignumFlavour = builtins.compareVersions ghc-version "9.6" >= 0;
@@ -250,7 +254,7 @@ let
   # value for us.
   installStage1 = useHadrian && (with haskell-nix.haskellLib; isCrossTarget || isNativeMusl);
 
-  hadrian =
+  hadrianProject =
     let
       compiler-nix-name =
         if builtins.compareVersions ghc-version "9.4.7" < 0
@@ -259,28 +263,12 @@ let
           then "ghc964"
         else "ghc962";
     in
-    buildPackages.haskell-nix.tool compiler-nix-name "hadrian" {
+    buildPackages.haskell-nix.cabalProject' {
+      inherit compiler-nix-name;
+      name = "hadrian";
       compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
-      # Verions of hadrian that comes with 9.6 depends on `time`
-      materialized =
-        if builtins.compareVersions ghc-version "9.4" < 0
-          then ../../materialized/${compiler-nix-name}/hadrian-ghc92
-        else if builtins.compareVersions ghc-version "9.4.8" < 0
-          then ../../materialized/${compiler-nix-name}/hadrian-ghc947
-        else if builtins.compareVersions ghc-version "9.6" < 0
-          then ../../materialized/${compiler-nix-name}/hadrian-ghc94
-        else if builtins.compareVersions ghc-version "9.6.5" < 0
-          then ../../materialized/${compiler-nix-name}/hadrian-ghc964
-        else if builtins.compareVersions ghc-version "9.8" < 0
-          then ../../materialized/${compiler-nix-name}/hadrian-ghc96
-        else if builtins.compareVersions ghc-version "9.8.2" < 0
-          then ../../materialized/${compiler-nix-name}/hadrian-ghc981
-        else if builtins.compareVersions ghc-version "9.9" < 0
-          then ../../materialized/${compiler-nix-name}/hadrian-ghc98
-        else if builtins.compareVersions ghc-version "9.11" < 0
-          then ../../materialized/${compiler-nix-name}/hadrian-ghc910
-        else null;
+      evalPackages = hadrianEvalPackages;
       modules = [{
         reinstallableLibGhc = false;
         # Apply the patches in a way that does not require using something
@@ -309,6 +297,8 @@ let
         includeSiblings = true;
       };
     };
+
+  hadrian = hadrianProject.hsPkgs.hadrian.components.exes.hadrian;
 
   # For a discription of hadrian command line args
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/README.md
@@ -389,7 +379,7 @@ let
   };
 
 in
-stdenv.mkDerivation (rec {
+haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
   version = ghc-version;
   name = "${targetPrefix}ghc-${version}" + lib.optionalString (useLLVM) "-llvm";
 
@@ -677,7 +667,7 @@ stdenv.mkDerivation (rec {
     '';
 
   passthru = {
-    inherit bootPkgs targetPrefix libDir llvmPackages enableShared useLLVM;
+    inherit bootPkgs targetPrefix libDir llvmPackages enableShared useLLVM hadrian hadrianProject;
 
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";
@@ -771,7 +761,9 @@ stdenv.mkDerivation (rec {
     smallAddressSpace = lib.makeOverridable self (args // {
       disableLargeAddressSpace = true;
     });
-  } // extra-passthru;
+  } // extra-passthru // {
+    buildGHC = extra-passthru.buildGHC.override { inherit hadrianEvalPackages; };
+  };
 
   meta = {
     homepage = "https://haskell.org/ghc";
@@ -915,5 +907,5 @@ stdenv.mkDerivation (rec {
         cd ../../..
         runHook postInstall
       '';
-});
+}));
 in self

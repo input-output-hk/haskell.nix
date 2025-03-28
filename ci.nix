@@ -63,7 +63,7 @@
         ghc910 = true;
         ghc912 = true;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
-        ghc96 = false;
+        ghc96 = true;
         ghc96X = true;
         ghc98 = true;
         ghc98llvm = false;
@@ -121,12 +121,18 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
         # Native builds
         # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
         native = pkgs.recurseIntoAttrs ({
-          roots = pkgs.haskell-nix.roots' compiler-nix-name ifdLevel;
-          ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name};
+          roots = pkgs.haskell-nix.roots' { inherit compiler-nix-name evalPackages; } ifdLevel;
         } // pkgs.lib.optionalAttrs runTests {
           inherit (build) tests tools maintainer-scripts maintainer-script-cache;
-        } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
-          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }).getComponent "exe:hello";
+        } // pkgs.lib.optionalAttrs (ifdLevel >= 3) rec {
+          hello = (pkgs.haskell-nix.hackage-package ({ name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }
+            // lib.optionalAttrs (builtins.compareVersions pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.13" >= 0) {
+              shell.tools.hoogle.cabalProjectLocal = ''
+                allow-newer: *:*
+              '';
+          })).getComponent "exe:hello";
+          # Make sure the default shell tools (hoogle) are built
+          simple-shell = (hello.project.flake {}).devShells.default;
         });
       }
       //
@@ -135,8 +141,9 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
         let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; });
             build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };
         in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
-            roots = pkgs.haskell-nix.roots' compiler-nix-name ifdLevel;
-            ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name};
+            roots = pkgs.haskell-nix.roots' { inherit compiler-nix-name evalPackages; } ifdLevel // {
+              ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { hadrianEvalPackages = evalPackages; };
+            };
             # TODO: look into cross compiling ghc itself
             # ghc = pkgs.haskell-nix.compiler.${compiler-nix-name};
             # TODO: look into making tools work when cross compiling
