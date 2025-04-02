@@ -32,11 +32,10 @@ rec {
   # derivations.
   filterAttrsOnlyRecursive = pred: set:
     lib.mapAttrs (name: v:
-      if pred name v
-        then
-          if builtins.isAttrs v
-              && !lib.isDerivation v
+      if builtins.isAttrs v
+          && !(lib.isDerivation v || v ? outPath)
+        then if pred name v
             then filterAttrsOnlyRecursive pred v
-            else v
-        else {}) set;
+            else {}
+        else v.outPath or v) set;
 }
