@@ -107,7 +107,7 @@ fi
 
 # These tests still use manually generated `pkgs`.  They were left that way
 # so that we would still be testing that workflow.
-SHELL_FOR_GHC="ghc966"
+SHELL_FOR_GHC="ghc967"
 if [ "$TESTS" == "shellFor-single-package" ] || [ "$TESTS" == "all" ]; then
   printf "*** Checking shellFor works for a cabal project, multiple packages...\n" >& 2
   nix-shell $NIX_BUILD_ARGS \

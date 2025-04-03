@@ -1107,8 +1107,7 @@ final: prev: {
           } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
             inherit ghc;
-            ghc-boot-packages-nix = final.recurseIntoAttrs
-              final.ghc-boot-packages-nix.${compiler-nix-name};
+            ghc-boot-packages-nix = final.ghc-boot-packages-nix.${compiler-nix-name};
           } // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             nix-tools-unchecked = final.pkgsBuildBuild.haskell-nix.nix-tools-unchecked;
