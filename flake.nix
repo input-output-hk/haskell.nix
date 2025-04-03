@@ -85,7 +85,7 @@
 
       ifdLevel = 3;
       runningHydraEvalTest = false;
-      defaultCompiler = "ghc966";
+      defaultCompiler = "ghc967";
       config = import ./config.nix;
 
       inherit (nixpkgs) lib;
