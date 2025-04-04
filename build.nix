@@ -60,12 +60,7 @@ in rec {
     } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.11") {
       "hls" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
-        src = pkgs.haskell-nix.sources.hls;
-        cabalProjectLocal = ''
-          if impl(ghc >=9.6.7) && impl(ghc <9.7) || impl(ghc >=9.8.3)
-            constraints: ghc-lib-parser >=9.8.4
-            allow-older: ghc-lib-parser:filepath
-        '';
+        src = pkgs.haskell-nix.sources."hls-2.10";
       };
     })
   );

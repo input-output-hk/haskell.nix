@@ -3,13 +3,8 @@ let
   project = haskell-nix.cabalProject' {
     inherit compiler-nix-name evalPackages;
     name = "haskell-language-server";
-    src = haskell-nix.sources.hls;
+    src = haskell-nix.sources."hls-2.10";
     configureArgs = "--disable-benchmarks --disable-tests"; # This makes cabalProject' more like the `tool` function
-    cabalProjectLocal = ''
-      if impl(ghc >=9.6.7) && impl(ghc <9.7) || impl(ghc >=9.8.3)
-        constraints: ghc-lib-parser >=9.8.4
-        allow-older: ghc-lib-parser:filepath
-    '';
   };
 in recurseIntoAttrs {
   ifdInputs = {
