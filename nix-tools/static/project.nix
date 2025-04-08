@@ -64,7 +64,7 @@ let
 
   static-nix-tools-project = pkgs.haskell-nix.project' {
 
-    compiler-nix-name = "ghc967";
+    compiler-nix-name = "ghc9101";
 
     src = ../.;
 
