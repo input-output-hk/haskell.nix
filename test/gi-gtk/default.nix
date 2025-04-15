@@ -10,6 +10,8 @@ let
     cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
       -- The overloading feature of haskell-gi makes build times very long
       constraints: haskell-gi-overloading ==0.0
+      -- Needed for the current nix-tools TODO remove once nix-tools is updated
+      constraints: Cabal <3.12
     '';
   };
 
