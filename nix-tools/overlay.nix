@@ -1,7 +1,7 @@
 final: _prev:
 
 let
-  compiler-nix-name = "ghc9101";
+  compiler-nix-name = "ghc96";
 
   nix-tools = nix-tools-set {
     nix-tools = nix-tools-unchecked;

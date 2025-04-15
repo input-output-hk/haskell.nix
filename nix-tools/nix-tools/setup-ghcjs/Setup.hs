@@ -27,7 +27,7 @@ import Distribution.Simple.Test.LibV09 (stubName)
 import Distribution.Types.Executable (exeName, Executable(..))
 import Distribution.Types.Benchmark (Benchmark(..))
 import Distribution.Types.UnqualComponentName (unUnqualComponentName)
-
+import Distribution.Utils.Path (makeSymbolicPath, getSymbolicPath)
 
 emarProgram :: Program
 emarProgram = simpleProgram "emar"
@@ -36,31 +36,31 @@ buildEMCCLib :: PackageDescription -> LocalBuildInfo -> IO ()
 buildEMCCLib desc lbi = do
     let verbosity = verbose
     -- get build dir
-    createDirectoryIfMissingVerbose verbosity True ((buildDir lbi) </> "emcc")
+    createDirectoryIfMissingVerbose verbosity True ((getSymbolicPath (buildDir lbi)) </> "emcc")
     --
     case library desc of
         Just lib -> do
             -- Let's see if we are going to export anything. If not there is likely no point in compiling anything
             -- from the C code.
             names <- forM (jsSources . libBuildInfo $ lib) $ \src -> do
-                unwords . concatMap (drop 2 . words) . filter (isPrefixOf "// EMCC:EXPORTED_FUNCTIONS") . lines <$> readFile src
+                unwords . concatMap (drop 2 . words) . filter (isPrefixOf "// EMCC:EXPORTED_FUNCTIONS") . lines <$> readFile (getSymbolicPath src)
 
             unless (null names) $ do
                 let depIncludeDirs = concatMap IPI.includeDirs (topologicalOrder $ installedPkgs lbi)
                 -- alright, let's compile all .c files into .o files with emcc, which is the `gcc` program.
                 forM_ (cSources . libBuildInfo $ lib) $ \src -> do
-                    let dst = (buildDir lbi) </> "emcc" </> (src -<.> "o")
+                    let dst = (getSymbolicPath (buildDir lbi)) </> "emcc" </> (getSymbolicPath src -<.> "o")
                     createDirectoryIfMissingVerbose verbosity True (takeDirectory dst)
                     runDbProgram verbosity gccProgram (withPrograms lbi) $
-                        ["-c", src, "-o", dst] ++ ["-I" <> incDir | incDir <- (includeDirs . libBuildInfo $ lib) ++ depIncludeDirs]
+                        ["-c", getSymbolicPath src, "-o", dst] ++ ["-I" <> getSymbolicPath incDir | incDir <- (includeDirs . libBuildInfo $ lib) ++ map makeSymbolicPath depIncludeDirs]
 
                 -- and now construct a canonical `.js_a` file, *if* we have any cSources we turned into objects.
                 unless (null . cSources . libBuildInfo $ lib) $ do
-                    let dstLib = (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".js_a"
+                    let dstLib = (getSymbolicPath (buildDir lbi)) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".js_a"
                     runDbProgram verbosity emarProgram (withPrograms lbi) $
-                        [ "-r",  dstLib ] ++ [ (buildDir lbi) </> "emcc" </> (src -<.> "o") | src <- cSources . libBuildInfo $ lib ]
+                        [ "-r",  dstLib ] ++ [ getSymbolicPath (buildDir lbi) </> "emcc" </> (getSymbolicPath src -<.> "o") | src <- cSources . libBuildInfo $ lib ]
 
-                let expLib = (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported.js_a"
+                let expLib = getSymbolicPath (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported.js_a"
                 writeFile expLib (unwords names)
 
         -- if there's no lib, this is a fairly pointless exercise
@@ -96,19 +96,19 @@ linkCLib libname desc lbi = do
         exfns <- concat <$> forM exff (fmap words . readFile)
         unless (null libs0 && null exfns) $ do
             libs1 <- case libs0 of
-                [] -> do writeFile (buildDir lbi </> "emcc_linking_dummy.c") ""
+                [] -> do writeFile (getSymbolicPath (buildDir lbi) </> "emcc_linking_dummy.c") ""
                          runDbProgram verbosity gccProgram (withPrograms lbi) $
-                            ["-c", buildDir lbi </> "emcc_linking_dummy.c", "-o", buildDir lbi </> "emcc_linking_dummy.o"]
-                         return [(buildDir lbi </> "emcc_linking_dummy.o")]
+                            ["-c", getSymbolicPath (buildDir lbi) </> "emcc_linking_dummy.c", "-o", getSymbolicPath (buildDir lbi) </> "emcc_linking_dummy.o"]
+                         return [(getSymbolicPath (buildDir lbi) </> "emcc_linking_dummy.o")]
                 _ -> return libs0
 
-            let dst = if libname == "emcc" </> "lib.js" then buildDir lbi
+            let dst = if libname == "emcc" </> "lib.js" then getSymbolicPath (buildDir lbi)
                       -- who designed this shit in cabal?
                       else case comp of
-                          (CTest test@(TestSuite { testInterface = TestSuiteLibV09 _ _ })) -> buildDir lbi </> stubName test </> stubName test ++ "-tmp"
-                          (CTest test@(TestSuite { testInterface = TestSuiteExeV10 _ _ })) -> buildDir lbi </> unUnqualComponentName (testName test) </> unUnqualComponentName (testName test) ++ "-tmp"
-                          (CExe exe) -> buildDir lbi </> unUnqualComponentName (exeName exe) </> unUnqualComponentName (exeName exe) ++ "-tmp"
-                          _ -> componentBuildDir lbi clbi
+                          (CTest test@(TestSuite { testInterface = TestSuiteLibV09 _ _ })) -> getSymbolicPath (buildDir lbi) </> stubName test </> stubName test ++ "-tmp"
+                          (CTest test@(TestSuite { testInterface = TestSuiteExeV10 _ _ })) -> getSymbolicPath (buildDir lbi) </> unUnqualComponentName (testName test) </> unUnqualComponentName (testName test) ++ "-tmp"
+                          (CExe exe) -> getSymbolicPath (buildDir lbi) </> unUnqualComponentName (exeName exe) </> unUnqualComponentName (exeName exe) ++ "-tmp"
+                          _ -> getSymbolicPath (componentBuildDir lbi clbi)
                 dst' = dst </> libname
             createDirectoryIfMissingVerbose verbosity True (takeDirectory dst')
             runDbProgram verbosity gccProgram (withPrograms lbi) $
@@ -126,7 +126,7 @@ postBuildHook :: Args -> BuildFlags -> PackageDescription -> LocalBuildInfo -> I
 postBuildHook _args flags desc lbi = do
     case (takeFileName . programPath <$> lookupProgram ghcProgram (withPrograms lbi)) of
         Just "js-unknown-ghcjs-ghc" ->
-            readBuildTargets silent desc (buildArgs flags) >>= \case
+            readBuildTargets silent desc (buildTargets flags) >>= \case
                 [BuildTargetComponent (CLibName _)] -> print "OK. Lib (Build)" >> buildEMCCLib desc lbi
                 [BuildTargetComponent (CExeName _)] -> print "OK. Exe"
                 [BuildTargetComponent (CTestName _)] -> print "OK. Test"
@@ -142,7 +142,7 @@ postConfHook args flags desc lbi = do
             -- this is technically only needed if the package uses TH somewhere.
             linkEMCCTHLib desc lbi
             -- only link the final lib if we want to produce an output.
-            readBuildTargets silent desc (configArgs flags) >>= \case
+            readBuildTargets silent desc (configureArgs False flags) >>= \case
                 [BuildTargetComponent (CLibName _)] -> print "OK. Lib" >> postConf simpleUserHooks args flags desc lbi
                 [BuildTargetComponent (CExeName _)] -> print "OK. Exe (Link)" >> linkEMCCLib desc lbi
                 [BuildTargetComponent (CTestName _)] -> print "OK. Test (Link)" >> linkEMCCLib desc lbi
@@ -194,7 +194,7 @@ emccBuildHook desc lbi hooks flags = do
 --
 emccCopyHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> CopyFlags -> IO ()
 emccCopyHook desc lbi hooks flags = do
-    emccLibs <- filterM (\l -> doesFileExist (buildDir lbi </> "lib" <> l <> ".js_a"))
+    emccLibs <- filterM (\l -> doesFileExist (getSymbolicPath (buildDir lbi) </> "lib" <> l <> ".js_a"))
                         [ "EMCC" <> (unPackageName . pkgName . package $ desc)
                         , "EMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported" ]
     print $ "EMCC extra lib files: " ++ intercalate ", " emccLibs
@@ -210,7 +210,7 @@ emccCopyHook desc lbi hooks flags = do
 
 emccRegHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> RegisterFlags -> IO ()
 emccRegHook desc lbi hooks flags = do
-    emccLibs <- filterM (\l -> doesFileExist (buildDir lbi </> "lib" <> l <> ".js_a"))
+    emccLibs <- filterM (\l -> doesFileExist (getSymbolicPath (buildDir lbi) </> "lib" <> l <> ".js_a"))
                         [ "EMCC" <> (unPackageName . pkgName . package $ desc)
                         , "EMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported" ]
     print $ "EMCC extra lib files: " ++ intercalate ", " emccLibs
@@ -226,7 +226,7 @@ emccRegHook desc lbi hooks flags = do
 
 emccUnregHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> RegisterFlags -> IO ()
 emccUnregHook desc lbi hooks flags = do
-    emccLibs <- filterM (\l -> doesFileExist (buildDir lbi </> "lib" <> l <> ".js_a"))
+    emccLibs <- filterM (\l -> doesFileExist (getSymbolicPath (buildDir lbi) </> "lib" <> l <> ".js_a"))
                         [ "EMCC" <> (unPackageName . pkgName . package $ desc)
                         , "EMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported" ]
     print $ "EMCC extra lib files: " ++ intercalate ", " emccLibs
