@@ -124,6 +124,7 @@ in
   GeoIP = [ geoip ];
   pulse-simple = [ libpulseaudio ];
   oath = [ liboauth ];
+  sqlite3 = [ sqlite ];
 }
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;
