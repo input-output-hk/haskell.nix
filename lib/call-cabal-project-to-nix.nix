@@ -518,22 +518,30 @@ let
                 json_cabal_file=$(mktemp)
                 cabal2json $fixed_cabal_file > $json_cabal_file
 
-                exposed_modules="$(jq -r '.library."exposed-modules"//[]|.[]|select(type=="array")[]' $json_cabal_file)"
-                reexported_modules="$(jq -r '.library."reexported-modules"//[]|.[]|select(type=="array")[]' $json_cabal_file | sed 's/.* as //g')"
+                exposed_modules="$(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="string")' $json_cabal_file)"
+                reexported_modules="$(jq -r '.components.lib."reexported-modules"//[]|.[]|select(type=="string")' $json_cabal_file | sed 's/.* as //g')"
 
                 # FIXME This is a bandaid. Rather than doing this, conditionals should be interpreted.
                 ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isGhcjs ''
-                exposed_modules+=" $(jq -r '.library."exposed-modules"//[]|.[]|select(type=="object" and .if.arch == "javascript")|.then[]' $json_cabal_file)"
+                exposed_modules+=" $(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="object" and ._if.arch == "javascript")|._then[]' $json_cabal_file)"
                 ''}
                 ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
-                exposed_modules+=" $(jq -r '.library."exposed-modules"//[]|.[]|select(type=="object" and .if.os == "windows")|.then[]' $json_cabal_file)"
+                exposed_modules+=" $(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="object" and ._if.os == "windows")|._then[]' $json_cabal_file)"
                 ''}
                 ${pkgs.lib.optionalString (!pkgs.stdenv.targetPlatform.isWindows) ''
-                exposed_modules+=" $(jq -r '.library."exposed-modules"//[]|.[]|select(type=="object" and .if.not.os == "windows")|.then[]' $json_cabal_file)"
+                exposed_modules+=" $(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="object" and ._if.not.os == "windows")|._then[]' $json_cabal_file)"
                 ''}
 
                 EXPOSED_MODULES_${varname name}="$(tr '\n' ' ' <<< "$exposed_modules $reexported_modules")"
-                DEPS_${varname name}="$(jq -r '.library."build-depends"[]|select(type=="array")[],select(type=="object" and .if.not.flag != "vendor-filepath").then[]' $json_cabal_file | sed 's/^\([A-Za-z0-9-]*\).*$/\1/g' | sort -u | tr '\n' ' ')"
+                deps="$(jq -r '.components.lib."build-depends"[]|select(.package)|.package' $json_cabal_file)"
+                deps+=" $(jq -r '.components.lib."build-depends"[]|select((.if.flag or ._if.not.flag) and ._if.not.flag != "vendor-filepath")._then[]|.package' $json_cabal_file)"
+                ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
+                deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.os == "windows")|._then[]|.package' $json_cabal_file)"
+                ''}
+                ${pkgs.lib.optionalString (!pkgs.stdenv.targetPlatform.isWindows) ''
+                deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.not.os == "windows")|._then[]|.package' $json_cabal_file)"
+                ''}
+                DEPS_${varname name}="$(tr '\n' ' ' <<< "$deps")"
                 VER_${varname name}="$(jq -r '.version' $json_cabal_file)"
                 PKGS+=" ${name}"
                 LAST_PKG="${name}"
