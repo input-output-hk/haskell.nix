@@ -36,6 +36,7 @@ import ProjectPlanOutput (writePlanExternalRepresentation)
 import System.Environment (getArgs)
 import System.FilePath
 import System.IO (IOMode (WriteMode), hClose, openFile)
+import Distribution.Simple.Utils (topHandler)
 
 main :: IO ()
 main = do
@@ -49,7 +50,7 @@ main = do
           flags@NixStyleFlags{configFlags} = mkflags (commandDefaultFlags cmdUI)
           verbosity = fromFlagOrDefault Verbosity.normal (configVerbosity configFlags)
           cliConfig = commandLineFlagsToProjectConfig globalFlags flags mempty
-       in installPlanAction verbosity cliConfig
+       in topHandler (installPlanAction verbosity cliConfig)
 
 cmdUI :: CommandUI (NixStyleFlags ())
 cmdUI =
