@@ -269,7 +269,6 @@ let
       inherit compiler-nix-name;
       name = "hadrian";
       compilerSelection = p: p.haskell.compiler;
-      index-state = buildPackages.haskell-nix.internalHackageIndexState;
       evalPackages = hadrianEvalPackages;
       modules = [{
         reinstallableLibGhc = false;

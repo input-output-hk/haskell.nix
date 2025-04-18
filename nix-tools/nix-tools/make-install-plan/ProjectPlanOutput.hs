@@ -53,6 +53,7 @@ import qualified Data.Map as Map
 import System.FilePath
 
 import Distribution.Client.ProjectPlanning
+import Distribution.Utils.Path (makeSymbolicPath, getSymbolicPath)
 
 -----------------------------------------------------------------------------
 -- Writing plan.json files
@@ -230,7 +231,7 @@ encodePlanAsJson distDirLayout elaboratedInstallPlan elaboratedSharedConfig targ
       | elabSetupScriptCliVersion elab < mkVersion [3, 7, 0, 0] =
           "build-info" J..= J.Null
       | otherwise =
-          "build-info" J..= J.String (buildInfoPref dist_dir)
+          "build-info" J..= J.String (getSymbolicPath (buildInfoPref (makeSymbolicPath dist_dir)))
 
     packageLocationToJ :: PackageLocation (Maybe FilePath) -> J.Value
     packageLocationToJ pkgloc =
