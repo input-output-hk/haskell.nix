@@ -826,10 +826,10 @@ final: prev: {
             #     ];
             #   }
             #
-            shellFor = shellArgs:
+            shellFor = extraArgs: shellFor' (rawProject.args.shell // extraArgs).crossPlatforms extraArgs;
+            shellFor' = crossPlatforms: extraArgs:
               let
-                # These are the args we will pass to the main shell.
-                args' = builtins.removeAttrs (rawProject.args.shell // shellArgs) [ "crossPlatforms" ];
+                shellArgs = builtins.removeAttrs (rawProject.args.shell // extraArgs) [ "crossPlatforms" ];
                 # These are the args we will pass to the shells for the corss compiler
                 argsCross =
                   # These things should match main shell
@@ -839,17 +839,12 @@ final: prev: {
                     # The main shell's hoogle will probably be faster to build.
                     withHoogle = false;
                   };
-                # These are the cross compilation versions of the project we will include.
-                selectedCrossProjects =
-                  if shellArgs ? crossPlatforms
-                    then shellArgs.crossPlatforms projectCross
-                    else [];
                 # Shells for cross compilation
-                crossShells = builtins.map (project: project.shellFor argsCross)
-                  selectedCrossProjects;
-              in rawProject.hsPkgs.shellFor (args' // {
+                crossShells = builtins.map (project: project.shellFor' (_p: []) argsCross)
+                  (crossPlatforms projectCross);
+              in rawProject.hsPkgs.shellFor (shellArgs // {
                   # Add inputs from the cross compilation shells
-                  inputsFrom = args'.inputsFrom or [] ++ crossShells;
+                  inputsFrom = shellArgs.inputsFrom or [] ++ crossShells;
                 });
 
             # Default shell
