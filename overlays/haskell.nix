@@ -840,7 +840,7 @@ final: prev: {
                     withHoogle = false;
                   };
                 # Shells for cross compilation
-                crossShells = builtins.map (project: project.shellFor' (p: []) argsCross)
+                crossShells = builtins.map (project: project.shellFor' (_p: []) argsCross)
                   (crossPlatforms projectCross);
               in rawProject.hsPkgs.shellFor (shellArgs // {
                   # Add inputs from the cross compilation shells
