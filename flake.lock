@@ -100,23 +100,6 @@
         "type": "github"
       }
     },
-    "ghc-8.6.5-iohk": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1600920045,
-        "narHash": "sha256-DO6kxJz248djebZLpSzTGD6s8WRpNI9BTwUeOf5RwY8=",
-        "owner": "input-output-hk",
-        "repo": "ghc",
-        "rev": "95713a6ecce4551240da7c96b6176f980af75cae",
-        "type": "github"
-      },
-      "original": {
-        "owner": "input-output-hk",
-        "ref": "release/8.6.5-iohk",
-        "repo": "ghc",
-        "type": "github"
-      }
-    },
     "hackage": {
       "flake": false,
       "locked": {
@@ -386,6 +369,24 @@
         "type": "github"
       }
     },
+    "libffi-wasm": {
+      "flake": false,
+      "locked": {
+        "host": "gitlab.haskell.org",
+        "lastModified": 1741286406,
+        "narHash": "sha256-GxC9G+LYRHwKArwXNeU9Enq7u4arvPbFfE4kQj1cHyc=",
+        "owner": "haskell-wasm",
+        "repo": "libffi-wasm",
+        "rev": "e2dbdd8ded953e7a4df42c192da65ab36b9f0345",
+        "type": "gitlab"
+      },
+      "original": {
+        "host": "gitlab.haskell.org",
+        "owner": "haskell-wasm",
+        "repo": "libffi-wasm",
+        "type": "gitlab"
+      }
+    },
     "nixpkgs-2305": {
       "locked": {
         "lastModified": 1705033721,
@@ -491,7 +492,6 @@
         "cabal-36": "cabal-36",
         "cardano-shell": "cardano-shell",
         "flake-compat": "flake-compat",
-        "ghc-8.6.5-iohk": "ghc-8.6.5-iohk",
         "hackage": "hackage",
         "hackage-for-stackage": "hackage-for-stackage",
         "hls": "hls",
@@ -508,6 +508,7 @@
         "hls-2.9": "hls-2.9",
         "hpc-coveralls": "hpc-coveralls",
         "iserv-proxy": "iserv-proxy",
+        "libffi-wasm": "libffi-wasm",
         "nixpkgs": [
           "nixpkgs-unstable"
         ],

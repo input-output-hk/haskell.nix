@@ -21,7 +21,7 @@ let self =
   libffi ? null
 
 , # we don't need LLVM for x86, aarch64, or ghcjs
-  useLLVM ? with stdenv.targetPlatform; !(isx86 || isAarch64 || isGhcjs)
+  useLLVM ? with stdenv.targetPlatform; !(isx86 || isAarch64 || isGhcjs || isWasm)
 , # LLVM is conceptually a run-time-only dependency, but for
   # non-x86, we need LLVM to bootstrap later stages, so it becomes a
   # build-time dependency too.
@@ -117,6 +117,35 @@ let
       INTEGER_LIBRARY = ${if enableIntegerSimple then "integer-simple" else "integer-gmp"}
     '';
 
+  libffi-wasm = buildPackages.runCommand "libffi-wasm" {
+      nativeBuildInputs = [
+        (buildPackages.haskell-nix.tool "ghc912" "libffi-wasm" {
+          src = buildPackages.haskell-nix.sources.libffi-wasm;
+        })
+        buildPackages.clang
+        targetPackages.buildPackages.clang
+        targetPackages.buildPackages.llvm
+        targetPackages.buildPackages.binaryen
+      ];
+      outputs = ["dev" "out"];
+      NIX_NO_SELF_RPATH = true;
+    } ''
+      mkdir cbits
+      cp ${buildPackages.haskell-nix.sources.libffi-wasm}/cbits/* cbits/
+      libffi-wasm
+      wasm32-unknown-wasi-clang -Wall -Wextra -mcpu=mvp -Oz -DNDEBUG -Icbits -c cbits/ffi.c -o cbits/ffi.o
+      wasm32-unknown-wasi-clang -Wall -Wextra -mcpu=mvp -Oz -DNDEBUG -Icbits -c cbits/ffi_call.c -o cbits/ffi_call.o
+      wasm32-unknown-wasi-clang -Wall -Wextra -mcpu=mvp -Oz -DNDEBUG -Icbits -c cbits/ffi_closure.c -o cbits/ffi_closure.o
+
+      mkdir -p $dev/include
+      cp cbits/*.h $dev/include
+      mkdir -p $out/lib
+      llvm-ar -r $out/lib/libffi.a cbits/*.o
+
+      wasm32-unknown-wasi-clang -Wall -Wextra -mcpu=mvp -Oz -DNDEBUG -Icbits -fPIC -fvisibility=default -shared -Wl,--keep-section=target_features,--strip-debug cbits/*.c -o libffi.so
+      wasm-opt --low-memory-unused --converge --debuginfo --flatten --rereloop --gufa -O4 -Oz libffi.so -o $out/lib/libffi.so
+    '';
+
   # TODO check if this possible fix for segfaults works or not.
   targetLibffi =
     # on native platforms targetPlatform.{libffi, gmp} do not exist; thus fall back
@@ -124,7 +153,9 @@ let
     let targetLibffi = targetPackages.libffi or libffi; in
     # we need to set `dontDisableStatic` for musl for libffi to work.
     if stdenv.targetPlatform.isMusl
-    then targetLibffi.overrideAttrs (_old: { dontDisableStatic = true; })
+      then targetLibffi.overrideAttrs (_old: { dontDisableStatic = true; })
+    else if stdenv.targetPlatform.isWasm
+      then libffi-wasm
     else targetLibffi;
 
   targetGmp = targetPackages.gmp or gmp;
@@ -195,13 +226,14 @@ let
   # `--with` flags for libraries needed for RTS linker
   configureFlags = [
         "--datadir=$doc/share/doc/ghc"
-    ] ++ lib.optionals (!targetPlatform.isGhcjs && !targetPlatform.isAndroid) ["--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
-    ] ++ lib.optionals (targetLibffi != null && !targetPlatform.isGhcjs) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
-    ] ++ lib.optionals (!enableIntegerSimple && !targetPlatform.isGhcjs) [
+    ] ++ lib.optionals (!targetPlatform.isGhcjs && !targetPlatform.isWasm && !targetPlatform.isAndroid) ["--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
+    ] ++ lib.optionals (targetLibffi != null && !targetPlatform.isGhcjs && !targetPlatform.isWasm) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
+    ] ++ lib.optionals (targetPlatform.isWasm) ["--with-system-libffi"
+    ] ++ lib.optionals (!enableIntegerSimple && !targetPlatform.isGhcjs && !targetPlatform.isWasm) [
         "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
     ] ++ lib.optionals (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
         "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
-    ] ++ lib.optionals (targetPlatform != hostPlatform && !targetPlatform.isGhcjs) [
+    ] ++ lib.optionals (targetPlatform != hostPlatform && !targetPlatform.isGhcjs && !targetPlatform.isWasm) [
         "--with-iconv-includes=${targetIconv}/include" "--with-iconv-libraries=${targetIconv}/lib"
     ] ++ lib.optionals (targetPlatform != hostPlatform) [
         "--enable-bootstrap-with-devel-snapshot"
@@ -229,9 +261,9 @@ let
     ;
 
   # Splicer will pull out correct variations
-  libDeps = platform: lib.optional (enableTerminfo && !targetPlatform.isGhcjs && !targetPlatform.isAndroid) [ targetPackages.ncurses targetPackages.ncurses.dev ]
+  libDeps = platform: lib.optional (enableTerminfo && !targetPlatform.isGhcjs && !targetPlatform.isWasm && !targetPlatform.isAndroid) [ targetPackages.ncurses targetPackages.ncurses.dev ]
     ++ lib.optional (!targetPlatform.isGhcjs) targetLibffi
-    ++ lib.optional (!enableIntegerSimple && !targetPlatform.isGhcjs) gmp
+    ++ lib.optional (!enableIntegerSimple && !targetPlatform.isGhcjs && !targetPlatform.isWasm) gmp
     ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv
     ++ lib.optional (enableNUMA && platform.isLinux && !platform.isAarch32 && !platform.isAndroid) numactl
     ++ lib.optional enableDWARF (lib.getLib elfutils);
@@ -306,12 +338,12 @@ let
   # For build flavours and flavour transformers
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/doc/flavours.md
   hadrianArgs = "--flavour=${
-        (if targetPlatform.isGhcjs then "quick" else "default")
+        (if targetPlatform.isGhcjs || targetPlatform.isWasm then "quick" else "default")
           + lib.optionalString (!enableShared) "+no_dynamic_ghc"
           + lib.optionalString useLLVM "+llvm"
           + lib.optionalString enableDWARF "+debug_info"
-          + lib.optionalString ((enableNativeBignum && hadrianHasNativeBignumFlavour) || targetPlatform.isGhcjs) "+native_bignum"
-          + lib.optionalString targetPlatform.isGhcjs "+no_profiled_libs"
+          + lib.optionalString ((enableNativeBignum && hadrianHasNativeBignumFlavour) || targetPlatform.isGhcjs || targetPlatform.isWasm) "+native_bignum"
+          + lib.optionalString (targetPlatform.isGhcjs || targetPlatform.isWasm) "+no_profiled_libs"
       } --docs=no-sphinx -j --verbose"
       # This is needed to prevent $GCC from emitting out of line atomics.
       # Those would then result in __aarch64_ldadd1_sync and others being referenced, which
@@ -425,9 +457,22 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         export EM_CACHE=$(mktemp -d)
         mv config.sub.ghcjs config.sub
     '')
+    + lib.optionalString (targetPlatform.isWasm) ''
+        export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
+        export CXX="${targetCC}/bin/${targetCC.targetPrefix}c++"
+        export LD="${buildPackages.llvmPackages.lld}/bin/wasm-ld"
+        export AS="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}as"
+        export AR="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"
+        export NM="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}nm"
+        export RANLIB="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ranlib"
+        export READELF="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}readelf"
+        export STRIP="${bintoolsFor.strip}/bin/${bintoolsFor.strip.targetPrefix}strip"
+        export NIX_CFLAGS_COMPILE_FOR_BUILD+=" -I${libffi.dev}/include -L${libffi.out}/lib"
+        export NIX_CFLAGS_COMPILE_FOR_TARGET+=" -I${targetLibffi.dev}/include -L${targetLibffi.out}/lib"
+    ''
     # GHC is a bit confused on its cross terminology, as these would normally be
     # the *host* tools.
-    + lib.optionalString (!targetPlatform.isGhcjs) (''
+    + lib.optionalString (!targetPlatform.isGhcjs && !targetPlatform.isWasm) (''
         export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
         export CXX="${targetCC}/bin/${targetCC.targetPrefix}c++"
     ''
