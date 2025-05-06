@@ -330,6 +330,8 @@ let
                 then "OSMinGW32"
               else if pkgs.stdenv.targetPlatform.isGhcjs
                 then "OSGhcjs"
+              else if pkgs.stdenv.targetPlatform.isWasi
+                then "OSWasi"
               else throw "Unknown target os ${pkgs.stdenv.targetPlatform.config}"
             }")'
           echo ',("target arch","${
@@ -345,6 +347,8 @@ let
                 then "ArchAArch32"
               else if pkgs.stdenv.targetPlatform.isJavaScript
                 then "ArchJavaScript"
+              else if pkgs.stdenv.targetPlatform.isWasm
+                then "ArchWasm32"
               else throw "Unknown target arch ${pkgs.stdenv.targetPlatform.config}"
           }")'
           echo ',("target platform string","${platformString pkgs.stdenv.targetPlatform}")'
