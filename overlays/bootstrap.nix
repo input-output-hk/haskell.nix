@@ -139,7 +139,7 @@ in {
                 # results in "unhandled PEi386 relocation type 14".
                 ++ onWindows (fromUntil "9.4.1"    "9.6.7"  ./patches/ghc/win-reloc-x86_64-pc64.patch)
                 ++ onWindows (fromUntil "9.8.1"    "9.8.3"  ./patches/ghc/win-reloc-x86_64-pc64.patch)
-                ++ onWindows (fromUntil "9.10"     "9.11"   ./patches/ghc/win-reloc-x86_64-pc64.patch)
+                ++ onWindows (fromUntil "9.10"     "9.10.2" ./patches/ghc/win-reloc-x86_64-pc64.patch)
                 # ++ onWindows (fromUntil "9.4.1"  "9.10"   ./patches/ghc/Win32-depends-on-mingwex.patch)
                 # if the host system provides ucrt (e.g. wine with ucrtbase.dll), we may end up linking against symbols from ucrtbase, instead of msvcrt,
                 # thus leading to broken code.  E.g. the handles we create and hand to wine will all be busted, because they come from one and are processed
