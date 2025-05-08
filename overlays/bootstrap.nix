@@ -10,7 +10,7 @@ let
       "9.4" = "9.4.8";
       "9.6" = "9.6.7";
       "9.8" = "9.8.4";
-      "9.10" = "9.10.1";
+      "9.10" = "9.10.2";
       "9.12" = "9.12.2";
     };
     gitInputs = {
@@ -305,7 +305,7 @@ in {
                 ++ fromUntil "9.9"   "9.11"  ./patches/ghc/ghc-9.9-Cabal-3.11.patch
                 ++ fromUntil "9.8"   "9.8.3" ./patches/ghc/ghc-9.8-text-upper-bound.patch
                 ++ fromUntil "9.8.3" "9.8.4"  ./patches/ghc/ghc-9.8.3-text-upper-bound.patch
-                ++ fromUntil "9.10"  "9.11"  ./patches/ghc/ghc-9.10-containers-upper-bound.patch
+                ++ fromUntil "9.10"  "9.10.2" ./patches/ghc/ghc-9.10-containers-upper-bound.patch
                 ++ fromUntil "9.10"  "9.14"  ./patches/ghc/ghc-9.10-merge-objects.patch
 
                 # This patch will make windows stop emitting absolute relocations. This is one way in which binutils 2.36+ (with ASLR enabled), will just choke on the
@@ -980,6 +980,37 @@ in {
                 src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.10.1";
+            });
+            ghc9102 = traceWarnOld "9.10" (final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9102; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc9102
+                    else # GHC 9.10.1 does not seem to build with ghc 9.8.4
+                         # final.buildPackages.buildPackages.haskell.compiler.ghc984
+                         # or final.buildPackages.buildPackages.haskell.compiler.ghc983
+                             final.buildPackages.buildPackages.haskell.compiler.ghc982
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc965
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc964
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_15;
+                llvmPackages = final.llvmPackages_15;
+
+                src-spec.file = final.haskell-nix.sources.ghc9102;
+                src-spec.version = "9.10.2";
+                src-spec.needsBooting = true;
+
+                ghc-patches = ghc-patches "9.10.2";
             });
             ghc9121 = traceWarnOld "9.12" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9121; };
