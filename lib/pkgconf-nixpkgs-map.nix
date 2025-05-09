@@ -2750,12 +2750,12 @@ pkgs:
     "gaminggear-0" = [ "libgaminggear" ];
     "libgbinder" = [ "libgbinder" ];
     "libgcrypt" = [ "libgcrypt" ];
-    "libgda-5.0" = [ "libgda" ];
-    "libgda-report-5.0" = [ "libgda" ];
-    "libgda-sqlcipher-5.0" = [ "libgda" ];
-    "libgda-sqlite-5.0" = [ "libgda" ];
-    "libgda-ui-5.0" = [ "libgda" ];
-    "libgda-xslt-5.0" = [ "libgda" ];
+    "libgda-5.0" = [ "libgda5" ];
+    "libgda-report-5.0" = [ "libgda5" ];
+    "libgda-sqlcipher-5.0" = [ "libgda5" ];
+    "libgda-sqlite-5.0" = [ "libgda5" ];
+    "libgda-ui-5.0" = [ "libgda5" ];
+    "libgda-xslt-5.0" = [ "libgda5" ];
     "libgda-6.0" = [ "libgda6" ];
     "libgda-sqlite-6.0" = [ "libgda6" ];
     "libgdamm-5.0" = [ "libgdamm" ];
@@ -5087,7 +5087,7 @@ pkgs:
     "riscv-disasm" = [ "spike" ];
     "riscv-fesvr" = [ "spike" ];
     "SPIRV-Headers" = [ "spirv-headers" ];
-    "LLVMSPIRVLib" = [ "spirv-llvm-translator" ];
+#    "LLVMSPIRVLib" = [ "spirv-llvm-translator" ];
     "SPIRV-Tools-shared" = [ "spirv-tools" ];
     "SPIRV-Tools" = [ "spirv-tools" ];
     "sqlcipher" = [ "sqlcipher" ];
@@ -5733,7 +5733,7 @@ pkgs:
         then [ pkgs.gdk_pixbuf ]
       else [];
     # rocm-thunk was replaced by rocmPackages.rocm-thunk in 23.11
-    "libhsakmt" = [ pkgs.rocmPackages.rocm-thunk or pkgs.rocm-thunk ];
+    # "libhsakmt" = [ pkgs.rocmPackages.rocm-thunk or pkgs.rocm-thunk ];
 } // lib.optionalAttrs (pkgs ? libsigcxx12) {
     # libsigcxx12 was removed in 23.11
     "sigc++-1.2" = [ "libsigcxx12" ];
