@@ -122,7 +122,6 @@ let
         (buildPackages.haskell-nix.tool "ghc912" "libffi-wasm" {
           src = buildPackages.haskell-nix.sources.libffi-wasm;
         })
-        buildPackages.clang
         targetPackages.buildPackages.clang
         targetPackages.buildPackages.llvm
         targetPackages.buildPackages.binaryen
@@ -228,7 +227,8 @@ let
         "--datadir=$doc/share/doc/ghc"
     ] ++ lib.optionals (!targetPlatform.isGhcjs && !targetPlatform.isWasm && !targetPlatform.isAndroid) ["--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
     ] ++ lib.optionals (targetLibffi != null && !targetPlatform.isGhcjs && !targetPlatform.isWasm) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
-    ] ++ lib.optionals (targetPlatform.isWasm) ["--with-system-libffi"
+    ] ++ lib.optionals (targetPlatform.isWasm) [
+        "--with-system-libffi"
     ] ++ lib.optionals (!enableIntegerSimple && !targetPlatform.isGhcjs && !targetPlatform.isWasm) [
         "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
     ] ++ lib.optionals (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
@@ -355,8 +355,12 @@ let
       + lib.optionalString (!hostPlatform.isAarch64 && targetPlatform.isLinux && targetPlatform.isAarch64)
         " '*.rts.ghc.c.opts += -optc-mno-outline-atomics'"
       # PIC breaks GHC annotations on windows (see test/annotations for a test case)
-      + lib.optionalString (enableRelocatedStaticLibs && !targetPlatform.isWindows)
+      + lib.optionalString (enableRelocatedStaticLibs && !targetPlatform.isWindows && !targetPlatform.isWasm)
         " '*.*.ghc.*.opts += -fPIC' '*.*.cc.*.opts += -fPIC'"
+      # C options for wasm
+      + lib.optionalString targetPlatform.isWasm (
+          " 'stage1.*.ghc.*.opts += -optc-Wno-error=int-conversion -optc-O3 -optc-mcpu=lime1 -optc-mreference-types -optc-msimd128 -optc-mtail-call -optc-DXXH_NO_XXH3'"
+        + " 'stage1.*.ghc.cpp.opts += -optc-fno-exceptions'")
       # `-fexternal-dynamic-refs` causes `undefined reference` errors when building GHC cross compiler for windows
       + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64 && !targetPlatform.isWindows)
         " '*.*.ghc.*.opts += -fexternal-dynamic-refs'"
@@ -469,6 +473,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         export STRIP="${bintoolsFor.strip}/bin/${bintoolsFor.strip.targetPrefix}strip"
         export NIX_CFLAGS_COMPILE_FOR_BUILD+=" -I${libffi.dev}/include -L${libffi.out}/lib"
         export NIX_CFLAGS_COMPILE_FOR_TARGET+=" -I${targetLibffi.dev}/include -L${targetLibffi.out}/lib"
+        substituteInPlace compiler/GHC.hs --replace-fail "panic \"corrupted wasi-sdk installation\"" "pure \"${targetPackages.wasilibc}\""
     ''
     # GHC is a bit confused on its cross terminology, as these would normally be
     # the *host* tools.
