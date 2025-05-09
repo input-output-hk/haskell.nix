@@ -24,6 +24,8 @@ in recurseIntoAttrs {
     || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl)
     # Failed to lookup symbol: __aarch64_swp8_acq_rel
     || (builtins.elem compiler-nix-name ["ghc947" "ghc948"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
+    # Not sure why this is failing with a seg fault
+    || (builtins.elem compiler-nix-name ["ghc9102"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
     # We have been unable to get windows cross compilation of th-orphans to work for GHC 8.10 using the latest nixpkgs
     || (compiler-nix-name == "ghc8107" && stdenv.hostPlatform.isWindows)
     # unhandled ELF relocation(Rel) type 10

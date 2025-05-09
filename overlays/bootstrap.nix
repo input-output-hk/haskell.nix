@@ -10,7 +10,7 @@ let
       "9.4" = "9.4.8";
       "9.6" = "9.6.7";
       "9.8" = "9.8.4";
-      "9.10" = "9.10.1";
+      "9.10" = "9.10.2";
       "9.12" = "9.12.2";
     };
     gitInputs = {
@@ -139,7 +139,7 @@ in {
                 # results in "unhandled PEi386 relocation type 14".
                 ++ onWindows (fromUntil "9.4.1"    "9.6.7"  ./patches/ghc/win-reloc-x86_64-pc64.patch)
                 ++ onWindows (fromUntil "9.8.1"    "9.8.3"  ./patches/ghc/win-reloc-x86_64-pc64.patch)
-                ++ onWindows (fromUntil "9.10"     "9.11"   ./patches/ghc/win-reloc-x86_64-pc64.patch)
+                ++ onWindows (fromUntil "9.10"     "9.10.2" ./patches/ghc/win-reloc-x86_64-pc64.patch)
                 # ++ onWindows (fromUntil "9.4.1"  "9.10"   ./patches/ghc/Win32-depends-on-mingwex.patch)
                 # if the host system provides ucrt (e.g. wine with ucrtbase.dll), we may end up linking against symbols from ucrtbase, instead of msvcrt,
                 # thus leading to broken code.  E.g. the handles we create and hand to wine will all be busted, because they come from one and are processed
@@ -205,7 +205,7 @@ in {
                 ++ onAarch64 (fromUntil "9.0" "9.11" ./patches/ghc/ghc-9.0-better-symbol-addr-debug.patch)
                 ++ onAarch64 (fromUntil "9.0" "9.6.7" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
                 ++ onAarch64 (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
-                ++ onAarch64 (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
+                ++ onAarch64 (fromUntil "9.10" "9.10.2" ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch)
 
                 ++ onWindows (fromUntil "9.6.3" "9.6.4" ./patches/ghc/ghc-9.6-hadrian-splitsections.patch)
                 ++ onWindows (fromUntil "9.8.1" "9.8.2" ./patches/ghc/ghc-9.6-hadrian-splitsections.patch)
@@ -254,10 +254,11 @@ in {
                 ++ onAndroid (from "9.8.1" ./patches/ghc/ghc-9.8-android-convert-os.patch)
 
                 # Allow loading static external plugins into cross compilers
-                ++ onCross (fromUntil "9.6.1" "9.11" ./patches/ghc/5c80a27488acfe3610ddfcb99a1e961002e386d0.patch)
-                ++ onCross (fromUntil "9.6.1" "9.8.3" ./patches/ghc/f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch)
-                ++ onCross (fromUntil "9.8.3" "9.10"  ./patches/ghc/ghc-9.8.3-f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch)
-                ++ onCross (fromUntil "9.10"  "9.11" ./patches/ghc/f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch)
+                ++ onCross (fromUntil "9.6.1"  "9.11"   ./patches/ghc/5c80a27488acfe3610ddfcb99a1e961002e386d0.patch)
+                ++ onCross (fromUntil "9.6.1"  "9.8.3"  ./patches/ghc/f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch)
+                ++ onCross (fromUntil "9.8.3"  "9.10"   ./patches/ghc/ghc-9.8.3-f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch)
+                ++ onCross (fromUntil "9.10"   "9.10.2" ./patches/ghc/f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch)
+                ++ onCross (fromUntil "9.10.2" "9.11"   ./patches/ghc/ghc-9.8.3-f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch)
                 ++ final.lib.optionals (
                         final.stdenv.targetPlatform.isAndroid
                      && final.stdenv.targetPlatform.is32bit
@@ -265,24 +266,24 @@ in {
                   (until "9.11" ./patches/ghc/ghc-9.6-missing-symbols-deadbeef.patch)
                 ++ onAarch64Musl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-linker-pool-allocator.patch)
                 ++ onAarch64Musl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-linker-pool-allocator.patch)
-                ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-linker-pool-allocator.patch)
+                ++ onAarch64Musl (fromUntil "9.10" "9.10.2" ./patches/ghc/ghc-9.6-linker-pool-allocator.patch)
                 ++ onAarch64Musl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
                 ++ onAarch64Musl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
-                ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
+                ++ onAarch64Musl (fromUntil "9.10" "9.10.2" ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch)
 
                 ++ onMusl (fromUntil "9.6" "9.8" ./patches/ghc/ghc-9.6-0001-Refactor-IServ.hs.patch)
                 ++ onMusl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
                 ++ onMusl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
-                ++ onMusl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
+                ++ onMusl (fromUntil "9.10" "9.10.2" ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch)
                 ++ onAarch64Musl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-0003-Better-pool-alignment.-We-still-hardcode-section-ali.patch)
                 ++ onAarch64Musl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-0003-Better-pool-alignment.-We-still-hardcode-section-ali.patch)
-                ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-0003-Better-pool-alignment.-We-still-hardcode-section-ali.patch)
+                ++ onAarch64Musl (fromUntil "9.10" "9.10.2" ./patches/ghc/ghc-9.6-0003-Better-pool-alignment.-We-still-hardcode-section-ali.patch)
                 ++ onAarch64Musl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-0007-fixup-Better-pool-alignment.-We-still-hardcode-secti.patch)
                 ++ onAarch64Musl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-0007-fixup-Better-pool-alignment.-We-still-hardcode-secti.patch)
-                ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-0007-fixup-Better-pool-alignment.-We-still-hardcode-secti.patch)
+                ++ onAarch64Musl (fromUntil "9.10" "9.10.2" ./patches/ghc/ghc-9.6-0007-fixup-Better-pool-alignment.-We-still-hardcode-secti.patch)
                 ++ onAarch64Musl (fromUntil "9.6" "9.6.7" ./patches/ghc/ghc-9.6-0008-pool-improvements.patch)
                 ++ onAarch64Musl (fromUntil "9.8" "9.8.3" ./patches/ghc/ghc-9.6-0008-pool-improvements.patch)
-                ++ onAarch64Musl (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.6-0008-pool-improvements.patch)
+                ++ onAarch64Musl (fromUntil "9.10" "9.10.2" ./patches/ghc/ghc-9.6-0008-pool-improvements.patch)
                 # these two are abit questionable. They are pretty rough, and assume static binary as well as posix.
                 # onMusl (fromUntil "9.6" "9.11" ./patches/ghc/ghc-9.6-0004-ghcidladdr.patch)
                 # onMusl (fromUntil "9.6" "9.11" ./patches/ghc/ghc-9.6-0005-Better-interpreter-debugging.-Needs-ghcidladdr.patch)
@@ -305,7 +306,7 @@ in {
                 ++ fromUntil "9.9"   "9.11"  ./patches/ghc/ghc-9.9-Cabal-3.11.patch
                 ++ fromUntil "9.8"   "9.8.3" ./patches/ghc/ghc-9.8-text-upper-bound.patch
                 ++ fromUntil "9.8.3" "9.8.4"  ./patches/ghc/ghc-9.8.3-text-upper-bound.patch
-                ++ fromUntil "9.10"  "9.11"  ./patches/ghc/ghc-9.10-containers-upper-bound.patch
+                ++ fromUntil "9.10"  "9.10.2" ./patches/ghc/ghc-9.10-containers-upper-bound.patch
                 ++ fromUntil "9.10"  "9.14"  ./patches/ghc/ghc-9.10-merge-objects.patch
 
                 # This patch will make windows stop emitting absolute relocations. This is one way in which binutils 2.36+ (with ASLR enabled), will just choke on the
@@ -980,6 +981,37 @@ in {
                 src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.10.1";
+            });
+            ghc9102 = traceWarnOld "9.10" (final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9102; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc9102
+                    else # GHC 9.10.1 does not seem to build with ghc 9.8.4
+                         # final.buildPackages.buildPackages.haskell.compiler.ghc984
+                         # or final.buildPackages.buildPackages.haskell.compiler.ghc983
+                             final.buildPackages.buildPackages.haskell.compiler.ghc982
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc965
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc964
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_15;
+                llvmPackages = final.llvmPackages_15;
+
+                src-spec.file = final.haskell-nix.sources.ghc9102;
+                src-spec.version = "9.10.2";
+                src-spec.needsBooting = true;
+
+                ghc-patches = ghc-patches "9.10.2";
             });
             ghc9121 = traceWarnOld "9.12" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9121; };
