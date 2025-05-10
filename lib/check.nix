@@ -39,7 +39,7 @@ in stdenv.mkDerivation ((
 
   nativeBuildInputs = drv.nativeBuildInputs
     ++ [buildPackages.xorg.lndir]
-    ++ lib.optional (stdenv.hostPlatform.isGhcjs) buildPackages.nodejs-18_x;
+    ++ lib.optional (stdenv.hostPlatform.isGhcjs) buildPackages.nodejs;
 
   inherit (component) doCheck doCrossCheck;
 
