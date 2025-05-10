@@ -49,13 +49,6 @@
       url = "github:input-output-hk/cardano-shell";
       flake = false;
     };
-    "ghc-8.6.5-iohk" = {
-      type = "github";
-      owner = "input-output-hk";
-      repo = "ghc";
-      ref = "release/8.6.5-iohk";
-      flake = false;
-    };
     hpc-coveralls = {
       url = "github:sevanspowell/hpc-coveralls";
       flake = false;
@@ -71,6 +64,10 @@
     iserv-proxy = {
       url = "github:stable-haskell/iserv-proxy?ref=iserv-syms";
       flake = false;
+    };
+    libffi-wasm = {
+       url = "gitlab:haskell-wasm/libffi-wasm?host=gitlab.haskell.org";
+       flake = false;
     };
   };
 

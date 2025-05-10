@@ -147,6 +147,3 @@ in
 # -- mingw32
 // { mingwex = null;
 }
-# -- os x
-# NB: these map almost 1:1 to the framework names
-// darwin.apple_sdk.frameworks
