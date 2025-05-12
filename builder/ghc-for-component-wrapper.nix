@@ -37,11 +37,11 @@ let
     ${lndir}/bin/lndir -silent $unwrappedGhc $wrappedGhc
     rm -rf ${libDir}/*/
   ''
-  # ... but retain the lib/ghc/bin directory. This contains `unlit' and friends.
+  # ... but retain the lib/ghc/bin directory. This may contain `unlit' and friends.
   + ''
     if [ -d $unwrappedGhc/lib/${ghcCommand}-${ghc.version}/bin ]; then
       ln -s $unwrappedGhc/lib/${ghcCommand}-${ghc.version}/bin ${libDir}
-    else
+    elif [ -d $unwrappedGhc/lib/bin ]; then
       ln -s $unwrappedGhc/lib/bin ${libDir}
     fi
   ''
