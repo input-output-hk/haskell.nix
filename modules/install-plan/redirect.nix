@@ -18,7 +18,7 @@ let
         else existing.${(builtins.head available).id}.components.${collectionName}.${name};
       componentsWithPrefix = collectionName: prefix:
         lib.listToAttrs (lib.concatLists (lib.mapAttrsToList (n: available:
-          lib.optional (lib.hasPrefix "${prefix}:" n && (builtins.length available != 1 || !builtins.elem (builtins.head available) ["TargetNotBuildable" "TargetNotLocal"])) (
+          lib.optional (lib.hasPrefix "${prefix}:" n && (builtins.length available != 1 || !builtins.elem (builtins.head available) ["TargetNotLocal"])) (
             let
               name = lib.removePrefix "${prefix}:" n;
               value = lookupComponent collectionName name available;
@@ -45,6 +45,9 @@ let
             (_: d: pkgs.haskell-nix.haskellLib.check d)
               (lib.filterAttrs (_: d: d.config.doCheck) components.tests)));
     };
+  buildableTargets = lib.filter (x: x.available != []) (
+    lib.map (x: x // { available = lib.filter (n: n != "TargetNotBuildable") x.available; })
+      config.plan-json.targets);
 in {
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;
@@ -63,10 +66,10 @@ in {
               components = err;
               checks = err;
             }
-          else redirect existing packageName packageTargets) (builtins.groupBy (x: x.pkg-name) config.plan-json.targets)) config.preExistingPkgs
+          else redirect existing packageName packageTargets) (builtins.groupBy (x: x.pkg-name) buildableTargets)) config.preExistingPkgs
 
       # Redirect for `${name}-${version}`
       // builtins.mapAttrs (packageNameAndVersion: packageTargets: redirect existing packageNameAndVersion packageTargets)
-            (builtins.groupBy (x: "${x.pkg-name}-${x.pkg-version}") config.plan-json.targets);
+            (builtins.groupBy (x: "${x.pkg-name}-${x.pkg-version}") buildableTargets);
   };
 }
