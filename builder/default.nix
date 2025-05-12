@@ -64,7 +64,7 @@ let
     let
       haskellPackages = {
         # For musl we can use haddock from the buildGHC
-        ghc = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && !haskellLib.isNativeMusl
+        ghc = if stdenv.targetPlatform.isMusl
           then ghc.buildGHC
           else ghc;
         inherit packages hoogle;

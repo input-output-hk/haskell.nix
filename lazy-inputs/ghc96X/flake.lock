@@ -1,0 +1,30 @@
+{
+  "nodes": {
+    "ghc96X": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1740624264,
+        "narHash": "sha256-2gLt3yKMnddXHepwi97eYUs9O+PycsS7nRI0yOtycKw=",
+        "ref": "ghc-9.6",
+        "rev": "2b22b6ae69c94e721fde8af0108eb0feed97cc82",
+        "revCount": 61113,
+        "submodules": true,
+        "type": "git",
+        "url": "https://gitlab.haskell.org/ghc/ghc"
+      },
+      "original": {
+        "ref": "ghc-9.6",
+        "submodules": true,
+        "type": "git",
+        "url": "https://gitlab.haskell.org/ghc/ghc"
+      }
+    },
+    "root": {
+      "inputs": {
+        "ghc96X": "ghc96X"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

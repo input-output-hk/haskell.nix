@@ -1,0 +1,18 @@
+diff --git a/rts/ghc.mk b/rts/ghc.mk
+index 6d6ff4bb90..02d3c64ce9 100644
+--- a/rts/ghc.mk
++++ b/rts/ghc.mk
+@@ -415,6 +415,13 @@ rts_CC_OPTS += -fno-strict-aliasing
+
+ rts_CC_OPTS += -fno-common
+
++
++ifeq "$(TargetArch_CPP)" "aarch64"
++ifeq "$(TargetOS_CPP)" "darwin"
++rts_CC_OPTS += -mcpu=apple-a7 -march=armv8-a+norcpc
++endif
++endif
++
+ ifeq "$(BeConservative)" "YES"
+ rts_CC_OPTS += -DBE_CONSERVATIVE
+ endif

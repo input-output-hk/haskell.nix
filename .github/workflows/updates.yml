@@ -19,6 +19,7 @@ jobs:
       - name: "Update pins"
         run: |
           nix flake update hackage
+          nix flake update hackage-for-stackage
           nix flake update stackage
       - name: Commit and push changes
         run: |

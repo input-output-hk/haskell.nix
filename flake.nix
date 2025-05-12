@@ -3,11 +3,6 @@
 
   inputs = {
     nixpkgs.follows = "nixpkgs-unstable";
-    nixpkgs-2003 = { url = "github:NixOS/nixpkgs/nixpkgs-20.03-darwin"; };
-    nixpkgs-2105 = { url = "github:NixOS/nixpkgs/nixpkgs-21.05-darwin"; };
-    nixpkgs-2111 = { url = "github:NixOS/nixpkgs/nixpkgs-21.11-darwin"; };
-    nixpkgs-2205 = { url = "github:NixOS/nixpkgs/nixpkgs-22.05-darwin"; };
-    nixpkgs-2211 = { url = "github:NixOS/nixpkgs/nixpkgs-22.11-darwin"; };
     nixpkgs-2305 = { url = "github:NixOS/nixpkgs/nixpkgs-23.05-darwin"; };
     nixpkgs-2311 = { url = "github:NixOS/nixpkgs/nixpkgs-23.11-darwin"; };
     nixpkgs-2405 = { url = "github:NixOS/nixpkgs/nixpkgs-24.05-darwin"; };
@@ -24,8 +19,14 @@
     "hls-2.7" = { url = "github:haskell/haskell-language-server/2.7.0.0"; flake = false; };
     "hls-2.8" = { url = "github:haskell/haskell-language-server/2.8.0.0"; flake = false; };
     "hls-2.9" = { url = "github:haskell/haskell-language-server/2.9.0.1"; flake = false; };
+    "hls-2.10" = { url = "github:haskell/haskell-language-server/2.10.0.0"; flake = false; };
+    "hls"     = { url = "github:haskell/haskell-language-server"; flake = false; };
     hackage = {
       url = "github:input-output-hk/hackage.nix";
+      flake = false;
+    };
+    hackage-for-stackage = {
+      url = "github:input-output-hk/hackage.nix/for-stackage";
       flake = false;
     };
     stackage = {
@@ -85,7 +86,7 @@
 
       ifdLevel = 3;
       runningHydraEvalTest = false;
-      defaultCompiler = "ghc928";
+      defaultCompiler = "ghc967";
       config = import ./config.nix;
 
       inherit (nixpkgs) lib;
@@ -163,7 +164,7 @@
         # for core of haskell.nix E.g. this should always work:
         #   nix build .#roots.x86_64-linux --accept-flake-config --option allow-import-from-derivation false
         roots = forEachSystem (system:
-          self.legacyPackagesUnstable.${system}.haskell-nix.roots defaultCompiler);
+          self.legacyPackagesUnstable.${system}.haskell-nix.roots { compiler-nix-name = defaultCompiler; });
 
         # Note: `nix flake check` evaluates outputs for all platforms, and haskell.nix
         # uses IFD heavily, you have to have the ability to build for all platforms

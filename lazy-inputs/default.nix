@@ -29,12 +29,16 @@ in {
       inherit ((callFlake { pkgs = final; src = ./ghc964; }).defaultNix) ghc964;
       inherit ((callFlake { pkgs = final; src = ./ghc965; }).defaultNix) ghc965;
       inherit ((callFlake { pkgs = final; src = ./ghc966; }).defaultNix) ghc966;
+      inherit ((callFlake { pkgs = final; src = ./ghc967; }).defaultNix) ghc967;
+      inherit ((callFlake { pkgs = final; src = ./ghc96X; }).defaultNix) ghc96X;
       inherit ((callFlake { pkgs = final; src = ./ghc981; }).defaultNix) ghc981;
       inherit ((callFlake { pkgs = final; src = ./ghc982; }).defaultNix) ghc982;
       inherit ((callFlake { pkgs = final; src = ./ghc983; }).defaultNix) ghc983;
       inherit ((callFlake { pkgs = final; src = ./ghc984; }).defaultNix) ghc984;
       inherit ((callFlake { pkgs = final; src = ./ghc9101; }).defaultNix) ghc9101;
+      inherit ((callFlake { pkgs = final; src = ./ghc9102; }).defaultNix) ghc9102;
       inherit ((callFlake { pkgs = final; src = ./ghc9121; }).defaultNix) ghc9121;
+      inherit ((callFlake { pkgs = final; src = ./ghc9122; }).defaultNix) ghc9122;
       inherit ((callFlake { pkgs = final; src = ./ghc912X; }).defaultNix) ghc912X;
       inherit ((callFlake { pkgs = final; src = ./ghc913; }).defaultNix) ghc913;
     } // prev.haskell-nix.sources;

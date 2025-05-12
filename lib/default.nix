@@ -160,15 +160,24 @@ in {
     let packageToComponents = _name: package:
           # look for the components with this group if there are any
           let components = package.components.${group} or {};
-          # set recurseForDerivations unless it's a derivation itself (e.g. the "library" component) or an empty set
-          in if lib.isDerivation components || components == {}
-             then components
-             else recurseIntoAttrs components;
+          in {
+            inherit (package.identifier) name;
+            # set recurseForDerivations unless it's a derivation itself (e.g. the "library" component) or an empty set
+            components =
+              if lib.isDerivation components || components == {}
+                then components
+                else recurseIntoAttrs components;
+          };
         packageFilter = _name: package: (package.isHaskell or false) && packageSel package;
         filteredPkgs = lib.filterAttrs packageFilter haskellPackages;
         # at this point we can filter out packages that don't have any of the given kind of component
-        packagesByComponent = lib.filterAttrs (_: components: components != {}) (lib.mapAttrs packageToComponents filteredPkgs);
-    in recurseIntoAttrs packagesByComponent;
+        packagesByComponent = lib.mapAttrsToList packageToComponents filteredPkgs;
+        packagesGroupedByName = builtins.groupBy (x: x.name) packagesByComponent;
+        combined =
+          lib.filterAttrs (_: components: components != {}) (
+            builtins.mapAttrs (_name: packages:
+              builtins.foldl' (a: b: a // b) {} (map (x: x.components) packages)) packagesGroupedByName);
+    in recurseIntoAttrs combined;
 
   # Equivalent to collectComponents with (_: true) as selection function.
   # Useful for pre-filtered package-set.
@@ -184,7 +193,7 @@ in {
   # This can be used to collect all the test runs in your project, so that can be run in CI.
   collectChecks = packageSel: haskellPackages:
     let packageFilter = _name: package: (package.isHaskell or false) && packageSel package;
-    in recurseIntoAttrs (lib.mapAttrs (_: p: p.checks) (lib.filterAttrs packageFilter haskellPackages));
+    in recurseIntoAttrs (lib.filterAttrs (_: x: x != {} && x != recurseIntoAttrs {}) (lib.mapAttrs (_: p: p.checks) (lib.filterAttrs packageFilter haskellPackages)));
 
   # Equivalent to collectChecks with (_: true) as selection function.
   # Useful for pre-filtered package-set.
@@ -256,9 +265,9 @@ in {
   isCrossTarget = stdenv.targetPlatform != stdenv.hostPlatform
     && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && stdenv.hostPlatform.linuxArch == stdenv.targetPlatform.linuxArch);
   # Native musl build-host-target combo
-  isNativeMusl = stdenv.hostPlatform.isMusl
-    && stdenv.buildPlatform == stdenv.hostPlatform
-    && stdenv.hostPlatform == stdenv.targetPlatform;
+  isNativeMusl = stdenv.targetPlatform.isMusl
+    && stdenv.buildPlatform.linuxArch == stdenv.hostPlatform.linuxArch
+    && stdenv.hostPlatform.linuxArch == stdenv.targetPlatform.linuxArch;
 
   # Takes a version number, module or list of modules (for cabalProject)
   # and converts it to an list of project modules.  This allows
@@ -593,6 +602,8 @@ in {
     then "arm"
     else if hostPlatform.isAarch64
     then "aarch64"
+    else if hostPlatform.isi686
+    then "i386"
     else abort "Don't know which QEMU to use for hostPlatform ${hostPlatform.config}. Please provide qemuSuffix";
 
   # How to run ldd when checking for static linking

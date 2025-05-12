@@ -1,4 +1,8 @@
-index-state: 2024-10-15T20:31:31Z
+index-state: 2025-04-12T00:00:00Z
+
+-- Needed for building aarch64-linux musl version with GHC 9.6
+constraints: containers installed, Cabal >=3.14.1.0
+allow-older: Cabal-syntax-json:base, Cabal-syntax-json:containers
 
 packages: nix-tools
 
@@ -36,5 +40,5 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/andreabedini/Cabal-syntax-json.git
-    tag: b7192832f730d9181a013ef7c77f2ad0b30cca43
-    --sha256: sha256-Yw2HQOCmjOvfKHi3xWbSniAZfyrshOvsgmUbqFmDDpU=
+    tag: b0033ed4d00a09340c64f4290cc649f4009deabd
+    --sha256: sha256-Aymi25AQLSMextVeXbsMnaOppxAO93qVbwo7Vt44ej4=

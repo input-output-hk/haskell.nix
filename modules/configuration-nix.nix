@@ -3,7 +3,7 @@
 # package sets out of this repo. Ideally, this file is only used for
 # fixing things that are broken due to the Nix infrastructure.
 
-{ pkgs, config, ... }:
+{ pkgs, lib, config, ... }:
 let
   fromUntil = from: until: patch: { version }:
     if   builtins.compareVersions version from  >= 0
@@ -35,9 +35,9 @@ in addPackageKeys {
   # These packages have `license: LGPL` in their .cabal file, but
   # do not specify the version.  Setting the version here on
   # examination of the license files included in the packages.
-  packages.hscolour.package.license = pkgs.lib.mkForce "LGPL-2.1-only";
-  packages.cpphs.package.license = pkgs.lib.mkForce "LGPL-2.1-only";
-  packages.polyparse.package.license = pkgs.lib.mkForce "LGPL-2.1-only";
+  packages.hscolour.package.license = lib.mkForce "LGPL-2.1-only";
+  packages.cpphs.package.license = lib.mkForce "LGPL-2.1-only";
+  packages.polyparse.package.license = lib.mkForce "LGPL-2.1-only";
 
   # These two patches are needed by GHCJS
   packages.Cabal.patches = [
@@ -63,14 +63,14 @@ in addPackageKeys {
   #
   # We now expose genprimopcode and deriveConstants from ghc directly (this is not in line with
   # with upstream ghc) to be able to re-build lib:ghc.
-  packages.ghc.components.library.build-tools = pkgs.lib.mkForce (
-    pkgs.lib.optionals (__compareVersions config.hsPkgs.ghc.identifier.version "9.4.1" > 0) [
+  packages.ghc.components.library.build-tools = lib.mkForce (
+    lib.optionals (__compareVersions config.hsPkgs.ghc.identifier.version "9.4.1" > 0) [
       (config.hsPkgs.buildPackages.alex.components.exes.alex or pkgs.buildPackages.alex)
       (config.hsPkgs.buildPackages.happy.components.exes.happy or pkgs.buildPackages.happy)
     ]);
 
   # Remove dependency on hsc2hs (hsc2hs should be in ghc derivation)
-  packages.mintty.components.library.build-tools = pkgs.lib.mkForce [];
+  packages.mintty.components.library.build-tools = lib.mkForce [];
 
   packages.ghc-lib-parser.patches = [
     (fromUntil "8.10.0.0" "9.2" ../overlays/patches/ghc-lib-parser-8.10-global-unique-counters-in-rts.patch)
@@ -86,7 +86,7 @@ in addPackageKeys {
 
   # See https://github.com/input-output-hk/haskell.nix/issues/1455
   # This is a work around to make `ghcide` and `haskell-language-server` build with the unboxed tuple patch.
-  packages.ghcide = pkgs.lib.mkIf (__elem config.compiler.nix-name [
+  packages.ghcide = lib.mkIf (__elem config.compiler.nix-name [
         # Work out if we have applied the unboxed tupple patch in overlays/bootstrap.nix
         "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc8107" "ghc810420210212"
       ]) {
@@ -97,7 +97,7 @@ in addPackageKeys {
         (fromUntil "2.2.0.0" "2.3.0.0" ../patches/ghcide-2.2-unboxed-tuple-fix-issue-1455.patch)
       ]
       # This is needed for a patch only applied to ghc810420210212
-      ++ pkgs.lib.optional (__elem config.compiler.nix-name [
+      ++ lib.optional (__elem config.compiler.nix-name [
         "ghc810420210212"
       ]) (from "1.7.0.0" ../patches/ghcide-1.7-plutus-ghc.patch);
       flags = {
@@ -119,9 +119,9 @@ in addPackageKeys {
     (fromUntil "0.9.1" "0.9.2" ../patches/languge-c-int128.patch)
   ];
 
-  packages.discount.components.library.libs = pkgs.lib.mkForce [ pkgs.discount ];
+  packages.discount.components.library.libs = lib.mkForce [ pkgs.discount ];
 
-  packages.llvm-hs.components.library.build-tools = pkgs.lib.mkForce [
+  packages.llvm-hs.components.library.build-tools = lib.mkForce [
     (fromUntil "5.0.0" "6" pkgs.llvmPackages_5.llvm)
     (fromUntil "6.0.0" "7" pkgs.llvmPackages_6.llvm)
     (fromUntil "7.0.0" "8" pkgs.llvmPackages_7.llvm)
@@ -185,7 +185,7 @@ in addPackageKeys {
   # https://gitlab.haskell.org/ghc/ghc/-/issues/23392
   # Using -j1 works around the issue.
   packages.gi-gtk.components.library.ghcOptions =
-    pkgs.lib.optional (
+    lib.optional (
          builtins.compareVersions config.compiler.version "9.6.1" >= 0
       && builtins.compareVersions config.compiler.version "9.9" < 0) "-j1";
 
@@ -193,5 +193,14 @@ in addPackageKeys {
   # text package to fail with:
   #   error: inlining failed in call to ‘always_inline’ ‘void* memcpy(void*, const void*, size_t)’: target specific option mismatch
   packages.text.components.library.hardeningDisable =
-    pkgs.lib.optionals pkgs.stdenv.hostPlatform.isMusl ["fortify"];
+    lib.optionals pkgs.stdenv.hostPlatform.isMusl ["fortify"];
+
+  # error: use of undeclared identifier 'IP_RECVTOS'
+  # for whatever reason nixpkgs 24.11 defines x86_64-darwin
+  # to be sdk-10.12.2, and aarch64-darwin to be sdk-11.
+  # nixpkgs 25.05 will drop sdk-10.12, and unify aarch64 and x86 at last.
+  packages.network.components.library.libs = lib.mkIf (pkgs.stdenv.hostPlatform.isDarwin && pkgs ? apple-sdk && lib.versionOlder pkgs.apple-sdk.version "11") [
+    pkgs.apple-sdk_11
+    (pkgs.darwinMinVersionHook "11.0")
+  ];
 }

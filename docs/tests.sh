@@ -5,7 +5,7 @@ pushd tutorials
 
 ## Getting started
 pushd getting-started
-nix-build
+nix-build -A hsPkgs.hello.components.exes.hello
 nix-shell --pure --run "cabal build hello"
 popd
 

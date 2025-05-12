@@ -1,0 +1,74 @@
+diff --git a/utils/compare_sizes/ghc.mk b/utils/compare_sizes/ghc.mk
+index d659a5e..b5e4228 100644
+--- a/utils/compare_sizes/ghc.mk
++++ b/utils/compare_sizes/ghc.mk
+@@ -5,5 +5,6 @@ utils/compare_sizes_MODULES = Main
+ utils/compare_sizes_dist-install_PROGNAME = compareSizes
+ utils/compare_sizes_dist-install_INSTALL_INPLACE = NO
+ 
++ifneq "$(Stage1Only)" "YES"
+ $(eval $(call build-prog,utils/compare_sizes,dist-install,1))
+-
++endif
+\ No newline at end of file
+diff --git a/utils/ghc-cabal/ghc.mk b/utils/ghc-cabal/ghc.mk
+index 290b233..c9a119f 100644
+--- a/utils/ghc-cabal/ghc.mk
++++ b/utils/ghc-cabal/ghc.mk
+@@ -104,4 +104,6 @@ utils/ghc-cabal_dist-install_INSTALL_INPLACE = NO
+ utils/ghc-cabal_dist-install_WANT_BINDIST_WRAPPER = YES
+ utils/ghc-cabal_dist-install_MODULES         = Main
+ 
++ifneq "$(Stage1Only)" "YES"
+ $(eval $(call build-prog,utils/ghc-cabal,dist-install,1))
++endif
+\ No newline at end of file
+diff --git a/utils/hpc/ghc.mk b/utils/hpc/ghc.mk
+index 9b2bce2..448ad16 100644
+--- a/utils/hpc/ghc.mk
++++ b/utils/hpc/ghc.mk
+@@ -18,4 +18,6 @@ utils/hpc_dist-install_PROGNAME        = hpc
+ utils/hpc_dist-install_SHELL_WRAPPER   = YES
+ utils/hpc_dist-install_INSTALL_SHELL_WRAPPER_NAME = hpc
+ 
++ifneq "$(Stage1Only)" "YES"
+ $(eval $(call build-prog,utils/hpc,dist-install,1))
++endif
+\ No newline at end of file
+diff --git a/utils/hsc2hs/ghc.mk b/utils/hsc2hs/ghc.mk
+index 386d472..5cc6037 100644
+--- a/utils/hsc2hs/ghc.mk
++++ b/utils/hsc2hs/ghc.mk
+@@ -18,8 +18,12 @@ utils/hsc2hs_dist_INSTALL         = NO
+ utils/hsc2hs_dist-install_INSTALL = YES
+ endif
+ 
++ifeq "$(Stage1Only)" "YES"
++$(eval $(call build-prog,utils/hsc2hs,dist,0))
++else
+ $(eval $(call build-prog,utils/hsc2hs,dist,0))
+ $(eval $(call build-prog,utils/hsc2hs,dist-install,1))
++endif
+ 
+ # After build-prog above
+ utils/hsc2hs_dist-install_MODULES = $(utils/hsc2hs_dist_MODULES)
+diff --git a/utils/iserv/ghc.mk b/utils/iserv/ghc.mk
+index 74f90e6..e747ca7 100644
+--- a/utils/iserv/ghc.mk
++++ b/utils/iserv/ghc.mk
+@@ -96,6 +96,7 @@ NEED_iserv_dyn = NO
+ endif
+ endif
+ 
++ifneq "$(Stage1Only)" "YES"
+ ifeq "$(NEED_iserv)" "YES"
+ $(eval $(call build-prog,utils/iserv,stage2,1))
+ endif
+@@ -107,6 +108,7 @@ endif
+ ifeq "$(NEED_iserv_dyn)" "YES"
+ $(eval $(call build-prog,utils/iserv,stage2_dyn,1))
+ endif
++endif
+ 
+ all_ghc_stage2 : $(iserv-stage2_INPLACE)
+ all_ghc_stage2 : $(iserv-stage2_p_INPLACE)

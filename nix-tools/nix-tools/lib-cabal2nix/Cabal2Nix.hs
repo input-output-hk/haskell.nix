@@ -10,7 +10,7 @@ import Distribution.Simple.PackageDescription (readGenericPackageDescription)
 import Distribution.Verbosity (normal)
 import Distribution.Pretty ( pretty, prettyShow )
 import Distribution.Utils.ShortText (fromShortText)
-import Distribution.Utils.Path (getSymbolicPath)
+import Distribution.Utils.Path (getSymbolicPath, makeSymbolicPath)
 import Data.Char (toUpper)
 import System.FilePath
 import Data.ByteString (ByteString)
@@ -97,7 +97,7 @@ data CabalDetailLevel = MinimalDetails | FullDetails deriving (Show, Eq)
 cabal2nix :: Bool -> CabalDetailLevel -> Maybe Src -> CabalFile -> IO NExpr
 cabal2nix isLocal fileDetails src = \case
   (OnDisk path) -> gpd2nix isLocal fileDetails src Nothing
-    <$> readGenericPackageDescription normal path
+    <$> readGenericPackageDescription normal Nothing (makeSymbolicPath path)
   (InMemory gen _ body) -> gpd2nix isLocal fileDetails src (genExtra <$> gen)
     <$> case runParseResult (parseGenericPackageDescription body) of
         (_, Left (_, err)) -> error ("Failed to parse in-memory cabal file: " ++ show err)
@@ -137,11 +137,11 @@ instance IsComponent ForeignLib where
 
 instance IsComponent Executable where
   getBuildInfo = buildInfo
-  getMainPath Executable {modulePath = p} = Just p
+  getMainPath Executable {modulePath = p} = Just (getSymbolicPath p)
 
 instance IsComponent TestSuite where
   getBuildInfo = testBuildInfo
-  getMainPath TestSuite {testInterface = (TestSuiteExeV10 _ p)} = Just p
+  getMainPath TestSuite {testInterface = (TestSuiteExeV10 _ p)} = Just (getSymbolicPath p)
   getMainPath _ = Nothing
 
 instance IsComponent Benchmark where
@@ -211,11 +211,11 @@ toNixPackageDescription isLocal detailLevel pd = mkNonRecSet $
       else
         [ "detailLevel"   $= mkStr (fromString (show detailLevel))
         , "licenseFiles"  $= toNix (map getSymbolicPath (licenseFiles pd))
-        , "dataDir"       $= mkStr (fromString (dataDir pd))
-        , "dataFiles"     $= toNix (dataFiles pd)
-        , "extraSrcFiles" $= toNix (extraSrcFiles pd)
-        , "extraTmpFiles" $= toNix (extraTmpFiles pd)
-        , "extraDocFiles" $= toNix (extraDocFiles pd)
+        , "dataDir"       $= mkStr (fromString (getSymbolicPath (dataDir pd)))
+        , "dataFiles"     $= toNix (map getSymbolicPath (dataFiles pd))
+        , "extraSrcFiles" $= toNix (map getSymbolicPath (extraSrcFiles pd))
+        , "extraTmpFiles" $= toNix (map getSymbolicPath (extraTmpFiles pd))
+        , "extraDocFiles" $= toNix (map getSymbolicPath (extraDocFiles pd))
         ]
   where
     toSetupDepends (Dependency pkg _ libs) = SetupDependency pkg <$> toList libs
@@ -328,7 +328,7 @@ toNixGenericPackageDescription isLocal detailLevel gpd = mkNonRecSet
                 mkNonRecSet (
                   [ "depends"      $= toNix deps | Just deps <- [shakeTree . fmap ( (>>= depends) . targetBuildDepends . getBuildInfo) $ comp ] ] ++
                   [ "libs"         $= toNix deps | Just deps <- [shakeTree . fmap (  fmap mkSysDep . extraLibs . getBuildInfo) $ comp ] ] ++
-                  [ "frameworks"   $= toNix deps | Just deps <- [shakeTree . fmap ( fmap mkSysDep . frameworks . getBuildInfo) $ comp ] ] ++
+                  [ "frameworks"   $= toNix deps | Just deps <- [shakeTree . fmap ( fmap mkSysDep . fmap getSymbolicPath . frameworks . getBuildInfo) $ comp ] ] ++
                   [ "pkgconfig"    $= toNix deps | Just deps <- [shakeTree . fmap (           pkgconfigDepends . getBuildInfo) $ comp ] ] ++
                   [ "build-tools"  $= toNix deps | Just deps <- [shakeTree . fmap (                   toolDeps . getBuildInfo) $ comp ] ] ++
                   [ "buildable"    $= boolTreeToNix (and <$> b) | Just b <- [shakeTree . fmap ((:[]) . buildable . getBuildInfo) $ comp ] ] ++
@@ -336,14 +336,14 @@ toNixGenericPackageDescription isLocal detailLevel gpd = mkNonRecSet
                     then []
                     else
                       [ "modules"      $= toNix mods | Just mods <- [shakeTree . fmap (fmap ModuleName.toFilePath . modules) $ comp ] ] ++
-                      [ "asmSources"   $= toNix src  | Just src  <- [shakeTree . fmap (asmSources   . getBuildInfo) $ comp ] ] ++
-                      [ "cmmSources"   $= toNix src  | Just src  <- [shakeTree . fmap (cmmSources   . getBuildInfo) $ comp ] ] ++
-                      [ "cSources"     $= toNix src  | Just src  <- [shakeTree . fmap (cSources     . getBuildInfo) $ comp ] ] ++
-                      [ "cxxSources"   $= toNix src  | Just src  <- [shakeTree . fmap (cxxSources   . getBuildInfo) $ comp ] ] ++
-                      [ "jsSources"    $= toNix src  | Just src  <- [shakeTree . fmap (jsSources    . getBuildInfo) $ comp ] ] ++
-                      [ "hsSourceDirs" $= toNix (fmap getSymbolicPath <$> dir) | Just dir  <- [shakeTree . fmap (hsSourceDirs . getBuildInfo) $ comp ] ] ++
-                      [ "includeDirs"  $= toNix dir  | Just dir  <- [shakeTree . fmap (includeDirs  . getBuildInfo) $ comp] ] ++
-                      [ "includes"     $= toNix dir  | Just dir  <- [shakeTree . fmap (includes     . getBuildInfo) $ comp] ] ++
+                      [ "asmSources"   $= toNix (fmap getSymbolicPath <$> src)  | Just src  <- [shakeTree . fmap (asmSources   . getBuildInfo) $ comp ] ] ++
+                      [ "cmmSources"   $= toNix (fmap getSymbolicPath <$> src)  | Just src  <- [shakeTree . fmap (cmmSources   . getBuildInfo) $ comp ] ] ++
+                      [ "cSources"     $= toNix (fmap getSymbolicPath <$> src)  | Just src  <- [shakeTree . fmap (cSources     . getBuildInfo) $ comp ] ] ++
+                      [ "cxxSources"   $= toNix (fmap getSymbolicPath <$> src)  | Just src  <- [shakeTree . fmap (cxxSources   . getBuildInfo) $ comp ] ] ++
+                      [ "jsSources"    $= toNix (fmap getSymbolicPath <$> src)  | Just src  <- [shakeTree . fmap (jsSources    . getBuildInfo) $ comp ] ] ++
+                      [ "hsSourceDirs" $= toNix (fmap getSymbolicPath <$> dir)  | Just dir  <- [shakeTree . fmap (hsSourceDirs . getBuildInfo) $ comp ] ] ++
+                      [ "includeDirs"  $= toNix (fmap getSymbolicPath <$> dir)  | Just dir  <- [shakeTree . fmap (includeDirs  . getBuildInfo) $ comp] ] ++
+                      [ "includes"     $= toNix (fmap getSymbolicPath <$> dir)  | Just dir  <- [shakeTree . fmap (includes     . getBuildInfo) $ comp] ] ++
                       [ "mainPath"     $= toNix p | Just p <- [shakeTree . fmap (maybeToList . getMainPath) $ comp] ])
               where name = fromString $ unUnqualComponentName unQualName
                     depends (Dependency pkg _ libs) = HaskellLibDependency pkg <$> toList libs

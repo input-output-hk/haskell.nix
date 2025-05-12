@@ -23,11 +23,6 @@ final: prev: {
         # here and be explicit about imports and dependencies.
         callPackage = prev.lib.callPackageWith (final // final.haskell-nix);
 
-        # You can provide different pins for hackage.nix and stackage.nix if required.
-        # It's also possible to override these sources with NIX_PATH.
-        hackageSourceJSON = ../hackage-src.json;
-        stackageSourceJSON = ../stackage-src.json;
-
         # ghc hackage patches.
         # these are patches that turn hackage packages into the same as the ones
         # ghc ships with the supposedly same version. See GHC Track Issue: 16199
@@ -47,7 +42,7 @@ final: prev: {
         # All packages from Hackage as Nix expressions
         hackageSrc = sources.hackage;
         # The only stack projects need hackage.nix now
-        hackageForStack = import hackageSrc;
+        hackageForStack = import sources.hackage-for-stackage;
 
         # Contains the hashes of the cabal 01-index.tar.gz for given
         # index states.  Starting from April 1st 2019.
@@ -115,7 +110,7 @@ final: prev: {
                 You may need to update haskell.nix to one that includes a newer stackage.nix.
                 '');
                 # The compiler referenced in the stack config
-                compiler = (stack-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
+                compiler = (stack-pkgs.extras hackageForStack).compiler or (pkg-def hackageForStack).compiler;
                 patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
                 # Remove fake packages generated from stack keywords used in ghc-options
                 removeStackSpecial = module: if builtins.typeOf module == "set"
@@ -170,7 +165,11 @@ final: prev: {
             };
 
         # Package sets for all stackage snapshots.
-        snapshots = import ../snapshots.nix { inherit (final) lib ghc-boot-packages; inherit mkPkgSet stackage excludeBootPackages; };
+        snapshots = import ../snapshots.nix {
+          inherit (final) lib ghc-boot-packages;
+          inherit mkPkgSet stackage excludeBootPackages;
+          hackage = hackageForStack;
+        };
         # Pick a recent LTS snapshot to be our "default" package set.
         haskellPackages =
             if final.stdenv.targetPlatform.isAarch64 && final.stdenv.buildPlatform.isAarch64
@@ -683,12 +682,14 @@ final: prev: {
                     ++ (config.modules or [])
                     ++ [ {
                       ghc.package =
-                        if config.ghcOverride != null
-                          then config.ghcOverride
-                        else if config.ghc != null
-                          then config.ghc
-                        else
-                          final.lib.mkDefault selectedCompiler;
+                        let ghc =
+                          if config.ghcOverride != null
+                            then config.ghcOverride
+                          else if config.ghc != null
+                            then config.ghc
+                          else
+                            final.lib.mkDefault selectedCompiler;
+                        in if ghc.isHaskellNixCompiler or false then ghc.override { hadrianEvalPackages = evalPackages; } else ghc;
                       compiler.nix-name = final.lib.mkForce config.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
                     } ];
@@ -704,7 +705,7 @@ final: prev: {
                   inherit (callProjectResults) index-state-max;
                   tool = final.buildPackages.haskell-nix.tool' evalPackages pkg-set.config.compiler.nix-name;
                   tools = final.buildPackages.haskell-nix.tools' evalPackages pkg-set.config.compiler.nix-name;
-                  roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
+                  roots = final.haskell-nix.roots { compiler-nix-name = pkg-set.config.compiler.nix-name; inherit evalPackages; };
                   projectFunction = haskell-nix: haskell-nix.cabalProject';
                   inherit projectModule buildProject;
                 };
@@ -825,10 +826,10 @@ final: prev: {
             #     ];
             #   }
             #
-            shellFor = shellArgs:
+            shellFor = extraArgs: shellFor' (rawProject.args.shell // extraArgs).crossPlatforms extraArgs;
+            shellFor' = crossPlatforms: extraArgs:
               let
-                # These are the args we will pass to the main shell.
-                args' = builtins.removeAttrs shellArgs [ "crossPlatforms" ];
+                shellArgs = builtins.removeAttrs (rawProject.args.shell // extraArgs) [ "crossPlatforms" ];
                 # These are the args we will pass to the shells for the corss compiler
                 argsCross =
                   # These things should match main shell
@@ -838,21 +839,16 @@ final: prev: {
                     # The main shell's hoogle will probably be faster to build.
                     withHoogle = false;
                   };
-                # These are the cross compilation versions of the project we will include.
-                selectedCrossProjects =
-                  if shellArgs ? crossPlatforms
-                    then shellArgs.crossPlatforms projectCross
-                    else [];
                 # Shells for cross compilation
-                crossShells = builtins.map (project: project.shellFor argsCross)
-                  selectedCrossProjects;
-              in rawProject.hsPkgs.shellFor (args' // {
+                crossShells = builtins.map (project: project.shellFor' (_p: []) argsCross)
+                  (crossPlatforms projectCross);
+              in rawProject.hsPkgs.shellFor (shellArgs // {
                   # Add inputs from the cross compilation shells
-                  inputsFrom = args'.inputsFrom or [] ++ crossShells;
+                  inputsFrom = shellArgs.inputsFrom or [] ++ crossShells;
                 });
 
             # Default shell
-            shell = shellFor rawProject.args.shell;
+            shell = shellFor {};
 
             # Like `.hsPkgs.${packageName}` but when compined with `getComponent` any
             # cabal configure errors are defered until the components derivation builds.
@@ -951,7 +947,7 @@ final: prev: {
                   modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; }
                       (mkCacheModule cache) ]
                     ++ (config.modules or [])
-                    ++ final.lib.optional (config.ghc != null) { ghc.package = config.ghc; }
+                    ++ final.lib.optional (config.ghc != null) { ghc.package = config.ghc.override { hadrianEvalPackages = evalPackages; }; }
                     ++ final.lib.optional (config.compiler-nix-name != null)
                         { compiler.nix-name = final.lib.mkForce config.compiler-nix-name; }
                     ++ [ { evalPackages = final.lib.mkDefault evalPackages; } ];
@@ -965,7 +961,7 @@ final: prev: {
                   stack-nix = callProjectResults.projectNix;
                   tool = final.buildPackages.haskell-nix.tool' evalPackages pkg-set.config.compiler.nix-name;
                   tools = final.buildPackages.haskell-nix.tools' evalPackages pkg-set.config.compiler.nix-name;
-                  roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
+                  roots = final.haskell-nix.roots { compiler-nix-name = pkg-set.config.compiler.nix-name; inherit evalPackages; };
                   projectFunction = haskell-nix: haskell-nix.stackProject';
                   inherit projectModule buildProject;
                 };
@@ -1061,40 +1057,52 @@ final: prev: {
                     allow-newer: *:base, *:bytestring
                   '';
                 })).hsPkgs.iserv-proxy.components.exes;
-            in {
+            in rec {
               # We need the proxy for the build system and the interpreter for the target
               inherit (exes final.pkgsBuildBuild) iserv-proxy;
-              inherit (exes final) iserv-proxy-interpreter;
+              iserv-proxy-interpreter = (exes final).iserv-proxy-interpreter.override
+                (final.lib.optionalAttrs final.stdenv.hostPlatform.isAndroid {
+                  setupBuildFlags = ["--ghc-option=-optl-static" ] ++ final.lib.optional final.stdenv.hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";
+                  enableDebugRTS = true;
+                } // final.lib.optionalAttrs final.stdenv.hostPlatform.isWindows {
+                  setupBuildFlags = ["--ghc-option=-optl-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000" ];
+                  enableDebugRTS = true;
+                });
+              iserv-proxy-interpreter-prof = iserv-proxy-interpreter.override {
+                enableProfiling = true;
+              };
             }) final.haskell-nix.compiler;
 
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached. Consider using `p.roots` where `p` is a
         # project as it will automatically match the `compiler-nix-name`
         # of the project.
-        roots = compiler-nix-name: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
+        roots = { compiler-nix-name, evalPackages ? final.pkgsBuildBuild }@args: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
           (final.lib.filter (x: x.name != "recurseForDerivations")
             (final.lib.mapAttrsToList (name: path: { inherit name path; })
-              (roots' compiler-nix-name 2)));
+              (roots' args 2)));
 
-        roots' = compiler-nix-name: ifdLevel:
+        roots' = { compiler-nix-name, evalPackages ? final.pkgsBuildBuild }: ifdLevel:
+          let
+            ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { hadrianEvalPackages = evalPackages; };
+          in
           	final.recurseIntoAttrs ({
             # Things that require no IFD to build
             source-pin-hackage = hackageSrc;
             source-pin-stackage = stackageSrc;
             source-pin-haskell-nix = final.path;
-            # Double buildPackages is intentional,
-            # see comment in lib/default.nix for details.
-            # Using buildPackages rather than evalPackages so both darwin and linux
-            # versions will get pinned (evalPackages on darwin systems will be for darwin).
-            inherit (final.buildPackages.buildPackages) gitMinimal nix-prefetch-git;
-            inherit (final.buildPackages) nix;
+            inherit (evalPackages) nix gitMinimal nix-prefetch-git;
           } // final.lib.optionalAttrs (final.stdenv.hostPlatform.libc == "glibc") {
             inherit (final) glibcLocales;
+          } // final.lib.optionalAttrs (builtins.compareVersions ghc.version "9.4" >= 0) {
+            # Make sure the plan for hadrian is cached (we need it to instanciate ghc).
+            hadrian-plan = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.hadrianProject.plan-nix;
+            # Also include the same plan evaluated on the eval system.
+            hadrian-plan-eval = ghc.hadrianProject.plan-nix;
           } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
-            ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name};
-            ghc-boot-packages-nix = final.recurseIntoAttrs
-              final.ghc-boot-packages-nix.${compiler-nix-name};
+            inherit ghc;
+            ghc-boot-packages-nix = final.ghc-boot-packages-nix.${compiler-nix-name};
           } // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             nix-tools-unchecked = final.pkgsBuildBuild.haskell-nix.nix-tools-unchecked;

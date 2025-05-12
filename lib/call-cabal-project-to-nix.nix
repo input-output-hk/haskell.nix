@@ -13,7 +13,7 @@
 , cabalProjectLocal    ? null
 , cabalProjectFreeze   ? null
 , caller               ? "callCabalProjectToNix" # Name of the calling function for better warning messages
-, compilerSelection    ? p: p.haskell-nix.compiler
+, compilerSelection    ? p: builtins.mapAttrs (_: x: x.override { hadrianEvalPackages = evalPackages; }) p.haskell-nix.compiler
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
 , configureArgs ? "" # Extra arguments to pass to `cabal v2-configure`.
                      # `--enable-tests --enable-benchmarks` are included by default.
@@ -151,7 +151,7 @@ in let
       let
         suitable-index-states =
           builtins.filter
-            (s: s >= index-state-max) # This compare is why we need zulu time
+            (s: s > index-state-max) # This compare is why we need zulu time
             (builtins.attrNames index-state-hashes);
       in
         if builtins.length suitable-index-states == 0
@@ -193,10 +193,11 @@ let
             then fetchgit { inherit (repoData) url sha256; rev = repoData.rev or repoData.ref; }
             else
               let drv = builtins.fetchGit
-                { inherit (repoData) url ; ref = repoData.ref or null; }
-                # fetchGit does not accept "null" as rev, so when it's null
-                # we have to omit the argument completely.
-                // pkgs.lib.optionalAttrs (repoData ? rev) { inherit (repoData) rev; };
+                ({ inherit (repoData) url ; }
+                  # fetchGit does not accept "null" as rev and ref, so when it's null
+                  # we have to omit the argument completely.
+                  // pkgs.lib.optionalAttrs (repoData ? ref) { inherit (repoData) ref; }
+                  // pkgs.lib.optionalAttrs (repoData ? rev) { inherit (repoData) rev; });
               in __trace "WARNING: No sha256 found for source-repository-package ${repoData.url} ref=${repoData.ref or "(unspecified)"} rev=${repoData.rev or "(unspecified)"} download may fail in restricted mode (hydra)"
                 (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a sha256map argument"
                  drv);
@@ -334,8 +335,14 @@ let
           echo ',("target arch","${
               if pkgs.stdenv.targetPlatform.isx86_64
                 then "ArchX86_64"
+              else if pkgs.stdenv.targetPlatform.isx86
+                then "ArchX86"
+              else if pkgs.stdenv.targetPlatform.isRiscV64
+                then "ArchRISCV64"
               else if pkgs.stdenv.targetPlatform.isAarch64
                 then "ArchAArch64"
+              else if pkgs.stdenv.targetPlatform.isAarch32
+                then "ArchAArch32"
               else if pkgs.stdenv.targetPlatform.isJavaScript
                 then "ArchJavaScript"
               else throw "Unknown target arch ${pkgs.stdenv.targetPlatform.config}"
@@ -511,22 +518,30 @@ let
                 json_cabal_file=$(mktemp)
                 cabal2json $fixed_cabal_file > $json_cabal_file
 
-                exposed_modules="$(jq -r '.library."exposed-modules"//[]|.[]|select(type=="array")[]' $json_cabal_file)"
-                reexported_modules="$(jq -r '.library."reexported-modules"//[]|.[]|select(type=="array")[]' $json_cabal_file | sed 's/.* as //g')"
+                exposed_modules="$(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="string")' $json_cabal_file)"
+                reexported_modules="$(jq -r '.components.lib."reexported-modules"//[]|.[]|select(type=="string")' $json_cabal_file | sed 's/.* as //g')"
 
                 # FIXME This is a bandaid. Rather than doing this, conditionals should be interpreted.
                 ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isGhcjs ''
-                exposed_modules+=" $(jq -r '.library."exposed-modules"//[]|.[]|select(type=="object" and .if.arch == "javascript")|.then[]' $json_cabal_file)"
+                exposed_modules+=" $(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="object" and ._if.arch == "javascript")|._then[]' $json_cabal_file)"
                 ''}
                 ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
-                exposed_modules+=" $(jq -r '.library."exposed-modules"//[]|.[]|select(type=="object" and .if.os == "windows")|.then[]' $json_cabal_file)"
+                exposed_modules+=" $(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="object" and ._if.os == "windows")|._then[]' $json_cabal_file)"
                 ''}
                 ${pkgs.lib.optionalString (!pkgs.stdenv.targetPlatform.isWindows) ''
-                exposed_modules+=" $(jq -r '.library."exposed-modules"//[]|.[]|select(type=="object" and .if.not.os == "windows")|.then[]' $json_cabal_file)"
+                exposed_modules+=" $(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="object" and ._if.not.os == "windows")|._then[]' $json_cabal_file)"
                 ''}
 
                 EXPOSED_MODULES_${varname name}="$(tr '\n' ' ' <<< "$exposed_modules $reexported_modules")"
-                DEPS_${varname name}="$(jq -r '.library."build-depends"[]|select(type=="array")[],select(type=="object" and .if.not.flag != "vendor-filepath").then[]' $json_cabal_file | sed 's/^\([A-Za-z0-9-]*\).*$/\1/g' | sort -u | tr '\n' ' ')"
+                deps="$(jq -r '.components.lib."build-depends"[]|select(.package)|.package' $json_cabal_file)"
+                deps+=" $(jq -r '.components.lib."build-depends"[]|select((.if.flag or ._if.not.flag) and ._if.not.flag != "vendor-filepath")._then[]|.package' $json_cabal_file)"
+                ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
+                deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.os == "windows")|._then[]|.package' $json_cabal_file)"
+                ''}
+                ${pkgs.lib.optionalString (!pkgs.stdenv.targetPlatform.isWindows) ''
+                deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.not.os == "windows")|._then[]|.package' $json_cabal_file)"
+                ''}
+                DEPS_${varname name}="$(tr '\n' ' ' <<< "$deps")"
                 VER_${varname name}="$(jq -r '.version' $json_cabal_file)"
                 PKGS+=" ${name}"
                 LAST_PKG="${name}"
@@ -681,8 +696,8 @@ let
         cabal.project.freeze
       chmod +w cabal.project.freeze
     ''}
-    export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
-    export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
+    export SSL_CERT_FILE=${evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
+    export GIT_SSL_CAINFO=${evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
 
     export CABAL_DIR=${
       # This creates `.cabal` directory that is as it would have
