@@ -1,4 +1,4 @@
-final: prev: {
+_final: prev: {
   winePackages = prev.winePackages // {
     minimal = prev.winePackages.minimal.overrideAttrs (oldAttrs: {
       # Fix issue with UNC device file paths
