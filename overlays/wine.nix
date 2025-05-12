@@ -1,9 +1,11 @@
 final: prev: {
   winePackages = prev.winePackages // {
     minimal = prev.winePackages.minimal.overrideAttrs (oldAttrs: {
-      # Fix issue with UNC file paths
+      # Fix issue with UNC device file paths
       patches = oldAttrs.patches or []
-        ++ final.lib.optional (builtins.compareVersions prev.winePackages.minimal.version "10.0" < 0) ./patches/wine-add-dll-directory.patch;
+        ++ [(if builtins.compareVersions prev.winePackages.minimal.version "10.0" < 0
+          then ./patches/wine-add-dll-directory.patch
+          else ./patches/wine-add-dll-directory-10.patch)];
       # Avoid dependency on X11
       configureFlags = oldAttrs.configureFlags or [] ++ [ "--without-x" ];
     });
