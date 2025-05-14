@@ -540,7 +540,13 @@ let
                 ''}
                 ${pkgs.lib.optionalString (!pkgs.stdenv.targetPlatform.isWindows) ''
                 deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.not.os == "windows")|._then[]|.package' $json_cabal_file)"
-                ''}
+                ''
+                # Fix problem with `haskeline` using a `terminfo` flag
+                # For haskell-nix ghc we can use ghc.enableTerminfo to get the flag setting
+                + pkgs.lib.optionalString (name == "haskeline" && !pkgs.stdenv.targetPlatform.isWindows && ghc.enableTerminfo or true) ''
+                deps+=" terminfo"
+                ''
+                }
                 DEPS_${varname name}="$(tr '\n' ' ' <<< "$deps")"
                 VER_${varname name}="$(jq -r '.version' $json_cabal_file)"
                 PKGS+=" ${name}"
