@@ -668,7 +668,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     '';
 
   passthru = {
-    inherit bootPkgs targetPrefix libDir llvmPackages enableShared useLLVM hadrian hadrianProject;
+    inherit bootPkgs targetPrefix libDir llvmPackages enableShared enableTerminfo useLLVM hadrian hadrianProject;
 
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";
