@@ -24,8 +24,8 @@ writeScript "check-hydra.sh" ''
   fi
   EVAL_TIME=$(cat eval-time.txt)
   jq . < eval.json
-  ERRORS=$(jq -r 'map_values(.error)|to_entries[]|select(.value)|@text "\(.key): \(.value)"' < eval.json)
-  NUM_ERRORS=$(jq -r '[ map_values(.error)|to_entries[]|select(.value) ] |length' < eval.json)
+  ERRORS=$(jq 'select(.error)|@text "\(.attrPath|join(".")): \(.error)"' < eval.json)
+  NUM_ERRORS=$([ -z "$ERRORS" ] && echo 0 || echo "$ERRORS" | wc -l)
   rm eval.json eval-time.txt
 
   if [ "$NUM_ERRORS" != 0 ]
