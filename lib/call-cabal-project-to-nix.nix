@@ -546,6 +546,10 @@ let
                 + pkgs.lib.optionalString (name == "haskeline" && !pkgs.stdenv.targetPlatform.isWindows && ghc.enableTerminfo or true) ''
                 deps+=" terminfo"
                 ''
+                # Similar issue for Win32:filepath build-depends (hidden behind `if impl(ghc >= 8.0)`)
+                + pkgs.lib.optionalString (name == "Win32" && pkgs.stdenv.targetPlatform.isWindows) ''
+                deps+=" filepath"
+                ''
                 }
                 DEPS_${varname name}="$(tr '\n' ' ' <<< "$deps")"
                 VER_${varname name}="$(jq -r '.version' $json_cabal_file)"
