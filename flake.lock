@@ -369,24 +369,6 @@
         "type": "github"
       }
     },
-    "libffi-wasm": {
-      "flake": false,
-      "locked": {
-        "host": "gitlab.haskell.org",
-        "lastModified": 1741286406,
-        "narHash": "sha256-GxC9G+LYRHwKArwXNeU9Enq7u4arvPbFfE4kQj1cHyc=",
-        "owner": "haskell-wasm",
-        "repo": "libffi-wasm",
-        "rev": "e2dbdd8ded953e7a4df42c192da65ab36b9f0345",
-        "type": "gitlab"
-      },
-      "original": {
-        "host": "gitlab.haskell.org",
-        "owner": "haskell-wasm",
-        "repo": "libffi-wasm",
-        "type": "gitlab"
-      }
-    },
     "nixpkgs-2305": {
       "locked": {
         "lastModified": 1705033721,
@@ -508,7 +490,6 @@
         "hls-2.9": "hls-2.9",
         "hpc-coveralls": "hpc-coveralls",
         "iserv-proxy": "iserv-proxy",
-        "libffi-wasm": "libffi-wasm",
         "nixpkgs": [
           "nixpkgs-unstable"
         ],

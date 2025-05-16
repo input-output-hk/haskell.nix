@@ -65,10 +65,6 @@
       url = "github:stable-haskell/iserv-proxy?ref=iserv-syms";
       flake = false;
     };
-    libffi-wasm = {
-       url = "gitlab:haskell-wasm/libffi-wasm?host=gitlab.haskell.org";
-       flake = false;
-    };
   };
 
   outputs =
