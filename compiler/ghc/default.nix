@@ -329,6 +329,18 @@ let
         subDir = "hadrian";
         includeSiblings = true;
       };
+      # When building the plan we do not need a patched version
+      # of the source and `buildPackages.srcOnly` requires introduces
+      # a dependency on a build machine.
+      evalSrc = haskell-nix.haskellLib.cleanSourceWith {
+        src = {
+          name = "hadrian";
+          outPath = src;
+          filterPath = { path, ... }: path;
+        };
+        subDir = "hadrian";
+        includeSiblings = true;
+      };
     };
 
   hadrian = hadrianProject.hsPkgs.hadrian.components.exes.hadrian;
@@ -718,7 +730,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     '';
 
   passthru = {
-    inherit bootPkgs targetPrefix libDir llvmPackages enableShared useLLVM hadrian hadrianProject;
+    inherit bootPkgs targetPrefix libDir llvmPackages enableShared enableTerminfo useLLVM hadrian hadrianProject;
 
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";
