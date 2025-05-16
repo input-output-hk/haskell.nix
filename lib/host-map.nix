@@ -18,6 +18,7 @@ with stdenv.hostPlatform; {
        if isiOS     then "Ios"     else
        if isAndroid then "Android" else
        if isGhcjs   then "Ghcjs"   else
+       if isWasi    then "Wasi"    else
        if isAsterius then "Asterius" else
        throw "Unknown OS";
   arch = if isx86     && is32bit then "I386"    else
