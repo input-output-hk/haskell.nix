@@ -1,6 +1,7 @@
 { pkgs, cacert, index-state-hashes, haskellLib }:
 { name          ? src.name or null # optional name for better error messages
 , src
+, evalSrc ? src
 , materialized-dir ? ../materialized
 , compiler-nix-name    # The name of the ghc compiler to use eg. "ghc884"
 , index-state   ? null # Hackage index-state, eg. "2019-10-10T00:00:00Z"
@@ -94,13 +95,13 @@ in let
   ghc = if ghc' ? latestVersion
     then __trace "WARNING: ${ghc'.version} is out of date, consider using upgrading to ${ghc'.latestVersion}." ghc'
     else ghc';
-  subDir' = src.origSubDir or "";
+  subDir' = evalSrc.origSubDir or "";
   subDir = pkgs.lib.strings.removePrefix "/" subDir';
 
   cleanedSource = haskellLib.cleanSourceWith {
     name = if name != null then "${name}-root-cabal-files" else "source-root-cabal-files";
-    src = src.origSrc or src;
-    filter = path: type: (!(src ? filter) || src.filter path type) && (
+    src = evalSrc.origSrc or evalSrc;
+    filter = path: type: (!(evalSrc ? filter) || evalSrc.filter path type) && (
       type == "directory" ||
       pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "package.yaml" ]); };
 

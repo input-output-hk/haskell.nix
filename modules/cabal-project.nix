@@ -56,15 +56,15 @@ in {
     };
     cabalProject = mkOption {
       type = nullOr lines;
-      default = readIfExists config.src config.cabalProjectFileName;
+      default = readIfExists config.evalSrc config.cabalProjectFileName;
     };
     cabalProjectLocal = mkOption {
       type = nullOr lines;
-      default = readIfExists config.src "${config.cabalProjectFileName}.local";
+      default = readIfExists config.evalSrc "${config.cabalProjectFileName}.local";
     };
     cabalProjectFreeze = mkOption {
       type = nullOr lines;
-      default = readIfExists config.src "${config.cabalProjectFileName}.freeze";
+      default = readIfExists config.evalSrc "${config.cabalProjectFileName}.freeze";
     };
     ghc = mkOption {
       type = nullOr package;

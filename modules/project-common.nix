@@ -75,6 +75,18 @@ with lib.types;
           };
       '';
     };
+    evalSrc = mkOption {
+      type = either path package;
+      default = config.src;
+      description = ''
+        Allows a different version of the src to be used at eval time.
+        This is useful when building the source may require a build machine.
+        To avoid an eval time dependency on a build machine set `evalSrc`
+        to either:
+          * A version of the source built using `evalPackages`
+          * A version of the source that does not require building
+      '';
+    };
     hsPkgs = lib.mkOption {
       type = lib.types.unspecified;
     };
