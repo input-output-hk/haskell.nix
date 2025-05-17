@@ -1,0 +1,29 @@
+{
+  "nodes": {
+    "libffi-wasm": {
+      "flake": false,
+      "locked": {
+        "host": "gitlab.haskell.org",
+        "lastModified": 1741286406,
+        "narHash": "sha256-GxC9G+LYRHwKArwXNeU9Enq7u4arvPbFfE4kQj1cHyc=",
+        "owner": "haskell-wasm",
+        "repo": "libffi-wasm",
+        "rev": "e2dbdd8ded953e7a4df42c192da65ab36b9f0345",
+        "type": "gitlab"
+      },
+      "original": {
+        "host": "gitlab.haskell.org",
+        "owner": "haskell-wasm",
+        "repo": "libffi-wasm",
+        "type": "gitlab"
+      }
+    },
+    "root": {
+      "inputs": {
+        "libffi-wasm": "libffi-wasm"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
