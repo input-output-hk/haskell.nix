@@ -14,7 +14,7 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs rec {
-  meta.disabled = stdenv.hostPlatform.isGhcjs;
+  meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm;
 
   ifdInputs = {
     inherit (project) plan-nix;
