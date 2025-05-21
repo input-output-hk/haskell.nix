@@ -17,6 +17,7 @@ let
       lndir ${pkgs.buildPackages.gcc.cc} $out
     '')
   ] else [];
+  postgresqlLibs = [ postgresql ] ++ lib.optional (postgresql ? pg_config) postgresql.pg_config;
 in
 # -- linux
 { crypto = [ openssl ];
@@ -57,10 +58,10 @@ in
   bz2 = [ bzip2 ];
   util = [ utillinux ];
   magic = [ file ];
-  pgcommon = [ postgresql ];
-  pgport = [ postgresql] ;
-  pq = [ postgresql ];
-  libpq = [ postgresql ];
+  pgcommon = postgresqlLibs;
+  pgport = postgresqlLibs;
+  pq = postgresqlLibs;
+  libpq = postgresqlLibs;
   iconv = [ libiconv ];
   lapack = [ liblapack ];
   boost_atomic = [ boost ];
