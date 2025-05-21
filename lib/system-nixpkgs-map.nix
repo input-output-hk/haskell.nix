@@ -17,6 +17,9 @@ let
       lndir ${pkgs.buildPackages.gcc.cc} $out
     '')
   ] else [];
+  # In newer versions of nixpkgs `pg_config` has been moved to its own derivation.
+  # Haskell libs that depend on the `pq` library (like `postgresql-libpq`)
+  # are likely to require `pg_config` to be in the `PATH` as well.
   postgresqlLibs = [ postgresql ] ++ lib.optional (postgresql ? pg_config) postgresql.pg_config;
 in
 # -- linux
