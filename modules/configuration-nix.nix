@@ -203,4 +203,7 @@ in addPackageKeys {
     pkgs.apple-sdk_11
     (pkgs.darwinMinVersionHook "11.0")
   ];
+
+  packages.postgresql-libpq-configure.components.library.libs = [ (lib.getDev pkgs.postgresql) ]
+    ++ lib.optional (pkgs.postgresql ? pg_config) [ pkgs.postgresql.pg_config ];
 }
