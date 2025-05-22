@@ -170,11 +170,12 @@ final: prev: {
           inherit mkPkgSet stackage excludeBootPackages;
           hackage = hackageForStack;
         };
-        # Pick a recent LTS snapshot to be our "default" package set.
+        # Pick the most recent LTS snapshot to be our "default" package set.
         haskellPackages =
-            if final.stdenv.targetPlatform.isAarch64 && final.stdenv.buildPlatform.isAarch64
-            then snapshots."lts-15.13"
-            else snapshots."lts-14.13";
+          let
+            versions = final.lib.mapAttrsToList
+              (name: _: final.lib.removePrefix "lts-" name) snapshots;
+          in snapshots."lts-${final.lib.head (final.lib.sort final.lib.versionAtLeast versions)}";
 
         # Creates Cabal local repository from { name, index } set.
         mkLocalHackageRepo = import ../mk-local-hackage-repo final;
