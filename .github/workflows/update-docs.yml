@@ -9,7 +9,7 @@ env:
   GH_TOKEN: ${{ github.token }}
 
 jobs:
-  wait-for-hydra:
+  upload-docs:
     runs-on: ubuntu-latest
 
     steps:
