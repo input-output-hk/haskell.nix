@@ -1,4 +1,4 @@
-{ lib, stdenv, mkShell, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, pkgsBuildBuild, evalPackages, compiler }:
+{ lib, stdenv, mkShell, glibcLocales, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, pkgsBuildBuild, evalPackages, compiler }:
 
 { # `packages` function selects packages that will be worked on in the shell itself.
   # These packages will not be built by `shellFor`, but their
@@ -93,6 +93,11 @@ let
     (removeSelectedInputs (haskellLib.uniqueWithName (lib.concatMap (cfg: cfg.depends) selectedConfigs))
       ++ additionalPackages);
 
+  # For non haskell dependencies (and `pre-existing` haskell packages)
+  # we want to search all the configs.
+  allConfigs = selectedConfigs ++
+    builtins.map (x: (haskellLib.dependToLib x).config) additionalPackages;
+
   # Add the system libraries and build tools of the selected haskell packages to the shell.
   # We need to remove any inputs which are selected components (see above).
   # `buildInputs`, `propagatedBuildInputs`, and `executableToolDepends` contain component
@@ -115,10 +120,10 @@ let
   # Set up a "dummy" component to use with ghcForComponent.
   component = {
     depends = packageInputs;
-    pre-existing = lib.concatMap (x: (haskellLib.dependToLib x).config.pre-existing or []) packageInputs;
-    libs         = lib.concatMap (x: (haskellLib.dependToLib x).config.libs or []) packageInputs;
-    pkgconfig    = lib.concatMap (x: (haskellLib.dependToLib x).config.pkgconfig or []) packageInputs;
-    frameworks   = lib.concatMap (x: (haskellLib.dependToLib x).config.frameworks or []) packageInputs;
+    pre-existing = lib.unique (lib.concatMap (x: (haskellLib.dependToLib x).pre-existing or []) allConfigs);
+    libs         = haskellLib.uniqueWithName (lib.concatMap (x: (haskellLib.dependToLib x).libs or []) allConfigs);
+    pkgconfig    = haskellLib.uniqueWithName (lib.concatMap (x: (haskellLib.dependToLib x).pkgconfig or []) allConfigs);
+    frameworks   = haskellLib.uniqueWithName (lib.concatMap (x: (haskellLib.dependToLib x).frameworks or []) allConfigs);
     doExactConfig = false;
   };
   configFiles = makeConfigFiles {

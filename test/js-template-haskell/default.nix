@@ -23,11 +23,18 @@ in recurseIntoAttrs {
     inherit (project) plan-nix;
   };
 
-  meta.disabled = stdenv.buildPlatform != stdenv.hostPlatform && stdenv.hostPlatform.isAarch64;
+  meta.disabled = builtins.elem compiler-nix-name ["ghc91320241204"]
+    # unhandled ELF relocation(Rel) type 10
+    || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_32);
 
   build = packages.js-template-haskell.components.library;
   check = packages.js-template-haskell.checks.test;
-} // optionalAttrs (!stdenv.hostPlatform.isGhcjs) {
+} // optionalAttrs (!(
+         stdenv.hostPlatform.isGhcjs
+      || (stdenv.hostPlatform.isAarch64
+          && stdenv.hostPlatform.isMusl
+          && builtins.elem compiler-nix-name ["ghc9101" "ghc966"])
+    )) {
   build-profiled = packages.js-template-haskell.components.library.profiled;
   check-profiled = packages.js-template-haskell.checks.test.profiled;
 }

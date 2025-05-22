@@ -1,5 +1,5 @@
-resolver: lts-21.9
-compiler: ghc-9.4.7
+resolver: lts-23.7
+compiler: ghc-9.10.1
 compiler-check: match-exact
 packages:
 - .

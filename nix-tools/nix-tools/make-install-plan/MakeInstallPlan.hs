@@ -6,15 +6,14 @@ import qualified Cabal2Nix hiding (gpd2nix)
 import qualified Data.ByteString.Lazy as BSL
 import Data.Foldable (for_)
 import qualified Data.Text.Encoding as T
-import Distribution.Client.DistDirLayout (DistDirLayout (distDirectory, distProjectCacheFile, distProjectFile))
+import Distribution.Client.DistDirLayout (DistDirLayout (..))
 import Distribution.Client.GlobalFlags
 import Distribution.Client.HashValue (HashValue, showHashValue)
 import qualified Distribution.Client.InstallPlan as InstallPlan
 import Distribution.Client.NixStyleOptions (NixStyleFlags (..), defaultNixStyleFlags, nixStyleOptions)
 import Distribution.Client.ProjectConfig
 import Distribution.Client.ProjectOrchestration
-import Distribution.Client.ProjectPlanOutput (writePlanExternalRepresentation)
-import Distribution.Client.ProjectPlanning (ElaboratedConfiguredPackage (..), rebuildInstallPlan, availableTargets)
+import Distribution.Client.ProjectPlanning (ElaboratedConfiguredPackage (..), availableTargets, rebuildInstallPlan)
 import Distribution.Client.Setup
 import Distribution.Client.Types.PackageLocation (PackageLocation (..))
 import Distribution.Client.Types.Repo (LocalRepo (..), RemoteRepo (..), Repo (..))
@@ -25,7 +24,7 @@ import Distribution.Pretty (prettyShow)
 import Distribution.Simple.Command
 import Distribution.Simple.Flag
 import qualified Distribution.Simple.Utils as Cabal
-import Distribution.Types.SourceRepo (KnownRepoType (Git), RepoType (..))
+import Distribution.Types.SourceRepo (KnownRepoType (..), RepoType (..))
 import Distribution.Verbosity (Verbosity)
 import qualified Distribution.Verbosity as Verbosity
 import Freeze (projectFreezeConfig)
@@ -33,9 +32,11 @@ import Nix.Expr
 import Nix.Pretty (prettyNix)
 import Prettyprinter (Doc)
 import Prettyprinter.Render.Text (hPutDoc)
+import ProjectPlanOutput (writePlanExternalRepresentation)
 import System.Environment (getArgs)
 import System.FilePath
 import System.IO (IOMode (WriteMode), hClose, openFile)
+import Distribution.Simple.Utils (topHandler)
 
 main :: IO ()
 main = do
@@ -46,27 +47,27 @@ main = do
     CommandErrors errs -> putStrLn $ "commandErrors: " ++ show errs
     CommandReadyToGo (mkflags, _commandParse) ->
       let globalFlags = defaultGlobalFlags
-          flags@NixStyleFlags {configFlags} = mkflags (commandDefaultFlags cmdUI)
+          flags@NixStyleFlags{configFlags} = mkflags (commandDefaultFlags cmdUI)
           verbosity = fromFlagOrDefault Verbosity.normal (configVerbosity configFlags)
           cliConfig = commandLineFlagsToProjectConfig globalFlags flags mempty
-       in installPlanAction verbosity cliConfig
+       in topHandler (installPlanAction verbosity cliConfig)
 
 cmdUI :: CommandUI (NixStyleFlags ())
 cmdUI =
   CommandUI
-    { commandName = "",
-      commandSynopsis = "Makes an install-plan",
-      commandUsage = ("Usage: " ++),
-      commandDescription = Nothing,
-      commandNotes = Nothing,
-      commandDefaultFlags = defaultNixStyleFlags (),
-      commandOptions = nixStyleOptions (const [])
+    { commandName = ""
+    , commandSynopsis = "Makes an install-plan"
+    , commandUsage = ("Usage: " ++)
+    , commandDescription = Nothing
+    , commandNotes = Nothing
+    , commandDefaultFlags = defaultNixStyleFlags ()
+    , commandOptions = nixStyleOptions (const [])
     }
 
 -- The following is adapted from cabal-install's Distribution.Client.CmdFreeze
 installPlanAction :: Verbosity -> ProjectConfig -> IO ()
 installPlanAction verbosity cliConfig = do
-  ProjectBaseContext {distDirLayout, cabalDirLayout, projectConfig, localPackages} <-
+  ProjectBaseContext{distDirLayout, cabalDirLayout, projectConfig, localPackages} <-
     establishProjectBaseContext verbosity cliConfig OtherCommand
 
   (_improvedPlan, elaboratedPlan, elaboratedSharedConfig, totalIndexState, activeRepos) <-
@@ -74,7 +75,11 @@ installPlanAction verbosity cliConfig = do
 
   -- Write plan.json
   Cabal.notice verbosity $ "Writing plan.json to " ++ distProjectCacheFile distDirLayout "plan.json"
-  writePlanExternalRepresentation distDirLayout elaboratedPlan elaboratedSharedConfig (availableTargets elaboratedPlan)
+  writePlanExternalRepresentation
+    distDirLayout
+    elaboratedPlan
+    elaboratedSharedConfig
+    (availableTargets elaboratedPlan)
 
   -- Write cabal.freeze
   let freezeConfig = projectFreezeConfig elaboratedPlan totalIndexState activeRepos
@@ -90,12 +95,12 @@ installPlanAction verbosity cliConfig = do
 
   for_ ecps $
     \ElaboratedConfiguredPackage
-       { elabPkgSourceId,
-         elabPkgSourceLocation,
-         elabPkgSourceHash,
-         elabLocalToProject,
-         elabPkgDescriptionOverride
-       } -> do
+      { elabPkgSourceId
+      , elabPkgSourceLocation
+      , elabPkgSourceHash
+      , elabLocalToProject
+      , elabPkgDescriptionOverride
+      } -> do
         let nixFile = cabalFilesDir </> prettyShow (pkgName elabPkgSourceId) <.> "nix"
         for_ elabPkgDescriptionOverride $ \pkgTxt -> do
           -- In the plan we have elabPkgDescription :: PackageDescription which is the cabal file after
@@ -123,8 +128,8 @@ packageLocation2Src pkgSrcLoc pkgSrcHash = case pkgSrcLoc of
     (SourceRepositoryPackage (KnownRepoType Git) location (Just tag) branch subdir []) ->
       Cabal2Nix.Git location tag branch subdir
     _otherCases -> error $ "Repository " <> show sourceRepoMaybe <> " not supported"
-  where
-    mSrcHash = showHashValue <$> pkgSrcHash
+ where
+  mSrcHash = showHashValue <$> pkgSrcHash
 
 writeDoc :: FilePath -> Doc ann -> IO ()
 writeDoc file doc = do

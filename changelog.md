@@ -1,6 +1,15 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Jan 29, 2025
+
+Removed GHC <9.6 from CI.
+
+The latest `nixpkgs-unstable` caused problems with
+  * GHC 8.10.7
+  * GHC 9.6.6 mingwW64 (ucrt64 works still as does mingwW64
+    with newer GHC versions)
+
 ## Sep 17, 2024
 
 Cabal projects now use the more granular Unit IDs from plan.json

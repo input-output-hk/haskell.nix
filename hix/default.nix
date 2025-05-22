@@ -86,11 +86,11 @@ let
         HIX_FLAKE="$(mktemp -d)/flake.nix"
         sed 's|EVAL_SYSTEM|${pkgs.stdenv.hostPlatform.system}|' < ${hixProject}/flake.nix > $HIX_FLAKE
         if ! cmp $HIX_FLAKE $FLAKE/flake.nix &>/dev/null; then
-            if [ -e $FLAKE/flake.lock ]; then
-            echo "Updating $FLAKE/flake.nix and deleting old $FLAKE/flake.lock"
+          if [ -e $FLAKE/flake.lock ]; then
+            >&2 echo "Updating $FLAKE/flake.nix and deleting old $FLAKE/flake.lock"
             rm $FLAKE/flake.lock
           else
-            echo "Updating $FLAKE/flake.nix"
+            >&2 echo "Updating $FLAKE/flake.nix"
           fi
           cp $HIX_FLAKE $FLAKE/flake.nix
           chmod +w $FLAKE/flake.nix

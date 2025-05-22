@@ -2,13 +2,14 @@
 
 The following GHC versions are defined in `haskell.nix` (there is a derivation
 for each, though not all are cached or tested by CI):
-- 8.4.4
-- 8.6.{1,2,3,4,5}
-- 8.8.{1,2,3,4}
-- 8.10.{1,2,3,4,5}
-- 9.0.1
-- 9.2.1
-- 9.2.2
+
+- 9.6.6 (TH is broken in mingwW64, but ucrt64 works)
+- 9.8.4
+- 9.10.1
+- 9.12.1
+
+8.10.7 may still work with older nixpkgs versions, but is broken for
+nixpkgs-unstable.
 
 The following table shows the Nixpkgs/GHC versions which are built/cached, and
 which of those are further tested.  If you use a combination of Nixpkgs version
@@ -21,13 +22,10 @@ really should use an instance of Nixpkgs provided by `haskell.nix` itself.
 
 | Nixpkgs version  | Nixpkgs pinning    | GHC version | `compiler-nix-name`   | Tested in CI? |
 |------------------|--------------------|-------------|-----------------------|---------------|
-| 22.05            | `nixpkgs-2205`     | 8.6.5       | `ghc865`              | No            |
-| 22.05            | `nixpkgs-2205`     | 8.10.7      | `ghc8107`             | No            |
-| unstable         | `nixpkgs-unstable` | 8.6.5       | `ghc865`              | No            |
-| unstable         | `nixpkgs-unstable` | 8.8.4       | `ghc884`              | No            |
-| unstable         | `nixpkgs-unstable` | 8.10.7      | `ghc8107`             | Yes           |
-| unstable         | `nixpkgs-unstable` | 9.0.2       | `ghc902`              | No            |
-| unstable         | `nixpkgs-unstable` | 9.2.4       | `ghc924`              | Yes           |
+| unstable         | `nixpkgs-unstable` | 9.6.7       | `ghc96` or `ghc967`   | Yes           |
+| unstable         | `nixpkgs-unstable` | 9.8.4       | `ghc98` or `ghc984`   | Yes           |
+| unstable         | `nixpkgs-unstable` | 9.10.2      | `ghc910` or `ghc9102` | Yes           |
+| unstable         | `nixpkgs-unstable` | 9.12.2      | `ghc912` or `ghc9122` | Yes           |
 
 See [ci.nix](https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix)
 for the source of truth about what is built and tested (in the off chance this

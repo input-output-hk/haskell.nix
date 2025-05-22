@@ -1,6 +1,7 @@
-{ pkgs, runCommand, cacert, index-state-hashes, haskellLib }:
+{ pkgs, cacert, index-state-hashes, haskellLib }:
 { name          ? src.name or null # optional name for better error messages
 , src
+, evalSrc ? src
 , materialized-dir ? ../materialized
 , compiler-nix-name    # The name of the ghc compiler to use eg. "ghc884"
 , index-state   ? null # Hackage index-state, eg. "2019-10-10T00:00:00Z"
@@ -13,8 +14,7 @@
 , cabalProjectLocal    ? null
 , cabalProjectFreeze   ? null
 , caller               ? "callCabalProjectToNix" # Name of the calling function for better warning messages
-, compilerSelection    ? p: p.haskell-nix.compiler
-, ghc           ? null # Deprecated in favour of `compiler-nix-name`
+, compilerSelection    ? p: builtins.mapAttrs (_: x: x.override { hadrianEvalPackages = evalPackages; }) p.haskell-nix.compiler
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
 , configureArgs ? "" # Extra arguments to pass to `cabal v2-configure`.
                      # `--enable-tests --enable-benchmarks` are included by default.
@@ -74,41 +74,34 @@ let
   nix-tools = if args.nix-tools or null != null
     then args.nix-tools
     else evalPackages.haskell-nix.nix-tools-unchecked;
-  forName = pkgs.lib.optionalString (name != null) (" for " + name);
+
   nameAndSuffix = suffix: if name == null then suffix else name + "-" + suffix;
 
   ghc' =
     if ghcOverride != null
       then ghcOverride
       else
-        if ghc != null
-          then __trace ("WARNING: A `ghc` argument was passed" + forName
-            + " this has been deprecated in favour of `compiler-nix-name`. "
-            + "Using `ghc` will break cross compilation setups, as haskell.nix cannot "
-            + "pick the correct `ghc` package from the respective buildPackages. "
-            + "For example, use `compiler-nix-name = \"ghc865\";` for GHC 8.6.5.") ghc
-          else
-              # Do note that `pkgs = final.buildPackages` in the `overlays/haskell.nix`
-              # call to this file. And thus `pkgs` here is the proper `buildPackages`
-              # set and we do not need, nor should pick the compiler from another level
-              # of `buildPackages`, lest we want to get confusing errors about the Win32
-              # package.
-              #
-              # > The option `packages.Win32.package.identifier.name' is used but not defined.
-              #
-              (compilerSelection pkgs)."${compiler-nix-name}";
+      # Do note that `pkgs = final.buildPackages` in the `overlays/haskell.nix`
+      # call to this file. And thus `pkgs` here is the proper `buildPackages`
+      # set and we do not need, nor should pick the compiler from another level
+      # of `buildPackages`, lest we want to get confusing errors about the Win32
+      # package.
+      #
+      # > The option `packages.Win32.package.identifier.name' is used but not defined.
+      #
+      (compilerSelection pkgs)."${compiler-nix-name}";
 
 in let
   ghc = if ghc' ? latestVersion
     then __trace "WARNING: ${ghc'.version} is out of date, consider using upgrading to ${ghc'.latestVersion}." ghc'
     else ghc';
-  subDir' = src.origSubDir or "";
+  subDir' = evalSrc.origSubDir or "";
   subDir = pkgs.lib.strings.removePrefix "/" subDir';
 
   cleanedSource = haskellLib.cleanSourceWith {
     name = if name != null then "${name}-root-cabal-files" else "source-root-cabal-files";
-    src = src.origSrc or src;
-    filter = path: type: (!(src ? filter) || src.filter path type) && (
+    src = evalSrc.origSrc or evalSrc;
+    filter = path: type: (!(evalSrc ? filter) || evalSrc.filter path type) && (
       type == "directory" ||
       pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "package.yaml" ]); };
 
@@ -159,7 +152,7 @@ in let
       let
         suitable-index-states =
           builtins.filter
-            (s: s >= index-state-max) # This compare is why we need zulu time
+            (s: s > index-state-max) # This compare is why we need zulu time
             (builtins.attrNames index-state-hashes);
       in
         if builtins.length suitable-index-states == 0
@@ -201,10 +194,11 @@ let
             then fetchgit { inherit (repoData) url sha256; rev = repoData.rev or repoData.ref; }
             else
               let drv = builtins.fetchGit
-                { inherit (repoData) url ; ref = repoData.ref or null; }
-                # fetchGit does not accept "null" as rev, so when it's null
-                # we have to omit the argument completely.
-                // pkgs.lib.optionalAttrs (repoData ? rev) { inherit (repoData) rev; };
+                ({ inherit (repoData) url ; }
+                  # fetchGit does not accept "null" as rev and ref, so when it's null
+                  # we have to omit the argument completely.
+                  // pkgs.lib.optionalAttrs (repoData ? ref) { inherit (repoData) ref; }
+                  // pkgs.lib.optionalAttrs (repoData ? rev) { inherit (repoData) rev; });
               in __trace "WARNING: No sha256 found for source-repository-package ${repoData.url} ref=${repoData.ref or "(unspecified)"} rev=${repoData.rev or "(unspecified)"} download may fail in restricted mode (hydra)"
                 (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a sha256map argument"
                  drv);
@@ -342,8 +336,14 @@ let
           echo ',("target arch","${
               if pkgs.stdenv.targetPlatform.isx86_64
                 then "ArchX86_64"
+              else if pkgs.stdenv.targetPlatform.isx86
+                then "ArchX86"
+              else if pkgs.stdenv.targetPlatform.isRiscV64
+                then "ArchRISCV64"
               else if pkgs.stdenv.targetPlatform.isAarch64
                 then "ArchAArch64"
+              else if pkgs.stdenv.targetPlatform.isAarch32
+                then "ArchAArch32"
               else if pkgs.stdenv.targetPlatform.isJavaScript
                 then "ArchJavaScript"
               else throw "Unknown target arch ${pkgs.stdenv.targetPlatform.config}"
@@ -519,22 +519,40 @@ let
                 json_cabal_file=$(mktemp)
                 cabal2json $fixed_cabal_file > $json_cabal_file
 
-                exposed_modules="$(jq -r '.library."exposed-modules"[]|select(type=="array")[]' $json_cabal_file)"
-                reexported_modules="$(jq -r '.library."reexported-modules"//[]|.[]|select(type=="array")[]' $json_cabal_file)"
+                exposed_modules="$(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="string")' $json_cabal_file)"
+                reexported_modules="$(jq -r '.components.lib."reexported-modules"//[]|.[]|select(type=="string")' $json_cabal_file | sed 's/.* as //g')"
 
                 # FIXME This is a bandaid. Rather than doing this, conditionals should be interpreted.
                 ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isGhcjs ''
-                exposed_modules+=" $(jq -r '.library."exposed-modules"[]|select(type=="object" and .if.arch == "javascript")|.then[]' $json_cabal_file)"
+                exposed_modules+=" $(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="object" and ._if.arch == "javascript")|._then[]' $json_cabal_file)"
                 ''}
                 ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
-                exposed_modules+=" $(jq -r '.library."exposed-modules"[]|select(type=="object" and .if.os == "windows")|.then[]' $json_cabal_file)"
+                exposed_modules+=" $(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="object" and ._if.os == "windows")|._then[]' $json_cabal_file)"
                 ''}
                 ${pkgs.lib.optionalString (!pkgs.stdenv.targetPlatform.isWindows) ''
-                exposed_modules+=" $(jq -r '.library."exposed-modules"[]|select(type=="object" and .if.not.os == "windows")|.then[]' $json_cabal_file)"
+                exposed_modules+=" $(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="object" and ._if.not.os == "windows")|._then[]' $json_cabal_file)"
                 ''}
 
                 EXPOSED_MODULES_${varname name}="$(tr '\n' ' ' <<< "$exposed_modules $reexported_modules")"
-                DEPS_${varname name}="$(jq -r '.library."build-depends"[]|select(type=="array")[],select(type=="object" and .if.not.flag != "vendor-filepath").then[]' $json_cabal_file | sed 's/^\([A-Za-z0-9-]*\).*$/\1/g' | sort -u | tr '\n' ' ')"
+                deps="$(jq -r '.components.lib."build-depends"[]|select(.package)|.package' $json_cabal_file)"
+                deps+=" $(jq -r '.components.lib."build-depends"[]|select((.if.flag or ._if.not.flag) and ._if.not.flag != "vendor-filepath")._then[]|.package' $json_cabal_file)"
+                ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
+                deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.os == "windows")|._then[]|.package' $json_cabal_file)"
+                ''}
+                ${pkgs.lib.optionalString (!pkgs.stdenv.targetPlatform.isWindows) ''
+                deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.not.os == "windows")|._then[]|.package' $json_cabal_file)"
+                ''
+                # Fix problem with `haskeline` using a `terminfo` flag
+                # For haskell-nix ghc we can use ghc.enableTerminfo to get the flag setting
+                + pkgs.lib.optionalString (name == "haskeline" && !pkgs.stdenv.targetPlatform.isWindows && ghc.enableTerminfo or true) ''
+                deps+=" terminfo"
+                ''
+                # Similar issue for Win32:filepath build-depends (hidden behind `if impl(ghc >= 8.0)`)
+                + pkgs.lib.optionalString (name == "Win32" && pkgs.stdenv.targetPlatform.isWindows) ''
+                deps+=" filepath"
+                ''
+                }
+                DEPS_${varname name}="$(tr '\n' ' ' <<< "$deps")"
                 VER_${varname name}="$(jq -r '.version' $json_cabal_file)"
                 PKGS+=" ${name}"
                 LAST_PKG="${name}"
@@ -689,8 +707,8 @@ let
         cabal.project.freeze
       chmod +w cabal.project.freeze
     ''}
-    export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
-    export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
+    export SSL_CERT_FILE=${evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
+    export GIT_SSL_CAINFO=${evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
 
     export CABAL_DIR=${
       # This creates `.cabal` directory that is as it would have

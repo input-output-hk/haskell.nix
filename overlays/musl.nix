@@ -33,11 +33,11 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
   # See https://github.com/input-output-hk/haskell.nix/issues/948
   postgresql = (prev.postgresql.overrideAttrs (_old: {
       dontDisableStatic = true;
-      # the following is needed becuase libicu links against stdc++
+      # the following is needed because libicu links against stdc++
       NIX_LDFLAGS = "--push-state --as-needed -lstdc++ --pop-state";
       # without this collate.icu.utf8, and foreign_data will fail.
       LC_CTYPE = "C";
-    })).override { enableSystemd = false; gssSupport = false; };
+    })).override { systemdSupport = false; gssSupport = false; };
 
   openssl = prev.openssl.override { static = true; };
 

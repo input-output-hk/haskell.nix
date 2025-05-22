@@ -83,7 +83,7 @@ pkgs:
     "stdc++.dll"                         = []; # What is that?
     "systemd-journal"                    = [ "systemd" ];
     "tag_c"                              = [ "taglib" ];
-    "webkit2gtk"                         = [ "webkitgtk" ];
+    "webkit2gtk"                         = [ "webkitgtk_4_0" ]; # This is somewhat arbitary
     "xml2"                               = [ "libxml2" ];
     "yaml"                               = [ "libyaml" ];
     "z"                                  = [ "zlib" ];
@@ -2750,12 +2750,12 @@ pkgs:
     "gaminggear-0" = [ "libgaminggear" ];
     "libgbinder" = [ "libgbinder" ];
     "libgcrypt" = [ "libgcrypt" ];
-    "libgda-5.0" = [ "libgda" ];
-    "libgda-report-5.0" = [ "libgda" ];
-    "libgda-sqlcipher-5.0" = [ "libgda" ];
-    "libgda-sqlite-5.0" = [ "libgda" ];
-    "libgda-ui-5.0" = [ "libgda" ];
-    "libgda-xslt-5.0" = [ "libgda" ];
+    "libgda-5.0" = [ "libgda5" ];
+    "libgda-report-5.0" = [ "libgda5" ];
+    "libgda-sqlcipher-5.0" = [ "libgda5" ];
+    "libgda-sqlite-5.0" = [ "libgda5" ];
+    "libgda-ui-5.0" = [ "libgda5" ];
+    "libgda-xslt-5.0" = [ "libgda5" ];
     "libgda-6.0" = [ "libgda6" ];
     "libgda-sqlite-6.0" = [ "libgda6" ];
     "libgdamm-5.0" = [ "libgdamm" ];
@@ -3158,8 +3158,8 @@ pkgs:
     "libsodium" = [ "libsodium" ];
     "libsolvext" = [ "libsolv" ];
     "libsolv" = [ "libsolv" ];
-    "libsoup-2.4" = [ "libsoup" ];
-    "libsoup-gnome-2.4" = [ "libsoup" ];
+    "libsoup-2.4" = [ "libsoup_2_4" ];
+    "libsoup-gnome-2.4" = [ "libsoup_2_4" ];
     "libsoup-3.0" = [ "libsoup_3" ];
     "spatialaudio" = [ "libspatialaudio" ];
     "libspatialindex" = [ "libspatialindex" ];
@@ -5087,7 +5087,7 @@ pkgs:
     "riscv-disasm" = [ "spike" ];
     "riscv-fesvr" = [ "spike" ];
     "SPIRV-Headers" = [ "spirv-headers" ];
-    "LLVMSPIRVLib" = [ "spirv-llvm-translator" ];
+#    "LLVMSPIRVLib" = [ "spirv-llvm-translator" ];
     "SPIRV-Tools-shared" = [ "spirv-tools" ];
     "SPIRV-Tools" = [ "spirv-tools" ];
     "sqlcipher" = [ "sqlcipher" ];
@@ -5149,7 +5149,7 @@ pkgs:
     "svrcore" = [ "svrcore" ];
     "SvtAv1Dec" = [ "svt-av1" ];
     "SvtAv1Enc" = [ "svt-av1" ];
-    "swipl" = [ "swiProlog" ];
+    "swipl" = [ "swi-prolog" ];
 #    "swipl" = [ "swiPrologWithGui" ];
     "sword" = [ "sword" ];
     "syncthingconnector" = [ "syncthingtray" ];
@@ -5255,8 +5255,8 @@ pkgs:
     "tss2-tcti-pcap" = [ "tpm2-tss" ];
     "tss2-tcti-swtpm" = [ "tpm2-tss" ];
     "libtracecmd" = [ "trace-cmd" ];
-    "tracker-sparql-3.0" = [ "tracker" ];
-    "tracker-testutils-3.0" = [ "tracker" ];
+    "tracker-sparql-3.0" = [ "tinysparql" ];
+    "tracker-testutils-3.0" = [ "tinysparql" ];
     "trafficserver" = [ "trafficserver" ];
     "tre" = [ "tre" ];
     "tree-sitter" = [ "tree-sitter" ];
@@ -5427,9 +5427,9 @@ pkgs:
     "wayland-server++" = [ "waylandpp" ];
     "wcslib" = [ "wcslib" ];
     "webkit2-sharp-4.0" = [ "webkit2-sharp" ];
-    "javascriptcoregtk-4.0" = [ "webkitgtk" ];
-    "webkit2gtk-4.0" = [ "webkitgtk" ];
-    "webkit2gtk-web-extension-4.0" = [ "webkitgtk" ];
+    "javascriptcoregtk-4.0" = [ "webkitgtk_4_0" ];
+    "webkit2gtk-4.0" = [ "webkitgtk_4_0" ];
+    "webkit2gtk-web-extension-4.0" = [ "webkitgtk_4_0" ];
     "javascriptcoregtk-4.1" = [ "webkitgtk_4_1" ];
     "webkit2gtk-4.1" = [ "webkitgtk_4_1" ];
     "webkit2gtk-web-extension-4.1" = [ "webkitgtk_4_1" ];
@@ -5733,7 +5733,7 @@ pkgs:
         then [ pkgs.gdk_pixbuf ]
       else [];
     # rocm-thunk was replaced by rocmPackages.rocm-thunk in 23.11
-    "libhsakmt" = [ pkgs.rocmPackages.rocm-thunk or pkgs.rocm-thunk ];
+    # "libhsakmt" = [ pkgs.rocmPackages.rocm-thunk or pkgs.rocm-thunk ];
 } // lib.optionalAttrs (pkgs ? libsigcxx12) {
     # libsigcxx12 was removed in 23.11
     "sigc++-1.2" = [ "libsigcxx12" ];

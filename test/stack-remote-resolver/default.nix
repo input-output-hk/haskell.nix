@@ -3,13 +3,13 @@
 let
   project = project' {
     src = testSrc "stack-remote-resolver";
-    resolverSha256 = "1rldkqqsxd8zxybrkqhc25bcxinhz212kz45jcz8jinfihc91jl7";
+    resolverSha256 = "sha256-Vw1i0woTpbnbfl7KLAWZW6tfMHV7MOGLtzSlacM5sLE=";
     inherit evalPackages;
   };
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  meta.disabled = compiler-nix-name != "ghc865";
+  meta.disabled = compiler-nix-name != "ghc984";
   ifdInputs = {
     inherit (project) stack-nix;
   };

@@ -6,6 +6,7 @@
 , mingw_w64_pthreads
 , iserv-proxy
 , iserv-proxy-interpreter
+, iserv-proxy-interpreter-prof
 , gmp
 , hostPlatform
 , symlinkJoin
@@ -18,7 +19,7 @@ let
     let
       interpreter =
         if enableProfiling
-          then iserv-proxy-interpreter.override { inherit enableProfiling; }
+          then iserv-proxy-interpreter-prof
           else iserv-proxy-interpreter;
       no-load-call = lib.optionalString (interpreter.exeName != "remote-iserv.exe") "--no-load-call";
     in
@@ -37,7 +38,7 @@ let
         PORT=$((5000 + $RANDOM % 5000))
         (>&2 echo "---> Starting ${interpreter.exeName} on port $PORT")
         REMOTE_ISERV=$(mktemp -d)
-        ln -s ${interpreter.override { enableDebugRTS = true; setupBuildFlags = ["--ghc-option=-optl-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000" ];}}/bin/* $REMOTE_ISERV
+        ln -s ${interpreter}/bin/* $REMOTE_ISERV
         # See coment in comp-builder.nix for where this comes from and why it's here
         # TODO use `LINK_DLL_FOLDERS` here once it is in all the nixpkgs we want to support.
         for p in $pkgsHostTargetAsString; do

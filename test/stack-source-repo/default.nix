@@ -1,4 +1,4 @@
-{ stackProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, stackProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 let
   project = stackProject' {
@@ -8,7 +8,7 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  meta.disabled = compiler-nix-name != "ghc865";
+  meta.disabled = compiler-nix-name != "ghc984" || stdenv.hostPlatform.isGhcjs;
   ifdInputs = {
     inherit (project) stack-nix;
   };

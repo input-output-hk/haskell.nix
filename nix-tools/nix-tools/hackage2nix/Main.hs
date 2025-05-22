@@ -1,16 +1,20 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Main where
+module Main (main) where
 
 import           Cabal2Nix
 import           Cabal2Nix.Util                           ( quoted )
+#if !MIN_VERSION_base(4, 17, 0)
 import           Control.Applicative                      ( liftA2 )
+#endif
 import           Control.Monad.Trans.State.Strict
 import           Crypto.Hash.SHA256                       ( hash )
 import qualified Data.ByteString.Base16        as Base16
 import qualified Data.ByteString.Char8         as BS
+import           Data.Char                                ( isUpper )
 import           Data.Foldable                            ( toList
                                                           , for_
                                                           )
@@ -50,7 +54,6 @@ import           System.Environment                       ( getArgs )
 import           System.FilePath                          ( (</>)
                                                           , (<.>)
                                                           )
-import Data.Char (isUpper)
 
 -- Avoid issues with case insensitive file systems by escaping upper case
 -- characters with a leading _ character.
@@ -64,27 +67,31 @@ main :: IO ()
 main = do
   out:rest <- getArgs
   (inp, src) <- case rest of
-                 [tarball, url, hash] -> return (tarball, Just $ Repo url (Just hash))
+                 [tarball, url, sha256] -> return (tarball, Just $ Repo url (Just sha256))
                  [tarball, url] -> return (tarball, Just $ Repo url Nothing)
                  [tarball] -> return (tarball, Nothing)
                  [] -> hackageTarball >>= \tarball -> return (tarball, Nothing)
+                 _ -> error "Usage: hackage2nix [tarball [url [hash]]]"
 
   db    <- U.readTarball Nothing inp
 
   let (nixFiles, cabalFiles) =
         runState (fmap (toList . (Seq.sortOn fst)) $ foldMapWithKeyA package2nix db) mempty
   createDirectoryIfMissing False out
-  writeFile (out </> "default.nix") $
-    "with builtins; mapAttrs (_: mapAttrs (_: data: rec {\n\
-     \ inherit (data) sha256;\n\
-     \ revisions = data.revisions // {\n\
-     \  default = revisions.\"${data.revisions.default}\";\n\
-     \ };\n\
-     \})) {\n"
-     -- Import all the per package nix files
-     <> mconcat (map (\(pname, _) ->
-       "  " <> quoted pname <> " = import ./nix/" <> escapeUpperCase pname <> ".nix;\n") nixFiles)
-     <> "}\n"
+  writeFile (out </> "default.nix") $ unlines [
+      "with builtins; mapAttrs (_: mapAttrs (_: data: rec {",
+      " inherit (data) sha256;",
+      " revisions = data.revisions // {",
+      "  default = revisions.\"${data.revisions.default}\";",
+      " };",
+      "})) {",
+      -- Import all the per package nix files
+      unlines [
+         "  " <> quoted pname <> " = import ./nix/" <> escapeUpperCase pname <> ".nix;"
+        | (pname, _) <- nixFiles
+      ],
+      "}"
+    ]
 
   createDirectoryIfMissing False (out </> "nix")
   for_ nixFiles $ \(pname, nix) ->
@@ -124,9 +131,9 @@ version2nix pname vnum (U.VersionData { U.cabalFileRevisions, U.metaFile }) =
   do
     revisionBindings <- sequenceA
       $ zipWith (revBindingJson pname vnum) cabalFileRevisions [0 ..]
-    let hash = decodeUtf8 $ fromString $ P.parseMetaData pname vnum metaFile Map.! "sha256"
+    let sha256 = decodeUtf8 $ fromString $ P.parseMetaData pname vnum metaFile Map.! "sha256"
     return $ Seq.singleton (quoted (fromPretty vnum), mkNonRecSet
-      [ "sha256" $= mkStr hash
+      [ "sha256" $= mkStr sha256
       , "revisions" $= mkNonRecSet
         ( map (uncurry ($=)) revisionBindings
         ++ ["default" $= mkStr (fst (last revisionBindings))]

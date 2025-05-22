@@ -1,7 +1,7 @@
 { stdenv, pkgs, lib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 let
-  ghc = buildPackages.haskell-nix.compiler.${compiler-nix-name};
+  ghc = buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { hadrianEvalPackages = evalPackages; };
 
   supported-langauges = import ../../lib/supported-languages.nix {
     inherit pkgs evalPackages ghc;

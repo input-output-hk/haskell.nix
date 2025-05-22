@@ -6,11 +6,6 @@
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
 , evalPackages ? import nixpkgs nixpkgsArgs
-# This version is used to make our GitHub Action runners happy
-# Using `nixpkgs-unstable` currently results in:
-#   version `GLIBCXX_3.4.30' not found
-, nixpkgsForGitHubAction ? haskellNix.sources.nixpkgs-2211
-, pkgsForGitHubAction ? import nixpkgsForGitHubAction (nixpkgsArgs // { inherit (pkgs) system; })
 , ifdLevel ? 1000
 , compiler-nix-name ? throw "No `compiler-nix-name` passed to build.nix"
 , haskellNix ? (import ./default.nix {})
@@ -28,7 +23,7 @@ in rec {
     pkgs.recurseIntoAttrs ({
       cabal-latest = tool compiler-nix-name "cabal" ({
         inherit evalPackages;
-      } // pkgs.lib.optionalAttrs (ghcFromTo "9.10" "9.12") {
+      } // pkgs.lib.optionalAttrs (ghcFromTo "9.13" "9.14") {
         cabalProjectLocal = builtins.readFile ./test/cabal.project.local;
       });
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0) {
@@ -62,10 +57,10 @@ in rec {
         inherit evalPackages;
         src = pkgs.haskell-nix.sources."hls-2.2";
       };
-    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.11") {
-      "hls-29" = tool compiler-nix-name "haskell-language-server" {
+    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.10.2") {
+      "hls" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
-        src = pkgs.haskell-nix.sources."hls-2.9";
+        src = pkgs.haskell-nix.sources."hls-2.10";
       };
     })
   );
@@ -77,14 +72,14 @@ in rec {
   maintainer-scripts = pkgs.dontRecurseIntoAttrs {
     update-hackage = import ./scripts/update-hackage.nix {
       inherit (pkgs) stdenv lib writeScript coreutils glibc git
-        openssh nixFlakes gawk bash curl findutils;
+        openssh nixVersions gawk bash curl findutils;
       # Update scripts use the internal nix-tools (compiled with a fixed GHC version)
       nix-tools = haskell.nix-tools-unchecked;
       inherit (haskell) update-index-state-hashes cabal-issue-8352-workaround;
     };
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {
       inherit (pkgs) stdenv lib writeScript coreutils glibc git
-        openssh nixFlakes gawk bash curl findutils;
+        openssh nixVersions gawk bash curl findutils;
       # Update scripts use the internal nix-tools (compiled with a fixed GHC version)
       nix-tools = haskell.nix-tools-unchecked;
       inherit (haskell) cabal-issue-8352-workaround;
@@ -98,7 +93,7 @@ in rec {
       nix-tools = haskell.nix-tools-unchecked; # includes cabal-install and default-setup
     };
     check-materialization-concurrency = pkgs.buildPackages.callPackage ./scripts/check-materialization-concurrency/check.nix {};
-    check-path-support = pkgsForGitHubAction.buildPackages.callPackage ./scripts/check-path-support.nix {
+    check-path-support = pkgs.buildPackages.callPackage ./scripts/check-path-support.nix {
       inherit compiler-nix-name;
     };
   };

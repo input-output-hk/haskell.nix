@@ -5,6 +5,12 @@ let
   plan-json = builtins.fromJSON (
     builtins.unsafeDiscardStringContext (
       builtins.readFile (callProjectResults.projectNix + "/plan.json")));
+  # Function to add context back to the strings we get from `plan.json`
+  addContext = s:
+    let storeDirMatch = builtins.match ".*(${builtins.storeDir}/[^/]+).*" s;
+    in if storeDirMatch == null
+      then s
+      else builtins.appendContext s { ${builtins.head storeDirMatch} = { path = true; }; };
   # All the units in the plan indexed by unit ID.
   by-id = pkgs.lib.listToAttrs (map (x: { name = x.id; value = x; }) plan-json.install-plan);
   # Find the names of all the pre-existing packages used by a list of dependencies
@@ -69,7 +75,9 @@ let
           buildable = true;
         } // lookupDependencies hsPkgs.pkgsBuildBuild (components.setup.depends or []) (components.setup.exe-depends or []);
       };
-  nixFilesDir = callProjectResults.projectNix + callProjectResults.src.origSubDir or "";
+  # We use unsafeDiscardStringContext to ensure that we don't query this derivation when importing
+  # each package. The cost can be very high when using a remote store, as we need to do a network call.
+  nixFilesDir = builtins.unsafeDiscardStringContext callProjectResults.projectNix.outPath + callProjectResults.src.origSubDir or "";
 in {
   # This replaces the `plan-nix/default.nix`
   pkgs = (hackage: {
@@ -94,7 +102,9 @@ in {
                     then import (nixFilesDir + "/cabal-files/${p.pkg-name}.nix")
                   else if builtins.pathExists (nixFilesDir + "/.plan.nix/${p.pkg-name}.nix")
                     then import (nixFilesDir + "/.plan.nix/${p.pkg-name}.nix")
-                  else (((hackage.${p.pkg-name}).${p.pkg-version}).revisions).default) (args // { hsPkgs = {}; });
+                  else
+                    # TODO make this an error?
+                    __trace "WARNING no `.nix` file for ${p.pkg-name} in ${nixFilesDir}." {}) (args // { hsPkgs = {}; });
               in pkgs.lib.optionalAttrs (p ? pkg-src-sha256) {
                 sha256 = p.pkg-src-sha256;
               } // pkgs.lib.optionalAttrs (p.pkg-src.type or "" == "source-repo") {
@@ -104,7 +114,9 @@ in {
                   + pkgs.lib.optionalString (p.pkg-src.source-repo.subdir != ".") "/${p.pkg-src.source-repo.subdir}";
               } // pkgs.lib.optionalAttrs (p.pkg-src.type or "" == "repo-tar") {
                 src = pkgs.lib.mkDefault (pkgs.fetchurl {
-                  url = p.pkg-src.repo.uri + "${pkgs.lib.optionalString (!pkgs.lib.hasSuffix "/" p.pkg-src.repo.uri) "/"}package/${p.pkg-name}-${p.pkg-version}.tar.gz";
+                   # repo.uri might look like file:/nix/store/xxx; using addContext, we let nix know about the dependency on
+                   # /nix/store/xxx.  Otherwise we can run into the situation where nix won't be able to access the dependencies needed to build. (e.g. the /nix/store/xxx path).
+                  url = addContext p.pkg-src.repo.uri + "${pkgs.lib.optionalString (!pkgs.lib.hasSuffix "/" p.pkg-src.repo.uri) "/"}package/${p.pkg-name}-${p.pkg-version}.tar.gz";
                   sha256 = p.pkg-src-sha256;
                 });
               } // pkgs.lib.optionalAttrs (cabal2nix ? package-description-override && p.pkg-version == cabal2nix.package.identifier.version) {

@@ -1,4 +1,4 @@
-resolver: lts-14.13
+resolver: lts-23.7
 
 packages:
 - pkga/

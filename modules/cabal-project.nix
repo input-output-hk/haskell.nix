@@ -22,7 +22,7 @@ in {
     };
     compilerSelection = mkOption {
       type = unspecified;
-      default = p: p.haskell-nix.compiler;
+      default = p: builtins.mapAttrs (_: x: x.override { hadrianEvalPackages = config.evalPackages; }) p.haskell-nix.compiler;
       description = "Use GHC from pkgs.haskell instead of pkgs.haskell-nix";
     };
     index-state = mkOption {
@@ -56,15 +56,15 @@ in {
     };
     cabalProject = mkOption {
       type = nullOr lines;
-      default = readIfExists config.src config.cabalProjectFileName;
+      default = readIfExists config.evalSrc config.cabalProjectFileName;
     };
     cabalProjectLocal = mkOption {
       type = nullOr lines;
-      default = readIfExists config.src "${config.cabalProjectFileName}.local";
+      default = readIfExists config.evalSrc "${config.cabalProjectFileName}.local";
     };
     cabalProjectFreeze = mkOption {
       type = nullOr lines;
-      default = readIfExists config.src "${config.cabalProjectFileName}.freeze";
+      default = readIfExists config.evalSrc "${config.cabalProjectFileName}.freeze";
     };
     ghc = mkOption {
       type = nullOr package;

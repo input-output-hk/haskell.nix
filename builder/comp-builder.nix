@@ -197,6 +197,9 @@ let
         "--with-gcc=${pkgsBuildBuild.emscripten}/bin/emcc"
         "--with-ld=${pkgsBuildBuild.emscripten}/bin/emcc"
       ]
+      ++ lib.optionals (stdenv.hostPlatform.isGhcjs && stdenv.buildPlatform.isDarwin) [
+        "--ar-options=--format=gnu" # Avoid `--format=darwin` it can cause `section too large` errors
+      ]
       ++ [ # other flags
       (disableFeature dontStrip "executable-stripping")
       (disableFeature dontStrip "library-stripping")
@@ -206,7 +209,15 @@ let
       (enableFeature enableShared "shared")
       (enableFeature enableExecutableDynamic "executable-dynamic")
       (enableFeature doCoverage "coverage")
-      (enableFeature (enableLibraryForGhci && !stdenv.hostPlatform.isGhcjs) "library-for-ghci")
+      # For Android (or really anything that uses lld), -r will silently drop
+      # "lazy" symbols. Those are leaf symbols with no referenes. This however
+      # does not work when loading the objects into the linker, because then we
+      # occationally miss symbols when subsequent libraries depending on the one
+      # that dropped the symbol are loaded.  bfd and lld support --whole-archive
+      # lld -r --whole-archive ... will _not_ drop lazy symbols. However the
+      # --whole-archive flag needs to come _before_ the objects, it's applied in
+      # sequence. The proper fix is thusly to add --while-archive to Cabal.
+      (enableFeature (enableLibraryForGhci && !stdenv.hostPlatform.isGhcjs && !stdenv.hostPlatform.isAndroid) "library-for-ghci")
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
       # If it uses other libraries it may be necessary for to add more
@@ -374,8 +385,8 @@ let
         inherit (package.identifier) version;
         nativeBuildInputs = [shellWrappers.drv] ++ attrs.nativeBuildInputs;
       });
-      profiled = self (drvArgs // { enableLibraryProfiling = true; });
-      dwarf = self (drvArgs // { enableDWARF = true; });
+      profiled = lib.makeOverridable self (drvArgs // { enableLibraryProfiling = true; });
+      dwarf = lib.makeOverridable self (drvArgs // { enableDWARF = true; });
     } // lib.optionalAttrs (haskellLib.isLibrary componentId || haskellLib.isTest componentId) ({
         inherit haddock;
         inherit (haddock) haddockDir; # This is null if `doHaddock = false`
@@ -583,7 +594,6 @@ let
               (''
               if id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output); then
                 name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
-                echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
                 echo "package-id $id" >> $out/envDep
                 ''
                 # Allow `package-name:sublib-name` to work in `build-depends`

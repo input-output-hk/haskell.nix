@@ -1,0 +1,17 @@
+diff --git a/rts/linker/LoadArchive.c b/rts/linker/LoadArchive.c
+index 3c35a029a4..55d78160f5 100644
+--- a/rts/linker/LoadArchive.c
++++ b/rts/linker/LoadArchive.c
+@@ -261,6 +261,12 @@ HsInt loadArchive_ (pathchar *path)
+     DEBUG_LOG("start\n");
+     DEBUG_LOG("Loading archive `%" PATH_FMT "'\n", path);
+
++    if (endsWithPath(path, "/libc.a")) {
++        IF_DEBUG(linker,
++                 debugBelch("ignoring libc.a file %" PATH_FMT "\n", path));
++        return 1; /* success */
++    }
++
+     /* Check that we haven't already loaded this archive.
+        Ignore requests to load multiple times */
+     if (isAlreadyLoaded(path)) {

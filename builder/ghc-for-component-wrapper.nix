@@ -23,7 +23,7 @@ let
   libDir         = "$wrappedGhc/${configFiles.libDir}";
   docDir         = "$wrappedGhc/share/doc/ghc/html";
   # For musl we can use haddock from the buildGHC
-  haddock        = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && !haskellLib.isNativeMusl
+  haddock        = if stdenv.targetPlatform.isMusl
     then ghc.buildGHC
     else ghc;
 
@@ -37,11 +37,11 @@ let
     ${lndir}/bin/lndir -silent $unwrappedGhc $wrappedGhc
     rm -rf ${libDir}/*/
   ''
-  # ... but retain the lib/ghc/bin directory. This contains `unlit' and friends.
+  # ... but retain the lib/ghc/bin directory. This may contain `unlit' and friends.
   + ''
     if [ -d $unwrappedGhc/lib/${ghcCommand}-${ghc.version}/bin ]; then
       ln -s $unwrappedGhc/lib/${ghcCommand}-${ghc.version}/bin ${libDir}
-    else
+    elif [ -d $unwrappedGhc/lib/bin ]; then
       ln -s $unwrappedGhc/lib/bin ${libDir}
     fi
   ''
@@ -125,7 +125,7 @@ let
     done
 
   ''
-  + lib.optionalString (stdenv.targetPlatform.isMusl && !haskellLib.isNativeMusl && builtins.compareVersions ghc.version "9.9" >0) ''
+  + lib.optionalString (haskellLib.isNativeMusl && builtins.compareVersions ghc.version "9.9" >0) ''
      ln -s $wrappedGhc/bin/${targetPrefix}unlit $wrappedGhc/bin/unlit
      ln -s $wrappedGhc/bin/${ghcCommand}-iserv $wrappedGhc/bin/ghc-iserv
      ln -s $wrappedGhc/bin/${ghcCommand}-iserv-prof $wrappedGhc/bin/ghc-iserv-prof
