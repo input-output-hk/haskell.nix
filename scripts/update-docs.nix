@@ -40,7 +40,7 @@ in
 
     use_ssh_key ${sshKey}
 
-    if [ "''${BUILDKITE_BRANCH:-}" = master ]; then
+    if [ "''${GITHUB_REF:-}" = refs/heads/master ]; then
       git push ${repo} HEAD:gh-pages
     fi
   '')
