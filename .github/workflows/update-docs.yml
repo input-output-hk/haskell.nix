@@ -1,0 +1,36 @@
+name: Updload Docs
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  wait-for-hydra:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix with good defaults
+        uses: input-output-hk/install-nix-action@v20
+        with:
+          extra_nix_config: |
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= loony-tools:pr9m4BkM/5/eSTZlkQyRt57Jz7OMBxNSUiMC4FkcNfk=
+            substituters = https://cache.nixos.org/ https://cache.iog.io/ https://cache.zw3rk.com
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Update docs
+        run: |
+          nix-build build.nix -A maintainer-scripts.update-docs -o update-docs.sh
+          ./update-docs.sh
+
+      - name: Upload docs
+        run: |
+          git config --global user.name 'Auto Update Bot'
+          git config --global user.email 'no-reply@iohk.io'
+          git push origin gh-pages
