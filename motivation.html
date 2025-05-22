@@ -1,14 +1,16 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js light">
+<html lang="en" class="light sidebar-visible" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Motivation - Alternative Haskell Infrastructure for Nixpkgs</title>
+        <title>Motivation - Haskell.nix</title>
+
+
         <!-- Custom HTML head -->
-        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#ffffff">
 
         <link rel="icon" href="favicon.svg">
         <link rel="shortcut icon" href="favicon.png">
@@ -16,28 +18,35 @@
         <link rel="stylesheet" href="css/general.css">
         <link rel="stylesheet" href="css/chrome.css">
         <link rel="stylesheet" href="css/print.css" media="print">
+
         <!-- Fonts -->
         <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
         <link rel="stylesheet" href="fonts/fonts.css">
+
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" id="highlight-css" href="highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
     </head>
     <body>
-        <!-- Provide site root to javascript -->
-        <script type="text/javascript">
-            var path_to_root = "";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
-        </script>
-
+    <div id="body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
-        <script type="text/javascript">
+        <script>
             try {
-                var theme = localStorage.getItem('mdbook-theme');
-                var sidebar = localStorage.getItem('mdbook-sidebar');
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
 
                 if (theme.startsWith('"') && theme.endsWith('"')) {
                     localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
@@ -50,50 +59,60 @@
         </script>
 
         <!-- Set the theme before any content is loaded, prevents flash -->
-        <script type="text/javascript">
-            var theme;
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
-            var html = document.querySelector('html');
-            html.classList.remove('no-js')
+            const html = document.documentElement;
             html.classList.remove('light')
             html.classList.add(theme);
-            html.classList.add('js');
+            html.classList.add("js");
         </script>
 
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
         <!-- Hide / unhide sidebar before it is displayed -->
-        <script type="text/javascript">
-            var html = document.querySelector('html');
-            var sidebar = 'hidden';
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
             }
+            sidebar_toggle.checked = sidebar === 'visible';
             html.classList.remove('sidebar-visible');
             html.classList.add("sidebar-" + sidebar);
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
-            <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="motivation.html" class="active"><strong aria-hidden="true">2.</strong> Motivation</a></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">3.</strong> Architecture</a></li><li class="chapter-item expanded "><a href="tutorials/index.html"><strong aria-hidden="true">4.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorials/getting-started.html"><strong aria-hidden="true">4.1.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="tutorials/getting-started-flakes.html"><strong aria-hidden="true">4.2.</strong> Getting started with Flakes</a></li><li class="chapter-item expanded "><a href="tutorials/getting-started-hix.html"><strong aria-hidden="true">4.3.</strong> Getting started with Hix</a></li><li class="chapter-item expanded "><a href="tutorials/development.html"><strong aria-hidden="true">4.4.</strong> Creating a development environment</a></li><li class="chapter-item expanded "><a href="tutorials/clean-git.html"><strong aria-hidden="true">4.5.</strong> Sourcing files only part of git repository using cleanGit</a></li><li class="chapter-item expanded "><a href="tutorials/source-repository-hashes.html"><strong aria-hidden="true">4.6.</strong> Handling git repositories in projects</a></li><li class="chapter-item expanded "><a href="tutorials/pkg-map.html"><strong aria-hidden="true">4.7.</strong> Mapping non-Haskell dependencies to Nixpkgs</a></li><li class="chapter-item expanded "><a href="tutorials/hackage-stackage.html"><strong aria-hidden="true">4.8.</strong> Bumping Hackage and Stackage snapshots</a></li><li class="chapter-item expanded "><a href="tutorials/materialization.html"><strong aria-hidden="true">4.9.</strong> Materialization: Speeding up Nix evaluation</a></li><li class="chapter-item expanded "><a href="tutorials/cross-compilation.html"><strong aria-hidden="true">4.10.</strong> Cross-compiling your project</a></li><li class="chapter-item expanded "><a href="tutorials/coverage.html"><strong aria-hidden="true">4.11.</strong> Generating coverage information</a></li><li class="chapter-item expanded "><a href="tutorials/building-package-from-stackage-hackage.html"><strong aria-hidden="true">4.12.</strong> Build a specific package from Hackage or Stackage</a></li><li class="chapter-item expanded "><a href="tutorials/ca-derivations.html"><strong aria-hidden="true">4.13.</strong> Content addressed derivations</a></li></ol></li><li class="chapter-item expanded "><a href="reference/index.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="reference/supported-ghc-versions.html"><strong aria-hidden="true">5.1.</strong> Supported GHC versions</a></li><li class="chapter-item expanded "><a href="reference/commands.html"><strong aria-hidden="true">5.2.</strong> Command-line tools</a></li><li class="chapter-item expanded "><a href="reference/library.html"><strong aria-hidden="true">5.3.</strong> Haskell.nix Library</a></li><li class="chapter-item expanded "><a href="reference/modules.html"><strong aria-hidden="true">5.4.</strong> Module options</a></li><li class="chapter-item expanded "><a href="troubleshooting.html"><strong aria-hidden="true">5.5.</strong> Troubleshooting</a></li></ol></li><li class="chapter-item expanded "><a href="template/index.html"><strong aria-hidden="true">6.</strong> Templates / Abstraction</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="template/iohk-nix.html"><strong aria-hidden="true">6.1.</strong> IOHKs nix library</a></li></ol></li><li class="chapter-item expanded "><a href="dev/index.html"><strong aria-hidden="true">7.</strong> Dev Notes</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="dev/dev-architecture.html"><strong aria-hidden="true">7.1.</strong> Architecture</a></li><li class="chapter-item expanded "><a href="dev/installing-nix-tools.html"><strong aria-hidden="true">7.2.</strong> Installing nix-tools</a></li><li class="chapter-item expanded "><a href="dev/nix-tools-pin.html"><strong aria-hidden="true">7.3.</strong> How to update nix-tools</a></li><li class="chapter-item expanded "><a href="dev/manually-generating-nix-expressions.html"><strong aria-hidden="true">7.4.</strong> Manually generating Nix expressions</a></li><li class="chapter-item expanded "><a href="dev/maintainer-scripts.html"><strong aria-hidden="true">7.5.</strong> Maintainer Scripts</a></li><li class="chapter-item expanded "><a href="dev/nixpkgs-pin.html"><strong aria-hidden="true">7.6.</strong> Nixpkgs Pin</a></li><li class="chapter-item expanded "><a href="dev/removing-with-package-wrapper.html"><strong aria-hidden="true">7.7.</strong> Removing withPackage wrapper</a></li><li class="chapter-item expanded "><a href="dev/tests.html"><strong aria-hidden="true">7.8.</strong> Test Suite</a></li><li class="chapter-item expanded "><a href="dev/adding-new-ghc.html"><strong aria-hidden="true">7.9.</strong> Adding a new GHC version</a></li><li class="chapter-item expanded "><a href="dev/coverage.html"><strong aria-hidden="true">7.10.</strong> Coverage</a></li><li class="chapter-item expanded "><a href="dev/hix.html"><strong aria-hidden="true">7.11.</strong> Making changes to Hix</a></li><li class="chapter-item expanded "><a href="changelog.html"><strong aria-hidden="true">7.12.</strong> ChangeLog</a></li></ol></li></ol>
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
             </div>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
 
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
                 <div id="menu-bar-hover-placeholder"></div>
-                <div id="menu-bar" class="menu-bar sticky bordered">
+                <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
-                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
                             <i class="fa fa-bars"></i>
-                        </button>
+                        </label>
                         <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
@@ -104,12 +123,13 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">Alternative Haskell Infrastructure for Nixpkgs</h1>
+                    <h1 class="menu-title">Haskell.nix</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
+
                     </div>
                 </div>
 
@@ -123,8 +143,9 @@
                         </ul>
                     </div>
                 </div>
+
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
-                <script type="text/javascript">
+                <script>
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
                     document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
                     Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
@@ -135,55 +156,124 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="motivation"><a class="header" href="#motivation">Motivation</a></h1>
-<p>Why do we need another Haskell infrastructure for Nix?</p>
-<p>Doesn't nixpkgs
-provide a sufficiently good Haskell infrastructure already?</p>
-<p>Problems with
-the nixpkgs haskell infrastructure are covered in the following sections:</p>
-<h2 id="cross-compilation"><a class="header" href="#cross-compilation">Cross compilation</a></h2>
-<p><code>nixpkgs</code> has quite good support for cross compilation, however the
-Haskell infrastructure suffers from the fact that it heavily relies on
-the <code>cabal2nix</code> tool.  <code>cabal2nix</code> (as well as tools that depend on it
-like <code>stack2nix</code>) flattens the <code>.cabal</code> file at conversion time to a
-given os/arch/flags configuration.  Thus to make cross compilation
-work with <code>cabal2nix</code> you will have to generate a separate <code>nix</code>
-expression for each configuration.  This becomes a major maintenance
-burden over time.  Therefore the tooling that translates cabal files
-into nix-expressions for use with Haskell.nix retains the full
-conditional tree from the cabal file and exposes it to <code>nix</code>.  In
-addition it will also expose the <code>build-type</code> value, which allows us
-to cache the <code>Setup.hs</code> for build-type simple and not have to rebuild
-it every time.</p>
-<h2 id="package-sets"><a class="header" href="#package-sets">Package sets</a></h2>
-<p>We often rely on either package sets as provided by stackage or
-computed by cabal.  <code>nixpkgs</code> provides its own curated package set
-which might or might not work for the projects we work on.
-<code>stack2nix</code> tries to solve this issue, here we go one step further and
-provide the infrastructure to allow any form of package set.</p>
-<h2 id="per-component-level-control"><a class="header" href="#per-component-level-control">Per component level control</a></h2>
-<p>The Haskell builder in <code>nixpkgs</code> provides control over executables and
-libraries, to build a specific executable only however is rather
-tricky to do.  This also leads to the cyclic dependencies issue.</p>
-<h2 id="cyclic-dependencies"><a class="header" href="#cyclic-dependencies">Cyclic dependencies</a></h2>
-<p>The Haskell builder in <code>nixpkgs</code> exposes packages at the
-package level. If packages mutually depend on each other through tests
-and libraries, this leads to cyclic dependencies that nix can't resolve. By
-exposing the components to nix as separate derivations this will only
-occur if you have mutually dependent components.</p>
-<h2 id="build-times"><a class="header" href="#build-times">Build times</a></h2>
-<p>The Haskell builder in nixpkgs builds a package sequentially, first the
-library then the executables and finally the tests.  It then executes
-the tests before the package is considered done.  The upshot of this
-is that packages are only considered done if the test-suites
-passed.  The downside is that if you have to compile multiple packages
-the likelihood of them failing is low, you have unnecessarily
-serialized your build.  In a more aggressive setting libraries could
-start building as early as their dependent libraries are built.  Of
-course they will have to be invalidated later should the test-suites
-of their dependencies fail, but this way we can make use of parallel
-building.  In an ideal scenario this will reduce build times close to
+<p><code>haskell.nix</code> is an infrastructure based on <code>nix</code> to build Haskell code.
+It provides a way to build <code>cabal-install</code> and <code>Stack</code> based projects using <code>nix</code>,
+reading the <code>cabal.project</code> or <code>stack.yaml</code> files used by those tools, hence reducing
+the amount of <code>nix</code> code that needs to be maintained and making it easy to continue
+using <code>cabal-install</code> and <code>Stack</code> as well.</p>
+<p>In the rest of this page we motivate <code>haskell.nix</code> by comparing it to:</p>
+<ul>
+<li><a href="https://docs.haskellstack.org/en/stable/">Stack</a> and <a href="https://cabal.readthedocs.io/en/stable/">cabal-install</a> build tools</li>
+<li><a href="https://haskell4nix.readthedocs.io/">nixpkgs</a> Haskell infrastructure for <code>nix</code></li>
+</ul>
+<h2 id="comparison-with-stack-and-cabal-install"><a class="header" href="#comparison-with-stack-and-cabal-install">Comparison with <code>Stack</code> and <code>cabal-install</code></a></h2>
+<p>Using <code>haskell.nix</code> instead of <code>Stack</code> or <code>cabal-install</code> gives us:</p>
+<ul>
+<li>deterministic and hermetic builds</li>
+<li>distributed caching</li>
+<li>precise selection of the toolchain (GHC...) to use (which only <code>Stack</code> allows to some extent)</li>
+<li>precise selection of the native libraries to use (using <code>nix</code>), if any</li>
+</ul>
+<p>In addition, <code>haskell.nix</code> has better support for cross-compilation (e.g.
+compiling Haskell code on Linux that will be run on Windows). It does this by
+carefully distinguishing the GHC compiler for the build platform (used to
+compile <code>Cabal</code>'s <code>Setup.hs</code> files for Linux in our example) and the GHC
+compiler for the host platform (GHC cross-compiler targeting Windows in our
+example).</p>
+<p>By design <code>haskell.nix</code> reuses configuration files from other tools and converts
+them into <code>nix</code> expressions:</p>
+<ul>
+<li><code>.cabal</code> files</li>
+<li><code>Stack</code>'s <code>stack.yaml</code></li>
+<li><code>cabal-install</code>'s <code>cabal.project</code>...</li>
+</ul>
+<p>As such it doesn't require more work from you if your projects already build
+with <code>Stack</code> or <code>cabal-install</code>.</p>
+<p><code>haskell.nix</code> can also be used to provide developer environments including
+common Haskell tools: GHC, cabal-install, HLS (Haskell Language Server), hlint,
+etc. With these environments, you don't need to use <code>ghcup</code> nor to pass programs
+explicitly (e.g. as in <code>cabal -w ghc-9.2.2</code>). See <a href="https://github.com/input-output-hk/devx">devx</a>.</p>
+<h2 id="comparison-with-nixpkgs"><a class="header" href="#comparison-with-nixpkgs">Comparison with <code>nixpkgs</code></a></h2>
+<p>To properly compare with <code>nixpkgs</code> we need to get more into the technical details
+of both solutions.</p>
+<h3 id="cross-compilation"><a class="header" href="#cross-compilation">Cross compilation</a></h3>
+<p><code>haskell.nix</code> has more maintainable support for cross-compilation (e.g.
+compiling Haskell code on a Linux machine to produce a program that runs on
+Windows).</p>
+<p>Both <code>nixpkgs</code> and <code>haskell.nix</code> rely on tools to convert <code>.cabal</code> files into
+<code>nix</code> expressions. <code>.cabal</code> files can contain conditionals (e.g. <code>os(windows)</code>) to
+conditionally build modules, pass flags to the compiler, etc.</p>
+<p>The difference is that:</p>
+<ul>
+<li><code>nixpkgs</code> generates a different <code>nix</code> expression for each os/arch/flags
+configuration.</li>
+<li><code>haskell.nix</code> generates a single <code>nix</code> expression that exposes the conditionals
+to <code>nix</code>.</li>
+</ul>
+<p>The drawback of the <code>nixpkgs</code> approach is that managing so many different <code>nix</code>
+expressions for a single <code>.cabal</code> file becomes a maintenance burden over time.</p>
+<h3 id="performance-build-type"><a class="header" href="#performance-build-type">Performance: build-type</a></h3>
+<p>When <code>haskell.nix</code> converts a <code>.cabal</code> file into a <code>nix</code> expression, it keeps
+track of the <code>build-type</code> value. All the <code>.cabal</code> files that use <code>build-type: simple</code> reuse the same <code>Setup</code> program that is built once and cached.</p>
+<h3 id="dependencies-package-sets"><a class="header" href="#dependencies-package-sets">Dependencies: package sets</a></h3>
+<p>Not all Haskell packages work well together. As it is cumbersome to pinpoint
+every package version explicitly, it is common to rely on curated sets of
+packages: packages that are known to work well together to some extent (e.g.
+Stackage snapshots).</p>
+<ul>
+<li>
+<p><code>nixpkgs</code> provides its own curated set of packages which might or might not
+work for the project we work on.</p>
+</li>
+<li>
+<p><code>haskell.nix</code> allows any form of package set.</p>
+</li>
+</ul>
+<p>First <a href="https://github.com/input-output-hk/hackage.nix">hackage.nix</a> exposes the
+<code>nix</code> expressions of every revision of every package from Hackage.</p>
+<p>As the Hackage index is an ever growing repository of Haskell packages,
+<code>haskell.nix</code> supports pinning the Hackage index to a specific revision
+and letting Cabal's solver resolve the dependencies in a reproducible way.</p>
+<p>An alternative is to start with a curated package set. For example,
+<a href="https://github.com/input-output-hk/stackage.nix">stackage.nix</a> exposes the
+<code>nix</code> expressions of every Stackage Snapshot.</p>
+<p>In addition, it is possible to explicitly specify a package version and
+revision, or even to fetch its sources (e.g. using Git).</p>
+<h3 id="granularity-and-performance-per-component-level-control"><a class="header" href="#granularity-and-performance-per-component-level-control">Granularity and performance: per component level control</a></h3>
+<p>Haskell packages can contain several <em>components</em>: libraries, executables,
+testsuites...</p>
+<ul>
+<li><code>nixpkgs</code> mostly considers package as a whole.</li>
+<li><code>haskell.nix</code> uses component granularity for dependencies.</li>
+</ul>
+<p>The <code>nixpkgs</code> approach leads to some issues:</p>
+<ul>
+<li>
+<p>building only a specific component (e.g. an executable) in a package is tricky
+to do</p>
+</li>
+<li>
+<p>dependencies of the different components are mixed up: this can lead to cyclic
+dependencies that <code>nix</code> can't solve. For example, package <code>unicode</code> exposes
+<code>lib-unicode</code> and <code>test-unicode</code> executable, where <code>test-unicode</code> depends on
+<code>lib-print</code> from package <code>print</code>, which itself depends on <code>lib-unicode</code>.
+Component-wise, dependencies aren't cyclic, however, package-wise, they are.</p>
+</li>
+<li>
+<p>build times: the Haskell builder in nixpkgs builds a package sequentially,
+first the library then the executables and finally the tests. It then executes
+the tests before the package is considered done. The upshot of this is that
+packages are only considered done if the test-suites passed. The downside is
+that if you have to compile multiple packages the likelihood of them failing
+is low, you have unnecessarily serialized your build. In a more aggressive
+setting libraries could start building as early as their dependent libraries
+are built.  Of course they will have to be invalidated later should the
+test-suites of their dependencies fail, but this way we can make use of
+parallel building.  In an ideal scenario this will reduce build times close to
 the optimum.</p>
-<h2 id="more-logic-in-nix"><a class="header" href="#more-logic-in-nix">More logic in nix</a></h2>
+</li>
+</ul>
+<h3 id="more-logic-in-nix"><a class="header" href="#more-logic-in-nix">More logic in nix</a></h3>
 <p>The <code>cabal2nix</code> tool has a resolver that resolves system dependencies
 and licenses to values in <code>nixpkgs</code>.  This logic ends up being a simple
 dictionary lookup and therefore can be a simple nix expression. This also
@@ -191,9 +281,9 @@ offloads some of the work the cabal to nix translation tool needs to
 do into nix, and as such if changes are necessary (or needed to be
 performed ad hoc) there is no need to rebuild the conversion tool and
 subsequently mark every derived expression as out of date.</p>
-<h2 id="decoupling"><a class="header" href="#decoupling">Decoupling</a></h2>
-<p>Finally, by treating Haskell.nix and nixpkgs as separate entities we
-can decouple the Haskell packages and infrastructure from the nixpkgs
+<h3 id="decoupling"><a class="header" href="#decoupling">Decoupling</a></h3>
+<p>Finally, by treating <code>haskell.nix</code> and <code>nixpkgs</code> as separate entities we
+can decouple the Haskell packages and infrastructure from the <code>nixpkgs</code>
 package set, and rely on it to provide us with system packages while
 staying up to date with Haskell packages from hackage while retaining
 a stable (or known to be good) nixpkgs revision.</p>
@@ -205,9 +295,11 @@ a stable (or known to be good) nixpkgs revision.</p>
                             <a rel="prev" href="index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
-                            <a rel="next" href="architecture.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+
+                            <a rel="next prefetch" href="architecture.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
+
                         <div style="clear: both"></div>
                     </nav>
                 </div>
@@ -217,23 +309,33 @@ a stable (or known to be good) nixpkgs revision.</p>
                     <a rel="prev" href="index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
-                    <a rel="next" href="architecture.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+
+                    <a rel="next prefetch" href="architecture.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
 
         </div>
 
-        <script type="text/javascript">
+
+
+
+        <script>
             window.playground_copyable = true;
         </script>
-        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
-        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
+
+
+    </div>
     </body>
 </html>

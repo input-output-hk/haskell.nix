@@ -1,14 +1,16 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js light">
+<html lang="en" class="light sidebar-visible" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Content addressed derivations - Alternative Haskell Infrastructure for Nixpkgs</title>
+        <title>Content addressed derivations - Haskell.nix</title>
+
+
         <!-- Custom HTML head -->
-        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#ffffff">
 
         <link rel="icon" href="../favicon.svg">
         <link rel="shortcut icon" href="../favicon.png">
@@ -16,28 +18,35 @@
         <link rel="stylesheet" href="../css/general.css">
         <link rel="stylesheet" href="../css/chrome.css">
         <link rel="stylesheet" href="../css/print.css" media="print">
+
         <!-- Fonts -->
         <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
         <link rel="stylesheet" href="../fonts/fonts.css">
+
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="../highlight.css">
-        <link rel="stylesheet" href="../tomorrow-night.css">
-        <link rel="stylesheet" href="../ayu-highlight.css">
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
     </head>
     <body>
-        <!-- Provide site root to javascript -->
-        <script type="text/javascript">
-            var path_to_root = "../";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
-        </script>
-
+    <div id="body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
-        <script type="text/javascript">
+        <script>
             try {
-                var theme = localStorage.getItem('mdbook-theme');
-                var sidebar = localStorage.getItem('mdbook-sidebar');
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
 
                 if (theme.startsWith('"') && theme.endsWith('"')) {
                     localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
@@ -50,50 +59,60 @@
         </script>
 
         <!-- Set the theme before any content is loaded, prevents flash -->
-        <script type="text/javascript">
-            var theme;
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
-            var html = document.querySelector('html');
-            html.classList.remove('no-js')
+            const html = document.documentElement;
             html.classList.remove('light')
             html.classList.add(theme);
-            html.classList.add('js');
+            html.classList.add("js");
         </script>
 
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
         <!-- Hide / unhide sidebar before it is displayed -->
-        <script type="text/javascript">
-            var html = document.querySelector('html');
-            var sidebar = 'hidden';
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
             }
+            sidebar_toggle.checked = sidebar === 'visible';
             html.classList.remove('sidebar-visible');
             html.classList.add("sidebar-" + sidebar);
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
-            <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="../index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../motivation.html"><strong aria-hidden="true">2.</strong> Motivation</a></li><li class="chapter-item expanded "><a href="../architecture.html"><strong aria-hidden="true">3.</strong> Architecture</a></li><li class="chapter-item expanded "><a href="../tutorials/index.html"><strong aria-hidden="true">4.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../tutorials/getting-started.html"><strong aria-hidden="true">4.1.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="../tutorials/getting-started-flakes.html"><strong aria-hidden="true">4.2.</strong> Getting started with Flakes</a></li><li class="chapter-item expanded "><a href="../tutorials/getting-started-hix.html"><strong aria-hidden="true">4.3.</strong> Getting started with Hix</a></li><li class="chapter-item expanded "><a href="../tutorials/development.html"><strong aria-hidden="true">4.4.</strong> Creating a development environment</a></li><li class="chapter-item expanded "><a href="../tutorials/clean-git.html"><strong aria-hidden="true">4.5.</strong> Sourcing files only part of git repository using cleanGit</a></li><li class="chapter-item expanded "><a href="../tutorials/source-repository-hashes.html"><strong aria-hidden="true">4.6.</strong> Handling git repositories in projects</a></li><li class="chapter-item expanded "><a href="../tutorials/pkg-map.html"><strong aria-hidden="true">4.7.</strong> Mapping non-Haskell dependencies to Nixpkgs</a></li><li class="chapter-item expanded "><a href="../tutorials/hackage-stackage.html"><strong aria-hidden="true">4.8.</strong> Bumping Hackage and Stackage snapshots</a></li><li class="chapter-item expanded "><a href="../tutorials/materialization.html"><strong aria-hidden="true">4.9.</strong> Materialization: Speeding up Nix evaluation</a></li><li class="chapter-item expanded "><a href="../tutorials/cross-compilation.html"><strong aria-hidden="true">4.10.</strong> Cross-compiling your project</a></li><li class="chapter-item expanded "><a href="../tutorials/coverage.html"><strong aria-hidden="true">4.11.</strong> Generating coverage information</a></li><li class="chapter-item expanded "><a href="../tutorials/building-package-from-stackage-hackage.html"><strong aria-hidden="true">4.12.</strong> Build a specific package from Hackage or Stackage</a></li><li class="chapter-item expanded "><a href="../tutorials/ca-derivations.html" class="active"><strong aria-hidden="true">4.13.</strong> Content addressed derivations</a></li></ol></li><li class="chapter-item expanded "><a href="../reference/index.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference/supported-ghc-versions.html"><strong aria-hidden="true">5.1.</strong> Supported GHC versions</a></li><li class="chapter-item expanded "><a href="../reference/commands.html"><strong aria-hidden="true">5.2.</strong> Command-line tools</a></li><li class="chapter-item expanded "><a href="../reference/library.html"><strong aria-hidden="true">5.3.</strong> Haskell.nix Library</a></li><li class="chapter-item expanded "><a href="../reference/modules.html"><strong aria-hidden="true">5.4.</strong> Module options</a></li><li class="chapter-item expanded "><a href="../troubleshooting.html"><strong aria-hidden="true">5.5.</strong> Troubleshooting</a></li></ol></li><li class="chapter-item expanded "><a href="../template/index.html"><strong aria-hidden="true">6.</strong> Templates / Abstraction</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../template/iohk-nix.html"><strong aria-hidden="true">6.1.</strong> IOHKs nix library</a></li></ol></li><li class="chapter-item expanded "><a href="../dev/index.html"><strong aria-hidden="true">7.</strong> Dev Notes</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../dev/dev-architecture.html"><strong aria-hidden="true">7.1.</strong> Architecture</a></li><li class="chapter-item expanded "><a href="../dev/installing-nix-tools.html"><strong aria-hidden="true">7.2.</strong> Installing nix-tools</a></li><li class="chapter-item expanded "><a href="../dev/nix-tools-pin.html"><strong aria-hidden="true">7.3.</strong> How to update nix-tools</a></li><li class="chapter-item expanded "><a href="../dev/manually-generating-nix-expressions.html"><strong aria-hidden="true">7.4.</strong> Manually generating Nix expressions</a></li><li class="chapter-item expanded "><a href="../dev/maintainer-scripts.html"><strong aria-hidden="true">7.5.</strong> Maintainer Scripts</a></li><li class="chapter-item expanded "><a href="../dev/nixpkgs-pin.html"><strong aria-hidden="true">7.6.</strong> Nixpkgs Pin</a></li><li class="chapter-item expanded "><a href="../dev/removing-with-package-wrapper.html"><strong aria-hidden="true">7.7.</strong> Removing withPackage wrapper</a></li><li class="chapter-item expanded "><a href="../dev/tests.html"><strong aria-hidden="true">7.8.</strong> Test Suite</a></li><li class="chapter-item expanded "><a href="../dev/adding-new-ghc.html"><strong aria-hidden="true">7.9.</strong> Adding a new GHC version</a></li><li class="chapter-item expanded "><a href="../dev/coverage.html"><strong aria-hidden="true">7.10.</strong> Coverage</a></li><li class="chapter-item expanded "><a href="../dev/hix.html"><strong aria-hidden="true">7.11.</strong> Making changes to Hix</a></li><li class="chapter-item expanded "><a href="../changelog.html"><strong aria-hidden="true">7.12.</strong> ChangeLog</a></li></ol></li></ol>
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
             </div>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
 
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
                 <div id="menu-bar-hover-placeholder"></div>
-                <div id="menu-bar" class="menu-bar sticky bordered">
+                <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
-                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
                             <i class="fa fa-bars"></i>
-                        </button>
+                        </label>
                         <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
@@ -104,12 +123,13 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">Alternative Haskell Infrastructure for Nixpkgs</h1>
+                    <h1 class="menu-title">Haskell.nix</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
+
                     </div>
                 </div>
 
@@ -123,8 +143,9 @@
                         </ul>
                     </div>
                 </div>
+
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
-                <script type="text/javascript">
+                <script>
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
                     document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
                     Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
@@ -140,8 +161,8 @@
 Indeed, normally derivations are input addressed i.e. the outputs store paths depends only on the derivation inputs, instead with CA derivations they depend on the content of the outputs.</p>
 <p>This has two main advantages:</p>
 <ul>
-<li>The so-called &quot;early cutoff&quot;, namely the ability of Nix to stop a build if the build outputs would be something already built. 
-For example suppose you add a comment in an Haskell source, at this point Nix will rebuild the component depending on this source but since the output will be the same (adding a comment is an &quot;output-invariant&quot; change for <code>ghc</code>) every other component that depends on that will not be rebuilt.</li>
+<li>The so-called "early cutoff", namely the ability of Nix to stop a build if the build outputs would be something already built.
+For example suppose you add a comment in an Haskell source, at this point Nix will rebuild the component depending on this source but since the output will be the same (adding a comment is an "output-invariant" change for <code>ghc</code>) every other component that depends on that will not be rebuilt.</li>
 <li>Users of the same Nix store does not need to trust each other when using substituters.</li>
 </ul>
 <p>You can find more information in the <a href="https://nixos.wiki/wiki/Ca-derivations">ca-derivations page on the wiki</a> (and in the other resources linked there).</p>
@@ -189,9 +210,11 @@ At this point, if you need to build a derivation <code>B</code> that depends on 
                             <a rel="prev" href="../tutorials/building-package-from-stackage-hackage.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
-                            <a rel="next" href="../reference/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+
+                            <a rel="next prefetch" href="../reference/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
+
                         <div style="clear: both"></div>
                     </nav>
                 </div>
@@ -201,23 +224,33 @@ At this point, if you need to build a derivation <code>B</code> that depends on 
                     <a rel="prev" href="../tutorials/building-package-from-stackage-hackage.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
-                    <a rel="next" href="../reference/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+
+                    <a rel="next prefetch" href="../reference/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
 
         </div>
 
-        <script type="text/javascript">
+
+
+
+        <script>
             window.playground_copyable = true;
         </script>
-        <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
-        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
+
+
+    </div>
     </body>
 </html>

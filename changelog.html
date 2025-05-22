@@ -1,14 +1,16 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js light">
+<html lang="en" class="light sidebar-visible" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>ChangeLog - Alternative Haskell Infrastructure for Nixpkgs</title>
+        <title>ChangeLog - Haskell.nix</title>
+
+
         <!-- Custom HTML head -->
-        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#ffffff">
 
         <link rel="icon" href="favicon.svg">
         <link rel="shortcut icon" href="favicon.png">
@@ -16,28 +18,35 @@
         <link rel="stylesheet" href="css/general.css">
         <link rel="stylesheet" href="css/chrome.css">
         <link rel="stylesheet" href="css/print.css" media="print">
+
         <!-- Fonts -->
         <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
         <link rel="stylesheet" href="fonts/fonts.css">
+
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" id="highlight-css" href="highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
     </head>
     <body>
-        <!-- Provide site root to javascript -->
-        <script type="text/javascript">
-            var path_to_root = "";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
-        </script>
-
+    <div id="body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
-        <script type="text/javascript">
+        <script>
             try {
-                var theme = localStorage.getItem('mdbook-theme');
-                var sidebar = localStorage.getItem('mdbook-sidebar');
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
 
                 if (theme.startsWith('"') && theme.endsWith('"')) {
                     localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
@@ -50,50 +59,60 @@
         </script>
 
         <!-- Set the theme before any content is loaded, prevents flash -->
-        <script type="text/javascript">
-            var theme;
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
-            var html = document.querySelector('html');
-            html.classList.remove('no-js')
+            const html = document.documentElement;
             html.classList.remove('light')
             html.classList.add(theme);
-            html.classList.add('js');
+            html.classList.add("js");
         </script>
 
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
         <!-- Hide / unhide sidebar before it is displayed -->
-        <script type="text/javascript">
-            var html = document.querySelector('html');
-            var sidebar = 'hidden';
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
             }
+            sidebar_toggle.checked = sidebar === 'visible';
             html.classList.remove('sidebar-visible');
             html.classList.add("sidebar-" + sidebar);
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
-            <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="motivation.html"><strong aria-hidden="true">2.</strong> Motivation</a></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">3.</strong> Architecture</a></li><li class="chapter-item expanded "><a href="tutorials/index.html"><strong aria-hidden="true">4.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorials/getting-started.html"><strong aria-hidden="true">4.1.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="tutorials/getting-started-flakes.html"><strong aria-hidden="true">4.2.</strong> Getting started with Flakes</a></li><li class="chapter-item expanded "><a href="tutorials/getting-started-hix.html"><strong aria-hidden="true">4.3.</strong> Getting started with Hix</a></li><li class="chapter-item expanded "><a href="tutorials/development.html"><strong aria-hidden="true">4.4.</strong> Creating a development environment</a></li><li class="chapter-item expanded "><a href="tutorials/clean-git.html"><strong aria-hidden="true">4.5.</strong> Sourcing files only part of git repository using cleanGit</a></li><li class="chapter-item expanded "><a href="tutorials/source-repository-hashes.html"><strong aria-hidden="true">4.6.</strong> Handling git repositories in projects</a></li><li class="chapter-item expanded "><a href="tutorials/pkg-map.html"><strong aria-hidden="true">4.7.</strong> Mapping non-Haskell dependencies to Nixpkgs</a></li><li class="chapter-item expanded "><a href="tutorials/hackage-stackage.html"><strong aria-hidden="true">4.8.</strong> Bumping Hackage and Stackage snapshots</a></li><li class="chapter-item expanded "><a href="tutorials/materialization.html"><strong aria-hidden="true">4.9.</strong> Materialization: Speeding up Nix evaluation</a></li><li class="chapter-item expanded "><a href="tutorials/cross-compilation.html"><strong aria-hidden="true">4.10.</strong> Cross-compiling your project</a></li><li class="chapter-item expanded "><a href="tutorials/coverage.html"><strong aria-hidden="true">4.11.</strong> Generating coverage information</a></li><li class="chapter-item expanded "><a href="tutorials/building-package-from-stackage-hackage.html"><strong aria-hidden="true">4.12.</strong> Build a specific package from Hackage or Stackage</a></li><li class="chapter-item expanded "><a href="tutorials/ca-derivations.html"><strong aria-hidden="true">4.13.</strong> Content addressed derivations</a></li></ol></li><li class="chapter-item expanded "><a href="reference/index.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="reference/supported-ghc-versions.html"><strong aria-hidden="true">5.1.</strong> Supported GHC versions</a></li><li class="chapter-item expanded "><a href="reference/commands.html"><strong aria-hidden="true">5.2.</strong> Command-line tools</a></li><li class="chapter-item expanded "><a href="reference/library.html"><strong aria-hidden="true">5.3.</strong> Haskell.nix Library</a></li><li class="chapter-item expanded "><a href="reference/modules.html"><strong aria-hidden="true">5.4.</strong> Module options</a></li><li class="chapter-item expanded "><a href="troubleshooting.html"><strong aria-hidden="true">5.5.</strong> Troubleshooting</a></li></ol></li><li class="chapter-item expanded "><a href="template/index.html"><strong aria-hidden="true">6.</strong> Templates / Abstraction</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="template/iohk-nix.html"><strong aria-hidden="true">6.1.</strong> IOHKs nix library</a></li></ol></li><li class="chapter-item expanded "><a href="dev/index.html"><strong aria-hidden="true">7.</strong> Dev Notes</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="dev/dev-architecture.html"><strong aria-hidden="true">7.1.</strong> Architecture</a></li><li class="chapter-item expanded "><a href="dev/installing-nix-tools.html"><strong aria-hidden="true">7.2.</strong> Installing nix-tools</a></li><li class="chapter-item expanded "><a href="dev/nix-tools-pin.html"><strong aria-hidden="true">7.3.</strong> How to update nix-tools</a></li><li class="chapter-item expanded "><a href="dev/manually-generating-nix-expressions.html"><strong aria-hidden="true">7.4.</strong> Manually generating Nix expressions</a></li><li class="chapter-item expanded "><a href="dev/maintainer-scripts.html"><strong aria-hidden="true">7.5.</strong> Maintainer Scripts</a></li><li class="chapter-item expanded "><a href="dev/nixpkgs-pin.html"><strong aria-hidden="true">7.6.</strong> Nixpkgs Pin</a></li><li class="chapter-item expanded "><a href="dev/removing-with-package-wrapper.html"><strong aria-hidden="true">7.7.</strong> Removing withPackage wrapper</a></li><li class="chapter-item expanded "><a href="dev/tests.html"><strong aria-hidden="true">7.8.</strong> Test Suite</a></li><li class="chapter-item expanded "><a href="dev/adding-new-ghc.html"><strong aria-hidden="true">7.9.</strong> Adding a new GHC version</a></li><li class="chapter-item expanded "><a href="dev/coverage.html"><strong aria-hidden="true">7.10.</strong> Coverage</a></li><li class="chapter-item expanded "><a href="dev/hix.html"><strong aria-hidden="true">7.11.</strong> Making changes to Hix</a></li><li class="chapter-item expanded "><a href="changelog.html" class="active"><strong aria-hidden="true">7.12.</strong> ChangeLog</a></li></ol></li></ol>
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
             </div>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
 
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
                 <div id="menu-bar-hover-placeholder"></div>
-                <div id="menu-bar" class="menu-bar sticky bordered">
+                <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
-                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
                             <i class="fa fa-bars"></i>
-                        </button>
+                        </label>
                         <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
@@ -104,12 +123,13 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">Alternative Haskell Infrastructure for Nixpkgs</h1>
+                    <h1 class="menu-title">Haskell.nix</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
+
                     </div>
                 </div>
 
@@ -123,8 +143,9 @@
                         </ul>
                     </div>
                 </div>
+
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
-                <script type="text/javascript">
+                <script>
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
                     document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
                     Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
@@ -136,6 +157,122 @@
                     <main>
                         <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="jan-29-2024"><a class="header" href="#jan-29-2024">Jan 29, 2024</a></h2>
+<p>Removed GHC &lt;9.6 from CI.</p>
+<p>The latest <code>nixpkgs-unstable</code> cause problems with</p>
+<ul>
+<li>GHC 8.10.7</li>
+<li>GHC 9.6.6 mingwW64 (ucrt64 works still as does mingwW64
+with newer GHC versions)</li>
+</ul>
+<h2 id="sep-17-2024"><a class="header" href="#sep-17-2024">Sep 17, 2024</a></h2>
+<p>Cabal projects now use the more granular Unit IDs from plan.json
+to identify packages.  This allows for different versions of a
+package to be used when building <code>built-tool-depends</code> and setup
+dependencies.</p>
+<p>Overrides in the <code>modules</code> argument apply to all versions of
+the package.  However to make this work we needed to make
+each <code>packages.somepackage</code> an option (instead of using an
+<code>attrsOf</code> the submodule type).</p>
+<p>It is now an error to override a package that is not in the
+plan.  This can be a problem if different GHC versions, target
+platforms, or cabal flag settings cause the package to be
+excluded from the plan.  Adding <code>package-keys</code> can tell
+haskell.nix to include the option anyway:</p>
+<pre><code>  modules = [{
+    # Tell haskell.nix that `somepackage` may exist.
+    package-keys = ["somepackage"];
+    # Now the following will not cause an error even
+    # if `somepackage` is not in the plan
+    packages.somepackage.flags.someflag = true;
+  }];
+</code></pre>
+<p>There is a helper function you can use to add <code>package-keys</code>
+for all of the <code>builtins.attrNames</code> of <code>packages</code>:</p>
+<pre><code>  modules = [(pkgs.haskell-nix.haskellLib.addPackageKeys {
+    packages.somepackage.flags.someflag = true;
+  })];
+</code></pre>
+<p>Do not use the module's <code>pkgs</code> arg to look <code>addPackageKeys</code> up
+though or it will result an <code>infinite recursion</code> error.</p>
+<p>Code that uses <code>options.packages</code> will also need to be updated.
+For instance the following code that uses <code>options.packages</code>
+to set <code>--Werror</code> for local packages:</p>
+<pre><code>  ({ lib, ... }: {
+    options.packages = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule (
+        { config, lib, ... }:
+        lib.mkIf config.package.isLocal
+        {
+          configureFlags = [ "--ghc-option=-Werror"];
+        }
+      ));
+    };
+  })
+</code></pre>
+<p>Now needs to do it for each of the entry in <code>config.package-keys</code>
+instead of using <code>attrsOf</code>:</p>
+<pre><code>  ({ config, lib, ... }: {
+    options.packages = lib.genAttrs config.package-keys (_:
+      lib.mkOption {
+        type = lib.types.submodule (
+          { config, lib, ... }:
+          lib.mkIf config.package.isLocal
+          {
+            configureFlags = [ "--ghc-option=-Werror"];
+          }
+        );
+      });
+  })
+</code></pre>
+<h2 id="jun-5-2024"><a class="header" href="#jun-5-2024">Jun 5, 2024</a></h2>
+<p>Haskell.nix now respects the <code>pre-existing</code> packages selected
+by the cabal planner.  The selection made by the planner
+is used to set <code>nonReinstallablePkgs</code>.</p>
+<p>Instead setting <code>nonReinstallablePkgs</code> and <code>reinstallableLibGhc</code>
+haskell.nix projects should add <code>constraints</code> to the cabal project.</p>
+<p>For instance to force the use of the <code>pre-exising</code> <code>text</code>
+package add:</p>
+<pre><code>  constraints: text installed
+</code></pre>
+<p>To make sure <code>text</code> is reinstalled use:</p>
+<pre><code>  constraints: text source
+</code></pre>
+<p>The <code>pre-existing</code> <code>ghc</code> will now be used by default as
+that is what <code>cabal</code> will choose (haskell.nix used to choose
+<code>reinstallableLibGhc=true</code> by default).</p>
+<p>To allow cabal to choose reinstalling <code>ghc</code> add:</p>
+<pre><code>  allow-boot-library-installs: True
+</code></pre>
+<p>To force cabal to choose reinstalling:</p>
+<pre><code>  constraints: ghc source
+  allow-boot-library-installs: True
+</code></pre>
+<p>It may also need <code>allow-newer: ghc:Cabal</code></p>
+<h2 id="mar-27-2023"><a class="header" href="#mar-27-2023">Mar 27, 2023</a></h2>
+<p>Haskell.nix will no longer parse the <code>cabal.project</code> file to
+determine the <code>index-state</code>. This decision was made due to
+the function's inability to handle more than one <code>index-state</code>
+or a qualified <code>index-state</code> as the first <code>index-state</code>
+field in the file.</p>
+<p>As a result, there will be some drawbacks:</p>
+<ul>
+<li>
+<p>There will no longer be a warning in the trace output
+if an index state is not found.</p>
+</li>
+<li>
+<p>Even if the <code>index-state:</code> in the <code>cabal.project</code> has not changed,
+the plan will be recomputed when hackage.nix is bumped. However, this
+is not expected to be a problem since plan recomputations are typically
+quick.</p>
+</li>
+<li>
+<p><code>project.index-state</code> cannot be used to obtain the found <code>index-state</code>.
+However, the parse function is still available if required
+(haskell-nix.haskellLib.parseIndexState).</p>
+</li>
+</ul>
 <h2 id="jul-27-2022"><a class="header" href="#jul-27-2022">Jul 27, 2022</a></h2>
 <ul>
 <li>
@@ -148,7 +285,7 @@ derivations used in IFDs are run for that project (including shell tools):
 evalPackages = import nixpkgs haskellNix.nixpkgsArgs;</p>
 <p>Passing <code>evalSystem</code> instead will use create a suitable <code>nixpkgs</code> using <code>pkgs.path</code>
 and <code>pkgs.overlay</code>:
-evalSystem = &quot;x86_64-linux&quot;;
+evalSystem = "x86_64-linux";
 or
 evalSystem = builtins.currentSystem;</p>
 <p>The <code>haskellLib.cleanGit</code> function is also affected by this change.  If you are cross
@@ -206,12 +343,12 @@ components are the <code>.dwarf</code> ones.</li>
 <h2 id="feb-18-2021"><a class="header" href="#feb-18-2021">Feb 18, 2021</a></h2>
 <ul>
 <li><code>ghcOptions</code> has been moved from package and is now a list of strings.
-old: packages.x.package.ghcOptions = &quot;someGHCoption&quot;;
-new: packages.x.ghcOptions = [&quot;someGHCoption&quot;];
+old: packages.x.package.ghcOptions = "someGHCoption";
+new: packages.x.ghcOptions = ["someGHCoption"];
 To specify ghcOptions for all packages:
-ghcOptions = [&quot;someGHCoption&quot;];
+ghcOptions = ["someGHCoption"];
 For a single component:
-packages.x.compoents.library.ghcOptions = [&quot;someGHCoption&quot;];</li>
+packages.x.compoents.library.ghcOptions = ["someGHCoption"];</li>
 </ul>
 <h2 id="feb-8-2021"><a class="header" href="#feb-8-2021">Feb 8, 2021</a></h2>
 <ul>
@@ -299,11 +436,11 @@ Like <code>shellFor { tools = ... }</code> they will use the compiler nix name
 from the project (including stack projects where it is derived from
 the resolver).</li>
 <li><code>haskell-nix.alex</code> and <code>haskell-nix.happy</code> have been removed. Use
-<code>p.tool &quot;alex&quot; &quot;3.2.5&quot;</code> or <code>shellFor { tools = { alex = &quot;3.2.5&quot;; } }</code>.</li>
+<code>p.tool "alex" "3.2.5"</code> or <code>shellFor { tools = { alex = "3.2.5"; } }</code>.</li>
 <li><code>haskell-nix.nix-tools</code> -&gt; <code>haskell-nix.nix-tools.ghc883</code> (it includes
 the hpack exe now).</li>
 <li><code>haskell-nix.cabal-install</code> -&gt;
-<code>p.tool &quot;cabal&quot; &quot;3.2.0.0&quot;</code> or <code>shellFor { tools = { cabal = &quot;3.2.0.0&quot;; } }</code></li>
+<code>p.tool "cabal" "3.2.0.0"</code> or <code>shellFor { tools = { cabal = "3.2.0.0"; } }</code></li>
 <li><code>haskell-nix.haskellNixRoots</code> -&gt; <code>haskell-nix.roots ghc883</code> or <code>p.roots</code></li>
 </ul>
 <h2 id="june-25-2020"><a class="header" href="#june-25-2020">June 25, 2020</a></h2>
@@ -372,8 +509,8 @@ top-level.</li>
 </ul>
 <h2 id="may-21-2019"><a class="header" href="#may-21-2019">May 21, 2019</a></h2>
 <ul>
-<li>Add the <code>callCabalProjectToNix</code> function, which uses &quot;import from
-derivation&quot; (IFD) so that nix-tools doesn't need to be run
+<li>Add the <code>callCabalProjectToNix</code> function, which uses "import from
+derivation" (IFD) so that nix-tools doesn't need to be run
 manually.</li>
 <li>The <code>hackage.nix</code> update process has changed, so that Cabal index
 state hashes are also included in the generated repo.</li>
@@ -384,8 +521,8 @@ state hashes are also included in the generated repo.</li>
 </ul>
 <h2 id="may-17-2019"><a class="header" href="#may-17-2019">May 17, 2019</a></h2>
 <ul>
-<li>Add the <code>callStackToNix</code> function, which uses &quot;import from
-derivation&quot; (IFD) so that <code>stack-to-nix</code> doesn't need to be run
+<li>Add the <code>callStackToNix</code> function, which uses "import from
+derivation" (IFD) so that <code>stack-to-nix</code> doesn't need to be run
 manually.</li>
 </ul>
 <h2 id="mar-15-2019"><a class="header" href="#mar-15-2019">Mar 15, 2019</a></h2>
@@ -408,6 +545,8 @@ take a <code>pkg-def-extras</code> instead of <code>pkg-def-overlay</code> argum
                             <a rel="prev" href="dev/hix.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
+
+
                         <div style="clear: both"></div>
                     </nav>
                 </div>
@@ -417,20 +556,30 @@ take a <code>pkg-def-extras</code> instead of <code>pkg-def-overlay</code> argum
                     <a rel="prev" href="dev/hix.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
+
             </nav>
 
         </div>
 
-        <script type="text/javascript">
+
+
+
+        <script>
             window.playground_copyable = true;
         </script>
-        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
-        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
+
+
+    </div>
     </body>
 </html>
