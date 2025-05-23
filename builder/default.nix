@@ -79,7 +79,7 @@ let
 
   # Same as haskellPackages.shellFor in nixpkgs.
   shellFor = haskellLib.weakCallPackage pkgs ./shell-for.nix {
-    inherit hsPkgs ghcForComponent makeConfigFiles hoogleLocal haskellLib pkgsBuildBuild evalPackages compiler;
+    inherit hsPkgs ghcForComponent makeConfigFiles hoogleLocal haskellLib pkgsBuildBuild evalPackages compiler ghc;
     inherit (buildPackages) glibcLocales;
   };
 
