@@ -170,11 +170,12 @@ final: prev: {
           inherit mkPkgSet stackage excludeBootPackages;
           hackage = hackageForStack;
         };
-        # Pick a recent LTS snapshot to be our "default" package set.
+        # Pick the most recent LTS snapshot to be our "default" package set.
         haskellPackages =
-            if final.stdenv.targetPlatform.isAarch64 && final.stdenv.buildPlatform.isAarch64
-            then snapshots."lts-15.13"
-            else snapshots."lts-14.13";
+          let
+            versions = final.lib.mapAttrsToList
+              (name: _: final.lib.removePrefix "lts-" name) snapshots;
+          in snapshots."lts-${final.lib.head (final.lib.sort final.lib.versionAtLeast versions)}";
 
         # Creates Cabal local repository from { name, index } set.
         mkLocalHackageRepo = import ../mk-local-hackage-repo final;
@@ -1072,6 +1073,60 @@ final: prev: {
                 enableProfiling = true;
               };
             }) final.haskell-nix.compiler;
+
+          ghc-pre-existing = ghc: [
+            "Cabal"
+            "array"
+            "base"
+            "binary"
+            "bytestring"
+            "containers"
+            "deepseq"
+            "directory"
+            "filepath"
+            "ghc-boot"
+            "ghc-boot-th"
+            "ghc-compact"
+            "ghc-heap"
+            "ghc-prim"
+            "ghci"
+            "integer-gmp"
+            "mtl"
+            "parsec"
+            "pretty"
+            "process"
+            "rts"
+            "template-haskell"
+            "text"
+            "time"
+            "transformers"
+          ] ++ final.lib.optionals (!final.stdenv.targetPlatform.isGhcjs || builtins.compareVersions ghc.version "9.0" > 0) [
+            # GHCJS 8.10 does not have these
+            "Cabal-syntax"
+            "exceptions"
+            "file-io"
+            "ghc"
+            "ghc-bignum"
+            "ghc-experimental"
+            "ghc-internal"
+            "ghc-platform"
+            "ghc-toolchain"
+            "haskeline"
+            "hpc"
+            "libiserv"
+            "os-string"
+            "semaphore-compat"
+            "stm"
+            "xhtml"
+          ] ++ final.lib.optionals (
+                  !final.stdenv.targetPlatform.isGhcjs
+               && !final.stdenv.targetPlatform.isWindows
+               && ghc.enableTerminfo or true) [
+            "terminfo"
+          ] ++ (if final.stdenv.targetPlatform.isWindows
+            then [ "Win32" ]
+            else [ "unix" ]
+          );
 
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached. Consider using `p.roots` where `p` is a

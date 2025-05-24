@@ -3,10 +3,6 @@
 
 with lib;
 
-let
-  repo = "git@github.com:input-output-hk/haskell.nix.git";
-  sshKey = "/run/keys/buildkite-haskell-dot-nix-ssh-private";
-in
   # update-docs depends on glibc which doesn't build on darwin
   meta.addMetaAttrs { platforms = platforms.linux; } (writeScript "update-docs.sh" ''
     #!${stdenv.shell}
@@ -37,10 +33,4 @@ in
     check_staged
     echo "Committing changes..."
     git commit --no-gpg-sign --message "Update gh-pages for $rev"
-
-    use_ssh_key ${sshKey}
-
-    if [ "''${BUILDKITE_BRANCH:-}" = master ]; then
-      git push ${repo} HEAD:gh-pages
-    fi
   '')
