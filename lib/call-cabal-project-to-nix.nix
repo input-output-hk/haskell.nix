@@ -366,57 +366,6 @@ let
     '';
   };
 
-  ghc-pkgs = [
-    "Cabal"
-    "array"
-    "base"
-    "binary"
-    "bytestring"
-    "containers"
-    "deepseq"
-    "directory"
-    "filepath"
-    "ghc-boot"
-    "ghc-boot-th"
-    "ghc-compact"
-    "ghc-heap"
-    "ghc-prim"
-    "ghci"
-    "integer-gmp"
-    "mtl"
-    "parsec"
-    "pretty"
-    "process"
-    "rts"
-    "template-haskell"
-    "text"
-    "time"
-    "transformers"
-  ] ++ pkgs.lib.optionals (!pkgs.stdenv.targetPlatform.isGhcjs || builtins.compareVersions ghc.version "9.0" > 0) [
-    # GHCJS 8.10 does not have these
-    "Cabal-syntax"
-    "exceptions"
-    "file-io"
-    "ghc"
-    "ghc-bignum"
-    "ghc-experimental"
-    "ghc-internal"
-    "ghc-platform"
-    "ghc-toolchain"
-    "haskeline"
-    "hpc"
-    "libiserv"
-    "os-string"
-    "semaphore-compat"
-    "stm"
-    "xhtml"
-  ] ++ pkgs.lib.optionals (!pkgs.stdenv.targetPlatform.isGhcjs) [
-    "terminfo"
-  ] ++ (if pkgs.stdenv.targetPlatform.isWindows
-    then [ "Win32" ]
-    else [ "unix" ]
-  );
-
   dummy-ghc-pkg-dump = evalPackages.runCommand "dummy-ghc-pkg-dump" {
       nativeBuildInputs = [
         evalPackages.haskell-nix.nix-tools-unchecked.exes.cabal2json
@@ -557,7 +506,7 @@ let
                 PKGS+=" ${name}"
                 LAST_PKG="${name}"
               fi
-            '') ghc-pkgs)
+            '') (pkgs.haskell-nix.ghc-pre-existing ghc))
           }
           ${ # There is no .cabal file for system-cxx-std-lib
             pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.2" >= 0) (

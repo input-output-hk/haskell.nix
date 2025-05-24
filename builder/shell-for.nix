@@ -1,4 +1,4 @@
-{ lib, stdenv, mkShell, glibcLocales, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, pkgsBuildBuild, evalPackages, compiler }:
+{ lib, stdenv, mkShell, glibcLocales, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, pkgsBuildBuild, evalPackages, compiler, haskell-nix, ghc }:
 
 { # `packages` function selects packages that will be worked on in the shell itself.
   # These packages will not be built by `shellFor`, but their
@@ -120,7 +120,10 @@ let
   # Set up a "dummy" component to use with ghcForComponent.
   component = {
     depends = packageInputs;
-    pre-existing = lib.unique (lib.concatMap (x: (haskellLib.dependToLib x).pre-existing or []) allConfigs);
+    pre-existing =
+      if exactDeps
+        then lib.unique (lib.concatMap (x: (haskellLib.dependToLib x).pre-existing or []) allConfigs)
+        else haskell-nix.ghc-pre-existing ghc;
     libs         = haskellLib.uniqueWithName (lib.concatMap (x: (haskellLib.dependToLib x).libs or []) allConfigs);
     pkgconfig    = haskellLib.uniqueWithName (lib.concatMap (x: (haskellLib.dependToLib x).pkgconfig or []) allConfigs);
     frameworks   = haskellLib.uniqueWithName (lib.concatMap (x: (haskellLib.dependToLib x).frameworks or []) allConfigs);
