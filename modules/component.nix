@@ -49,7 +49,7 @@ in
     };
 
     frameworks = lib.mkOption {
-      type = listOfFilteringNulls types.package;
+      type = listOfFilteringNulls (types.nullOr types.package);
       default = [ ];
     };
 
