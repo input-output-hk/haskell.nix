@@ -19,7 +19,7 @@ let
   packages-ei = (project true).hsPkgs;
 
 in recurseIntoAttrs {
-  meta.disabled = stdenv.hostPlatform.isGhcjs
+  meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm
     # On aarch64 this test also breaks form musl builds (including cross compiles on x86_64-linux)
     || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl)
     # Failed to lookup symbol: __aarch64_swp8_acq_rel
