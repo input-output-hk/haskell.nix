@@ -435,6 +435,10 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         ''
     ) + ''
         export EM_CACHE=$(mktemp -d)
+        if [ -d ${targetCC}/share/emscripten/cache ]; then
+          cp -r ${targetCC}/share/emscripten/cache/* $EM_CACHE/
+          chmod +w -R $EM_CACHE
+        fi
         mv config.sub.ghcjs config.sub
     '')
     # GHC is a bit confused on its cross terminology, as these would normally be
