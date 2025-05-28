@@ -103,7 +103,7 @@ let
           chmod +w $FLAKE/flake.nix
         fi
         if [ "$projectArgs" != "" ]; then
-          printf %s "$projectArgs" > "$HIX_TMPDIR/default.nix"
+          printf %s "$projectArgs" > "$HIX_TMPDIR/projectArgs.nix"
         fi
         nix $cmd "''${args[@]}"
         ;;
