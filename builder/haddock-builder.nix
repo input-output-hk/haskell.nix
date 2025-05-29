@@ -151,8 +151,12 @@ let
           ${ghc.targetPrefix}ghc-pkg -v0 --package-db $configFiles/${configFiles.packageCfgDir} -f $out/package.conf.d register "$pkg"
         done
 
-        ln -s ${componentDrv}/exactDep $out/exactDep
-        ln -s ${componentDrv}/envDep $out/envDep
+        if [ -d ${componentDrv}/exactDep ]; then
+          ln -s ${componentDrv}/exactDep $out/exactDep
+        fi
+        if [ -f ${componentDrv}/envDep ]; then
+          ln -s ${componentDrv}/envDep $out/envDep
+        fi
       '';
   }
   // haskellLib.optionalHooks {
