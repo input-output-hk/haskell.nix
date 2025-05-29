@@ -31,9 +31,16 @@ let
       flake|build|develop|run|profile)
         # Put the flake files for remote URLs in $HOME/.hix by default
         HIX_DIR="''${HIX_DIR:-$HOME/.hix}"
+        HIX_TMPDIR="$(mktemp -d)"
+        projectArgs=""
         while(($#)); do
           arg=$1
           case $arg in
+            --projectArgs)
+              projectArgs="$2"
+              args+=(--override-input projectArgs "$HIX_TMPDIR")
+              shift
+              ;;
             --out-link|-o|--eval-store|--include|-I|--inputs-from|--expr|--file|-f|--keep|-k|--phase|--profile|--unset|-u)
               args+=("$arg" "$2")
               shift
@@ -83,7 +90,7 @@ let
         fi
         # Make a temporary flake if we have not already
         mkdir -p $FLAKE
-        HIX_FLAKE="$(mktemp -d)/flake.nix"
+        HIX_FLAKE="$HIX_TMPDIR/flake.nix"
         sed 's|EVAL_SYSTEM|${pkgs.stdenv.hostPlatform.system}|' < ${hixProject}/flake.nix > $HIX_FLAKE
         if ! cmp $HIX_FLAKE $FLAKE/flake.nix &>/dev/null; then
           if [ -e $FLAKE/flake.lock ]; then
@@ -94,6 +101,9 @@ let
           fi
           cp $HIX_FLAKE $FLAKE/flake.nix
           chmod +w $FLAKE/flake.nix
+        fi
+        if [ "$projectArgs" != "" ]; then
+          printf %s "$projectArgs" > "$HIX_TMPDIR/projectArgs.nix"
         fi
         nix $cmd "''${args[@]}"
         ;;

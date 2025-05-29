@@ -5,16 +5,21 @@
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs.projectArgs.url = "github:input-output-hk/empty-flake";
+  inputs.projectArgs.flake = false;
   inputs.src.flake = false;
-  outputs = { self, src, nixpkgs, flake-utils, haskellNix }:
+  outputs = { self, src, nixpkgs, flake-utils, haskellNix, projectArgs }:
     flake-utils.lib.eachSystem [ "EVAL_SYSTEM" ] (system:
     let
       overlays = [ haskellNix.overlay
         (final: _prev: {
           hixProject =
-            final.haskell-nix.hix.project {
+            final.haskell-nix.hix.project ({
               inherit src;
-            };
+            } // (
+              if builtins.pathExists (projectArgs + "/projectArgs.nix")
+                then import (projectArgs + "/projectArgs.nix")
+                else {}));
         })
       ];
       pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
