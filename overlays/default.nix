@@ -92,6 +92,7 @@ let
     cacheCompilerDeps = import ./cache-compiler-deps.nix;
     lazy-inputs = import ../lazy-inputs;
     rcodesign = import ./rcodesign.nix;
+    wasm = import ./wasm.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -126,6 +127,7 @@ let
     cabalPkgConfig
     gobject-introspection
     hix
+    wasm
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
     cacheCompilerDeps
