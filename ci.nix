@@ -19,6 +19,7 @@
   # short names for nixpkgs versions
   nixpkgsVersions = {
     "R2411" = inputs.nixpkgs-2411;
+    "R2505" = inputs.nixpkgs-2505;
     "unstable" = inputs.nixpkgs-unstable;
   };
 
@@ -57,7 +58,7 @@
       # cabal-install and nix-tools plans.  When removing a ghc version
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
-      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2411") {
+      nixpkgs.lib.optionalAttrs (builtins.elem nixpkgsName ["R2411" "R2505"]) {
         ghc96 = true;
         ghc98 = true;
         ghc910 = true;
@@ -77,10 +78,10 @@
     let lib = nixpkgs.lib;
     in lib.optionalAttrs (nixpkgsName == "unstable"
       && (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"])
-       || (system == "aarch64-linux" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"])
-       || (system == "x86_64-darwin" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948" "ghc966" "ghc967" "ghc96720250227" "ghc982" "ghc983" "ghc984"])
-       || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948" "ghc966" "ghc967" "ghc96720250227" "ghc982" "ghc983" "ghc984"])
+      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc9102"])
+       || (system == "aarch64-linux" && !builtins.elem compiler-nix-name ["ghc9102"])
+       || (system == "x86_64-darwin" && !builtins.elem compiler-nix-name ["ghc9102"])
+       || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc9102"])
        )) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (nixpkgsName == "unstable"

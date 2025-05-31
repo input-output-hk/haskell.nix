@@ -312,5 +312,11 @@ evalPackages.writeTextFile {
       NoMultilineStrings
       NamedDefaults
       NoNamedDefaults
+    ''
+    + pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.13" >=0) ''
+      ExplicitLevelImports
+      ImplicitStagePersistence
+      NoExplicitLevelImports
+      NoImplicitStagePersistence
     ''}'';
 }
