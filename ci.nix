@@ -18,7 +18,6 @@
 
   # short names for nixpkgs versions
   nixpkgsVersions = {
-    "R2411" = inputs.nixpkgs-2411;
     "R2505" = inputs.nixpkgs-2505;
     "unstable" = inputs.nixpkgs-unstable;
   };
@@ -43,6 +42,12 @@
         "libdwarf-20210528"
         "libdwarf-20181024"
         "dwarfdump-20181024"
+      ];
+      allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+        "android-sdk-ndk"
+        "android-sdk-platform-tools"
+        "aarch64-unknown-linux-android-ndk-toolchain-wrapper"
+        "aarch64-unknown-linux-android-ndk-toolchain"
       ];
     };
   };
@@ -97,7 +102,7 @@
   } // lib.optionalAttrs (__match ".*llvm" compiler-nix-name == null && system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
     # Out llvm versions of GHC seem to break for musl32
     inherit (lib.systems.examples) musl32;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "R2411" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
     inherit (lib.systems.examples) aarch64-android-prebuilt armv7a-android-prebuilt;
   } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc8107" "ghc902"]) {
     # TODO fix this for the compilers we build with hadrian (ghc >=9.4)
