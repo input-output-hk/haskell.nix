@@ -77,12 +77,7 @@
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
     in lib.optionalAttrs (nixpkgsName == "unstable"
-      && (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc9102"])
-       || (system == "aarch64-linux" && !builtins.elem compiler-nix-name ["ghc9102"])
-       || (system == "x86_64-darwin" && !builtins.elem compiler-nix-name ["ghc9102"])
-       || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc9102"])
-       )) {
+      && (__match ".*llvm" compiler-nix-name == null)) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
       && (__match ".*llvm" compiler-nix-name == null)
