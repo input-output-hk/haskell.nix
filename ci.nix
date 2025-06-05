@@ -48,6 +48,8 @@
         "android-sdk-platform-tools"
         "aarch64-unknown-linux-android-ndk-toolchain-wrapper"
         "aarch64-unknown-linux-android-ndk-toolchain"
+        "armv7a-unknown-linux-androideabi-ndk-toolchain-wrapper"
+        "armv7a-unknown-linux-androideabi-ndk-toolchain"
       ];
     };
   };
