@@ -331,6 +331,9 @@ in {
 
                 ++ onAndroid (from      "9.6"          ./patches/ghc/ghc-9.6-COMPAT_R_ARM_PREL31.patch)
                 ++ onAndroid (from      "9.10"         ./patches/ghc/ghc-9.10-ignore-libc.patch)
+
+                # Fix for `fatal error: 'rts/Types.h' file not found` when building `primitive`
+                ++ onGhcjs (from        "9.13"         ./patches/ghc/ghc-9.13-ghcjs-rts-types.patch)
                 ;
         in ({
             ghc8107 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
