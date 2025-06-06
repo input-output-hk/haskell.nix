@@ -1,0 +1,12 @@
+diff --git a/rts/rts.cabal b/rts/rts.cabal
+index 899e65d712..84dac99f54 100644
+--- a/rts/rts.cabal
++++ b/rts/rts.cabal
+@@ -160,6 +160,7 @@ library
+                         stg/MachRegs/x86.h
+                         stg/MachRegsForHost.h
+                         stg/Types.h
++                        rts/Types.h
+
+     else
+       -- If we are using an in-tree libffi then we must declare it as a bundled
