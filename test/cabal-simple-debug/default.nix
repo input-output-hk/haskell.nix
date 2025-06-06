@@ -39,7 +39,7 @@ in recurseIntoAttrs {
         else ''
           (${dwarfdump}/bin/dwarfdump $exe || true) | grep -c 'libraries/base/[A-Za-z0-9/]*\.hs'
         ''}
-      (${dwarfdump}/bin/dwarfdump $exe || true) | grep -c '/Main\.hs'
+      (${dwarfdump}/bin/dwarfdump $exe || true) | grep -c 'Main\.hs'
 
       touch $out
     '';

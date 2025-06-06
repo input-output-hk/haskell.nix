@@ -1,4 +1,4 @@
-{ lib, haskellLib, ... }:
+{ pkgs, lib, haskellLib, ... }:
 {
   options = {
     buildable = lib.mkOption {
@@ -104,7 +104,8 @@
     enableStatic = lib.mkOption {
       description = "If set, enables building static libraries and executables.";
       type = lib.types.bool;
-      default = true;
+      # Disabled for ghcjs, see https://gitlab.haskell.org/ghc/ghc/-/issues/23235
+      default = !pkgs.stdenv.hostPlatform.isGhcjs;
     };
 
     enableShared = lib.mkOption {

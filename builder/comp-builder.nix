@@ -447,6 +447,10 @@ let
       (lib.optionalString stdenv.hostPlatform.isGhcjs ''
       export HOME=$(mktemp -d)
       export EM_CACHE=$(mktemp -d)
+      if [ -d ${pkgsBuildBuild.emscripten}/share/emscripten/cache ]; then
+        cp -r ${pkgsBuildBuild.emscripten}/share/emscripten/cache/* $EM_CACHE/
+        chmod +w -R $EM_CACHE
+      fi
       '') +
       (lib.optionalString (!canCleanSource) ''
       echo "Cleaning component source not supported, leaving it un-cleaned"

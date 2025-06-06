@@ -97,6 +97,9 @@ self // {
   pkgs-2411 = import self.inputs.nixpkgs-2411 (nixpkgsArgs // {
     localSystem = { inherit system; };
   });
+  pkgs-2505 = import self.inputs.nixpkgs-2505 (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
   pkgs-unstable = import self.inputs.nixpkgs-unstable (nixpkgsArgs // {
     localSystem = { inherit system; };
   });

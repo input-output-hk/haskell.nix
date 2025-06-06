@@ -10,7 +10,7 @@ let
 
   componentType = types.submodule [
     ./component.nix
-    { _module.args = { inherit haskellLib; }; }
+    { _module.args = { inherit pkgs haskellLib; }; }
     # pass down common options as default values
     ({ lib, options, ... }: lib.mkDefault (lib.filterAttrs (n: _v: builtins.hasAttr n options) config))
   ];
