@@ -87,6 +87,9 @@
       && (__match ".*llvm" compiler-nix-name == null)
       && !builtins.elem compiler-nix-name ["ghc9102"]) {
     inherit (lib.systems.examples) ghcjs;
+  } // lib.optionalAttrs (nixpkgsName == "unstable"
+      && (__match ".*llvm" compiler-nix-name == null)
+      && !builtins.elem compiler-nix-name ["ghc967" "ghc984" "ghc9102"]) {
     inherit (lib.systems.examples) wasi32;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
       && (__match ".*llvm" compiler-nix-name == null)
