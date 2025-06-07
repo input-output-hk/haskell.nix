@@ -122,8 +122,8 @@ let
         (buildPackages.haskell-nix.tool "ghc912" "libffi-wasm" {
           src = buildPackages.haskell-nix.sources.libffi-wasm;
         })
-        targetPackages.buildPackages.clang
-        targetPackages.buildPackages.llvm
+        targetPackages.buildPackages.llvmPackages.clang
+        targetPackages.buildPackages.llvmPackages.llvm
         targetPackages.buildPackages.binaryen
       ];
       outputs = ["dev" "out"];
