@@ -1,17 +1,20 @@
 final: prev: prev.lib.optionalAttrs prev.stdenv.targetPlatform.isWasm {
   llvmPackages = final.llvmPackages_20.override {
-    version = "20.1.0-haskel-wasm";
-    gitRelease.rev-version = "20.1.0-haskell-wasm";
+    version = "20.1.5-haskel-wasm";
+    gitRelease.rev-version = "20.1.5-haskell-wasm";
     officialRelease = null;
     patchesFn = p: p // { "llvm/gnu-install-dirs.patch" = [{path = ./patches/wasm;}]; };
-    monorepoSrc = final.buildPackages.fetchFromGitLab {
-      domain = "gitlab.haskell.org";
-      owner = "haskell-wasm";
-      repo = "llvm-project";
-      rev = "3af5c33f0010c300d23adff0c576c637ba381580";
-      hash = "sha256-GnOP0tpyk+cWjMCJtxGi7FT78Wckl8fb6eibfdFWAJk=";
-      fetchSubmodules = true;
-    };
+    monorepoSrc =
+      final.stdenv.mkDerivation {
+        pname = "llvm-source";
+        version = final.llvmPackages_20.llvm.version + "-haskell";
+        src = final.llvmPackages_20.llvm.monorepoSrc;
+        patches = ./patches/wasm/llvm/haskell-wasm-llvm-project.patch;
+        buildPhase = "true";
+        installPhase = ''
+          cp -r . $out
+        '';
+      };
   };
   wasilibc = prev.wasilibc.overrideAttrs (old: {
     version = "25";
