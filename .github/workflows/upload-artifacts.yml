@@ -1,4 +1,4 @@
-name: Wait for Hydra Build
+name: Update Static Nix Tools
 
 on:
   push:
