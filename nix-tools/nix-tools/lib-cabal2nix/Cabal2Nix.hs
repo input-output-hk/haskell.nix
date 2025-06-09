@@ -453,6 +453,7 @@ instance {-# OVERLAPS #-} ToNixExpr a => ToNixExpr [a] where
 -- condtional statements in .cabal files.
 fixSystem :: String -> String
 fixSystem "isJavascript" = "isJavaScript"
+fixSystem "isDragonfly" = "isDragonFly"
 fixSystem s = s
 
 instance ToNixExpr ConfVar where
