@@ -1055,7 +1055,7 @@ final: prev: {
                 }];
               } // final.lib.optionalAttrs (
                      final.stdenv.hostPlatform.isAarch64
-                  && buildins.compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8" < 0) {
+                  && builtins.compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8" < 0) {
                 # The th-dlls test fails for aarch64 cross GHC 9.6.7 when the threaded rts is used
                 cabalProjectLocal = ''
                   package iserv-proxy
