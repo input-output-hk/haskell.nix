@@ -109,6 +109,12 @@ let
 
       # If we don't have any source files, no need to run haddock
       [[ -n $(find . -name "*.hs" -o -name "*.lhs") ]] && {
+      # Run any preprocessor in the custom build step
+      $SETUP_HS build \
+        "--with-ghc=false" \
+        ${lib.optionalString (haskellLib.isTest componentId) "--tests"} \
+        ${lib.concatStringsSep " " setupHaddockFlags} || true
+
       $SETUP_HS haddock \
         "--html" \
         ${lib.optionalString (haskellLib.isTest componentId) "--tests"} \
