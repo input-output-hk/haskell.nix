@@ -461,6 +461,8 @@ let
                 cabal_file=${ghcSrc}/compiler/${name}.cabal.in
               elif [ -f ${ghcSrc}/libraries/${name}/${name}.cabal.in ]; then
                 cabal_file=${ghcSrc}/libraries/${name}/${name}.cabal.in
+              elif [ -f ${ghcSrc}/utils/haddock/${name}/${name}.cabal ]; then
+                cabal_file=${ghcSrc}/utils/haddock/${name}/${name}.cabal
               fi
               if [[ "$cabal_file" != "" ]]; then
                 fixed_cabal_file=$(mktemp)
