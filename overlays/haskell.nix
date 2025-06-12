@@ -1126,6 +1126,9 @@ final: prev: {
             "xhtml"
           ] ++ final.lib.optionals (builtins.compareVersions ghc.version "9.4" > 0) [
             "system-cxx-std-lib"
+          ] ++ final.lib.optionals (builtins.compareVersions ghc.version "9.12" > 0) [
+            "haddock-api"
+            "haddock-library"
           ] ++ final.lib.optionals (
                   !final.stdenv.targetPlatform.isGhcjs
                && !final.stdenv.targetPlatform.isWindows
