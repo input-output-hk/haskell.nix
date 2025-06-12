@@ -827,10 +827,11 @@ final: prev: {
             #     ];
             #   }
             #
-            shellFor = extraArgs: shellFor' (rawProject.args.shell // extraArgs).crossPlatforms extraArgs;
-            shellFor' = crossPlatforms: extraArgs:
+            shellFor = extraArgs: (appendModule { shell = extraArgs; }).shell;
+            shell = shellFor' rawProject.args.shell.crossPlatforms;
+            shellFor' = crossPlatforms:
               let
-                shellArgs = builtins.removeAttrs (rawProject.args.shell // extraArgs) [ "crossPlatforms" ];
+                shellArgs = builtins.removeAttrs rawProject.args.shell [ "crossPlatforms" ];
                 # These are the args we will pass to the shells for the corss compiler
                 argsCross =
                   # These things should match main shell
@@ -847,9 +848,6 @@ final: prev: {
                   # Add inputs from the cross compilation shells
                   inputsFrom = shellArgs.inputsFrom or [] ++ crossShells;
                 });
-
-            # Default shell
-            shell = shellFor {};
 
             # Like `.hsPkgs.${packageName}` but when compined with `getComponent` any
             # cabal configure errors are defered until the components derivation builds.
@@ -1053,6 +1051,14 @@ final: prev: {
                     setupBuildFlags = final.lib.mkForce [];
                   };
                 }];
+              } // final.lib.optionalAttrs (
+                     final.stdenv.hostPlatform.isAarch64
+                  && builtins.compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8" < 0) {
+                # The th-dlls test fails for aarch64 cross GHC 9.6.7 when the threaded rts is used
+                cabalProjectLocal = ''
+                  package iserv-proxy
+                    flags: -threaded
+                '';
               } // final.lib.optionalAttrs (__compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.10" > 0) {
                   cabalProjectLocal = ''
                     allow-newer: *:base, *:bytestring
@@ -1120,6 +1126,9 @@ final: prev: {
             "xhtml"
           ] ++ final.lib.optionals (builtins.compareVersions ghc.version "9.4" > 0) [
             "system-cxx-std-lib"
+          ] ++ final.lib.optionals (builtins.compareVersions ghc.version "9.12" > 0) [
+            "haddock-api"
+            "haddock-library"
           ] ++ final.lib.optionals (
                   !final.stdenv.targetPlatform.isGhcjs
                && !final.stdenv.targetPlatform.isWindows

@@ -57,10 +57,10 @@ in rec {
         inherit evalPackages;
         src = pkgs.haskell-nix.sources."hls-2.2";
       };
-    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.10.2") {
+    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.13") {
       "hls" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
-        src = pkgs.haskell-nix.sources."hls-2.10";
+        src = pkgs.haskell-nix.sources."hls-2.11";
       };
     })
   );

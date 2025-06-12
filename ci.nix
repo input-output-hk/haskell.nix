@@ -66,10 +66,10 @@
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
       nixpkgs.lib.optionalAttrs (builtins.elem nixpkgsName ["R2411" "R2505"]) {
-        ghc96 = true;
-        ghc98 = true;
-        ghc910 = true;
-        ghc912 = true;
+        ghc96 = false;
+        ghc98 = false;
+        ghc910 = false;
+        ghc912 = false;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc96 = true;
         ghc98 = true;
