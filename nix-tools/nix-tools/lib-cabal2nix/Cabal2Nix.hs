@@ -454,6 +454,9 @@ instance {-# OVERLAPS #-} ToNixExpr a => ToNixExpr [a] where
 fixSystem :: String -> String
 fixSystem "isJavascript" = "isJavaScript"
 fixSystem "isDragonfly" = "isDragonFly"
+fixSystem "isHpux" = "isHPUX"
+fixSystem "isIos" = "isIOS"
+fixSystem "isIrix" = "isIRIX"
 fixSystem s = s
 
 instance ToNixExpr ConfVar where
