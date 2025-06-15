@@ -5733,7 +5733,7 @@ pkgs:
         then [ pkgs.gdk_pixbuf ]
       else [];
     # rocm-thunk was replaced by rocmPackages.rocm-thunk in 23.11
-    "libhsakmt" = [ pkgs.rocmPackages.rocm-thunk or pkgs.rocm-thunk ];
+    # "libhsakmt" = [ pkgs.rocmPackages.rocm-thunk or pkgs.rocm-thunk ];
 } // lib.optionalAttrs (pkgs ? libsigcxx12) {
     # libsigcxx12 was removed in 23.11
     "sigc++-1.2" = [ "libsigcxx12" ];
