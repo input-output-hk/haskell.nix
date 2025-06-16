@@ -489,7 +489,12 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         export STRIP="${bintoolsFor.strip}/bin/${bintoolsFor.strip.targetPrefix}strip"
         export NIX_CFLAGS_COMPILE_FOR_BUILD+=" -I${lib.getDev libffi}/include -L${lib.getLib libffi}/lib"
         export NIX_CFLAGS_COMPILE_FOR_TARGET+=" -I${lib.getDev targetLibffi}/include -L${lib.getLib targetLibffi}/lib"
-        substituteInPlace compiler/GHC.hs --replace-fail "panic \"corrupted wasi-sdk installation\"" "pure \"${targetPackages.wasilibc}\""
+        ${if ghc-version == "9.12.2"
+          then ''
+            substituteInPlace compiler/GHC.hs --replace-fail "panic \"corrupted wasi-sdk installation\"" "pure \"${targetPackages.wasilibc}\""
+          '' else ''
+            substituteInPlace compiler/GHC.hs --replace-fail "last <\$> Loader.getGccSearchDirectory logger dflags \"libraries\"" "pure \"${targetPackages.wasilibc}\""
+          ''}
     ''
     # GHC is a bit confused on its cross terminology, as these would normally be
     # the *host* tools.
