@@ -265,7 +265,7 @@ let
   libDeps = platform: lib.optionals (enableTerminfo && !targetPlatform.isGhcjs && !targetPlatform.isWasm && !targetPlatform.isAndroid) [ (lib.getLib targetPackages.ncurses) (lib.getDev targetPackages.ncurses) ]
     ++ lib.optional (!targetPlatform.isGhcjs) targetLibffi
     ++ lib.optional (!enableIntegerSimple && !targetPlatform.isGhcjs && !targetPlatform.isWasm) gmp
-    ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconvReal
+    ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) targetPackages.libiconv
     ++ lib.optional (enableNUMA && platform.isLinux && !platform.isAarch32 && !platform.isAndroid) numactl
     ++ lib.optional enableDWARF (lib.getLib elfutils);
 
