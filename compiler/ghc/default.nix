@@ -225,16 +225,16 @@ let
   # `--with` flags for libraries needed for RTS linker
   configureFlags = [
         "--datadir=$doc/share/doc/ghc"
-    ] ++ lib.optionals (!targetPlatform.isGhcjs && !targetPlatform.isWasm && !targetPlatform.isAndroid) ["--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
-    ] ++ lib.optionals (targetLibffi != null && !targetPlatform.isGhcjs && !targetPlatform.isWasm) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
+    ] ++ lib.optionals (!targetPlatform.isGhcjs && !targetPlatform.isWasm && !targetPlatform.isAndroid) ["--with-curses-includes=${lib.getDev targetPackages.ncurses}/include" "--with-curses-libraries=${lib.getLib targetPackages.ncurses}/lib"
+    ] ++ lib.optionals (targetLibffi != null && !targetPlatform.isGhcjs && !targetPlatform.isWasm) ["--with-system-libffi" "--with-ffi-includes=${lib.getDev targetLibffi}/include" "--with-ffi-libraries=${lib.getLib targetLibffi}/lib"
     ] ++ lib.optionals (targetPlatform.isWasm) [
         "--with-system-libffi"
     ] ++ lib.optionals (!enableIntegerSimple && !targetPlatform.isGhcjs && !targetPlatform.isWasm) [
-        "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
+        "--with-gmp-includes=${lib.getDev targetGmp}/include" "--with-gmp-libraries=${lib.getLib targetGmp}/lib"
     ] ++ lib.optionals (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
-        "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
+        "--with-iconv-includes=${lib.getDev libiconv}/include" "--with-iconv-libraries=${lib.getLib libiconv}/lib"
     ] ++ lib.optionals (targetPlatform != hostPlatform && !targetPlatform.isGhcjs && !targetPlatform.isWasm) [
-        "--with-iconv-includes=${targetIconv}/include" "--with-iconv-libraries=${targetIconv}/lib"
+        "--with-iconv-includes=${lib.getDev targetIconv}/include" "--with-iconv-libraries=${lib.getLib targetIconv}/lib"
     ] ++ lib.optionals (targetPlatform != hostPlatform) [
         "--enable-bootstrap-with-devel-snapshot"
     ] ++ lib.optionals (disableLargeAddressSpace) [
@@ -261,7 +261,7 @@ let
     ;
 
   # Splicer will pull out correct variations
-  libDeps = platform: lib.optional (enableTerminfo && !targetPlatform.isGhcjs && !targetPlatform.isWasm && !targetPlatform.isAndroid) [ targetPackages.ncurses targetPackages.ncurses.dev ]
+  libDeps = platform: lib.optional (enableTerminfo && !targetPlatform.isGhcjs && !targetPlatform.isWasm && !targetPlatform.isAndroid) [ (lib.getLib targetPackages.ncurses) (lib.getDev targetPackages.ncurses) ]
     ++ lib.optional (!targetPlatform.isGhcjs) targetLibffi
     ++ lib.optional (!enableIntegerSimple && !targetPlatform.isGhcjs && !targetPlatform.isWasm) gmp
     ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv
@@ -487,8 +487,8 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         export RANLIB="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ranlib"
         export READELF="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}readelf"
         export STRIP="${bintoolsFor.strip}/bin/${bintoolsFor.strip.targetPrefix}strip"
-        export NIX_CFLAGS_COMPILE_FOR_BUILD+=" -I${libffi.dev}/include -L${libffi.out}/lib"
-        export NIX_CFLAGS_COMPILE_FOR_TARGET+=" -I${targetLibffi.dev}/include -L${targetLibffi.out}/lib"
+        export NIX_CFLAGS_COMPILE_FOR_BUILD+=" -I${lib.getDev libffi}/include -L${lib.getLib libffi}/lib"
+        export NIX_CFLAGS_COMPILE_FOR_TARGET+=" -I${lib.getDev targetLibffi}/include -L${lib.getLib targetLibffi}/lib"
         substituteInPlace compiler/GHC.hs --replace-fail "panic \"corrupted wasi-sdk installation\"" "pure \"${targetPackages.wasilibc}\""
     ''
     # GHC is a bit confused on its cross terminology, as these would normally be
