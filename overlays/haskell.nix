@@ -832,18 +832,13 @@ final: prev: {
             shellFor' = crossPlatforms:
               let
                 shellArgs = builtins.removeAttrs rawProject.args.shell [ "crossPlatforms" ];
-                # These are the args we will pass to the shells for the corss compiler
-                argsCross =
-                  # These things should match main shell
-                  final.lib.filterAttrs (n: _: builtins.elem n [
-                    "packages" "components" "additional" "exactDeps" "packageSetupDeps"
-                  ]) shellArgs // {
-                    # The main shell's hoogle will probably be faster to build.
-                    withHoogle = false;
-                  };
                 # Shells for cross compilation
-                crossShells = builtins.map (project: project.shellFor' (_p: []) argsCross)
-                  (crossPlatforms projectCross);
+                crossShells = builtins.map (project: project.shellFor {
+                    # Prevent recursion
+                    crossPlatforms = final.lib.mkForce (_p: []);
+                    # The main shell's hoogle will probably be faster to build.
+                    withHoogle = final.lib.mkForce false;
+                  }) (crossPlatforms projectCross);
               in rawProject.hsPkgs.shellFor (shellArgs // {
                   # Add inputs from the cross compilation shells
                   inputsFrom = shellArgs.inputsFrom or [] ++ crossShells;
@@ -1152,7 +1147,7 @@ final: prev: {
           let
             ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { hadrianEvalPackages = evalPackages; };
           in
-          	final.recurseIntoAttrs ({
+            final.recurseIntoAttrs ({
             # Things that require no IFD to build
             source-pin-hackage = hackageSrc;
             source-pin-stackage = stackageSrc;
