@@ -1,4 +1,4 @@
-{ pkgs, stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles }@defaults:
+{ pkgs, stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, llvmPackages }@defaults:
 
 let self =
 { component, package, name, src, enableDWARF ? false, flags ? {}, revision ? null, patches ? [], defaultSetupSrc
@@ -67,7 +67,7 @@ let
         ++ builtins.concatLists component.pkgconfig
         ++ configFiles.libDeps
         ++ [ghc]; # Needs to be a build input so that the boot libraries are included
-      nativeBuildInputs = [ghc] ++ executableToolDepends;
+      nativeBuildInputs = [ghc] ++ executableToolDepends ++ (lib.optional (ghc.useLdLld or false) llvmPackages.bintools);
 
       passthru = {
         inherit (package) identifier;
