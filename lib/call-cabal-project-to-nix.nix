@@ -678,6 +678,8 @@ let
           # Setting the desired `index-state` here in case it is not
           # in the cabal.project file. This will further restrict the
           # packages used by the solver (cached-index-state >= index-state-max).
+          # Cabal treats `--index-state` > the last known package as an error,
+          # so we only include this if it is < cached-index-state.
           pkgs.lib.optionalString (index-state != null && index-state < cached-index-state) "--index-state=${index-state}"
         } \
         -w ${
