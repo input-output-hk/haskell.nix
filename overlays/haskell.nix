@@ -437,8 +437,8 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2024-10-17T00:00:00Z"; # Remember to also update ../nix-tools/cabal.project and ../nix-tools/flake.lock
-
+        internalHackageIndexState = builtins.head (builtins.attrNames (
+          import (sources.hackage-internal + "/index-state.nix")));
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
         # Helps materialize the output of derivations
@@ -601,7 +601,13 @@ final: prev: {
         # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
         # Resulting nix files are added to nix-plan subdirectory.
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
-            index-state-hashes = import indexStateHashesPath;
+            index-state-hashes =
+              (
+                if builtins.pathExists (hackageSrc + "/index-state.nix")
+                  then import (hackageSrc + "/index-state.nix")
+                  else import (hackageSrc + "/index-state-hashes.nix")
+              )
+              // import (sources.hackage-internal + "/index-state.nix");
             inherit (final.buildPackages.haskell-nix) haskellLib;
             pkgs = final.buildPackages.pkgs;
             inherit (final.buildPackages.pkgs) cacert;
