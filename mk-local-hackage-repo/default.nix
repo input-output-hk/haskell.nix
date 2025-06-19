@@ -17,7 +17,7 @@
 pkgs:
 { name, index }:
 
-pkgs.buildPackages.runCommand "hackage-repo-${name}" { preferLocalBuild = true; } ''
+pkgs.pkgsBuildBuild.runCommand "hackage-repo-${name}" { preferLocalBuild = true; } ''
 mkdir -p $out
 export expires="4000-01-01T00:00:00Z"
 
@@ -29,7 +29,7 @@ ${
   # of the index derivation (when the `extra-hackages` feature is used the index
   # may not have an outputHash).
   pkgs.lib.optionalString (index ? outputHash) ''
-    if [[ "${index.outputHash}" != "$index_sha256" ]]; then
+    if [[ "$(${pkgs.pkgsBuildBuild.nix}/bin/nix-hash --type sha256 --to-base16 ${index.outputHash})" != "$index_sha256" ]]; then
       echo "ERROR See https://github.com/input-output-hk/haskell.nix/issues/884"
       exit 1
     fi

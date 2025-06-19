@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, pkgsBuildBuild, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, windows, zlib, ncurses, nodejs, nonReinstallablePkgs }@defaults:
+{ pkgs, stdenv, buildPackages, pkgsBuildBuild, ghc, llvmPackages, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, windows, zlib, ncurses, nodejs, nonReinstallablePkgs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -429,7 +429,8 @@ let
     nativeBuildInputs =
       [ghc buildPackages.removeReferencesTo]
       ++ executableToolDepends
-      ++ (lib.optional stdenv.hostPlatform.isGhcjs buildPackages.nodejs);
+      ++ (lib.optional stdenv.hostPlatform.isGhcjs buildPackages.nodejs)
+      ++ (lib.optional (ghc.useLdLld or false) llvmPackages.bintools);
 
     outputs = ["out"]
       ++ (lib.optional keepConfigFiles "configFiles")

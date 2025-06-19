@@ -273,8 +273,8 @@ needed for `importAndFilterProject`.
 |----------------------|------|---------------------|
 | `name`               | String | Optional name for better error messages. |
 | `src`                | Path   | Location of the cabal project files. |
-| `compiler-nix-name`  | String | The name of the ghc compiler to use eg. "ghc884" |
-| `index-state`        | Timestamp | Optional hackage index-state, eg. "2019-10-10T00:00:00Z". |
+| `compiler-nix-name`  | String | The name of the ghc compiler to use eg. "ghc9122" |
+| `index-state`        | Timestamp | Optional hackage index-state, eg. "2025-01-10T00:00:00Z". |
 | `index-sha256`       | Sha256 | Optional hash of the truncated hackage index-state. |
 | `plan-sha256`        | Sha256 | Optional hash of the plan-to-nix output (makes the plan-to-nix step a fixed output derivation). |
 | `cabalProject`       | String | Optional cabal project file contents (defaults to readFile "${src}/cabal.project"). |
