@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, lib, haskellLib, ghc, ghcForComponent, nonReinstallablePkgs, runCommand, writeText, writeScript, makeConfigFiles }:
+{ stdenv, buildPackages, lib, haskellLib, ghc, ghcForComponent, nonReinstallablePkgs, runCommand, writeText, writeScript, makeConfigFiles, llvmPackages }:
 
 { componentId
 , component
@@ -80,7 +80,8 @@ let
 
     nativeBuildInputs =
       [ ghc buildPackages.removeReferencesTo ]
-      ++ componentDrv.executableToolDepends;
+      ++ componentDrv.executableToolDepends
+      ++ (lib.optional (ghc.useLdLld or false) llvmPackages.bintools);
 
     configurePhase = ''
       mkdir -p $configFiles
