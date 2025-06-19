@@ -31,6 +31,10 @@
       url = "github:input-output-hk/hackage.nix/for-stackage";
       flake = false;
     };
+    hackage-internal = {
+      url = "github:input-output-hk/hackage.nix";
+      flake = false;
+    };
     stackage = {
       url = "github:input-output-hk/stackage.nix";
       flake = false;
