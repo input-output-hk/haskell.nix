@@ -602,7 +602,11 @@ final: prev: {
         # Resulting nix files are added to nix-plan subdirectory.
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
             index-state-hashes =
-                 import (sources.hackage + "/index-state.nix")
+              (
+                if builtins.pathExists (hackageSrc + "/index-state.nix")
+                  then import (hackageSrc + "/index-state.nix")
+                  else import (hackageSrc + "/index-state-hashes.nix")
+              )
               // import (sources.hackage-internal + "/index-state.nix");
             inherit (final.buildPackages.haskell-nix) haskellLib;
             pkgs = final.buildPackages.pkgs;
