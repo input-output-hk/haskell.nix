@@ -230,7 +230,7 @@ in {
                 # This one will lead to segv's on darwin, when calling `strlen` during lookupStrHashTable. `strlen` ends up being called with 0x0.
                 # This patch will allow adding additional symbols to iserv, instead of having to patch them into GHC all the time.
                 ++ final.lib.optionals (
-                     final.stdenv.targetPlatform.isWindows || final.stdenv.targetPlatform.isMusl ||
+                     final.stdenv.targetPlatform.isWindows ||
                      (  (final.stdenv.targetPlatform.isAndroid || final.stdenv.targetPlatform.isLinux)
                      && (final.stdenv.targetPlatform.isAarch64 || final.stdenv.targetPlatform.is32bit)))
                   (fromUntil "9.6.1" "9.11" ./patches/ghc/iserv-syms.patch)
