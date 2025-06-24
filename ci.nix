@@ -93,7 +93,7 @@
     inherit (lib.systems.examples) wasi32;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
       && (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc966" "ghc967" "ghc96720250227"]) # Not sure why GHC 9.6.6 TH code now wants `log1pf`
+      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928"])
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
