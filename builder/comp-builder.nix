@@ -217,7 +217,7 @@ let
       # lld -r --whole-archive ... will _not_ drop lazy symbols. However the
       # --whole-archive flag needs to come _before_ the objects, it's applied in
       # sequence. The proper fix is thusly to add --while-archive to Cabal.
-      (enableFeature (enableLibraryForGhci && !stdenv.hostPlatform.isGhcjs && !stdenv.hostPlatform.isAndroid) "library-for-ghci")
+      (enableFeature (enableLibraryForGhci && !stdenv.hostPlatform.isGhcjs && !stdenv.hostPlatform.isWasm && !stdenv.hostPlatform.isAndroid) "library-for-ghci")
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
       # If it uses other libraries it may be necessary for to add more
