@@ -43,7 +43,7 @@ let self =
 , hardeningDisable ? component.hardeningDisable
 
 , enableStatic ? component.enableStatic
-, enableShared ? ghc.enableShared && component.enableShared && !haskellLib.isCrossHost
+, enableShared ? ghc.enableShared && component.enableShared && (!haskellLib.isCrossHost || stdenv.hostPlatform.isWasm)
 , enableExecutableDynamic ? component.enableExecutableDynamic && !stdenv.hostPlatform.isMusl
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 , writeHieFiles ? component.writeHieFiles

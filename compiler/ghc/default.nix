@@ -39,7 +39,7 @@ let self =
 
 , # Whether to build dynamic libs for the standard library (on the target
   # platform). Static libs are always built.
-  enableShared ? !haskell-nix.haskellLib.isCrossTarget
+  enableShared ? !haskell-nix.haskellLib.isCrossTarget || stdenv.targetPlatform.isWasm
 
 , enableLibraryProfiling ? true
 

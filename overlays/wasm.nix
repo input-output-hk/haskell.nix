@@ -46,7 +46,7 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.targetPlatform.isWasm {
       ({ pkgs, ... }: {
         testWrapper = ["HOME=$(mktemp -d)" (pkgs.pkgsBuildBuild.wasmtime + "/bin/wasmtime")];
         package-keys = ["clock"];
-        packages.clock.configureFlags = ["--ghc-option=-optc-Wno-int-conversion"];
+        packages.clock.ghcOptions = ["-optc-Wno-int-conversion"];
       })
     ];
   });
