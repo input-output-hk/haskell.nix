@@ -609,7 +609,9 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
   buildInputs = [ perl bash ] ++ (libDeps hostPlatform);
 
   depsTargetTarget = lib.optionals (!targetPlatform.isGhcjs) (map lib.getDev (libDeps targetPlatform));
-  depsTargetTargetPropagated = lib.optionals (!targetPlatform.isGhcjs) (map (lib.getOutput "out") (libDeps targetPlatform));
+  depsTargetTargetPropagated = lib.optionals (!targetPlatform.isGhcjs) (map (lib.getOutput "out") (libDeps targetPlatform))
+    # Needs to be propagated for `ffi.h`
+    ++ lib.optional targetPlatform.isWasm (lib.getDev targetLibffi);
 
   # required, because otherwise all symbols from HSffi.o are stripped, and
   # that in turn causes GHCi to abort
