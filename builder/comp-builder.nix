@@ -385,7 +385,6 @@ let
       env = shellWrappers.drv;
       shell = drv.overrideAttrs (attrs: {
         pname = nameOnly + "-shell";
-        inherit (package.identifier) version;
         nativeBuildInputs = [shellWrappers.drv] ++ attrs.nativeBuildInputs;
       });
       profiled = lib.makeOverridable self (drvArgs // { enableLibraryProfiling = true; });
