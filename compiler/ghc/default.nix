@@ -76,7 +76,7 @@ let self =
       # don't use gold with with musl. Still seems to be
       # affected by 22266.
       && !stdenv.targetPlatform.isMusl)
-
+, useLdLld ? false
 , ghc-version ? src-spec.version
 , ghc-version-date ? null
 , ghc-commit-id ? null
@@ -94,6 +94,8 @@ assert !(enableIntegerSimple || enableNativeBignum) -> gmp != null;
 # Early check to make sure only one of these is enabled
 assert enableNativeBignum -> !enableIntegerSimple;
 assert enableIntegerSimple -> !enableNativeBignum;
+
+assert !(useLdGold && useLdLld);
 
 let
   src = src-spec.file or (fetchurl { inherit (src-spec) url sha256; });
@@ -212,6 +214,11 @@ let
         "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
         "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
         "CONF_LD_LINKER_OPTS_STAGE2=-fuse-ld=gold" # See: <https://gitlab.haskell.org/ghc/ghc/-/issues/22550#note_466656>
+    ] ++ lib.optionals useLdLld [
+        "LD=${llvmPackages.bintools}/bin/ld.lld"
+        "CFLAGS=-fuse-ld=lld"
+        "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=lld"
+        "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=lld"
     ] ++ lib.optionals enableDWARF [
         "--enable-dwarf-unwind"
         "--with-libdw-includes=${lib.getDev elfutils}/include"
@@ -292,6 +299,18 @@ let
             name = "hadrian";
             inherit src;
           };
+          filterPath = { path, ... }: path;
+        };
+        subDir = "hadrian";
+        includeSiblings = true;
+      };
+      # When building the plan we do not need a patched version
+      # of the source and `buildPackages.srcOnly` requires introduces
+      # a dependency on a build machine.
+      evalSrc = haskell-nix.haskellLib.cleanSourceWith {
+        src = {
+          name = "hadrian";
+          outPath = src;
           filterPath = { path, ... }: path;
         };
         subDir = "hadrian";
@@ -410,9 +429,9 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         export CXX="${targetCC}/bin/em++"
         export LD="${targetCC}/bin/emcc"
     '' + (
-      # Including AR and RANLIB here breaks tests.js-template-haskell for GHC 9.6
+      # Including AR and RANLIB here breaks tests.js-template-haskell for GHC <9.12
       # `LLVM ERROR: malformed uleb128, extends past end`
-      if builtins.compareVersions ghc-version "9.8" >= 0
+      if builtins.compareVersions ghc-version "9.12" >= 0
         then ''
           export AR="${targetCC}/bin/emar"
           export NM="${targetCC}/share/emscripten/emnm"
@@ -423,6 +442,10 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         ''
     ) + ''
         export EM_CACHE=$(mktemp -d)
+        if [ -d ${targetCC}/share/emscripten/cache ]; then
+          cp -r ${targetCC}/share/emscripten/cache/* $EM_CACHE/
+          chmod +w -R $EM_CACHE
+        fi
         mv config.sub.ghcjs config.sub
     '')
     # GHC is a bit confused on its cross terminology, as these would normally be
@@ -433,7 +456,10 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     ''
     # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
     + ''
-        export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString useLdGold ".gold"}"
+        export LD="${if useLdLld then
+                        "${targetPackages.llvmPackages.bintools}/bin/${targetPackages.llvmPackages.bintools.targetPrefix}ld.lld"
+                     else
+                       "${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString useLdGold ".gold"}"}"
         export AS="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}as"
         export AR="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"
         export NM="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}nm"
@@ -451,6 +477,8 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     # set LD explicitly if we want gold even if we aren't cross compiling
     ''
         export LD="${targetCC.bintools}/bin/ld.gold"
+    '' + lib.optionalString (targetPlatform == hostPlatform && useLdLld) ''
+        export LD="${llvmPackages.bintools}/bin/ld.lld"
     '' + lib.optionalString (targetPlatform.isWindows) ''
         export DllWrap="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}dllwrap"
         export Windres="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}windres"
@@ -517,7 +545,8 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
   nativeBuildInputs = [
     perl autoconf automake m4 python3 sphinx
     ghc bootPkgs.alex bootPkgs.happy bootPkgs.hscolour
-  ] ++ lib.optional (patches != []) autoreconfHook;
+  ] ++ lib.optional (patches != []) autoreconfHook
+  ++ lib.optional useLdLld llvmPackages.bintools;
 
   # For building runtime libs
   depsBuildTarget = toolsForTarget;
@@ -668,7 +697,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     '';
 
   passthru = {
-    inherit bootPkgs targetPrefix libDir llvmPackages enableShared useLLVM hadrian hadrianProject;
+    inherit bootPkgs targetPrefix libDir llvmPackages enableShared enableTerminfo useLLVM useLdLld hadrian hadrianProject;
 
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";

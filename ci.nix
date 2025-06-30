@@ -18,7 +18,7 @@
 
   # short names for nixpkgs versions
   nixpkgsVersions = {
-    "R2411" = inputs.nixpkgs-2411;
+    "R2505" = inputs.nixpkgs-2505;
     "unstable" = inputs.nixpkgs-unstable;
   };
 
@@ -43,6 +43,14 @@
         "libdwarf-20181024"
         "dwarfdump-20181024"
       ];
+      allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+        "android-sdk-ndk"
+        "android-sdk-platform-tools"
+        "aarch64-unknown-linux-android-ndk-toolchain-wrapper"
+        "aarch64-unknown-linux-android-ndk-toolchain"
+        "armv7a-unknown-linux-androideabi-ndk-toolchain-wrapper"
+        "armv7a-unknown-linux-androideabi-ndk-toolchain"
+      ];
     };
   };
 
@@ -57,11 +65,11 @@
       # cabal-install and nix-tools plans.  When removing a ghc version
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
-      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2411") {
-        ghc96 = true;
-        ghc98 = true;
-        ghc910 = true;
-        ghc912 = true;
+      nixpkgs.lib.optionalAttrs (builtins.elem nixpkgsName ["R2411" "R2505"]) {
+        ghc96 = false;
+        ghc98 = false;
+        ghc910 = false;
+        ghc912 = false;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc96 = true;
         ghc98 = true;
@@ -77,15 +85,11 @@
     let lib = nixpkgs.lib;
     in lib.optionalAttrs (nixpkgsName == "unstable"
       && (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"])
-       || (system == "aarch64-linux" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"])
-       || (system == "x86_64-darwin" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948" "ghc966" "ghc967" "ghc96720250227" "ghc982" "ghc983" "ghc984"])
-       || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948" "ghc966" "ghc967" "ghc96720250227" "ghc982" "ghc983" "ghc984"])
-       )) {
+      && !builtins.elem compiler-nix-name ["ghc9102"]) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
       && (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc966" "ghc967" "ghc96720250227"]) # Not sure why GHC 9.6.6 TH code now wants `log1pf`
+      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928"])
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
@@ -100,8 +104,10 @@
   } // lib.optionalAttrs (__match ".*llvm" compiler-nix-name == null && system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
     # Out llvm versions of GHC seem to break for musl32
     inherit (lib.systems.examples) musl32;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "R2411" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
-    inherit (lib.systems.examples) aarch64-android-prebuilt armv7a-android-prebuilt;
+  } // lib.optionalAttrs (system == "x86_64-linux" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
+    inherit (lib.systems.examples) aarch64-android-prebuilt;
+  } // lib.optionalAttrs (system == "x86_64-linux" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948" "ghc91320250523"]) {
+    inherit (lib.systems.examples) armv7a-android-prebuilt;
   } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc8107" "ghc902"]) {
     # TODO fix this for the compilers we build with hadrian (ghc >=9.4)
     inherit (lib.systems.examples) aarch64-multiplatform-musl;

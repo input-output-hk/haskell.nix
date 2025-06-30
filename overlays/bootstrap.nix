@@ -230,8 +230,9 @@ in {
                 # This one will lead to segv's on darwin, when calling `strlen` during lookupStrHashTable. `strlen` ends up being called with 0x0.
                 # This patch will allow adding additional symbols to iserv, instead of having to patch them into GHC all the time.
                 ++ final.lib.optionals (
-                        (final.stdenv.targetPlatform.isAndroid || final.stdenv.targetPlatform.isLinux)
-                     && (final.stdenv.targetPlatform.isAarch64 || final.stdenv.targetPlatform.is32bit))
+                     final.stdenv.targetPlatform.isWindows ||
+                     (  (final.stdenv.targetPlatform.isAndroid || final.stdenv.targetPlatform.isLinux)
+                     && (final.stdenv.targetPlatform.isAarch64 || final.stdenv.targetPlatform.is32bit)))
                   (fromUntil "9.6.1" "9.11" ./patches/ghc/iserv-syms.patch)
                 ++ onAndroid (until "9.0" ./patches/ghc/ghc-8.10.7-weak-symbols-2.patch)
                 ++ onDarwin (onAarch64 (until "9.0" ./patches/ghc/ghc-8.10.7-rts-aarch64-darwin.patch))
@@ -331,6 +332,9 @@ in {
 
                 ++ onAndroid (from      "9.6"          ./patches/ghc/ghc-9.6-COMPAT_R_ARM_PREL31.patch)
                 ++ onAndroid (from      "9.10"         ./patches/ghc/ghc-9.10-ignore-libc.patch)
+
+                # Fix for `fatal error: 'rts/Types.h' file not found` when building `primitive`
+                ++ onGhcjs (from        "9.13"         ./patches/ghc/ghc-9.13-ghcjs-rts-types.patch)
                 ;
         in ({
             ghc8107 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {

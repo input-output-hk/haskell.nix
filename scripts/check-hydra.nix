@@ -1,4 +1,4 @@
-{ stdenv, lib, writeScript, coreutils, time, gnutar, gzip, hydra_unstable, jq, gitMinimal }:
+{ stdenv, lib, writeScript, coreutils, time, gnutar, gzip, nix-eval-jobs, jq, gitMinimal }:
 
 with lib;
 
@@ -7,14 +7,14 @@ writeScript "check-hydra.sh" ''
 
   set -euo pipefail
 
-  export PATH="${makeBinPath [ coreutils time gnutar gzip hydra_unstable jq gitMinimal ]}"
+  export PATH="${makeBinPath [ coreutils time gnutar gzip nix-eval-jobs jq gitMinimal ]}"
   export NIX_PATH=
 
   echo '~~~ Evaluating release.nix with' "$@"
   HYDRA_CONFIG= command time --format '%e' -o eval-time.txt \
-      hydra-eval-jobs \
+      nix-eval-jobs \
       --option allowed-uris "https://github.com/NixOS/ https://github.com/input-output-hk/ github:NixOS/nixpkgs/ github:input-output-hk/hackage.nix/ github:input-output-hk/stackage.nix/ github:input-output-hk/flake-compat/ github:stable-haskell/iserv-proxy/ github:haskell/haskell-language-server/" \
-      --flake $(pwd) > eval.json
+      --flake $(pwd)#hydraJobs --force-recurse > eval.json
   EVAL_EXIT_CODE="$?"
   if [ "$EVAL_EXIT_CODE" != 0 ]
   then
@@ -24,8 +24,8 @@ writeScript "check-hydra.sh" ''
   fi
   EVAL_TIME=$(cat eval-time.txt)
   jq . < eval.json
-  ERRORS=$(jq -r 'map_values(.error)|to_entries[]|select(.value)|@text "\(.key): \(.value)"' < eval.json)
-  NUM_ERRORS=$(jq -r '[ map_values(.error)|to_entries[]|select(.value) ] |length' < eval.json)
+  ERRORS=$(jq 'select(.error)|@text "\(.attrPath|join(".")): \(.error)"' < eval.json)
+  NUM_ERRORS=$([ -z "$ERRORS" ] && echo 0 || echo "$ERRORS" | wc -l)
   rm eval.json eval-time.txt
 
   if [ "$NUM_ERRORS" != 0 ]

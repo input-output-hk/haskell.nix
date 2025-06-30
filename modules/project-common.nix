@@ -21,7 +21,7 @@ with lib.types;
     shell = mkOption {
       type = submodule [
         (import ./shell.nix { projectConfig = config; })
-        { _module.args = { inherit (pkgs.haskell-nix) haskellLib; }; }
+        { _module.args = { inherit pkgs; inherit (pkgs.haskell-nix) haskellLib; }; }
       ];
       default = { };
       description = ''
@@ -73,6 +73,18 @@ with lib.types;
             system = config.evalSystem;
             overlays = pkgs.overlays;
           };
+      '';
+    };
+    evalSrc = mkOption {
+      type = either path package;
+      default = config.src;
+      description = ''
+        Allows a different version of the src to be used at eval time.
+        This is useful when building the source may require a build machine.
+        To avoid an eval time dependency on a build machine set `evalSrc`
+        to either:
+          * A version of the source built using `evalPackages`
+          * A version of the source that does not require building
       '';
     };
     hsPkgs = lib.mkOption {

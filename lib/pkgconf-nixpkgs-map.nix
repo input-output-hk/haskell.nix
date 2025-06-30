@@ -2750,12 +2750,12 @@ pkgs:
     "gaminggear-0" = [ "libgaminggear" ];
     "libgbinder" = [ "libgbinder" ];
     "libgcrypt" = [ "libgcrypt" ];
-    "libgda-5.0" = [ "libgda" ];
-    "libgda-report-5.0" = [ "libgda" ];
-    "libgda-sqlcipher-5.0" = [ "libgda" ];
-    "libgda-sqlite-5.0" = [ "libgda" ];
-    "libgda-ui-5.0" = [ "libgda" ];
-    "libgda-xslt-5.0" = [ "libgda" ];
+    "libgda-5.0" = [ "libgda5" ];
+    "libgda-report-5.0" = [ "libgda5" ];
+    "libgda-sqlcipher-5.0" = [ "libgda5" ];
+    "libgda-sqlite-5.0" = [ "libgda5" ];
+    "libgda-ui-5.0" = [ "libgda5" ];
+    "libgda-xslt-5.0" = [ "libgda5" ];
     "libgda-6.0" = [ "libgda6" ];
     "libgda-sqlite-6.0" = [ "libgda6" ];
     "libgdamm-5.0" = [ "libgdamm" ];
@@ -5087,7 +5087,7 @@ pkgs:
     "riscv-disasm" = [ "spike" ];
     "riscv-fesvr" = [ "spike" ];
     "SPIRV-Headers" = [ "spirv-headers" ];
-    "LLVMSPIRVLib" = [ "spirv-llvm-translator" ];
+#    "LLVMSPIRVLib" = [ "spirv-llvm-translator" ];
     "SPIRV-Tools-shared" = [ "spirv-tools" ];
     "SPIRV-Tools" = [ "spirv-tools" ];
     "sqlcipher" = [ "sqlcipher" ];

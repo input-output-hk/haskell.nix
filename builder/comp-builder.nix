@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, pkgsBuildBuild, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, windows, zlib, ncurses, nodejs, nonReinstallablePkgs }@defaults:
+{ pkgs, stdenv, buildPackages, pkgsBuildBuild, ghc, llvmPackages, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, windows, zlib, ncurses, nodejs, nonReinstallablePkgs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -383,7 +383,6 @@ let
       env = shellWrappers.drv;
       shell = drv.overrideAttrs (attrs: {
         pname = nameOnly + "-shell";
-        inherit (package.identifier) version;
         nativeBuildInputs = [shellWrappers.drv] ++ attrs.nativeBuildInputs;
       });
       profiled = lib.makeOverridable self (drvArgs // { enableLibraryProfiling = true; });
@@ -431,7 +430,8 @@ let
     nativeBuildInputs =
       [ghc buildPackages.removeReferencesTo]
       ++ executableToolDepends
-      ++ (lib.optional stdenv.hostPlatform.isGhcjs buildPackages.nodejs);
+      ++ (lib.optional stdenv.hostPlatform.isGhcjs buildPackages.nodejs)
+      ++ (lib.optional (ghc.useLdLld or false) llvmPackages.bintools);
 
     outputs = ["out"]
       ++ (lib.optional keepConfigFiles "configFiles")
@@ -448,6 +448,10 @@ let
       (lib.optionalString stdenv.hostPlatform.isGhcjs ''
       export HOME=$(mktemp -d)
       export EM_CACHE=$(mktemp -d)
+      if [ -d ${pkgsBuildBuild.emscripten}/share/emscripten/cache ]; then
+        cp -r ${pkgsBuildBuild.emscripten}/share/emscripten/cache/* $EM_CACHE/
+        chmod +w -R $EM_CACHE
+      fi
       '') +
       (lib.optionalString (!canCleanSource) ''
       echo "Cleaning component source not supported, leaving it un-cleaned"
@@ -595,7 +599,6 @@ let
               (''
               if id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output); then
                 name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
-                echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
                 echo "package-id $id" >> $out/envDep
                 ''
                 # Allow `package-name:sublib-name` to work in `build-depends`

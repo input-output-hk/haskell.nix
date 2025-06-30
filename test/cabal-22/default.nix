@@ -37,7 +37,7 @@ in recurseIntoAttrs {
     '' +
     # Aarch is statically linked and does not produce a .so file.
     # Musl is also statically linked, but it does make a .so file so we should check that still.
-    optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64) (''
+    optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64 || stdenv.hostPlatform.isDarwin) (''
       printf "checking that executable is dynamically linked to system libraries... " >& 2
     '' + optionalString (stdenv.isLinux && !stdenv.hostPlatform.isMusl) ''
       ${haskellLib.lddForTests} $exe | grep 'libc[.]so'
@@ -57,7 +57,7 @@ in recurseIntoAttrs {
     '' + optionalString stdenv.isLinux ''
       ${haskellLib.lddForTests} $sofile | grep libHSghc-prim
     '' + optionalString stdenv.isDarwin ''
-      otool -L $sofile | grep libHSghc-prim
+      otool -L $sofile | grep libHSghc-
     '')) + ''
       touch $out
 

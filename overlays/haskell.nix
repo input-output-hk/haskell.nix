@@ -170,11 +170,12 @@ final: prev: {
           inherit mkPkgSet stackage excludeBootPackages;
           hackage = hackageForStack;
         };
-        # Pick a recent LTS snapshot to be our "default" package set.
+        # Pick the most recent LTS snapshot to be our "default" package set.
         haskellPackages =
-            if final.stdenv.targetPlatform.isAarch64 && final.stdenv.buildPlatform.isAarch64
-            then snapshots."lts-15.13"
-            else snapshots."lts-14.13";
+          let
+            versions = final.lib.mapAttrsToList
+              (name: _: final.lib.removePrefix "lts-" name) snapshots;
+          in snapshots."lts-${final.lib.head (final.lib.sort final.lib.versionAtLeast versions)}";
 
         # Creates Cabal local repository from { name, index } set.
         mkLocalHackageRepo = import ../mk-local-hackage-repo final;
@@ -436,8 +437,8 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2024-10-17T00:00:00Z"; # Remember to also update ../nix-tools/cabal.project and ../nix-tools/flake.lock
-
+        internalHackageIndexState = builtins.head (builtins.attrNames (
+          import (sources.hackage-internal + "/index-state.nix")));
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
         # Helps materialize the output of derivations
@@ -600,7 +601,13 @@ final: prev: {
         # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
         # Resulting nix files are added to nix-plan subdirectory.
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
-            index-state-hashes = import indexStateHashesPath;
+            index-state-hashes =
+              (
+                if builtins.pathExists (hackageSrc + "/index-state.nix")
+                  then import (hackageSrc + "/index-state.nix")
+                  else import (hackageSrc + "/index-state-hashes.nix")
+              )
+              // import (sources.hackage-internal + "/index-state.nix");
             inherit (final.buildPackages.haskell-nix) haskellLib;
             pkgs = final.buildPackages.pkgs;
             inherit (final.buildPackages.pkgs) cacert;
@@ -826,29 +833,22 @@ final: prev: {
             #     ];
             #   }
             #
-            shellFor = extraArgs: shellFor' (rawProject.args.shell // extraArgs).crossPlatforms extraArgs;
-            shellFor' = crossPlatforms: extraArgs:
+            shellFor = extraArgs: (appendModule { shell = extraArgs; }).shell;
+            shell = shellFor' rawProject.args.shell.crossPlatforms;
+            shellFor' = crossPlatforms:
               let
-                shellArgs = builtins.removeAttrs (rawProject.args.shell // extraArgs) [ "crossPlatforms" ];
-                # These are the args we will pass to the shells for the corss compiler
-                argsCross =
-                  # These things should match main shell
-                  final.lib.filterAttrs (n: _: builtins.elem n [
-                    "packages" "components" "additional" "exactDeps" "packageSetupDeps"
-                  ]) shellArgs // {
-                    # The main shell's hoogle will probably be faster to build.
-                    withHoogle = false;
-                  };
+                shellArgs = builtins.removeAttrs rawProject.args.shell [ "crossPlatforms" ];
                 # Shells for cross compilation
-                crossShells = builtins.map (project: project.shellFor' (_p: []) argsCross)
-                  (crossPlatforms projectCross);
+                crossShells = builtins.map (project: project.shellFor {
+                    # Prevent recursion
+                    crossPlatforms = final.lib.mkForce (_p: []);
+                    # The main shell's hoogle will probably be faster to build.
+                    withHoogle = final.lib.mkForce false;
+                  }) (crossPlatforms projectCross);
               in rawProject.hsPkgs.shellFor (shellArgs // {
                   # Add inputs from the cross compilation shells
                   inputsFrom = shellArgs.inputsFrom or [] ++ crossShells;
                 });
-
-            # Default shell
-            shell = shellFor {};
 
             # Like `.hsPkgs.${packageName}` but when compined with `getComponent` any
             # cabal configure errors are defered until the components derivation builds.
@@ -1052,6 +1052,14 @@ final: prev: {
                     setupBuildFlags = final.lib.mkForce [];
                   };
                 }];
+              } // final.lib.optionalAttrs (
+                     final.stdenv.hostPlatform.isAarch64
+                  && builtins.compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8" < 0) {
+                # The th-dlls test fails for aarch64 cross GHC 9.6.7 when the threaded rts is used
+                cabalProjectLocal = ''
+                  package iserv-proxy
+                    flags: -threaded
+                '';
               } // final.lib.optionalAttrs (__compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.10" > 0) {
                   cabalProjectLocal = ''
                     allow-newer: *:base, *:bytestring
@@ -1073,6 +1081,65 @@ final: prev: {
               };
             }) final.haskell-nix.compiler;
 
+          ghc-pre-existing = ghc: [
+            "Cabal"
+            "array"
+            "base"
+            "binary"
+            "bytestring"
+            "containers"
+            "deepseq"
+            "directory"
+            "filepath"
+            "ghc-boot"
+            "ghc-boot-th"
+            "ghc-compact"
+            "ghc-heap"
+            "ghc-prim"
+            "ghci"
+            "integer-gmp"
+            "mtl"
+            "parsec"
+            "pretty"
+            "process"
+            "rts"
+            "template-haskell"
+            "text"
+            "time"
+            "transformers"
+          ] ++ final.lib.optionals (!final.stdenv.targetPlatform.isGhcjs || builtins.compareVersions ghc.version "9.0" > 0) [
+            # GHCJS 8.10 does not have these
+            "Cabal-syntax"
+            "exceptions"
+            "file-io"
+            "ghc"
+            "ghc-bignum"
+            "ghc-experimental"
+            "ghc-internal"
+            "ghc-platform"
+            "ghc-toolchain"
+            "haskeline"
+            "hpc"
+            "libiserv"
+            "os-string"
+            "semaphore-compat"
+            "stm"
+            "xhtml"
+          ] ++ final.lib.optionals (builtins.compareVersions ghc.version "9.4" > 0) [
+            "system-cxx-std-lib"
+          ] ++ final.lib.optionals (builtins.compareVersions ghc.version "9.12" > 0) [
+            "haddock-api"
+            "haddock-library"
+          ] ++ final.lib.optionals (
+                  !final.stdenv.targetPlatform.isGhcjs
+               && !final.stdenv.targetPlatform.isWindows
+               && ghc.enableTerminfo or true) [
+            "terminfo"
+          ] ++ (if final.stdenv.targetPlatform.isWindows
+            then [ "Win32" ]
+            else [ "unix" ]
+          );
+
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached. Consider using `p.roots` where `p` is a
         # project as it will automatically match the `compiler-nix-name`
@@ -1086,7 +1153,7 @@ final: prev: {
           let
             ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { hadrianEvalPackages = evalPackages; };
           in
-          	final.recurseIntoAttrs ({
+            final.recurseIntoAttrs ({
             # Things that require no IFD to build
             source-pin-hackage = hackageSrc;
             source-pin-stackage = stackageSrc;

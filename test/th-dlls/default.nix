@@ -22,14 +22,16 @@ in recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs
     # On aarch64 this test also breaks form musl builds (including cross compiles on x86_64-linux)
     || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl)
-    # Failed to lookup symbol: __aarch64_swp8_acq_rel
-    || (builtins.elem compiler-nix-name ["ghc947" "ghc948"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
     # Not sure why this is failing with a seg fault
-    || (builtins.elem compiler-nix-name ["ghc9102"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
-    # We have been unable to get windows cross compilation of th-orphans to work for GHC 8.10 using the latest nixpkgs
-    || (compiler-nix-name == "ghc8107" && stdenv.hostPlatform.isWindows)
+    || (builtins.elem compiler-nix-name ["ghc9102" "ghc9102llvm"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
     # unhandled ELF relocation(Rel) type 10
     || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_32)
+
+    ## Old GHC versions (TODO remove)
+    # Failed to lookup symbol: __aarch64_swp8_acq_rel
+    || (builtins.elem compiler-nix-name ["ghc947" "ghc948"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
+    # We have been unable to get windows cross compilation of th-orphans to work for GHC 8.10 using the latest nixpkgs
+    || (compiler-nix-name == "ghc8107" && stdenv.hostPlatform.isWindows)
     ;
 
   ifdInputs = {
@@ -41,7 +43,9 @@ in recurseIntoAttrs {
   build-ei = packages-ei.th-dlls.components.library;
   just-template-haskell-ei = packages-ei.th-dlls.components.exes.just-template-haskell;
 } // optionalAttrs
-    (!(builtins.elem compiler-nix-name ["ghc984" "ghc9121" "ghc912120241215" "ghc91320241230" "ghc912120250219"]  && stdenv.buildPlatform.isx86_64 && stdenv.hostPlatform.isAarch64)) {
+    (!(builtins.elem compiler-nix-name ["ghc984" "ghc9122" "ghc91320250523"]  && stdenv.buildPlatform.isx86_64 && stdenv.hostPlatform.isAarch64
+      # The dependency on `math-functions` somehow breaks GHC 9.6.7 musl profiled builds (only with the external interpreter though)
+      || (compiler-nix-name == "ghc967" && stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_64))) {
   # On for aarch64 cross compile on GHC this test is fails sometimes for non profiled builds
   # (and always for the profiled builds).
   # This may be related to the memory allocation changes made in 9.8.4 that
