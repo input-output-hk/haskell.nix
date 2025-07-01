@@ -272,7 +272,7 @@ let
           then "ghc964"
         else "ghc962";
     in
-    buildPackages.haskell-nix.cabalProject' {
+    buildPackages.haskell-nix.cabalProject' ({
       inherit compiler-nix-name;
       name = "hadrian";
       compilerSelection = p: p.haskell.compiler;
@@ -316,7 +316,9 @@ let
         subDir = "hadrian";
         includeSiblings = true;
       };
-    };
+    } // lib.optionalAttrs (builtins.compareVersions ghc-version "9.6" < 0) {
+      index-state = "2024-10-17T00:00:00Z";
+    });
 
   hadrian = hadrianProject.hsPkgs.hadrian.components.exes.hadrian;
 
