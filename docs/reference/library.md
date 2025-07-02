@@ -465,7 +465,7 @@ or
 }
 ```
 
-The `shellFor` argments can also be passed to to the project `shell`
+The `shellFor` arguments can also be passed to the project `shell`
 argument.  For instance:
 
 ```
