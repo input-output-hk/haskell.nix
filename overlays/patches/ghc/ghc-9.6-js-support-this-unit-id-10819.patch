@@ -1,0 +1,36 @@
+From 168af9c24581bb550e6f352ebb3dd86c8784cea9 Mon Sep 17 00:00:00 2001
+From: Sylvain Henry <sylvain@haskus.fr>
+Date: Thu, 6 Jul 2023 15:59:38 +0200
+Subject: [PATCH] JS: support -this-unit-id for programs in the linker (#23613)
+
+---
+ compiler/GHC/StgToJS/Linker/Linker.hs | 2 +-
+ testsuite/tests/driver/T23613.hs      | 4 ++++
+ testsuite/tests/driver/all.T          | 7 ++++---
+ 3 files changed, 9 insertions(+), 4 deletions(-)
+ create mode 100644 testsuite/tests/driver/T23613.hs
+
+diff --git a/compiler/GHC/StgToJS/Linker/Linker.hs b/compiler/GHC/StgToJS/Linker/Linker.hs
+index 58bcdf2de90..530f8730c6b 100644
+--- a/compiler/GHC/StgToJS/Linker/Linker.hs
++++ b/compiler/GHC/StgToJS/Linker/Linker.hs
+@@ -327,7 +327,7 @@ computeLinkDependencies cfg unit_env link_spec finder_opts finder_cache = do
+   let (rts_wired_units, rts_wired_functions) = rtsDeps units
+ 
+   -- all the units we want to link together, without their dependencies
+-  let root_units = filter (/= mainUnitId)
++  let root_units = filter (/= ue_currentUnit unit_env)
+                    $ filter (/= interactiveUnitId)
+                    $ nub
+                    $ rts_wired_units ++ reverse obj_units ++ reverse units
+diff --git a/testsuite/tests/driver/T23613.hs b/testsuite/tests/driver/T23613.hs
+new file mode 100644
+index 00000000000..d82a4bd93b7
+--- /dev/null
++++ b/testsuite/tests/driver/T23613.hs
+@@ -0,0 +1,4 @@
++module Main where
++
++main :: IO ()
++main = return ()
+

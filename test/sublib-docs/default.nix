@@ -43,7 +43,7 @@ in recurseIntoAttrs {
 
       printf "check that it looks like we have docs..." >& 2
       test -f "${packages.sublib-docs.components.library.doc}/share/doc/sublib-docs/html/Lib.html"
-      test -f "${packages.sublib-docs.components.sublibs.slib.doc}/share/doc/sublib-docs/html/Slib.html"
+      test -f "${packages.sublib-docs.components.sublibs.slib.doc}/share/doc/sublib-docs/html/slib/Slib.html"
 
       touch $out
     '';
