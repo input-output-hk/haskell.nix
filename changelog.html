@@ -168,6 +168,30 @@
                     <main>
                         <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="jul-3-2025"><a class="header" href="#jul-3-2025">Jul 3, 2025</a></h2>
+<p>Some time ago the behavior of <code>shellFor</code> changed so that the arguments
+are now checked against <code>modules/shell.nix</code>.  This was done as part of a fix
+for bugs in the way <code>shellFor</code> arguments and project <code>shell</code> arguments
+interacted (both are now <code>modules</code> and the normal module merge rules apply).</p>
+<p>This means it is no longer possible to pass arbitrarily named arguments
+to <code>shellFor</code> in order to set environment variables.</p>
+<p>Instead of:</p>
+<pre><code>p.shellFor {
+  FOO = "bar";
+}
+</code></pre>
+<p>Use:</p>
+<pre><code>p.shellFor {
+  shellHook = ''
+    export FOO="bar"
+  '';
+}
+</code></pre>
+<p>or</p>
+<pre><code>(p.shellFor {}).overrideAttrs {
+   FOO = "bar";
+}
+</code></pre>
 <h2 id="jan-29-2025"><a class="header" href="#jan-29-2025">Jan 29, 2025</a></h2>
 <p>Removed GHC &lt;9.6 from CI.</p>
 <p>The latest <code>nixpkgs-unstable</code> caused problems with</p>

@@ -476,17 +476,49 @@ packages with <code>ghci</code> or <code>cabal v2-build</code> (but not Stack).<
     { packages, withHoogle ? true, exactDeps ? false, ...}: ...
 </code></pre>
 <div class="table-wrapper"><table><thead><tr><th>Argument</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>name</code></td><td>String</td><td>Name of the derivation</td></tr>
 <tr><td><code>packages</code></td><td>Function</td><td>Package selection function. It takes a list of <a href="#haskell-package">Haskell packages</a> and returns a subset of these packages.</td></tr>
 <tr><td><code>components</code></td><td>Function</td><td>Similar to <code>packages</code>, by default all the components of the selected packages are selected.</td></tr>
 <tr><td><code>additional</code></td><td>Function</td><td>Similar to <code>packages</code>, but the selected packages are built and included in <code>ghc-pkg list</code> (not just their dependencies).</td></tr>
 <tr><td><code>withHoogle</code></td><td>Boolean</td><td>Whether to build a Hoogle documentation index and provide the <code>hoogle</code> command.</td></tr>
 <tr><td><code>exactDeps</code></td><td>Boolean</td><td>Prevents the Cabal solver from choosing any package dependency other than what are in the package set.</td></tr>
+<tr><td><code>allToolDeps</code></td><td>Boolean</td><td>Indicates if the shell should include all the tool dependencies of the haskell packages in the project.</td></tr>
 <tr><td><code>tools</code></td><td>Function</td><td>AttrSet of tools to make available e.g. <code>{ cabal = "3.2.0.0"; }</code> or <code>{ cabal = { version = "3.2.0.0"; }; }</code>. If an AttrSet is provided for a tool, the additional arguments will be passed to the function creating the derivation for that tool. So you can provide an <code>index-state</code> or a <code>materialized</code> argument like that <code>{ cabal = { version = "3.2.0.0"; index-state = "2020-10-30T00:00:00Z"; materialized = ./cabal.materialized; }; }</code> for example. You can specify and materialize the version of hoogle used to construct the hoogle index by including something like <code>{ hoogle = { version = "5.0.17.15"; index-state = "2020-05-31T00:00:00Z"; materialized = ./hoogle.materialized; }</code>. Uses a default version of hoogle if omitted.</td></tr>
-<tr><td><code>inputsFrom</code></td><td>List</td><td>List of other shells to include in this one.  The <code>buildInputs</code> and <code>nativeBuildInputs</code> of each will be included using <a href="https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-mkShell">mkShell</a>.</td></tr>
+<tr><td><code>packageSetupDeps</code></td><td>Boolean</td><td>Set this to <code>false</code> to exclude custom-setup dependencies.</td></tr>
+<tr><td><code>enableDWARF</code></td><td>Boolean</td><td>Include debug info</td></tr>
 <tr><td><code>crossPlatforms</code></td><td>Function</td><td>Platform selection function for cross compilation targets to support eg. <code>ps: with ps; [ghcjs mingwW64]</code> (see nixpkgs lib.systems.examples for list of platform names).</td></tr>
-<tr><td><code>{ ... }</code></td><td>Attrset</td><td>All the other arguments are passed to <a href="https://nixos.org/nixpkgs/manual/#sec-using-stdenv"><code>mkDerivation</code></a>.</td></tr>
+<tr><td><code>inputsFrom</code></td><td>List</td><td>List of other shells to include in this one.  The <code>buildInputs</code> and <code>nativeBuildInputs</code> of each will be included using <a href="https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-mkShell">mkShell</a>.</td></tr>
+<tr><td><code>shellHook</code></td><td>String</td><td>Bash statements that are executed when the shell starts.</td></tr>
+<tr><td><code>buildInputs</code></td><td></td><td>Passed to <a href="https://nixos.org/nixpkgs/manual/#sec-using-stdenv"><code>mkDerivation</code></a> (via <a href="https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-mkShell">mkShell</a>).</td></tr>
+<tr><td><code>nativeBuildInputs</code></td><td></td><td>Passed to <a href="https://nixos.org/nixpkgs/manual/#sec-using-stdenv"><code>mkDerivation</code></a> (via <a href="https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-mkShell">mkShell</a>).</td></tr>
+<tr><td><code>passthru</code></td><td></td><td>Passed to <a href="https://nixos.org/nixpkgs/manual/#sec-using-stdenv"><code>mkDerivation</code></a>  (via <a href="https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-mkShell">mkShell</a>).</td></tr>
 </tbody></table>
 </div>
+<p>The arguments are checked using the module <code>modules/shell.nix</code>.</p>
+<p>To set environment variables in the shell use:</p>
+<pre><code>  shellHook = ''
+    export FOO="bar"
+  '';
+</code></pre>
+<p>or</p>
+<pre><code>(p.shellFor {}).overrideAttrs {
+   FOO = "bar";
+}
+</code></pre>
+<p>The <code>shellFor</code> arguments can also be passed to the project <code>shell</code>
+argument.  For instance:</p>
+<pre><code>(pkgs.haskell-nix.project {
+  ...
+  shell.tools.cabal = {}
+).shellFor {}
+</code></pre>
+<p>Is the same as:</p>
+<pre><code>(pkgs.haskell-nix.project {
+  ...
+).shellFor {
+  tools.cabal = {}
+}
+</code></pre>
 <p><strong>Return value</strong>: a derivation</p>
 <blockquote>
 <p>⚠️ <strong>Warning:</strong></p>
