@@ -43,7 +43,7 @@ in recurseIntoAttrs {
   build-ei = packages-ei.th-dlls.components.library;
   just-template-haskell-ei = packages-ei.th-dlls.components.exes.just-template-haskell;
 } // optionalAttrs
-    (!(builtins.elem compiler-nix-name ["ghc984" "ghc9122" "ghc91320250523"]  && stdenv.buildPlatform.isx86_64 && stdenv.hostPlatform.isAarch64
+    (!(builtins.elem compiler-nix-name ["ghc984" "ghc9122" "ghc9122llvm" "ghc91320250523"]  && stdenv.buildPlatform.isx86_64 && stdenv.hostPlatform.isAarch64
       # The dependency on `math-functions` somehow breaks GHC 9.6.7 musl profiled builds (only with the external interpreter though)
       || (compiler-nix-name == "ghc967" && stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_64))) {
   # On for aarch64 cross compile on GHC this test is fails sometimes for non profiled builds

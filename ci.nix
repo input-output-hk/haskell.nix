@@ -75,8 +75,9 @@
         ghc98 = true;
         ghc98llvm = false;
         ghc910 = true;
-        ghc910llvm = true;
+        ghc910llvm = false;
         ghc912 = true;
+        ghc912llvm = true;
         ghc913 = true;
       })));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
