@@ -652,6 +652,10 @@ let
         mkdir -p $out/share
         if [ -d dist/build/extra-compilation-artifacts ]; then
           cp -r dist/build/extra-compilation-artifacts/hpc $out/share
+        elif [ -d ${testExecutable}-tmp/extra-compilation-artifacts ]; then
+          cp -r ${testExecutable}-tmp/extra-compilation-artifacts/hpc $out/share
+        elif [ -d dist/build/${componentId.cname}/extra-compilation-artifacts ]; then
+          cp -r dist/build/${componentId.cname}/extra-compilation-artifacts/hpc $out/share
         else
           cp -r dist/hpc $out/share
         fi
