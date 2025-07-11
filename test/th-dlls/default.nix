@@ -20,8 +20,6 @@ let
 
 in recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs
-    # On aarch64 this test also breaks form musl builds (including cross compiles on x86_64-linux)
-    || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl)
     # Not sure why this is failing with a seg fault
     || (builtins.elem compiler-nix-name ["ghc9102" "ghc9102llvm"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
     # unhandled ELF relocation(Rel) type 10
