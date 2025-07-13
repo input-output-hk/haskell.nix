@@ -20,8 +20,12 @@ let
 
 in recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs
-    # On aarch64 this test also breaks form musl builds (including cross compiles on x86_64-linux)
-    || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl)
+    # On aarch64 this test breaks form musl cross compiles on x86_64-linux
+    # Error is:
+    # iserv-proxy-interpreter: internal error: 0x0 address for .LANCHOR1 + 0 of type 562
+    #   in tmp/nix/store/kgprix3jn2w320flxpf7yr29f7dczykr-libsodium-aarch64-unknown-linux-musl-1.0.18/lib/libsodium.a
+    #   (#103:librdrand_la-randombytes_internal_random.o) for relocation 4 in section 1 of kind: 0
+    || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl && !stdenv.buildPlatform.isAarch64)
     # Not sure why this is failing with a seg fault
     || (builtins.elem compiler-nix-name ["ghc9102" "ghc9102llvm"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
     # unhandled ELF relocation(Rel) type 10
