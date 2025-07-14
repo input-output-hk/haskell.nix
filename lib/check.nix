@@ -30,7 +30,7 @@ in stdenv.mkDerivation ((
   name = (drv.name + "-check");
 
   passthru = {
-    inherit (drv) identifier config configFiles executableToolDepends cleanSrc env exeName;
+    inherit (drv) identifier config configFiles executableToolDepends cleanSrc env exeName meta;
     profiled = self drv.profiled;
     dwarf = self drv.dwarf;
   };
