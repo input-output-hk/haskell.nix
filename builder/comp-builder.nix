@@ -1,6 +1,4 @@
 { pkgs, stdenv, buildPackages, pkgsBuildBuild, ghc, llvmPackages, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, windows, zlib, ncurses, nodejs, nonReinstallablePkgs }@defaults:
-lib.makeOverridable (
-let self =
 { componentId
 , component
 , package
@@ -92,7 +90,76 @@ let self =
 # LLVM
 , useLLVM ? ghc.useLLVM or false
 , smallAddressSpace ? false
-
+}:
+# makeOverridable is called here after all the `? DEFAULT` arguments
+# will have been applied.  This makes sure that `c.override (oldAttrs: {...})`
+# includes these `DEFAULT` values in `oldAttrs`.  This is important
+# so that overrides can modify the existing values instead of replacing them.
+lib.makeOverridable (
+let self =
+{ componentId
+, component
+, package
+, name
+, setup
+, src
+, flags
+, cabalFile
+, cabal-generator
+, patches
+, preUnpack
+, configureFlags
+, prePatch
+, postPatch
+, preConfigure
+, postConfigure
+, setupBuildFlags
+, preBuild
+, postBuild
+, preCheck
+, postCheck
+, setupInstallFlags
+, preInstall
+, postInstall
+, preHaddock
+, postHaddock
+, shellHook
+, configureAllComponents
+, allComponent
+, build-tools
+, pkgconfig
+, platforms
+, frameworks
+, dontPatchELF
+, dontStrip
+, dontUpdateAutotoolsGnuConfigScripts
+, hardeningDisable
+, enableStatic
+, enableShared
+, enableExecutableDynamic
+, enableDeadCodeElimination
+, writeHieFiles
+, ghcOptions
+, contentAddressed
+, doHaddock
+, doHoogle
+, hyperlinkSource
+, quickjump
+, keepConfigFiles
+, keepGhc
+, keepSource
+, setupHaddockFlags
+, enableLibraryProfiling
+, enableProfiling
+, profilingDetail
+, doCoverage
+, enableSeparateDataOutput
+, enableLibraryForGhci
+, enableDebugRTS
+, enableDWARF
+, enableTSanRTS
+, useLLVM
+, smallAddressSpace
 }@drvArgs:
 
 let
@@ -719,4 +786,68 @@ let
   // lib.optionalAttrs (hardeningDisable != [] || stdenv.hostPlatform.isMusl) {
     hardeningDisable = hardeningDisable ++ lib.optional stdenv.hostPlatform.isMusl "pie";
   });
-in drv; in self)
+in drv; in self) {
+  inherit componentId
+          component
+          package
+          name
+          setup
+          src
+          flags
+          cabalFile
+          cabal-generator
+          patches
+          preUnpack
+          configureFlags
+          prePatch
+          postPatch
+          preConfigure
+          postConfigure
+          setupBuildFlags
+          preBuild
+          postBuild
+          preCheck
+          postCheck
+          setupInstallFlags
+          preInstall
+          postInstall
+          preHaddock
+          postHaddock
+          shellHook
+          configureAllComponents
+          allComponent
+          build-tools
+          pkgconfig
+          platforms
+          frameworks
+          dontPatchELF
+          dontStrip
+          dontUpdateAutotoolsGnuConfigScripts
+          hardeningDisable
+          enableStatic
+          enableShared
+          enableExecutableDynamic
+          enableDeadCodeElimination
+          writeHieFiles
+          ghcOptions
+          contentAddressed
+          doHaddock
+          doHoogle
+          hyperlinkSource
+          quickjump
+          keepConfigFiles
+          keepGhc
+          keepSource
+          setupHaddockFlags
+          enableLibraryProfiling
+          enableProfiling
+          profilingDetail
+          doCoverage
+          enableSeparateDataOutput
+          enableLibraryForGhci
+          enableDebugRTS
+          enableDWARF
+          enableTSanRTS
+          useLLVM
+          smallAddressSpace;
+}
