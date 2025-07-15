@@ -93,7 +93,7 @@
 }:
 # makeOverridable is called here after all the `? DEFAULT` arguments
 # will have been applied.  This makes sure that `c.override (oldAttrs: {...})`
-# is includes these `DEFAULT` values in `oldAttrs`.  This is important
+# includes these `DEFAULT` values in `oldAttrs`.  This is important
 # so that overrides can modify the existing values instead of replacing them.
 lib.makeOverridable (
 let self =
