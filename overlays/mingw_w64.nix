@@ -73,14 +73,14 @@ let
   ################################################################################
   # Build logic (TH support via remote iserv via wine)
   #
-  setupBuildFlags = map (opt: "--ghc-option=" + opt) (lib.optionals hostPlatform.isWindows ([
+  ghcOptions = lib.optionals hostPlatform.isWindows ([
     "-fexternal-interpreter"
     "-pgmi" "${wineIservWrapper}/bin/iserv-wrapper"
     # TODO: this should be automatically injected based on the extraLibrary.
     "-L${mingw_w64_pthreads}/lib"
     "-L${mingw_w64_pthreads}/bin"
     "-L${gmp}/lib"
-    ]));
+    ]);
 
   ################################################################################
   # Test logic via wine
@@ -105,4 +105,4 @@ let
   '';
   testWrapper = lib.optional hostPlatform.isWindows "${wineTestWrapper}/bin/test-wrapper";
 
-in { inherit testWrapper setupBuildFlags configureFlags; }
+in { inherit testWrapper ghcOptions configureFlags; }
