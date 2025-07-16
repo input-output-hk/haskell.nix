@@ -38,7 +38,7 @@ final: prev:
    });
 
    haskell-nix = prev.haskell-nix // final.lib.optionalAttrs final.stdenv.hostPlatform.isWindows ({
-     templateHaskell = builtins.mapAttrs (compiler-nix-name: iserv-proxy-exes:
+     templateHaskell = builtins.mapAttrs (_compiler-nix-name: iserv-proxy-exes:
         import ./mingw_w64.nix {
           inherit (final.stdenv) hostPlatform;
           inherit (final.pkgsBuildBuild) lib writeShellScriptBin;
