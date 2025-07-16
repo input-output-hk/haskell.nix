@@ -10,7 +10,7 @@ let
 in
 {
    haskell-nix = prev.haskell-nix // final.lib.optionalAttrs isLinuxCross ({
-     templateHaskell = builtins.mapAttrs (compiler-nix-name: iserv-proxy-exes:
+     templateHaskell = builtins.mapAttrs (_compiler-nix-name: iserv-proxy-exes:
         import ./linux-cross.nix {
           inherit (final.stdenv) hostPlatform buildPlatform;
           inherit (final) stdenv lib;
