@@ -110,8 +110,9 @@
       systems = [
         "x86_64-linux"
       ] ++ (if runningHydraEvalTest then [ ] else [
-        "x86_64-darwin"
-        "aarch64-darwin"
+        # TODO put these back when the macOS builders for ci.zw3rk.com are back online
+        # "x86_64-darwin"
+        # "aarch64-darwin"
       ]);
 
       nixpkgsArgs = {
