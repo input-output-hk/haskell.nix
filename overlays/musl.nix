@@ -29,7 +29,9 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
     configureFlags = oldAttrs.configureFlags ++ ["--enable-static"];
   });
 
-  numactl = prev.numactl.overrideAttrs (_: { configureFlags = ["--enable-static"];});
+  numactl = prev.numactl.overrideAttrs (oldAttrs: {
+    configureFlags = (oldAttrs.configureFlags or []) ++ ["--enable-static"];
+  });
 
   # See https://github.com/input-output-hk/haskell.nix/issues/948
   postgresql = (prev.postgresql.overrideAttrs (_old: {
