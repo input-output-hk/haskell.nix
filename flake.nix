@@ -297,10 +297,11 @@
           hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
             name = "nix-tools";
             constituents = (if runningHydraEvalTest then [ ] else [
-              "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
-              "x86_64-darwin.nix-tools.static.zipped.nix-tools-static"
-              "aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
-              "x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+              # TODO put these back when the macOS builders for ci.zw3rk.com are back online
+              # "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
+              # "x86_64-darwin.nix-tools.static.zipped.nix-tools-static"
+              # "aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+              # "x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
             ]) ++ [
               "x86_64-linux.nix-tools.static.zipped.nix-tools-static"
               "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
