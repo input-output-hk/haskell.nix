@@ -70,6 +70,6 @@ let
   '';
 
   # Choose the appropriate test wrapper
-  testWrapper = "${qemuTestWrapper}/bin/test-wrapper";
+  testWrapper = [ "${qemuTestWrapper}/bin/test-wrapper" ];
 
 in { inherit configureFlags ghcOptions testWrapper; }
