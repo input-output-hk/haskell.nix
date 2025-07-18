@@ -13,7 +13,7 @@
 }:
 let
 
-  configureFlags = lib.optional hostPlatform.isWindows "--disable-split-sections";
+  configureFlags = ["--disable-split-sections"];
 
   wineIservWrapperScript = enableProfiling:
     let
@@ -73,14 +73,14 @@ let
   ################################################################################
   # Build logic (TH support via remote iserv via wine)
   #
-  ghcOptions = lib.optionals hostPlatform.isWindows ([
+  ghcOptions = [
     "-fexternal-interpreter"
     "-pgmi" "${wineIservWrapper}/bin/iserv-wrapper"
     # TODO: this should be automatically injected based on the extraLibrary.
     "-L${mingw_w64_pthreads}/lib"
     "-L${mingw_w64_pthreads}/bin"
     "-L${gmp}/lib"
-    ]);
+    ];
 
   ################################################################################
   # Test logic via wine
@@ -103,6 +103,6 @@ let
     export Path
     ${wine}/bin/wine64 $@
   '';
-  testWrapper = lib.optional hostPlatform.isWindows "${wineTestWrapper}/bin/test-wrapper";
+  testWrapper = ["${wineTestWrapper}/bin/test-wrapper"];
 
 in { inherit testWrapper ghcOptions configureFlags; }
