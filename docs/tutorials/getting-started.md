@@ -76,7 +76,8 @@ nix run .#hello:exe:hello
 
 The following code could be capy-pasted and will work with `stack.yaml` and `cabal.project` based projects.
 
-Edit your `flake.nix` as:```nix
+Edit your `flake.nix` as:
+```nix
 {{#include getting-started-flakes/flake.nix}}
 ```
 
