@@ -115,7 +115,7 @@ in
                 lib.any (d: lib.strings.hasPrefix (rPath + "/") d) dirsNeeded)
               || traceReason "cabal package definition" (lib.strings.hasPrefix subDir rPath
                 && lib.strings.hasSuffix ".cabal" rPath)
-              || traceReason "hpack package defintion" (lib.strings.hasPrefix subDir rPath
+              || traceReason "hpack package definition" (lib.strings.hasPrefix subDir rPath
                 && rPath == "package.yaml")
               || traceReason "data file" (lib.strings.hasPrefix dataDir rPath
                 && dataFileMatch rPath)

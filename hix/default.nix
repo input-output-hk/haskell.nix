@@ -55,7 +55,7 @@ let
       to work on haskell projects using nix without the need to add
       nix files to the project.
 
-      Any nix <command> that takes 'installables' as an argumnet should
+      Any nix <command> that takes 'installables' as an argument should
       work and behave as if the project had a 'flake.nix' file that
       was set up to work with haskell.nix.
 

@@ -326,7 +326,7 @@ in {
   };
 
   # Run evalModules passing the project function argument (m) as a module along with
-  # the the a projectType module (../modules/cabal-project.nix or ../modules/stack-project.nix).
+  # the a projectType module (../modules/cabal-project.nix or ../modules/stack-project.nix).
   # The resulting config is then passed to the project function's implementation.
   evalProjectModule = projectType: m: f:
     let project = f

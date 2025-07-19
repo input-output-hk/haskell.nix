@@ -20,7 +20,7 @@ let
   # in a 32bit linux (via qemu-arm user mode emulation).  If we have
   # -pie enabled, it will produce a static-pie executable, which
   # seems a lot like what we want but will crash on launch.  It appears
-  # the the __stack_chk_guard lookups go through some lookup table, and
+  # the __stack_chk_guard lookups go through some lookup table, and
   # while the relocations for the lookup table are correct, the __stack_chk_guard
   # address isn't properly relocated.  This could also be because libc isn't
   # supposed to be staticlly linked really.  However because we are lacking
