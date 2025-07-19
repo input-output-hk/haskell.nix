@@ -593,62 +593,58 @@ cabal build
 </code></pre>
 <h2 id="scaffolding"><a class="header" href="#scaffolding">Scaffolding</a></h2>
 <p>The following code could be capy-pasted and will work with <code>stack.yaml</code> and <code>cabal.project</code> based projects.</p>
-<p>Edit your <code>flake.nix</code> as:```nix
-{
-description = "A very basic flake";
-inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
-inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
-inputs.flake-utils.url = "github:numtide/flake-utils";
-outputs = { self, nixpkgs, flake-utils, haskellNix }:
-flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" ] (system:
-let
-overlays = [ haskellNix.overlay
-(final: _prev: {
-# This overlay adds our project to pkgs
-helloProject =
-final.haskell-nix.project' {
-src = ./.;
-compiler-nix-name = "ghc96";
-# This is used by <code>nix develop .</code> to open a shell for use with
-# <code>cabal</code>, <code>hlint</code> and <code>haskell-language-server</code>
-shell.tools = {
-cabal = {};
-# hlint = {};
-# haskell-language-server = {};
-};
-# Non-Haskell shell tools go here
-shell.buildInputs = with pkgs; [
-nixpkgs-fmt
-];
-# This adds <code>js-unknown-ghcjs-cabal</code> to the shell.
-# shell.crossPlatforms = p: [p.ghcjs];
-};
-})
-];
-pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
-flake = pkgs.helloProject.flake {
-# This adds support for <code>nix build .#js-unknown-ghcjs:hello:exe:hello</code>
-# crossPlatforms = p: [p.ghcjs];
-};
-in flake // {
-# Built by <code>nix build .</code>
-packages.default = flake.packages."hello:exe:hello";
-});
-}</p>
-<pre><code>
-&gt; **Note:** Git dependencies
-&gt; 
-&gt; If you have git dependencies in your project, you'll need to [calculate sha256 hashes for them](./source-repository-hashes.md).
-
-## Working with a project
-
-Top-level attributes are Haskell packages (incl. dependencies) part of your project.
-
-This section will show side by side the commands using Flakes experimental `new-command` API and legacy Nix commands.
-
-To build the library component of a package in the project run:
-```shell
-nix build .#your-package-name:lib:your-package-name
+<p>Edit your <code>flake.nix</code> as:</p>
+<pre><code class="language-nix">{
+  description = "A very basic flake";
+  inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
+  inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
+  inputs.flake-utils.url = "github:numtide/flake-utils";
+  outputs = { self, nixpkgs, flake-utils, haskellNix }:
+    flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" ] (system:
+    let
+      overlays = [ haskellNix.overlay
+        (final: _prev: {
+          # This overlay adds our project to pkgs
+          helloProject =
+            final.haskell-nix.project' {
+              src = ./.;
+              compiler-nix-name = "ghc96";
+              # This is used by `nix develop .` to open a shell for use with
+              # `cabal`, `hlint` and `haskell-language-server`
+              shell.tools = {
+                cabal = {};
+                # hlint = {};
+                # haskell-language-server = {};
+              };
+              # Non-Haskell shell tools go here
+              shell.buildInputs = with pkgs; [
+                nixpkgs-fmt
+              ];
+              # This adds `js-unknown-ghcjs-cabal` to the shell.
+              # shell.crossPlatforms = p: [p.ghcjs];
+            };
+        })
+      ];
+      pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
+      flake = pkgs.helloProject.flake {
+        # This adds support for `nix build .#js-unknown-ghcjs:hello:exe:hello`
+        # crossPlatforms = p: [p.ghcjs];
+      };
+    in flake // {
+      # Built by `nix build .`
+      packages.default = flake.packages."hello:exe:hello";
+    });
+}
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> Git dependencies</p>
+<p>If you have git dependencies in your project, you'll need to <a href="tutorials/./source-repository-hashes.html">calculate sha256 hashes for them</a>.</p>
+</blockquote>
+<h2 id="working-with-a-project"><a class="header" href="#working-with-a-project">Working with a project</a></h2>
+<p>Top-level attributes are Haskell packages (incl. dependencies) part of your project.</p>
+<p>This section will show side by side the commands using Flakes experimental <code>new-command</code> API and legacy Nix commands.</p>
+<p>To build the library component of a package in the project run:</p>
+<pre><code class="language-shell">nix build .#your-package-name:lib:your-package-name
 </code></pre>
 <p>There are also other components such as <code>exes</code>, <code>tests</code>, <code>benchmarks</code> and <code>all</code>.
 To build an executable:</p>
