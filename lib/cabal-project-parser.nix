@@ -128,7 +128,7 @@ let
   # This works in a similar way to the `source-repository-package` but we are
   # able to simply replace the `repository` blocks with local `file:/nix/store` ones.
   # This works because `cabal configure` does not include any of the `/nix/sore/`
-  # paths in the `plan.json` (so materialized plan-nix will still work as expeced).
+  # paths in the `plan.json` (so materialized plan-nix will still work as expected).
   # See tests/unit.nix for examples of input and output.
   parseRepositoryBlock = evalPackages: _cabalProjectFileName: sha256map: inputMap: nix-tools: block:
     let
