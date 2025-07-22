@@ -14,6 +14,7 @@
 , postInstall ? ""
 , enableDWARF
 , plugins
+, ghcOptions ? []
 }:
 
 let
@@ -107,7 +108,7 @@ let
           --set "NIX_${ghcCommandCaps}PKG"     "$wrappedGhc/bin/${ghcCommand}-pkg" \
           --set "NIX_${ghcCommandCaps}_DOCDIR" "${docDir}"                  \
           --set "GHC_PLUGINS"                  "$GHC_PLUGINS"               \
-          --set "NIX_${ghcCommandCaps}_LIBDIR" "${libDir}"
+          --set "NIX_${ghcCommandCaps}_LIBDIR" "${libDir}"${lib.concatMapStrings (o: " --add-flags ${o}") ghcOptions}
       fi
     done
 
@@ -159,8 +160,7 @@ let
     inherit script targetPrefix;
     inherit (ghc) version meta;
   };
-  propagatedBuildInputs = configFiles.libDeps;
-  nativeBuildInputs = [ghc];
+  propagatedBuildInputs = configFiles.libDeps ++ [stdenv.cc ghc];
 } (''
     mkdir -p $out/configFiles
     configFiles=$out/configFiles

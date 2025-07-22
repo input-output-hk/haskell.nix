@@ -7,12 +7,12 @@ let
   project = externalInterpreter: project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "th-dlls";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
     modules = import ../modules.nix ++ [({pkgs, ...}: lib.optionalAttrs externalInterpreter {
       packages.th-dlls.components.library.ghcOptions = [ "-fexternal-interpreter" ];
       # Static openssl seems to fail to load in iserv for musl
       packages.HsOpenSSL.components.library.libs = lib.optional pkgs.stdenv.hostPlatform.isMusl (pkgs.openssl.override { static = false; });
     })];
+    shell.nativeBuildInputs = [ buildPackages.haskell-nix.nix-tools-unchecked.exes.cabal ];
   };
 
   packages = (project false).hsPkgs;
