@@ -160,7 +160,7 @@ let
     inherit script targetPrefix;
     inherit (ghc) version meta;
   };
-  propagatedBuildInputs = configFiles.libDeps ++ [stdenv.cc ghc];
+  propagatedBuildInputs = configFiles.libDeps ++ lib.optional stdenv.hasCC stdenv.cc ++ [ghc];
 } (''
     mkdir -p $out/configFiles
     configFiles=$out/configFiles
