@@ -143,6 +143,7 @@ let
     '';
     inherit enableDWARF;
     plugins = [];
+    ghcOptions =  haskell-nix.templateHaskell.${compiler.nix-name}.ghcOptions or [];
   };
 
   hoogleIndex = let
@@ -192,10 +193,15 @@ in
                 ''} $(builtin type -P "${ghcEnv.targetPrefix}pkg-config" &> /dev/null && echo "--with-pkg-config=${ghcEnv.targetPrefix}pkg-config") \
                 "$@"
               '');
+    propagatedBuildInputs = mkDrvArgs.propagateBuildInputs or [] ++ ghcEnv.drv.propagatedBuildInputs;
     phases = ["installPhase"];
     installPhase = ''
       echo "${"Shell for " + toString (builtins.map (p : p.identifier.name) selectedPackages)}"
       echo $nativeBuildInputs $buildInputs > $out
+    '';
+    shellHook = mkDrvArgs.shellHook or "" + lib.optionalString stdenv.hostPlatform.isWindows ''
+
+       export pkgsHostTargetAsString="''${pkgsHostTarget[@]}"
     '';
 
     # This helps tools like `ghcide` (that use the ghc api) to find

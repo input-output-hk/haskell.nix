@@ -92,6 +92,7 @@ let
             --projectArgs)
               printf %s "$2" > "$HIX_TMPDIR/projectArgs.nix"
               shift
+              args+=(--override-input projectArgs "$(realpath "$HIX_TMPDIR")")
               ;;
             --supportedSystems)
               printf %s "$2" > "$HIX_TMPDIR/supportedSystems.nix"
@@ -166,7 +167,6 @@ let
           cp $HIX_FLAKE $FLAKE/flake.nix
           chmod +w $FLAKE/flake.nix
         fi
-        args+=(--override-input projectArgs "$(realpath "$HIX_TMPDIR")")
         nix $cmd "''${args[@]}"
         ;;
       esac
