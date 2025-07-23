@@ -91,7 +91,8 @@
       callFlake = import flake-compat;
 
       ifdLevel = 3;
-      runningHydraEvalTest = false;
+      # TODO set this to false when the macOS builders for ci.zw3rk.com are back online
+      runningHydraEvalTest = true;
       defaultCompiler = "ghc967";
       config = import ./config.nix;
 
@@ -110,9 +111,8 @@
       systems = [
         "x86_64-linux"
       ] ++ (if runningHydraEvalTest then [ ] else [
-        # TODO put these back when the macOS builders for ci.zw3rk.com are back online
-        # "x86_64-darwin"
-        # "aarch64-darwin"
+        "x86_64-darwin"
+        "aarch64-darwin"
       ]);
 
       nixpkgsArgs = {
@@ -297,11 +297,10 @@
           hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
             name = "nix-tools";
             constituents = (if runningHydraEvalTest then [ ] else [
-              # TODO put these back when the macOS builders for ci.zw3rk.com are back online
-              # "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
-              # "x86_64-darwin.nix-tools.static.zipped.nix-tools-static"
-              # "aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
-              # "x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+              "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
+              "x86_64-darwin.nix-tools.static.zipped.nix-tools-static"
+              "aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+              "x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
             ]) ++ [
               "x86_64-linux.nix-tools.static.zipped.nix-tools-static"
               "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
