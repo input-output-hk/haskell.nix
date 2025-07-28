@@ -5,13 +5,14 @@ with lib;
 let
   project = pkgs.haskell-nix.stackProject' {
     src = testSrc "stack-simple";
+    stackYaml = "stack-${compiler-nix-name}.yaml";
     inherit evalPackages;
   };
 
   packages = project.hsPkgs;
 
 in pkgs.recurseIntoAttrs {
-  meta.disabled = compiler-nix-name != "ghc984";
+  meta.disabled = !builtins.pathExists ./stack-${compiler-nix-name}.yaml;
   stack-simple-exe = (haskellLib.check packages.stack-simple.components.exes.stack-simple-exe) // {
       # Attributes used for debugging with nix repl
       inherit pkgSet packages;
