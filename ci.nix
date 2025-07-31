@@ -82,36 +82,40 @@
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
     in lib.optionalAttrs (nixpkgsName == "unstable"
-      && (__match ".*llvm" compiler-nix-name == null)
-      && !builtins.elem compiler-nix-name ["ghc9102"]) {
-    inherit (lib.systems.examples) ghcjs;
-  } // lib.optionalAttrs (nixpkgsName == "unstable"
-      && (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928"])
-       || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
-    inherit (lib.systems.examples) mingwW64;
-  } // lib.optionalAttrs (nixpkgsName == "unstable"
-      && (__match ".*llvm" compiler-nix-name == null)
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc928" "ghc948"])
-       || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
-    inherit (lib.systems.examples) ucrt64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
-    # Musl cross only works on linux
-    # aarch64 cross only works on linux
-    inherit (lib.systems.examples) musl64 aarch64-multiplatform;
-  } // lib.optionalAttrs (__match ".*llvm" compiler-nix-name == null && system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
-    # Out llvm versions of GHC seem to break for musl32
-    inherit (lib.systems.examples) musl32;
-  } // lib.optionalAttrs (system == "x86_64-linux" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
-    inherit (lib.systems.examples) aarch64-android-prebuilt;
-  } // lib.optionalAttrs (system == "x86_64-linux" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948" "ghc91320250523"]) {
-    inherit (lib.systems.examples) armv7a-android-prebuilt;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc8107" "ghc902"]) {
-    # TODO fix this for the compilers we build with hadrian (ghc >=9.4)
-    inherit (lib.systems.examples) aarch64-multiplatform-musl;
-  } // lib.optionalAttrs (system == "aarch64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc8107" "ghc902"]) {
-    inherit (lib.systems.examples) aarch64-multiplatform-musl;
-  };
+      && __match ".*llvm" compiler-nix-name == null
+      && builtins.elem system ["aarch64-linux" "x86_64-linux"]) {
+        static = p: p.pkgsStatic;
+      } // lib.optionalAttrs (nixpkgsName == "unstable"
+          && (__match ".*llvm" compiler-nix-name == null)
+          && !builtins.elem compiler-nix-name ["ghc9102"]) {
+        inherit (lib.systems.examples) ghcjs;
+      } // lib.optionalAttrs (nixpkgsName == "unstable"
+          && (__match ".*llvm" compiler-nix-name == null)
+          && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928"])
+           || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
+        inherit (lib.systems.examples) mingwW64;
+      } // lib.optionalAttrs (nixpkgsName == "unstable"
+          && (__match ".*llvm" compiler-nix-name == null)
+          && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc928" "ghc948"])
+           || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
+        inherit (lib.systems.examples) ucrt64;
+      } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
+        # Musl cross only works on linux
+        # aarch64 cross only works on linux
+        inherit (lib.systems.examples) musl64 aarch64-multiplatform;
+      } // lib.optionalAttrs (__match ".*llvm" compiler-nix-name == null && system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
+        # Out llvm versions of GHC seem to break for musl32
+        inherit (lib.systems.examples) musl32;
+      } // lib.optionalAttrs (system == "x86_64-linux" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
+        inherit (lib.systems.examples) aarch64-android-prebuilt;
+      } // lib.optionalAttrs (system == "x86_64-linux" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948" "ghc91320250523"]) {
+        inherit (lib.systems.examples) armv7a-android-prebuilt;
+      } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc8107" "ghc902"]) {
+        # TODO fix this for the compilers we build with hadrian (ghc >=9.4)
+        inherit (lib.systems.examples) aarch64-multiplatform-musl;
+      } // lib.optionalAttrs (system == "aarch64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc8107" "ghc902"]) {
+        inherit (lib.systems.examples) aarch64-multiplatform-musl;
+      };
   isDisabled = d: d.meta.disabled or false;
 in
 dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
@@ -140,8 +144,10 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
       }
       //
       dimension "Cross system" (crossSystems nixpkgsName evalPackages compiler-nix-name) (crossSystemName: crossSystem:
-        # Cross builds
-        let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; });
+        let pkgs =
+              if builtins.isAttrs crossSystem
+                then import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; })
+                else crossSystem (import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; }));
             build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };
         in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
             roots = pkgs.haskell-nix.roots' { inherit compiler-nix-name evalPackages; } ifdLevel // {

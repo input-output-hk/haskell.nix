@@ -25,7 +25,7 @@ let
   docDir         = "$wrappedGhc/share/doc/ghc/html";
   # For musl we can use haddock from the buildGHC
   haddock        = if stdenv.hostPlatform.isMusl
-    then ghc.buildGHC
+    then ghc.buildGHC or ghc
     else ghc;
 
   script = ''
