@@ -6,18 +6,37 @@ author:              Hamish Mackenzie
 maintainer:          Hamish.K.Mackenzie@gmail.com
 build-type:          Simple
 
+flag libsodium
+  description:         Enable libsodium support
+  default:             True
+  manual:              True
+
+flag openssl
+  description:         Enable OpenSSL support
+  default:             True
+  manual:              True
+
+flag double-conversion
+  description:         Enable double-conversion support
+  default:             True
+  manual:              True
+
 library
-  build-depends:       base
-                     , HsOpenSSL
-                     , libsodium
-                     , template-haskell
-                     , text
-                     , double-conversion
-                     , unix-time
-                     , th-orphans
-                     , ghc-prim
-                     , math-functions
-                     , erf
+  build-depends:
+      base
+    , template-haskell
+    , text
+    , unix-time
+    , th-orphans
+    , ghc-prim
+    , math-functions
+    , erf
+  if flag(openssl)
+    build-depends: HsOpenSSL
+  if flag(libsodium)
+    build-depends: libsodium
+  if flag(double-conversion)
+    build-depends: double-conversion
   exposed-modules:     Lib
   hs-source-dirs:      src
   default-language:    Haskell2010

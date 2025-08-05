@@ -7,6 +7,13 @@ let
   project = externalInterpreter: project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "th-dlls";
+    # TODO figure out why TH breaks with pkgsStatic for `libsodium` and `HsOpenSSL`
+    # `libsodium` fails with the unhandled ELF relocation(RelA) type 23
+    # `HsOpenSSL` segfaults in ghcizm9zi12zi2zminplace_GHCiziObjLink_resolveObjs1_info
+    cabalProjectLocal = lib.optionalString stdenv.hostPlatform.isStatic ''
+      package th-dlls
+        flags: -libsodium -openssl
+    '';
     modules = import ../modules.nix ++ [({pkgs, ...}: lib.optionalAttrs externalInterpreter {
       packages.th-dlls.components.library.ghcOptions = [ "-fexternal-interpreter" ];
       # Static openssl seems to fail to load in iserv for musl
