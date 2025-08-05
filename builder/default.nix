@@ -26,7 +26,7 @@ let
   };
 
   setup-builder = haskellLib.weakCallPackage pkgs ./setup-builder.nix {
-    ghc = (ghc.passthru.buildGHC or ghc);
+    ghc = (ghc.buildGHC or ghc);
     hsPkgs = hsPkgs.buildPackages;
     # We need to use the buildPackages stdenv to build the setup-builder.
     # in the native case, it would be the same in the cross case however
@@ -54,7 +54,7 @@ let
   # When building setup depends we need to use the build systems GHC and Packages
   makeSetupConfigFiles = haskellLib.weakCallPackage buildPackages ./make-config-files.nix {
     inherit haskellLib nonReinstallablePkgs;
-    ghc = (ghc.passthru.buildGHC or ghc);
+    ghc = (ghc.buildGHC or ghc);
   };
 
 
