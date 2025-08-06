@@ -23,7 +23,7 @@ let
 
   exeExt = stdenv.hostPlatform.extensions.executable;
   crossSuffix = lib.optionalString (stdenv.hostPlatform != stdenv.buildPlatform) "-${stdenv.hostPlatform.config}";
-  crossSuffix' = lib.optionalString (stdenv.hostPlatform != stdenv.buildPlatform && stdenv.hostPlatform.isStatic) "-static-${stdenv.hostPlatform.config}";
+  crossSuffix' = lib.optionalString (stdenv.hostPlatform != stdenv.buildPlatform && stdenv.hostPlatform.isStatic) "-static" + crossSuffix;
 
 in recurseIntoAttrs ({
   # Does not work on ghcjs because it needs zlib.
