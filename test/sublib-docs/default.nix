@@ -14,7 +14,7 @@ let
 
 in recurseIntoAttrs {
   # Haddock is not included with cross compilers currently
-  meta.disabled = haskellLib.isCrossHost;
+  meta.disabled = haskellLib.isCrossHost || stdenv.hostPlatform.isStatic;
   ifdInputs = {
     inherit (project) plan-nix;
   };
