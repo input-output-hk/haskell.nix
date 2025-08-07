@@ -39,7 +39,7 @@ let self =
 
 , # Whether to build dynamic libs for the standard library (on the target
   # platform). Static libs are always built.
-  enableShared ? !haskell-nix.haskellLib.isCrossTarget || stdenv.targetPlatform.isWasm
+  enableShared ? !haskell-nix.haskellLib.isCrossTarget && !stdenv.targetPlatform.isStatic || stdenv.targetPlatform.isWasm
 
 , enableLibraryProfiling ? true
 
@@ -304,7 +304,7 @@ let
           then "ghc964"
         else "ghc962";
     in
-    buildPackages.haskell-nix.cabalProject' {
+    buildPackages.haskell-nix.cabalProject' ({
       inherit compiler-nix-name;
       name = "hadrian";
       compilerSelection = p: p.haskell.compiler;
@@ -348,7 +348,9 @@ let
         subDir = "hadrian";
         includeSiblings = true;
       };
-    };
+    } // lib.optionalAttrs (builtins.compareVersions ghc-version "9.6" < 0) {
+      index-state = "2024-10-17T00:00:00Z";
+    });
 
   hadrian = hadrianProject.hsPkgs.hadrian.components.exes.hadrian;
 
@@ -358,7 +360,7 @@ let
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/doc/flavours.md
   hadrianArgs = "--flavour=${
         (if targetPlatform.isGhcjs || targetPlatform.isWasm then "quick" else "default")
-          + lib.optionalString (!enableShared) "+no_dynamic_ghc"
+          + lib.optionalString (!enableShared) "+no_dynamic_libs+no_dynamic_ghc"
           + lib.optionalString useLLVM "+llvm"
           + lib.optionalString enableDWARF "+debug_info"
           + lib.optionalString ((enableNativeBignum && hadrianHasNativeBignumFlavour) || targetPlatform.isGhcjs || targetPlatform.isWasm) "+native_bignum"

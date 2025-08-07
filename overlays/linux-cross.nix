@@ -20,7 +20,7 @@ let
   # in a 32bit linux (via qemu-arm user mode emulation).  If we have
   # -pie enabled, it will produce a static-pie executable, which
   # seems a lot like what we want but will crash on launch.  It appears
-  # the the __stack_chk_guard lookups go through some lookup table, and
+  # the __stack_chk_guard lookups go through some lookup table, and
   # while the relocations for the lookup table are correct, the __stack_chk_guard
   # address isn't properly relocated.  This could also be because libc isn't
   # supposed to be staticlly linked really.  However because we are lacking
@@ -31,8 +31,6 @@ let
   # ensure that we get a low pid < 65535 for android (If we run outside)
   # of nix build envs.
 
-  # we want this to hold only for arm (32 and 64bit) for now.
-  isLinuxCross = haskellLib.isCrossHost && hostPlatform.isLinux && (hostPlatform.isAarch32 || hostPlatform.isAarch64 || hostPlatform.isi686);
   qemuIservWrapperScript = enableProfiling:
     let
       interpreter =
@@ -58,15 +56,12 @@ let
     '';
   qemuIservWrapper = symlinkJoin { name = "iserv-wrapper"; paths = [ (qemuIservWrapperScript false) (qemuIservWrapperScript true) ]; };
   configureFlags = lib.optional (hostPlatform.isAarch32 || hostPlatform.isAndroid) "--disable-split-sections";
-  setupBuildFlags = map (opt: "--ghc-option=" + opt) ((lib.optionals isLinuxCross
+  ghcOptions =
     [ "-fexternal-interpreter"
       "-pgmi" "${qemuIservWrapper}/bin/iserv-wrapper"
       "-L${gmp}/lib"
          # Required to work-around https://gitlab.haskell.org/ghc/ghc/issues/15275
-    ] ++ lib.optionals hostPlatform.isAarch64 ["-fPIC"]))
-    ++ lib.optionals hostPlatform.isAarch32 (map (opt: "--gcc-option=" + opt) [ "-fno-pic" "-fno-plt" ])
-       # Also for GHC #15275
-    ++ lib.optionals hostPlatform.isAarch64 ["--gcc-option=-fPIC"];
+    ] ++ lib.optionals hostPlatform.isAarch64 ["-fPIC"];
 
   # Wrapper for qemu testing
   qemuTestWrapper = writeShellScriptBin "test-wrapper" ''
@@ -75,8 +70,6 @@ let
   '';
 
   # Choose the appropriate test wrapper
-  testWrapper = lib.optional isLinuxCross "${qemuTestWrapper}/bin/test-wrapper";
+  testWrapper = [ "${qemuTestWrapper}/bin/test-wrapper" ];
 
-  enableShared = lib.mkDefault (!isLinuxCross);
-
-in { inherit configureFlags setupBuildFlags testWrapper enableShared; }
+in { inherit configureFlags ghcOptions testWrapper; }

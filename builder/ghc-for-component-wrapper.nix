@@ -14,6 +14,7 @@
 , postInstall ? ""
 , enableDWARF
 , plugins
+, ghcOptions ? []
 }:
 
 let
@@ -23,8 +24,9 @@ let
   libDir         = "$wrappedGhc/${configFiles.libDir}";
   docDir         = "$wrappedGhc/share/doc/ghc/html";
   # For musl we can use haddock from the buildGHC
-  haddock        = if stdenv.targetPlatform.isMusl
-    then ghc.buildGHC
+  haddock        = if stdenv.hostPlatform.isMusl
+    then ghc.buildGHC or ghc # `or ghc` is here because nixpkgs GHC does not have `buildGHC`
+                             # TODO find a way to get suitable GHC and/or respect `ghc.hasHaddock`.
     else ghc;
 
   script = ''
@@ -107,7 +109,7 @@ let
           --set "NIX_${ghcCommandCaps}PKG"     "$wrappedGhc/bin/${ghcCommand}-pkg" \
           --set "NIX_${ghcCommandCaps}_DOCDIR" "${docDir}"                  \
           --set "GHC_PLUGINS"                  "$GHC_PLUGINS"               \
-          --set "NIX_${ghcCommandCaps}_LIBDIR" "${libDir}"
+          --set "NIX_${ghcCommandCaps}_LIBDIR" "${libDir}"${lib.concatMapStrings (o: " --add-flags ${o}") ghcOptions}
       fi
     done
 
@@ -159,8 +161,7 @@ let
     inherit script targetPrefix;
     inherit (ghc) version meta;
   };
-  propagatedBuildInputs = configFiles.libDeps;
-  nativeBuildInputs = [ghc];
+  propagatedBuildInputs = configFiles.libDeps ++ lib.optional stdenv.hasCC stdenv.cc ++ [ghc];
 } (''
     mkdir -p $out/configFiles
     configFiles=$out/configFiles

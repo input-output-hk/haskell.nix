@@ -22,23 +22,88 @@ let
       cmd=$1
       shift
       case $cmd in
-      update)
-        nix-env -iA hix -f https://github.com/input-output-hk/haskell.nix/tarball/master
+      init|init-hix)
+        if [ "$cmd" == "init" ]; then
+          FLAKE_NIX="$(mktemp -d)/flake.nix"
+          sed 's|EVAL_SYSTEM|${pkgs.stdenv.hostPlatform.system}|' < ${hixInit}/flake.nix > $FLAKE_NIX
+          if [ -e flake.nix ]; then
+            if ! diff -u flake.nix $FLAKE_NIX; then
+              echo 'ERROR: Not replacing existing `flake.nix`.'
+              exit 1
+            fi
+          else
+            cp $FLAKE_NIX flake.nix
+            echo '`flake.nix` file created.'
+          fi
+        fi
+        HIX_NIX="$(mktemp -d)/hix.nix"
+        sed 's|EVAL_SYSTEM|${pkgs.stdenv.hostPlatform.system}|' < ${hixInit}/nix/hix.nix > $HIX_NIX
+        if [ -e nix/hix.nix ]; then
+          echo '`nix/hix.nix` project configuration already exists:'
+        else
+          mkdir -p nix
+          cp $HIX_NIX nix/hix.nix
+          echo '`nix/hix.nix` project configuation:'
+        fi
+        ${pkgs.bat}/bin/bat nix/hix.nix
         ;;
-      dump-path|eval|log|path-info|search|show-derivation|sign-paths|verify|why-depends)
-        nix $cmd -f ${hixProject} ${args} "$@"
+      help)
+        cat <<EOF
+      Usage: hix <command> [args...]
+
+      hix is a wrapper around for the nix command that allows you
+      to work on haskell projects using nix without the need to add
+      nix files to the project.
+
+      Any nix <command> that takes 'installables' as an argument should
+      work and behave as if the project had a 'flake.nix' file that
+      was set up to work with haskell.nix.
+
+      You can add a 'nix/hix.nix' file to your project and 'hix' will
+      include that file as nix module containing project arguments.
+
+      Other commands:
+        init             Add flake.nix and nix/hix.nix file to allow
+                         nix commands to work (without hix).
+        help             This message
+
+      Advanced options:
+        --projectArgs <nix>       Haskell.nix arguments as Nix expression
+        --supportedSystems <nix>  Supported systems as Nix expression
+        --overlays <nix>          Overlay definitions
+        --config <nix>            Custom nix configuration
+
+      Examples:
+        hix flake show .
+        hix build '.#hello:exe:hello'
+        hix run '.#hello:exe:hello'
+        hix flake check --projectArgs '{ compiler-nix-name = "ghc9122"; }'
+
+      EOF
         ;;
-      flake|build|develop|run|profile)
+      *)
         # Put the flake files for remote URLs in $HOME/.hix by default
         HIX_DIR="''${HIX_DIR:-$HOME/.hix}"
         HIX_TMPDIR="$(mktemp -d)"
-        projectArgs=""
+        args=("--option" "allow-import-from-derivation" "true")
         while(($#)); do
           arg=$1
           case $arg in
             --projectArgs)
-              projectArgs="$2"
-              args+=(--override-input projectArgs "$HIX_TMPDIR")
+              printf %s "$2" > "$HIX_TMPDIR/projectArgs.nix"
+              shift
+              args+=(--override-input projectArgs "$(realpath "$HIX_TMPDIR")")
+              ;;
+            --supportedSystems)
+              printf %s "$2" > "$HIX_TMPDIR/supportedSystems.nix"
+              shift
+              ;;
+            --overlays)
+              printf %s "$2" > "$HIX_TMPDIR/overlays.nix"
+              shift
+              ;;
+            --config)
+              printf %s "$2" > "$HIX_TMPDIR/config.nix"
               shift
               ;;
             --out-link|-o|--eval-store|--include|-I|--inputs-from|--expr|--file|-f|--keep|-k|--phase|--profile|--unset|-u)
@@ -102,41 +167,7 @@ let
           cp $HIX_FLAKE $FLAKE/flake.nix
           chmod +w $FLAKE/flake.nix
         fi
-        if [ "$projectArgs" != "" ]; then
-          printf %s "$projectArgs" > "$HIX_TMPDIR/projectArgs.nix"
-        fi
         nix $cmd "''${args[@]}"
-        ;;
-      init|init-hix)
-        if [ "$cmd" == "init" ]; then
-          FLAKE_NIX="$(mktemp -d)/flake.nix"
-          sed 's|EVAL_SYSTEM|${pkgs.stdenv.hostPlatform.system}|' < ${hixInit}/flake.nix > $FLAKE_NIX
-          if [ -e flake.nix ]; then
-            if ! diff -u flake.nix $FLAKE_NIX; then
-              echo 'ERROR: Not replacing existing `flake.nix`.'
-              exit 1
-            fi
-          else
-            cp $FLAKE_NIX flake.nix
-            echo '`flake.nix` file created.'
-          fi
-        fi
-        HIX_NIX="$(mktemp -d)/hix.nix"
-        sed 's|EVAL_SYSTEM|${pkgs.stdenv.hostPlatform.system}|' < ${hixInit}/nix/hix.nix > $HIX_NIX
-        if [ -e nix/hix.nix ]; then
-          echo '`nix/hix.nix` project configuration already exists:'
-        else
-          mkdir -p nix
-          cp $HIX_NIX nix/hix.nix
-          echo '`nix/hix.nix` project configuation:'
-        fi
-        ${pkgs.bat}/bin/bat nix/hix.nix
-        ;;
-      repl)
-        nix $cmd ${hixProject} ${args} "$@"
-        ;;
-      *)
-        nix $cmd "$@"
         ;;
       esac
     '';

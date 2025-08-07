@@ -88,6 +88,9 @@ let
       ghc-internal = "libraries/ghc-internal";
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.10" >= 0) {
       ghc-toolchain = "utils/ghc-toolchain";
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.12" >= 0) {
+      ghc-experimental = "libraries/ghc-experimental";
+      haddock-api = "utils/haddock/haddock-api";
     };
 
   # The nix produced by `cabalProject` differs slightly depending on

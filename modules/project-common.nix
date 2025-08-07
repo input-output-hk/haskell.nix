@@ -21,7 +21,7 @@ with lib.types;
     shell = mkOption {
       type = submodule [
         (import ./shell.nix { projectConfig = config; })
-        { _module.args = { inherit (pkgs.haskell-nix) haskellLib; }; }
+        { _module.args = { inherit pkgs; inherit (pkgs.haskell-nix) haskellLib; }; }
       ];
       default = { };
       description = ''

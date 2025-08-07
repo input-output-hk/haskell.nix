@@ -326,7 +326,7 @@ in {
   };
 
   # Run evalModules passing the project function argument (m) as a module along with
-  # the the a projectType module (../modules/cabal-project.nix or ../modules/stack-project.nix).
+  # the a projectType module (../modules/cabal-project.nix or ../modules/stack-project.nix).
   # The resulting config is then passed to the project function's implementation.
   evalProjectModule = projectType: m: f:
     let project = f
@@ -471,6 +471,7 @@ in {
             ${component.passthru.identifier.component-id} = {
               type = "app";
               program = component.exePath;
+              inherit (component) meta;
             };
           })
           acc
@@ -531,8 +532,7 @@ in {
         , apps ? mkFlakeApps haskellPackages
         , checks ? mkFlakeChecks (collectChecks' haskellPackages)
         , coverage ? {}
-        , devShell ? project.shell
-        , devShells ? { default = devShell; }
+        , devShells ? { default = project.shell; }
         , checkedProject ? project.appendModule { checkMaterialization = true; }
         , ciJobs ? mkFlakeCiJobs project { inherit checks coverage packages devShells checkedProject; }
         , hydraJobs ? ciJobs
@@ -560,8 +560,7 @@ in {
           ciJobs
           # Used by:
           #   `nix develop`
-          devShells
-          devShell; # TODO remove devShell once everyone has nix that supports `devShells.default`
+          devShells;
       };
 
   # Adapt a standard project shell (`project.shell` or `haskell-nix.shellFor`)

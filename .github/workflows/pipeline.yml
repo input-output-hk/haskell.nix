@@ -223,14 +223,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: "Check that evaluation of hydra jobs works without using remote builders for GHC 9.6.7"
-        run: nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc967-native --show-trace --builders ''
+        run: |
+          sed -i 's/runningHydraEvalTest = true;/runningHydraEvalTest = false;/' flake.nix
+          nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc967-native --show-trace --builders ''
 
   hydra-without-remote-builders-ghc9102:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
       - name: "Check that evaluation of hydra jobs works without using remote builders for GHC 9.10.2"
-        run: nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc9102-native --show-trace --builders ''
+        run: |
+          sed -i 's/runningHydraEvalTest = true;/runningHydraEvalTest = false;/' flake.nix
+          nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc9102-native --show-trace --builders ''
 
   hix-cabal:
     runs-on: [self-hosted, linux]

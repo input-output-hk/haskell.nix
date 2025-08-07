@@ -34,7 +34,7 @@
       default = !config.exactDeps;
       description = ''
         Indicates if the shell should include all the tool dependencies
-        of in the haskell packages in the project.  Defaulted to `false` in
+        of the haskell packages in the project.  Defaulted to `false` in
         stack projects (to avoid trying to build the tools used by
         every `stackage` package).
       '';
@@ -63,7 +63,25 @@
     };
     shellHook = lib.mkOption {
       type = lib.types.str;
-      default = "";
+      # Shell hook to set EM_CACHE to a writable temporary directory if not already set
+      default = lib.optionalString pkgs.stdenv.hostPlatform.isGhcjs ''
+        if [ -z "$EM_CACHE" ]; then
+          # Create a unique temporary directory using mktemp
+          EM_CACHE_DIR=$(mktemp -d -t emcache-ghcjs-XXXXXX)
+          
+          # Copy the default Emscripten cache contents to the temporary directory
+          DEFAULT_EM_CACHE="${pkgs.pkgsBuildBuild.emscripten}/share/emscripten/cache"
+          if [ -d "$DEFAULT_EM_CACHE" ]; then
+            cp -r "$DEFAULT_EM_CACHE"/* "$EM_CACHE_DIR" 2>/dev/null || true
+            chmod -R u+w "$EM_CACHE_DIR"
+          fi
+          
+          export EM_CACHE="$EM_CACHE_DIR"
+          echo "Set EM_CACHE to $EM_CACHE"
+        else
+          echo "EM_CACHE already set to $EM_CACHE"
+        fi
+      '';
     };
 
     # mkDerivation args

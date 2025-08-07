@@ -1,6 +1,42 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Jul 3, 2025
+
+Some time ago the behavior of `shellFor` changed so that the arguments
+are now checked against `modules/shell.nix`.  This was done as part of a fix
+for bugs in the way `shellFor` arguments and project `shell` arguments
+interacted (both are now `modules` and the normal module merge rules apply).
+
+This means it is no longer possible to pass arbitrarily named arguments
+to `shellFor` in order to set environment variables.
+
+Instead of:
+
+```
+p.shellFor {
+  FOO = "bar";
+}
+```
+
+Use:
+
+```
+p.shellFor {
+  shellHook = ''
+    export FOO="bar"
+  '';
+}
+```
+
+or
+
+```
+(p.shellFor {}).overrideAttrs {
+   FOO = "bar";
+}
+```
+
 ## Jan 29, 2025
 
 Removed GHC <9.6 from CI.
