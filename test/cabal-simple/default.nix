@@ -35,7 +35,7 @@ in recurseIntoAttrs {
         cabal = { cabalProjectLocal = builtins.readFile ../cabal.project.local; };
         hoogle = { cabalProjectLocal = builtins.readFile ../cabal.project.local; };
       };
-      withHoogle = true;
+      withHoogle = !stdenv.hostPlatform.isStatic;
     }).overrideAttrs (_: _: {
       meta = rec {
         platforms = lib.platforms.all;

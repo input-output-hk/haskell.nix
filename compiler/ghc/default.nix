@@ -39,7 +39,7 @@ let self =
 
 , # Whether to build dynamic libs for the standard library (on the target
   # platform). Static libs are always built.
-  enableShared ? !haskell-nix.haskellLib.isCrossTarget
+  enableShared ? !haskell-nix.haskellLib.isCrossTarget && !stdenv.targetPlatform.isStatic
 
 , enableLibraryProfiling ? true
 
@@ -328,7 +328,7 @@ let
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/doc/flavours.md
   hadrianArgs = "--flavour=${
         (if targetPlatform.isGhcjs then "quick" else "default")
-          + lib.optionalString (!enableShared) "+no_dynamic_ghc"
+          + lib.optionalString (!enableShared) "+no_dynamic_libs+no_dynamic_ghc"
           + lib.optionalString useLLVM "+llvm"
           + lib.optionalString enableDWARF "+debug_info"
           + lib.optionalString ((enableNativeBignum && hadrianHasNativeBignumFlavour) || targetPlatform.isGhcjs) "+native_bignum"
