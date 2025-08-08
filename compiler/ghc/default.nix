@@ -589,7 +589,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
   configurePlatforms = [ "build" "host" ] ++ lib.optional (!targetPlatform.isGhcjs) "target";
 
   enableParallelBuilding = true;
-  postPatch = lib.optional (targetPlatform.isWasm) ''
+  postPatch = lib.optionalString (targetPlatform.isWasm) ''
     substituteInPlace utils/jsffi/dyld.mjs \
       --replace-fail \
         "node --disable-warning=ExperimentalWarning --experimental-wasm-type-reflection --no-turbo-fast-api-calls --wasm-lazy-validation" \
@@ -602,7 +602,9 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
               "$@"
           ''
         }"
-  '' + "patchShebangs .";
+  '' + ''
+    patchShebangs .
+  '';
 
   outputs = [ "out" "doc" "generated" ];
 
