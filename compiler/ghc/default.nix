@@ -589,7 +589,20 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
   configurePlatforms = [ "build" "host" ] ++ lib.optional (!targetPlatform.isGhcjs) "target";
 
   enableParallelBuilding = true;
-  postPatch = "patchShebangs .";
+  postPatch = lib.optional (targetPlatform.isWasm) ''
+    substituteInPlace utils/jsffi/dyld.mjs \
+      --replace-fail \
+        "node --disable-warning=ExperimentalWarning --experimental-wasm-type-reflection --no-turbo-fast-api-calls --wasm-lazy-validation" \
+        "${buildPackages.writeShellScriptBin "node" ''
+            exec ${buildPackages.nodejs_24}/bin/node \
+              --disable-warning=ExperimentalWarning \
+              --experimental-wasm-type-reflection \
+              --no-turbo-fast-api-calls \
+              --wasm-lazy-validation \
+              "$@"
+          ''
+        }"
+  '' + "patchShebangs .";
 
   outputs = [ "out" "doc" "generated" ];
 
@@ -603,7 +616,8 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     perl autoconf automake m4 python3 sphinx
     ghc bootPkgs.alex bootPkgs.happy bootPkgs.hscolour
   ] ++ lib.optional (patches != []) autoreconfHook
-  ++ lib.optional useLdLld llvmPackages.bintools;
+  ++ lib.optional useLdLld llvmPackages.bintools
+  ++ lib.optional (targetPlatform.isWasm) buildPackages.nodejs_24;
 
   # For building runtime libs
   depsBuildTarget = toolsForTarget;
