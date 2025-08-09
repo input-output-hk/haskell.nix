@@ -1,0 +1,11 @@
+diff --git a/rts/js/mem.js b/rts/js/mem.js
+index 4a9adf09cd..68f63afece 100644
+--- a/rts/js/mem.js
++++ b/rts/js/mem.js
+@@ -1,5 +1,5 @@
+ //#OPTIONS:CPP
+-//#OPTIONS:EMCC:EXPORTED_RUNTIME_METHODS=addFunction,removeFunction,getEmptyTableSlot
++//#OPTIONS:EMCC:EXPORTED_RUNTIME_METHODS=addFunction,removeFunction,getEmptyTableSlot,HEAP8
+ 
+ // #define GHCJS_TRACE_META 1
+ 
