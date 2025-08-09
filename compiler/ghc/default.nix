@@ -594,7 +594,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
       --replace-fail \
         "node --disable-warning=ExperimentalWarning --experimental-wasm-type-reflection --no-turbo-fast-api-calls --wasm-lazy-validation" \
         "${buildPackages.writeShellScriptBin "node" ''
-            exec ${buildPackages.nodejs_24}/bin/node \
+            exec ${buildPackages.nodejs-with-lto}/bin/node \
               --disable-warning=ExperimentalWarning \
               --experimental-wasm-type-reflection \
               --no-turbo-fast-api-calls \
@@ -619,7 +619,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     ghc bootPkgs.alex bootPkgs.happy bootPkgs.hscolour
   ] ++ lib.optional (patches != []) autoreconfHook
   ++ lib.optional useLdLld llvmPackages.bintools
-  ++ lib.optional (targetPlatform.isWasm) buildPackages.nodejs_24;
+  ++ lib.optional (targetPlatform.isWasm) buildPackages.nodejs-with-lto;
 
   # For building runtime libs
   depsBuildTarget = toolsForTarget;

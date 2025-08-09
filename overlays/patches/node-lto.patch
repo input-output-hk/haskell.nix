@@ -1,0 +1,305 @@
+diff --git a/common.gypi b/common.gypi
+index a6a79adc..160b6eb6 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -185,9 +185,9 @@
+               'MSVC_runtimeType': 2   # MultiThreadedDLL (/MD)
+             }],
+             ['clang==1', {
+-              'lto': ' -flto ', # Clang
++              'lto': ' -flto=thin ', # Clang
+             }, {
+-              'lto': ' -flto=4 -fuse-linker-plugin -ffat-lto-objects ', # GCC
++              'lto': ' -flto=auto -fuse-linker-plugin -fno-fat-lto-objects ', # GCC
+             }],
+           ],
+         },
+diff --git a/deps/cares/configure b/deps/cares/configure
+index d02f117d..468461f7 100755
+--- a/deps/cares/configure
++++ b/deps/cares/configure
+@@ -16139,11 +16139,6 @@ _LT_EOF
+ 
+ 
+ _lt_libdeps_save_CFLAGS=$CFLAGS
+-case "$CC $CFLAGS " in #(
+-*\ -flto*\ *) CFLAGS="$CFLAGS -fno-lto" ;;
+-*\ -fwhopr*\ *) CFLAGS="$CFLAGS -fno-whopr" ;;
+-*\ -fuse-linker-plugin*\ *) CFLAGS="$CFLAGS -fno-use-linker-plugin" ;;
+-esac
+ 
+ if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
+   (eval $ac_compile) 2>&5
+diff --git a/deps/cares/m4/libtool.m4 b/deps/cares/m4/libtool.m4
+index c4c02946..9f3d3662 100755
+--- a/deps/cares/m4/libtool.m4
++++ b/deps/cares/m4/libtool.m4
+@@ -7537,11 +7537,6 @@ _LT_EOF
+ ])
+ 
+ _lt_libdeps_save_CFLAGS=$CFLAGS
+-case "$CC $CFLAGS " in #(
+-*\ -flto*\ *) CFLAGS="$CFLAGS -fno-lto" ;;
+-*\ -fwhopr*\ *) CFLAGS="$CFLAGS -fno-whopr" ;;
+-*\ -fuse-linker-plugin*\ *) CFLAGS="$CFLAGS -fno-use-linker-plugin" ;;
+-esac
+ 
+ dnl Parse the compiler output and extract the necessary
+ dnl objects, libraries and library flags.
+diff --git a/deps/npm/node_modules/node-gyp/gyp/pylib/gyp/xcode_emulation.py b/deps/npm/node_modules/node-gyp/gyp/pylib/gyp/xcode_emulation.py
+index 5f2c097f..42dad126 100644
+--- a/deps/npm/node_modules/node-gyp/gyp/pylib/gyp/xcode_emulation.py
++++ b/deps/npm/node_modules/node-gyp/gyp/pylib/gyp/xcode_emulation.py
+@@ -638,7 +638,7 @@ class XcodeSettings:
+         # if the system clang isn't used, DYLD_LIBRARY_PATH needs to contain the
+         # path to the libLTO.dylib that matches the used clang.
+         if self._Test("LLVM_LTO", "YES", default="NO"):
+-            cflags.append("-flto")
++            cflags.append("-flto=thin")
+ 
+         self._AppendPlatformVersionMinFlags(cflags)
+ 
+@@ -1101,7 +1101,7 @@ class XcodeSettings:
+         # For static libraries, no dSYMs are created.
+         result = []
+         if (
+-            self._Test("GCC_GENERATE_DEBUGGING_SYMBOLS", "YES", default="YES")
++            self._Test("GCC_GENERATE_DEBUGGING_SYMBOLS", "YES", default="NO")
+             and self._Test(
+                 "DEBUG_INFORMATION_FORMAT", "dwarf-with-dsym", default="dwarf"
+             )
+diff --git a/deps/openssl/openssl-cli.gypi b/deps/openssl/openssl-cli.gypi
+index b4c278b4..79cafd6b 100644
+--- a/deps/openssl/openssl-cli.gypi
++++ b/deps/openssl/openssl-cli.gypi
+@@ -23,7 +23,7 @@
+     }],
+     # Avoid excessive LTO
+     ['enable_lto=="true"', {
+-      'ldflags': [ '-fno-lto' ],
++      'ldflags': [],
+     }],
+   ],
+ }
+diff --git a/deps/openssl/openssl.gyp b/deps/openssl/openssl.gyp
+index ea3a2dc0..ea3780f7 100644
+--- a/deps/openssl/openssl.gyp
++++ b/deps/openssl/openssl.gyp
+@@ -75,7 +75,7 @@
+         }],
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+      ]
+     }, {
+diff --git a/node.gyp b/node.gyp
+index a3688b8e..d320299f 100644
+--- a/node.gyp
++++ b/node.gyp
+@@ -1069,7 +1069,7 @@
+         }],
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+     }, # fuzz_env
+@@ -1112,7 +1112,7 @@
+         }],
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+     }, # fuzz_ClientHelloParser.cc
+@@ -1157,7 +1157,7 @@
+         }],
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+     }, # fuzz_strings
+@@ -1235,7 +1235,7 @@
+         }],
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+     }, # cctest
+@@ -1291,7 +1291,7 @@
+         }],
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+     }, # embedtest
+@@ -1333,7 +1333,7 @@
+         }],
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ]
+     }, # overlapped-checker
+@@ -1439,7 +1439,7 @@
+         }],
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+     }, # node_mksnapshot
+diff --git a/tools/gyp/pylib/gyp/xcode_emulation.py b/tools/gyp/pylib/gyp/xcode_emulation.py
+index aee1a542..162881d1 100644
+--- a/tools/gyp/pylib/gyp/xcode_emulation.py
++++ b/tools/gyp/pylib/gyp/xcode_emulation.py
+@@ -638,7 +638,7 @@ class XcodeSettings:
+         # if the system clang isn't used, DYLD_LIBRARY_PATH needs to contain the
+         # path to the libLTO.dylib that matches the used clang.
+         if self._Test("LLVM_LTO", "YES", default="NO"):
+-            cflags.append("-flto")
++            cflags.append("-flto=thin")
+ 
+         self._AppendPlatformVersionMinFlags(cflags)
+ 
+@@ -1101,7 +1101,7 @@ class XcodeSettings:
+         # For static libraries, no dSYMs are created.
+         result = []
+         if (
+-            self._Test("GCC_GENERATE_DEBUGGING_SYMBOLS", "YES", default="YES")
++            self._Test("GCC_GENERATE_DEBUGGING_SYMBOLS", "YES", default="NO")
+             and self._Test(
+                 "DEBUG_INFORMATION_FORMAT", "dwarf-with-dsym", default="dwarf"
+             )
+diff --git a/tools/icu/icu-generic.gyp b/tools/icu/icu-generic.gyp
+index f007c652..ac69a873 100644
+--- a/tools/icu/icu-generic.gyp
++++ b/tools/icu/icu-generic.gyp
+@@ -454,7 +454,7 @@
+       'conditions': [
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+     },
+@@ -471,7 +471,7 @@
+       'conditions': [
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+     },
+@@ -489,7 +489,7 @@
+       'conditions': [
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+     },
+@@ -506,7 +506,7 @@
+       'conditions': [
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+     },
+diff --git a/tools/v8_gypfiles/d8.gyp b/tools/v8_gypfiles/d8.gyp
+index 4dd98972..27165061 100644
+--- a/tools/v8_gypfiles/d8.gyp
++++ b/tools/v8_gypfiles/d8.gyp
+@@ -65,7 +65,7 @@
+         }],
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+     },
+diff --git a/tools/v8_gypfiles/v8.gyp b/tools/v8_gypfiles/v8.gyp
+index 88c1297b..a640a7ff 100644
+--- a/tools/v8_gypfiles/v8.gyp
++++ b/tools/v8_gypfiles/v8.gyp
+@@ -1690,7 +1690,7 @@
+         }],
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+       'defines!': [
+@@ -1752,7 +1752,7 @@
+         }],
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+     },  # mksnapshot
+@@ -1769,7 +1769,7 @@
+         }],
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+       'defines!': [
+@@ -1807,7 +1807,7 @@
+         }],
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+       'dependencies': [
+@@ -1843,7 +1843,7 @@
+         }],
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+       'sources': [
+@@ -1863,7 +1863,7 @@
+         }],
+         # Avoid excessive LTO
+         ['enable_lto=="true"', {
+-          'ldflags': [ '-fno-lto' ],
++          'ldflags': [],
+         }],
+       ],
+       'actions': [
+@@ -1931,7 +1931,7 @@
+         ],
+         'conditions': [
+           ['enable_lto=="true"', {
+-            'cflags_cc': [ '-fno-lto' ],
++            'cflags_cc': [],
+           }],
+           # Changes in push_registers_asm.cc in V8 v12.8 requires using
+           # push_registers_masm on Windows even with ClangCL on x64
