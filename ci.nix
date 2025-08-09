@@ -91,6 +91,10 @@
         inherit (lib.systems.examples) ghcjs;
       } // lib.optionalAttrs (nixpkgsName == "unstable"
           && (__match ".*llvm" compiler-nix-name == null)
+          && !builtins.elem compiler-nix-name ["ghc967" "ghc984" "ghc9102"]) {
+        inherit (lib.systems.examples) wasi32;
+      } // lib.optionalAttrs (nixpkgsName == "unstable"
+          && (__match ".*llvm" compiler-nix-name == null)
           && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928"])
            || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
         inherit (lib.systems.examples) mingwW64;

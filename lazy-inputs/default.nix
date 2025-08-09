@@ -41,6 +41,7 @@ in {
       inherit ((callFlake { pkgs = final; src = ./ghc9122; }).defaultNix) ghc9122;
       inherit ((callFlake { pkgs = final; src = ./ghc912X; }).defaultNix) ghc912X;
       inherit ((callFlake { pkgs = final; src = ./ghc913; }).defaultNix) ghc913;
+      inherit ((callFlake { pkgs = final; src = ./libffi-wasm; }).defaultNix) libffi-wasm;
     } // prev.haskell-nix.sources;
   };
 }
