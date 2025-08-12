@@ -77,7 +77,7 @@ in {
                 from = start: final.lib.optional (versionAtLeast start);
                 until = end: final.lib.optional (versionLessThan end);
                 always = final.lib.optional true;
-                onDarwin = final.lib.optionals final.stdenv.targetPlatform.isDarwin; 
+                onDarwin = final.lib.optionals final.stdenv.targetPlatform.isDarwin;
                 onMusl = final.lib.optionals final.stdenv.targetPlatform.isMusl;
                 onWindows = final.lib.optionals final.stdenv.targetPlatform.isWindows;
                 onWindowsOrMusl = final.lib.optionals (final.stdenv.targetPlatform.isWindows || final.stdenv.targetPlatform.isMusl);
@@ -333,6 +333,7 @@ in {
                 ++ onAndroid (from      "9.6"          ./patches/ghc/ghc-9.6-COMPAT_R_ARM_PREL31.patch)
                 ++ onAndroid (from      "9.10"         ./patches/ghc/ghc-9.10-ignore-libc.patch)
 
+                ++ onGhcjs (from        "9.12"         ./patches/ghc/ghc-9.12-ghcjs-rts-mem-heap8.patch)
                 # Fix for `fatal error: 'rts/Types.h' file not found` when building `primitive`
                 ++ onGhcjs (from        "9.13"         ./patches/ghc/ghc-9.13-ghcjs-rts-types.patch)
 
