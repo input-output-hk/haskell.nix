@@ -1,8 +1,9 @@
 final: prev: {
-  nodejs-with-lto = prev.pkgsStatic.nodejs_24.overrideAttrs (attrs: {
-    LDFLAGS="-Wl,-z,stack-size=8388608";
-    VARIATION="static";
-    patches = attrs.patches or [] ++ [./patches/node-lto.patch];
-    configureFlags = ["--enable-lto" "--fully-static"];
-  });
+  nodejs-with-lto = final.nodejs_24;
+#  nodejs-with-lto = final.pkgsStatic.nodejs_24.overrideAttrs (attrs: {
+#    LDFLAGS="-Wl,-z,stack-size=8388608";
+#    VARIATION="static";
+#    patches = attrs.patches or [] ++ [./patches/node-lto.patch];
+#    configureFlags = ["--enable-lto" "--fully-static"];
+#  });
 }
