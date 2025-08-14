@@ -26,7 +26,7 @@ let
   packages-ei = (project true).hsPkgs;
 
 in recurseIntoAttrs {
-  meta.disabled = stdenv.hostPlatform.isGhcjs
+  meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm
     # On aarch64 this test breaks form musl cross compiles on x86_64-linux
     # Error is:
     # iserv-proxy-interpreter: internal error: 0x0 address for .LANCHOR1 + 0 of type 562

@@ -41,7 +41,7 @@
 , hardeningDisable ? component.hardeningDisable
 
 , enableStatic ? component.enableStatic
-, enableShared ? ghc.enableShared && component.enableShared && !haskellLib.isCrossHost
+, enableShared ? ghc.enableShared && component.enableShared && (!haskellLib.isCrossHost || stdenv.hostPlatform.isWasm)
 , enableExecutableDynamic ? component.enableExecutableDynamic && !stdenv.hostPlatform.isMusl
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 , writeHieFiles ? component.writeHieFiles
@@ -284,7 +284,7 @@ let
       # lld -r --whole-archive ... will _not_ drop lazy symbols. However the
       # --whole-archive flag needs to come _before_ the objects, it's applied in
       # sequence. The proper fix is thusly to add --while-archive to Cabal.
-      (enableFeature (enableLibraryForGhci && !stdenv.hostPlatform.isGhcjs && !stdenv.hostPlatform.isAndroid) "library-for-ghci")
+      (enableFeature (enableLibraryForGhci && !stdenv.hostPlatform.isGhcjs && !stdenv.hostPlatform.isWasm && !stdenv.hostPlatform.isAndroid) "library-for-ghci")
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
       # If it uses other libraries it may be necessary for to add more
@@ -348,8 +348,11 @@ let
                      if builtins.isFunction shellHook then shellHook { inherit package shellWrappers; }
                      else abort "shellHook should be a string or a function";
 
-  exeExt = if stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9.8" < 0
-    then ".jsexe/all.js"
+  exeExt =
+    if stdenv.hostPlatform.isWasm
+      then ".wasm"
+    else if stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9.8" < 0
+      then ".jsexe/all.js"
     else stdenv.hostPlatform.extensions.executable;
   exeName = componentId.cname + exeExt;
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
