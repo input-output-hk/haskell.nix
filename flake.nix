@@ -91,8 +91,7 @@
       callFlake = import flake-compat;
 
       ifdLevel = 3;
-      # TODO set this to false when the macOS builders for ci.zw3rk.com are back online
-      runningHydraEvalTest = true;
+      runningHydraEvalTest = false;
       defaultCompiler = "ghc967";
       config = import ./config.nix;
 
