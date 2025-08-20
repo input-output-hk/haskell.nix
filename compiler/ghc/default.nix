@@ -128,7 +128,7 @@ let
         targetPackages.buildPackages.llvmPackages.llvm
         targetPackages.buildPackages.binaryen
       ];
-      outputs = ["dev" "out"];
+      outputs = ["out" "dev"];
       NIX_NO_SELF_RPATH = true;
     } ''
       mkdir cbits
@@ -146,6 +146,11 @@ let
       wasm32-unknown-wasi-clang -Wall -Wextra -mcpu=mvp -Oz -DNDEBUG -Icbits -fPIC -fvisibility=default -shared -Wl,--keep-section=target_features,--strip-debug cbits/*.c -o libffi.so
       wasm-opt --low-memory-unused --converge --debuginfo --flatten --rereloop --gufa -O4 -Oz libffi.so -o $out/lib/libffi.so
     '';
+
+  lib-wasm = buildPackages.symlinkJoin {
+    name = "lib-wasm";
+    paths = [ targetPackages.wasilibc libffi-wasm ];
+  };
 
   # TODO check if this possible fix for segfaults works or not.
   targetLibffi =
@@ -589,21 +594,27 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
   configurePlatforms = [ "build" "host" ] ++ lib.optional (!targetPlatform.isGhcjs) "target";
 
   enableParallelBuilding = true;
-  postPatch = lib.optionalString (targetPlatform.isWasm) ''
+  postPatch = ''
+    patchShebangs .
+  '' + lib.optionalString (targetPlatform.isWasm) ''
     substituteInPlace utils/jsffi/dyld.mjs \
       --replace-fail \
-        "node --disable-warning=ExperimentalWarning --experimental-wasm-type-reflection --no-turbo-fast-api-calls --wasm-lazy-validation" \
+        "${buildPackages.nodejs-with-lto}/bin/node --disable-warning=ExperimentalWarning --experimental-wasm-type-reflection --no-turbo-fast-api-calls --wasm-lazy-validation" \
         "${buildPackages.writeShellScriptBin "node" ''
+            SCRIPT=$1
+            shift
+            LIB_WASM=$1
+            shift
             exec ${buildPackages.nodejs-with-lto}/bin/node \
               --disable-warning=ExperimentalWarning \
               --experimental-wasm-type-reflection \
               --no-turbo-fast-api-calls \
               --wasm-lazy-validation \
+              "$SCRIPT" \
+              "${lib-wasm}/lib" \
               "$@"
           ''
-        }"
-  '' + ''
-    patchShebangs .
+        }/bin/node"
   '';
 
   outputs = [ "out" "doc" "generated" ];
