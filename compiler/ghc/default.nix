@@ -598,8 +598,11 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     patchShebangs .
   '' + lib.optionalString (targetPlatform.isWasm) ''
     substituteInPlace utils/jsffi/dyld.mjs \
-      --replace-fail \
-        "${buildPackages.nodejs-with-lto}/bin/node --disable-warning=ExperimentalWarning --experimental-wasm-type-reflection --no-turbo-fast-api-calls --wasm-lazy-validation" \
+      --replace \
+        "${buildPackages.nodejs-with-lto}/bin/node --disable-warning=ExperimentalWarning ${
+           if builtins.compareVersions ghc-version "9.13" < 0
+             then "--experimental-wasm-type-reflection"
+             else "--max-old-space-size=65536"} --no-turbo-fast-api-calls --wasm-lazy-validation" \
         "${buildPackages.writeShellScriptBin "node" ''
             SCRIPT=$1
             shift
@@ -607,7 +610,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
             shift
             exec ${buildPackages.nodejs-with-lto}/bin/node \
               --disable-warning=ExperimentalWarning \
-              --experimental-wasm-type-reflection \
+              --max-old-space-size=65536 \
               --no-turbo-fast-api-calls \
               --wasm-lazy-validation \
               "$SCRIPT" \
