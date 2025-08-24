@@ -55,6 +55,7 @@ in recurseIntoAttrs {
   # Does not work on windows because it needs mintty.
   meta.disabled = stdenv.hostPlatform.isMusl
     || stdenv.hostPlatform.isGhcjs
+    || stdenv.hostPlatform.isWasm
     || stdenv.hostPlatform.isWindows
     || (haskellLib.isCrossHost && (stdenv.hostPlatform.isAarch64 || stdenv.hostPlatform.isAarch32));
   inherit env envPkga envDefault;
