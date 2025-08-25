@@ -610,7 +610,10 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
             shift
             exec ${buildPackages.nodejs-with-lto}/bin/node \
               --disable-warning=ExperimentalWarning \
-              --max-old-space-size=65536 \
+              ${
+                 if builtins.compareVersions ghc-version "9.13" < 0
+                   then "--experimental-wasm-type-reflection"
+                   else "--max-old-space-size=65536"} \
               --no-turbo-fast-api-calls \
               --wasm-lazy-validation \
               "$SCRIPT" \
