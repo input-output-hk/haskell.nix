@@ -119,6 +119,8 @@ let
       INTEGER_LIBRARY = ${if enableIntegerSimple then "integer-simple" else "integer-gmp"}
     '';
 
+  nodejs = buildPackages.nodejs_24;
+
   libffi-wasm = buildPackages.runCommand "libffi-wasm" {
       nativeBuildInputs = [
         (buildPackages.haskell-nix.tool "ghc912" "libffi-wasm" {
@@ -599,7 +601,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
   '' + lib.optionalString (targetPlatform.isWasm) ''
     substituteInPlace utils/jsffi/dyld.mjs \
       --replace \
-        "${buildPackages.nodejs-with-lto}/bin/node --disable-warning=ExperimentalWarning ${
+        "${nodejs}/bin/node --disable-warning=ExperimentalWarning ${
            if builtins.compareVersions ghc-version "9.13" < 0
              then "--experimental-wasm-type-reflection"
              else "--max-old-space-size=65536"} --no-turbo-fast-api-calls --wasm-lazy-validation" \
@@ -608,7 +610,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
             shift
             LIB_WASM=$1
             shift
-            exec ${buildPackages.nodejs-with-lto}/bin/node \
+            exec ${nodejs}/bin/node \
               --disable-warning=ExperimentalWarning \
               ${
                  if builtins.compareVersions ghc-version "9.13" < 0
@@ -636,7 +638,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     ghc bootPkgs.alex bootPkgs.happy bootPkgs.hscolour
   ] ++ lib.optional (patches != []) autoreconfHook
   ++ lib.optional useLdLld llvmPackages.bintools
-  ++ lib.optional (targetPlatform.isWasm) buildPackages.nodejs-with-lto;
+  ++ lib.optional (targetPlatform.isWasm) nodejs;
 
   # For building runtime libs
   depsBuildTarget = toolsForTarget;

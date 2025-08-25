@@ -97,7 +97,6 @@ let
     lazy-inputs = import ../lazy-inputs;
     rcodesign = import ./rcodesign.nix;
     wasm = import ./wasm.nix;
-    node-lto = import ./node-lto.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -133,7 +132,6 @@ let
     gobject-introspection
     hix
     wasm
-    node-lto
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
     cacheCompilerDeps
