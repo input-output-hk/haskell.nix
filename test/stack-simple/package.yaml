@@ -29,10 +29,15 @@ executables:
   stack-simple-exe:
     main:                Main.hs
     source-dirs:         app
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+    when:
+      - condition: arch(wasm32)
+        then:
+          ghc-options: []
+        else:
+          ghc-options:
+          - -threaded
+          - -rtsopts
+          - -with-rtsopts=-N
     dependencies:
     - stack-simple
 
@@ -40,9 +45,14 @@ tests:
   stack-simple-test:
     main:                Spec.hs
     source-dirs:         test
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+    when:
+      - condition: arch(wasm32)
+        then:
+          ghc-options: []
+        else:
+          ghc-options:
+          - -threaded
+          - -rtsopts
+          - -with-rtsopts=-N
     dependencies:
     - stack-simple
