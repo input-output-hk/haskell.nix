@@ -26,8 +26,8 @@ let
   crossSuffix' = lib.optionalString (stdenv.hostPlatform != stdenv.buildPlatform && stdenv.hostPlatform.isStatic) "-static" + crossSuffix;
 
 in recurseIntoAttrs ({
-  # Does not work on ghcjs because it needs zlib.
-  meta.disabled = stdenv.hostPlatform.isGhcjs
+  # Does not work on ghcjs because it needs zlib. Wasm needs network fixed.
+  meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatfom.isWasm
     # For some reason the `.tix` file is not created on armv7a android (not sure why)
     || stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32;
   run = stdenv.mkDerivation {
