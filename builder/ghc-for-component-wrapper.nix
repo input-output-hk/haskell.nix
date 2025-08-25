@@ -137,9 +137,6 @@ let
   + lib.optionalString (stdenv.hostPlatform.isWasm) ''
      rm $wrappedGhc/lib/*.mjs
      cp $unwrappedGhc/lib/*.mjs $wrappedGhc/lib/
-     substituteInPlace $wrappedGhc/lib/dyld.mjs \
-       --replace-fail "instance.exports.__wasm_apply_data_relocs();" \
-          "if(instance.exports.__wasm_apply_data_relocs) instance.exports.__wasm_apply_data_relocs(); else {}"
   ''
   # Wrap haddock, if the base GHC provides it.
   + ''
