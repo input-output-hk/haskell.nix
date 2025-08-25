@@ -18,11 +18,11 @@ in recurseIntoAttrs {
     inherit (project) plan-nix;
   };
 
-  # Not sure why this breaks for ghc 8.10.7
   meta.disabled =
        builtins.elem compiler-nix-name [ "ghc91320250523" ]
     || stdenv.hostPlatform.isMusl
     || stdenv.hostPlatform.isGhcjs
+    || stdenv.hostPlatform.isWasm
     || stdenv.hostPlatform.isWindows
     || (haskellLib.isCrossHost && (stdenv.hostPlatform.isAarch64 || stdenv.hostPlatform.isAarch32));
   build = packages.test.components.library;

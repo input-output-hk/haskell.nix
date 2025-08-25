@@ -9,7 +9,9 @@ let
   };
 
 in recurseIntoAttrs {
-  meta.disabled = stdenv.hostPlatform.isGhcjs
+  meta.disabled = 
+    # This fail looking for ghci.  Adding ghci as a `build-depends` works, but should not be needed
+    stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm
     # Failed to lookup symbol: __aarch64_swp8_acq_rel
     || (builtins.elem compiler-nix-name ["ghc947" "ghc948"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
     # unhandled ELF relocation(Rel) type 10

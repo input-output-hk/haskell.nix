@@ -1,0 +1,322 @@
+diff --git a/clang/lib/Driver/ToolChains/WebAssembly.cpp b/clang/lib/Driver/ToolChains/WebAssembly.cpp
+index bd25fd1a8933..b906bff5d5c7 100644
+--- a/clang/lib/Driver/ToolChains/WebAssembly.cpp
++++ b/clang/lib/Driver/ToolChains/WebAssembly.cpp
+@@ -6,6 +6,8 @@
+ //
+ //===----------------------------------------------------------------------===//
+ 
++#include <sstream>
++
+ #include "WebAssembly.h"
+ #include "CommonArgs.h"
+ #include "Gnu.h"
+@@ -19,6 +21,7 @@
+ #include "llvm/Option/ArgList.h"
+ #include "llvm/Support/FileSystem.h"
+ #include "llvm/Support/Path.h"
++#include "llvm/Support/Process.h"
+ #include "llvm/Support/VirtualFileSystem.h"
+ 
+ using namespace clang::driver;
+@@ -168,21 +171,12 @@ void wasm::Linker::ConstructJob(Compilation &C, const JobAction &JA,
+   CmdArgs.push_back("-o");
+   CmdArgs.push_back(Output.getFilename());
+ 
+-  // Don't use wasm-opt by default on `wasip2` as it doesn't have support for
+-  // components at this time. Retain the historical default otherwise, though,
+-  // of running `wasm-opt` by default.
+-  bool WasmOptDefault = !TargetBuildsComponents(ToolChain.getTriple());
+-  bool RunWasmOpt = Args.hasFlag(options::OPT_wasm_opt,
+-                                 options::OPT_no_wasm_opt, WasmOptDefault);
+-
+   // If wasm-opt is enabled and optimizations are happening look for the
+   // `wasm-opt` program. If it's not found auto-disable it.
+   std::string WasmOptPath;
+-  if (RunWasmOpt && Args.getLastArg(options::OPT_O_Group)) {
+-    WasmOptPath = ToolChain.GetProgramPath("wasm-opt");
+-    if (WasmOptPath == "wasm-opt") {
+-      WasmOptPath = {};
+-    }
++  WasmOptPath = ToolChain.GetProgramPath("wasm-opt");
++  if (WasmOptPath == "wasm-opt") {
++    WasmOptPath = {};
+   }
+ 
+   if (!WasmOptPath.empty()) {
+@@ -193,29 +187,27 @@ void wasm::Linker::ConstructJob(Compilation &C, const JobAction &JA,
+                                          ResponseFileSupport::AtFileCurCP(),
+                                          Linker, CmdArgs, Inputs, Output));
+ 
+-  if (Arg *A = Args.getLastArg(options::OPT_O_Group)) {
+-    if (!WasmOptPath.empty()) {
+-      StringRef OOpt = "s";
+-      if (A->getOption().matches(options::OPT_O4) ||
+-          A->getOption().matches(options::OPT_Ofast))
+-        OOpt = "4";
+-      else if (A->getOption().matches(options::OPT_O0))
+-        OOpt = "0";
+-      else if (A->getOption().matches(options::OPT_O))
+-        OOpt = A->getValue();
+-
+-      if (OOpt != "0") {
+-        const char *WasmOpt = Args.MakeArgString(WasmOptPath);
+-        ArgStringList OptArgs;
+-        OptArgs.push_back(Output.getFilename());
+-        OptArgs.push_back(Args.MakeArgString(llvm::Twine("-O") + OOpt));
+-        OptArgs.push_back("-o");
+-        OptArgs.push_back(Output.getFilename());
+-        C.addCommand(std::make_unique<Command>(
+-            JA, *this, ResponseFileSupport::AtFileCurCP(), WasmOpt, OptArgs,
+-            Inputs, Output));
+-      }
++  if (!WasmOptPath.empty() && Args.hasArg(options::OPT_shared) &&
++      llvm::sys::Process::GetEnv("WASM_SO_OPT")) {
++    const char *WasmOpt = Args.MakeArgString(WasmOptPath);
++    ArgStringList OptArgs;
++    OptArgs.push_back(Output.getFilename());
++    OptArgs.push_back("-o");
++    OptArgs.push_back(Output.getFilename());
++
++    std::istringstream iss(llvm::sys::Process::GetEnv("WASM_SO_OPT").value());
++    std::string arg;
++
++    while (iss >> arg) {
++      auto *arg_heap = new char[arg.size() + 1];
++      std::copy(arg.begin(), arg.end(), arg_heap);
++      arg_heap[arg.size()] = '\0';
++      OptArgs.push_back(arg_heap);
+     }
++
++    C.addCommand(std::make_unique<Command>(JA, *this,
++                                           ResponseFileSupport::AtFileCurCP(),
++                                           WasmOpt, OptArgs, Inputs, Output));
+   }
+ }
+ 
+diff --git a/compiler-rt/cmake/Modules/AddCompilerRT.cmake b/compiler-rt/cmake/Modules/AddCompilerRT.cmake
+index c3e734f72392..282a321fd70b 100644
+--- a/compiler-rt/cmake/Modules/AddCompilerRT.cmake
++++ b/compiler-rt/cmake/Modules/AddCompilerRT.cmake
+@@ -382,8 +382,8 @@ function(add_compiler_rt_runtime name type)
+       target_link_libraries(${libname} PRIVATE ${builtins_${libname}})
+     endif()
+     if(${type} STREQUAL "SHARED")
+-      if(APPLE OR WIN32)
+-        set_property(TARGET ${libname} PROPERTY BUILD_WITH_INSTALL_RPATH ON)
++      if(COMMAND llvm_setup_rpath)
++        llvm_setup_rpath(${libname})
+       endif()
+       if(WIN32 AND NOT CYGWIN AND NOT MINGW)
+         set_target_properties(${libname} PROPERTIES IMPORT_PREFIX "")
+diff --git a/lld/wasm/InputChunks.cpp b/lld/wasm/InputChunks.cpp
+index 0e6c4e691be1..bfa438505d98 100644
+--- a/lld/wasm/InputChunks.cpp
++++ b/lld/wasm/InputChunks.cpp
+@@ -361,12 +361,11 @@ uint64_t InputChunk::getVA(uint64_t offset) const {
+ // Generate code to apply relocations to the data section at runtime.
+ // This is only called when generating shared libraries (PIC) where address are
+ // not known at static link time.
+-bool InputChunk::generateRelocationCode(raw_ostream &os) const {
++void InputChunk::generateRelocationCode(std::vector<std::string> &funcs) const {
+   LLVM_DEBUG(dbgs() << "generating runtime relocations: " << name
+                     << " count=" << relocations.size() << "\n");
+ 
+   bool is64 = ctx.arg.is64.value_or(false);
+-  bool generated = false;
+   unsigned opcode_ptr_const = is64 ? WASM_OPCODE_I64_CONST
+                                    : WASM_OPCODE_I32_CONST;
+   unsigned opcode_ptr_add = is64 ? WASM_OPCODE_I64_ADD
+@@ -385,6 +384,14 @@ bool InputChunk::generateRelocationCode(raw_ostream &os) const {
+     if (!requiresRuntimeReloc)
+       continue;
+ 
++    if (funcs.empty() || funcs.back().size() >= 7654300) {
++      funcs.emplace_back(std::string());
++      raw_string_ostream os(funcs.back());
++      writeUleb128(os, 0, "num locals");
++    }
++
++    raw_string_ostream os(funcs.back());
++
+     LLVM_DEBUG(dbgs() << "gen reloc: type=" << relocTypeToString(rel.Type)
+                       << " addend=" << rel.Addend << " index=" << rel.Index
+                       << " output offset=" << offset << "\n");
+@@ -439,9 +446,7 @@ bool InputChunk::generateRelocationCode(raw_ostream &os) const {
+     writeU8(os, opcode_reloc_store, "I32_STORE");
+     writeUleb128(os, 2, "align");
+     writeUleb128(os, 0, "offset");
+-    generated = true;
+   }
+-  return generated;
+ }
+ 
+ // Split WASM_SEG_FLAG_STRINGS section. Such a section is a sequence of
+diff --git a/lld/wasm/InputChunks.h b/lld/wasm/InputChunks.h
+index f545449e1246..d231382a5f5e 100644
+--- a/lld/wasm/InputChunks.h
++++ b/lld/wasm/InputChunks.h
+@@ -78,7 +78,7 @@ public:
+ 
+   size_t getNumRelocations() const { return relocations.size(); }
+   void writeRelocations(llvm::raw_ostream &os) const;
+-  bool generateRelocationCode(raw_ostream &os) const;
++  void generateRelocationCode(std::vector<std::string> &funcs) const;
+ 
+   bool isTLS() const { return flags & llvm::wasm::WASM_SEG_FLAG_TLS; }
+   bool isRetained() const { return flags & llvm::wasm::WASM_SEG_FLAG_RETAIN; }
+diff --git a/lld/wasm/SyntheticSections.cpp b/lld/wasm/SyntheticSections.cpp
+index 0e2aa57e9048..e5df7d8c0be0 100644
+--- a/lld/wasm/SyntheticSections.cpp
++++ b/lld/wasm/SyntheticSections.cpp
+@@ -299,6 +299,8 @@ void FunctionSection::writeBody() {
+ void FunctionSection::addFunction(InputFunction *func) {
+   if (!func->live)
+     return;
++  if (func->hasFunctionIndex())
++    return;
+   uint32_t functionIndex =
+       out.importSec->getNumImportedFunctions() + inputFunctions.size();
+   inputFunctions.emplace_back(func);
+diff --git a/lld/wasm/Writer.cpp b/lld/wasm/Writer.cpp
+index 2bf4b370a7db..19fca2616c7a 100644
+--- a/lld/wasm/Writer.cpp
++++ b/lld/wasm/Writer.cpp
+@@ -1452,20 +1452,21 @@ void Writer::createStartFunction() {
+ void Writer::createApplyDataRelocationsFunction() {
+   LLVM_DEBUG(dbgs() << "createApplyDataRelocationsFunction\n");
+   // First write the body's contents to a string.
+-  std::string bodyContent;
++  std::vector<std::string> funcs;
+   {
+-    raw_string_ostream os(bodyContent);
+-    writeUleb128(os, 0, "num locals");
+-    bool generated = false;
+     for (const OutputSegment *seg : segments)
+       if (!ctx.arg.sharedMemory || !seg->isTLS())
+         for (const InputChunk *inSeg : seg->inputSegments)
+-          generated |= inSeg->generateRelocationCode(os);
++          inSeg->generateRelocationCode(funcs);
++  }
+ 
+-    if (!generated) {
+-      LLVM_DEBUG(dbgs() << "skipping empty __wasm_apply_data_relocs\n");
+-      return;
+-    }
++  if (funcs.empty()) {
++    LLVM_DEBUG(dbgs() << "skipping empty __wasm_apply_data_relocs\n");
++    return;
++  }
++
++  for (auto &func : funcs) {
++    raw_string_ostream os(func);
+     writeU8(os, WASM_OPCODE_END, "END");
+   }
+ 
+@@ -1478,24 +1479,67 @@ void Writer::createApplyDataRelocationsFunction() {
+       make<SyntheticFunction>(nullSignature, "__wasm_apply_data_relocs"));
+   def->markLive();
+ 
+-  createFunction(def, bodyContent);
++  if (funcs.size() == 1) {
++    createFunction(def, funcs.back());
++    return;
++  }
++
++  std::string body;
++  {
++    raw_string_ostream os(body);
++    writeUleb128(os, 0, "num locals");
++
++    for (std::size_t i = 0; i < funcs.size(); ++i) {
++      auto &name =
++          *make<std::string>("__wasm_apply_data_relocs_" + std::to_string(i));
++      auto *func = make<SyntheticFunction>(nullSignature, name);
++      auto *def = symtab->addSyntheticFunction(
++          name, WASM_SYMBOL_VISIBILITY_HIDDEN, func);
++      def->markLive();
++      // Normally this shouldn't be called manually for a synthetic
++      // function, since the function indices in
++      // ctx.syntheticFunctions will be calculated later (check
++      // functionSec->addFunction call hierarchy for details).
++      // However, at this point we already need the correct index. The
++      // solution is to place the new synthetic function eagerly, and
++      // also making addFunction idempotent by skipping when there's
++      // already a function index.
++      out.functionSec->addFunction(func);
++      createFunction(def, funcs[i]);
++
++      writeU8(os, WASM_OPCODE_CALL, "CALL");
++      writeUleb128(os, def->getFunctionIndex(), "function index");
++    }
++
++    writeU8(os, WASM_OPCODE_END, "END");
++  }
++  createFunction(def, body);
+ }
+ 
+ void Writer::createApplyTLSRelocationsFunction() {
+   LLVM_DEBUG(dbgs() << "createApplyTLSRelocationsFunction\n");
+-  std::string bodyContent;
++  std::vector<std::string> funcs;
+   {
+-    raw_string_ostream os(bodyContent);
+-    writeUleb128(os, 0, "num locals");
+     for (const OutputSegment *seg : segments)
+       if (seg->isTLS())
+         for (const InputChunk *inSeg : seg->inputSegments)
+-          inSeg->generateRelocationCode(os);
++          inSeg->generateRelocationCode(funcs);
++  }
+ 
++  if (funcs.empty()) {
++    funcs.emplace_back(std::string());
++    raw_string_ostream os(funcs.back());
++    writeUleb128(os, 0, "num locals");
++  }
++
++  for (auto &func : funcs) {
++    raw_string_ostream os(func);
+     writeU8(os, WASM_OPCODE_END, "END");
+   }
+ 
+-  createFunction(ctx.sym.applyTLSRelocs, bodyContent);
++  assert(funcs.size() == 1);
++
++  createFunction(ctx.sym.applyTLSRelocs, funcs.back());
+ }
+ 
+ // Similar to createApplyDataRelocationsFunction but generates relocation code
+diff --git a/llvm/cmake/modules/AddLLVM.cmake b/llvm/cmake/modules/AddLLVM.cmake
+index d3e9377c8d2f..50a34184919a 100644
+--- a/llvm/cmake/modules/AddLLVM.cmake
++++ b/llvm/cmake/modules/AddLLVM.cmake
+@@ -2524,8 +2524,7 @@ function(llvm_setup_rpath name)
+     # FIXME: update this when there is better solution.
+     set(_install_rpath "${LLVM_LIBRARY_OUTPUT_INTDIR}" "${CMAKE_INSTALL_PREFIX}/lib${LLVM_LIBDIR_SUFFIX}" ${extra_libdir})
+   elseif(UNIX)
+-    set(_build_rpath "\$ORIGIN/../lib${LLVM_LIBDIR_SUFFIX}" ${extra_libdir})
+-    set(_install_rpath "\$ORIGIN/../lib${LLVM_LIBDIR_SUFFIX}")
++    set(_install_rpath "\$ORIGIN/../lib${LLVM_LIBDIR_SUFFIX}" ${extra_libdir})
+     if(${CMAKE_SYSTEM_NAME} MATCHES "(FreeBSD|DragonFly)")
+       set_property(TARGET ${name} APPEND_STRING PROPERTY
+                    LINK_FLAGS " -Wl,-z,origin ")
+@@ -2539,16 +2538,9 @@ function(llvm_setup_rpath name)
+     return()
+   endif()
+ 
+-  # Enable BUILD_WITH_INSTALL_RPATH unless CMAKE_BUILD_RPATH is set and not
+-  # building for macOS or AIX, as those platforms seemingly require it.
+-  # On AIX, the tool chain doesn't support modifying rpaths/libpaths for XCOFF
+-  # on install at the moment, so BUILD_WITH_INSTALL_RPATH is required.
++  # Enable BUILD_WITH_INSTALL_RPATH unless CMAKE_BUILD_RPATH is set.
+   if("${CMAKE_BUILD_RPATH}" STREQUAL "")
+-    if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin|AIX")
+-      set_property(TARGET ${name} PROPERTY BUILD_WITH_INSTALL_RPATH ON)
+-    else()
+-      set_property(TARGET ${name} APPEND PROPERTY BUILD_RPATH "${_build_rpath}")
+-    endif()
++    set_property(TARGET ${name} PROPERTY BUILD_WITH_INSTALL_RPATH ON)
+   endif()
+ 
+   set_target_properties(${name} PROPERTIES

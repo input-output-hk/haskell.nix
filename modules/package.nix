@@ -77,6 +77,7 @@ in
 
       synopsis = lib.mkOption {
         type = types.str;
+        default = "";
       };
 
       description = lib.mkOption {

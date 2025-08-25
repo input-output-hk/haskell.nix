@@ -25,10 +25,15 @@ executables:
   cabal-hpack:
     main:                Main.hs
     source-dirs:         app
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+    when:
+      - condition: arch(wasm32)
+        then:
+          ghc-options: []
+        else:
+          ghc-options:
+          - -threaded
+          - -rtsopts
+          - -with-rtsopts=-N
     dependencies:
     - cabal-hpack
 

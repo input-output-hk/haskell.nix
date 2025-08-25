@@ -16,7 +16,7 @@ in recurseIntoAttrs {
   # ReferenceError: h$hs_clock_darwin_gettime is not defined
   # https://github.com/input-output-hk/haskell.nix/issues/925
   # Also `hspec` now depends on `ghc`, which breaks this test for cross compilation
-  meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWindows || stdenv.hostPlatform.isMusl;
+  meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm || stdenv.hostPlatform.isWindows || stdenv.hostPlatform.isMusl;
   ifdInputs = {
     inherit (project) plan-nix;
   };

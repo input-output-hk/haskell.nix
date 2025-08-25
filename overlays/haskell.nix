@@ -1178,7 +1178,8 @@ final: prev: {
             # GHCJS builds its own template haskell runner.
             # These seem to be the only things we use from `ghc-extra-packages`
             # in haskell.nix itself.
-            && !final.stdenv.hostPlatform.isGhcjs)
+            && !final.stdenv.hostPlatform.isGhcjs
+            && !final.stdenv.hostPlatform.isWasm)
               final.haskell-nix.iserv-proxy-exes.${compiler-nix-name});
     };
 }
