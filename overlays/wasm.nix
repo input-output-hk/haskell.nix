@@ -19,8 +19,8 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.targetPlatform.isWasm {
       domain = "gitlab.haskell.org";
       owner = "haskell-wasm";
       repo = "wasi-libc";
-      rev = "f8f0d3101e02aa3aaf37c5e31db23de34963053d";
-      hash = "sha256-EvqbvVP9EH63C7KUmN4QaYjYbc4yGPU7vNev9u6a46o=";
+      rev = "16aa8495f039918edb47046b277bf48b516a9776";
+      hash = "sha256-cun3q5OKjryabVhXMNjwQ0bsmz+pS1eCupRP2he+f1k=";
       fetchSubmodules = true;
     };
     preBuild = ''
