@@ -28,7 +28,8 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.targetPlatform.isWasm {
       makeFlagsArray+=(
         "default"
         "libc_so"
-        ) 
+        )
+      export BUILTINS_LIB=$($CC --print-libgcc-file-name)
     '';
     postBuild = ''
       mkdir -p ${builtins.placeholder "out"}
