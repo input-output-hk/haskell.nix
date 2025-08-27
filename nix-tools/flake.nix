@@ -78,7 +78,7 @@
       hydraJobs = forAllSystems
         (pkgs:
           # project's hydraJobs
-          pkgs.nix-tools.project.flake'.hydraJobs
+          pkgs.nix-tools-unchecked.project.flake'.hydraJobs
           # tarballs with static builds.
           // lib.optionalAttrs (pkgs.buildPlatform.system == "x86_64-linux")
             { binary-tarball = mkTarball pkgs.pkgsCross.musl64; }

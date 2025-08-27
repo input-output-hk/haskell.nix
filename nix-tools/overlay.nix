@@ -23,7 +23,7 @@ let
             # tests need to fetch hackage
             configureArgs = final.lib.mkDefault "--disable-tests";
 
-            evalPackages = final.buildPackages;
+            evalSystem = builtins.currentSystem or "x86_64-linux";
 
             # Tools to include in the development shell
             shell.tools.cabal = "latest";
