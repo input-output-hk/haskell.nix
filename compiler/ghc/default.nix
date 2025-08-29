@@ -125,6 +125,7 @@ let
       nativeBuildInputs = [
         (buildPackages.haskell-nix.tool "ghc912" "libffi-wasm" {
           src = buildPackages.haskell-nix.sources.libffi-wasm;
+          evalPackages = hadrianEvalPackages;
         })
         targetPackages.buildPackages.llvmPackages.clang
         targetPackages.buildPackages.llvmPackages.llvm
