@@ -86,7 +86,16 @@ let self =
 # extra values we want to have available as passthru values.
 , extra-passthru ? {}
 
-, hadrianEvalPackages ? buildPackages
+# For running IFDs (used to evaluate build plans of tools involved in building GHC).
+#
+# Currently used for:
+#   * hadrian
+#   * libffi-wasm
+#   * cabal (if we start using `cabal` to build GHC)
+#
+# We use this instead of `buildPackages` so that plan evaluation
+# can work on platforms other than the `buildPlatform`.
+, toolEvalPackages ? buildPackages, toolEvalPackages ? buildPackages
 }@args:
 
 assert !(enableIntegerSimple || enableNativeBignum) -> gmp != null;
@@ -104,7 +113,7 @@ let
   inherit (haskell-nix.haskellLib) isCrossTarget;
 
   ghc = if bootPkgs.ghc.isHaskellNixCompiler or false
-    then bootPkgs.ghc.override { inherit hadrianEvalPackages; }
+    then bootPkgs.ghc.override { inherit toolEvalPackages; }
     else bootPkgs.ghc;
 
   ghcHasNativeBignum = builtins.compareVersions ghc-version "9.0" >= 0;
@@ -125,7 +134,7 @@ let
       nativeBuildInputs = [
         (buildPackages.haskell-nix.tool "ghc912" "libffi-wasm" {
           src = buildPackages.haskell-nix.sources.libffi-wasm;
-          evalPackages = hadrianEvalPackages;
+          evalPackages = toolEvalPackages;
         })
         targetPackages.buildPackages.llvmPackages.clang
         targetPackages.buildPackages.llvmPackages.llvm
@@ -316,7 +325,7 @@ let
       inherit compiler-nix-name;
       name = "hadrian";
       compilerSelection = p: p.haskell.compiler;
-      evalPackages = hadrianEvalPackages;
+      evalPackages = toolEvalPackages;
       modules = [{
         reinstallableLibGhc = false;
         # Apply the patches in a way that does not require using something
@@ -887,7 +896,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
       disableLargeAddressSpace = true;
     });
   } // extra-passthru // {
-    buildGHC = extra-passthru.buildGHC.override { inherit hadrianEvalPackages; };
+    buildGHC = extra-passthru.buildGHC.override { inherit toolEvalPackages; };
   };
 
   meta = {

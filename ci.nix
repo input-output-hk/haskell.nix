@@ -155,7 +155,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
             build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };
         in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
             roots = pkgs.haskell-nix.roots' { inherit compiler-nix-name evalPackages; } ifdLevel // {
-              ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { hadrianEvalPackages = evalPackages; };
+              ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { toolEvalPackages = evalPackages; };
             };
             # TODO: look into cross compiling ghc itself
             # ghc = pkgs.haskell-nix.compiler.${compiler-nix-name};
