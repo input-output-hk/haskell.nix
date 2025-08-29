@@ -696,7 +696,7 @@ final: prev: {
                             then config.ghc
                           else
                             final.lib.mkDefault selectedCompiler;
-                        in if ghc.isHaskellNixCompiler or false then ghc.override { hadrianEvalPackages = evalPackages; } else ghc;
+                        in if ghc.isHaskellNixCompiler or false then ghc.override { ghcEvalPackages = evalPackages; } else ghc;
                       compiler.nix-name = final.lib.mkForce config.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
                     } ];
@@ -947,7 +947,7 @@ final: prev: {
                   modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; }
                       (mkCacheModule cache) ]
                     ++ (config.modules or [])
-                    ++ final.lib.optional (config.ghc != null) { ghc.package = config.ghc.override { hadrianEvalPackages = evalPackages; }; }
+                    ++ final.lib.optional (config.ghc != null) { ghc.package = config.ghc.override { ghcEvalPackages = evalPackages; }; }
                     ++ final.lib.optional (config.compiler-nix-name != null)
                         { compiler.nix-name = final.lib.mkForce config.compiler-nix-name; }
                     ++ [ { evalPackages = final.lib.mkDefault evalPackages; } ];
@@ -1151,7 +1151,7 @@ final: prev: {
 
         roots' = { compiler-nix-name, evalPackages ? final.pkgsBuildBuild }: ifdLevel:
           let
-            ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { hadrianEvalPackages = evalPackages; };
+            ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { ghcEvalPackages = evalPackages; };
           in
             final.recurseIntoAttrs ({
             # Things that require no IFD to build

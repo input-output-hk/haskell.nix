@@ -95,7 +95,7 @@ let self =
 #
 # We use this instead of `buildPackages` so that plan evaluation
 # can work on platforms other than the `buildPlatform`.
-, hadrianEvalPackages ? buildPackages
+, ghcEvalPackages ? buildPackages
 }@args:
 
 assert !(enableIntegerSimple || enableNativeBignum) -> gmp != null;
@@ -113,7 +113,7 @@ let
   inherit (haskell-nix.haskellLib) isCrossTarget;
 
   ghc = if bootPkgs.ghc.isHaskellNixCompiler or false
-    then bootPkgs.ghc.override { inherit hadrianEvalPackages; }
+    then bootPkgs.ghc.override { inherit ghcEvalPackages; }
     else bootPkgs.ghc;
 
   ghcHasNativeBignum = builtins.compareVersions ghc-version "9.0" >= 0;
@@ -134,7 +134,7 @@ let
       nativeBuildInputs = [
         (buildPackages.haskell-nix.tool "ghc912" "libffi-wasm" {
           src = buildPackages.haskell-nix.sources.libffi-wasm;
-          evalPackages = hadrianEvalPackages;
+          evalPackages = ghcEvalPackages;
         })
         targetPackages.buildPackages.llvmPackages.clang
         targetPackages.buildPackages.llvmPackages.llvm
@@ -325,7 +325,7 @@ let
       inherit compiler-nix-name;
       name = "hadrian";
       compilerSelection = p: p.haskell.compiler;
-      evalPackages = hadrianEvalPackages;
+      evalPackages = ghcEvalPackages;
       modules = [{
         reinstallableLibGhc = false;
         # Apply the patches in a way that does not require using something
@@ -896,7 +896,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
       disableLargeAddressSpace = true;
     });
   } // extra-passthru // {
-    buildGHC = extra-passthru.buildGHC.override { inherit hadrianEvalPackages; };
+    buildGHC = extra-passthru.buildGHC.override { inherit ghcEvalPackages; };
   };
 
   meta = {
