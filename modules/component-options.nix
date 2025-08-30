@@ -105,7 +105,7 @@
       description = "If set, enables building static libraries and executables.";
       type = lib.types.bool;
       # Disabled for ghcjs, see https://gitlab.haskell.org/ghc/ghc/-/issues/23235
-      default = !pkgs.stdenv.hostPlatform.isGhcjs;
+      default = !pkgs.stdenv.hostPlatform.isGhcjs && !pkgs.stdenv.hostPlatform.isWasm;
     };
 
     enableShared = lib.mkOption {

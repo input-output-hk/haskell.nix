@@ -21,7 +21,7 @@ let self =
   libffi ? null
 
 , # we don't need LLVM for x86, aarch64, or ghcjs
-  useLLVM ? with stdenv.targetPlatform; !(isx86 || isAarch64 || isGhcjs)
+  useLLVM ? with stdenv.targetPlatform; !(isx86 || isAarch64 || isGhcjs || isWasm)
 , # LLVM is conceptually a run-time-only dependency, but for
   # non-x86, we need LLVM to bootstrap later stages, so it becomes a
   # build-time dependency too.
@@ -39,7 +39,7 @@ let self =
 
 , # Whether to build dynamic libs for the standard library (on the target
   # platform). Static libs are always built.
-  enableShared ? !haskell-nix.haskellLib.isCrossTarget && !stdenv.targetPlatform.isStatic
+  enableShared ? !haskell-nix.haskellLib.isCrossTarget && !stdenv.targetPlatform.isStatic || stdenv.targetPlatform.isWasm
 
 , enableLibraryProfiling ? true
 
@@ -86,7 +86,16 @@ let self =
 # extra values we want to have available as passthru values.
 , extra-passthru ? {}
 
-, hadrianEvalPackages ? buildPackages
+# For running IFDs (used to evaluate build plans of tools involved in building GHC).
+#
+# Currently used for:
+#   * hadrian
+#   * libffi-wasm
+#   * cabal (if we start using `cabal` to build GHC)
+#
+# We use this instead of `buildPackages` so that plan evaluation
+# can work on platforms other than the `buildPlatform`.
+, ghcEvalPackages ? buildPackages
 }@args:
 
 assert !(enableIntegerSimple || enableNativeBignum) -> gmp != null;
@@ -104,7 +113,7 @@ let
   inherit (haskell-nix.haskellLib) isCrossTarget;
 
   ghc = if bootPkgs.ghc.isHaskellNixCompiler or false
-    then bootPkgs.ghc.override { inherit hadrianEvalPackages; }
+    then bootPkgs.ghc.override { inherit ghcEvalPackages; }
     else bootPkgs.ghc;
 
   ghcHasNativeBignum = builtins.compareVersions ghc-version "9.0" >= 0;
@@ -119,6 +128,42 @@ let
       INTEGER_LIBRARY = ${if enableIntegerSimple then "integer-simple" else "integer-gmp"}
     '';
 
+  nodejs = buildPackages.nodejs_24;
+
+  libffi-wasm = buildPackages.runCommand "libffi-wasm" {
+      nativeBuildInputs = [
+        (buildPackages.haskell-nix.tool "ghc912" "libffi-wasm" {
+          src = buildPackages.haskell-nix.sources.libffi-wasm;
+          evalPackages = ghcEvalPackages;
+        })
+        targetPackages.buildPackages.llvmPackages.clang
+        targetPackages.buildPackages.llvmPackages.llvm
+        targetPackages.buildPackages.binaryen
+      ];
+      outputs = ["out" "dev"];
+      NIX_NO_SELF_RPATH = true;
+    } ''
+      mkdir cbits
+      cp ${buildPackages.haskell-nix.sources.libffi-wasm}/cbits/* cbits/
+      libffi-wasm
+      wasm32-unknown-wasi-clang -Wall -Wextra -mcpu=mvp -Oz -DNDEBUG -Icbits -c cbits/ffi.c -o cbits/ffi.o
+      wasm32-unknown-wasi-clang -Wall -Wextra -mcpu=mvp -Oz -DNDEBUG -Icbits -c cbits/ffi_call.c -o cbits/ffi_call.o
+      wasm32-unknown-wasi-clang -Wall -Wextra -mcpu=mvp -Oz -DNDEBUG -Icbits -c cbits/ffi_closure.c -o cbits/ffi_closure.o
+
+      mkdir -p $dev/include
+      cp cbits/*.h $dev/include
+      mkdir -p $out/lib
+      llvm-ar -r $out/lib/libffi.a cbits/*.o
+
+      wasm32-unknown-wasi-clang -Wall -Wextra -mcpu=mvp -Oz -DNDEBUG -Icbits -fPIC -fvisibility=default -shared -Wl,--keep-section=target_features,--strip-debug cbits/*.c -o libffi.so
+      wasm-opt --low-memory-unused --converge --debuginfo --flatten --rereloop --gufa -O4 -Oz libffi.so -o $out/lib/libffi.so
+    '';
+
+  lib-wasm = buildPackages.symlinkJoin {
+    name = "lib-wasm";
+    paths = [ targetPackages.wasilibc libffi-wasm ];
+  };
+
   # TODO check if this possible fix for segfaults works or not.
   targetLibffi =
     # on native platforms targetPlatform.{libffi, gmp} do not exist; thus fall back
@@ -126,7 +171,9 @@ let
     let targetLibffi = targetPackages.libffi or libffi; in
     # we need to set `dontDisableStatic` for musl for libffi to work.
     if stdenv.targetPlatform.isMusl
-    then targetLibffi.overrideAttrs (_old: { dontDisableStatic = true; })
+      then targetLibffi.overrideAttrs (_old: { dontDisableStatic = true; })
+    else if stdenv.targetPlatform.isWasm
+      then libffi-wasm
     else targetLibffi;
 
   targetGmp = targetPackages.gmp or gmp;
@@ -197,14 +244,16 @@ let
   # `--with` flags for libraries needed for RTS linker
   configureFlags = [
         "--datadir=$doc/share/doc/ghc"
-    ] ++ lib.optionals (!targetPlatform.isGhcjs && !targetPlatform.isAndroid) ["--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
-    ] ++ lib.optionals (targetLibffi != null && !targetPlatform.isGhcjs) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
-    ] ++ lib.optionals (!enableIntegerSimple && !targetPlatform.isGhcjs) [
-        "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
+    ] ++ lib.optionals (!targetPlatform.isGhcjs && !targetPlatform.isWasm && !targetPlatform.isAndroid) ["--with-curses-includes=${lib.getDev targetPackages.ncurses}/include" "--with-curses-libraries=${lib.getLib targetPackages.ncurses}/lib"
+    ] ++ lib.optionals (targetLibffi != null && !targetPlatform.isGhcjs && !targetPlatform.isWasm) ["--with-system-libffi" "--with-ffi-includes=${lib.getDev targetLibffi}/include" "--with-ffi-libraries=${lib.getLib targetLibffi}/lib"
+    ] ++ lib.optionals (targetPlatform.isWasm) [
+        "--with-system-libffi"
+    ] ++ lib.optionals (!enableIntegerSimple && !targetPlatform.isGhcjs && !targetPlatform.isWasm) [
+        "--with-gmp-includes=${lib.getDev targetGmp}/include" "--with-gmp-libraries=${lib.getLib targetGmp}/lib"
     ] ++ lib.optionals (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
-        "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
-    ] ++ lib.optionals (targetPlatform != hostPlatform && !targetPlatform.isGhcjs) [
-        "--with-iconv-includes=${targetIconv}/include" "--with-iconv-libraries=${targetIconv}/lib"
+        "--with-iconv-includes=${lib.getDev libiconv}/include" "--with-iconv-libraries=${lib.getLib libiconv}/lib"
+    ] ++ lib.optionals (targetPlatform != hostPlatform && !targetPlatform.isGhcjs && !targetPlatform.isWasm) [
+        "--with-iconv-includes=${lib.getDev targetIconv}/include" "--with-iconv-libraries=${lib.getLib targetIconv}/lib"
     ] ++ lib.optionals (targetPlatform != hostPlatform) [
         "--enable-bootstrap-with-devel-snapshot"
     ] ++ lib.optionals (disableLargeAddressSpace) [
@@ -236,10 +285,10 @@ let
     ;
 
   # Splicer will pull out correct variations
-  libDeps = platform: lib.optional (enableTerminfo && !targetPlatform.isGhcjs && !targetPlatform.isAndroid) [ targetPackages.ncurses targetPackages.ncurses.dev ]
+  libDeps = platform: lib.optionals (enableTerminfo && !targetPlatform.isGhcjs && !targetPlatform.isWasm && !targetPlatform.isAndroid) [ (lib.getLib targetPackages.ncurses) (lib.getDev targetPackages.ncurses) ]
     ++ lib.optional (!targetPlatform.isGhcjs) targetLibffi
-    ++ lib.optional (!enableIntegerSimple && !targetPlatform.isGhcjs) gmp
-    ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv
+    ++ lib.optional (!enableIntegerSimple && !targetPlatform.isGhcjs && !targetPlatform.isWasm) gmp
+    ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows && !targetPlatform.isWasm) libiconv
     ++ lib.optional (enableNUMA && platform.isLinux && !platform.isAarch32 && !platform.isAndroid) numactl
     ++ lib.optional enableDWARF (lib.getLib elfutils);
 
@@ -276,7 +325,7 @@ let
       inherit compiler-nix-name;
       name = "hadrian";
       compilerSelection = p: p.haskell.compiler;
-      evalPackages = hadrianEvalPackages;
+      evalPackages = ghcEvalPackages;
       modules = [{
         reinstallableLibGhc = false;
         # Apply the patches in a way that does not require using something
@@ -327,12 +376,12 @@ let
   # For build flavours and flavour transformers
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/doc/flavours.md
   hadrianArgs = "--flavour=${
-        (if targetPlatform.isGhcjs then "quick" else "default")
+        (if targetPlatform.isGhcjs || targetPlatform.isWasm then "quick" else "default")
           + lib.optionalString (!enableShared) "+no_dynamic_libs+no_dynamic_ghc"
           + lib.optionalString useLLVM "+llvm"
           + lib.optionalString enableDWARF "+debug_info"
-          + lib.optionalString ((enableNativeBignum && hadrianHasNativeBignumFlavour) || targetPlatform.isGhcjs) "+native_bignum"
-          + lib.optionalString targetPlatform.isGhcjs "+no_profiled_libs"
+          + lib.optionalString ((enableNativeBignum && hadrianHasNativeBignumFlavour) || targetPlatform.isGhcjs || targetPlatform.isWasm) "+native_bignum"
+          + lib.optionalString (targetPlatform.isGhcjs || targetPlatform.isWasm) "+no_profiled_libs"
       } --docs=no-sphinx -j --verbose"
       # This is needed to prevent $GCC from emitting out of line atomics.
       # Those would then result in __aarch64_ldadd1_sync and others being referenced, which
@@ -344,8 +393,12 @@ let
       + lib.optionalString (!hostPlatform.isAarch64 && targetPlatform.isLinux && targetPlatform.isAarch64)
         " '*.rts.ghc.c.opts += -optc-mno-outline-atomics'"
       # PIC breaks GHC annotations on windows (see test/annotations for a test case)
-      + lib.optionalString (enableRelocatedStaticLibs && !targetPlatform.isWindows)
+      + lib.optionalString (enableRelocatedStaticLibs && !targetPlatform.isWindows && !targetPlatform.isWasm)
         " '*.*.ghc.*.opts += -fPIC' '*.*.cc.*.opts += -fPIC'"
+      # C options for wasm
+      + lib.optionalString targetPlatform.isWasm (
+          " 'stage1.*.ghc.*.opts += -optc-Wno-error=int-conversion -optc-O3 -optc-mcpu=lime1 -optc-mreference-types -optc-msimd128 -optc-mtail-call -optc-DXXH_NO_XXH3'"
+        + " 'stage1.*.ghc.cpp.opts += -optc-fno-exceptions'")
       # `-fexternal-dynamic-refs` causes `undefined reference` errors when building GHC cross compiler for windows
       + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64 && !targetPlatform.isWindows)
         " '*.*.ghc.*.opts += -fexternal-dynamic-refs'"
@@ -450,9 +503,28 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         fi
         mv config.sub.ghcjs config.sub
     '')
+    + lib.optionalString (targetPlatform.isWasm) ''
+        export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
+        export CXX="${targetCC}/bin/${targetCC.targetPrefix}c++"
+        export LD="${buildPackages.llvmPackages.lld}/bin/wasm-ld"
+        export AS="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}as"
+        export AR="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"
+        export NM="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}nm"
+        export RANLIB="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ranlib"
+        export READELF="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}readelf"
+        export STRIP="${bintoolsFor.strip}/bin/${bintoolsFor.strip.targetPrefix}strip"
+        export NIX_CFLAGS_COMPILE_FOR_BUILD+=" -I${lib.getDev libffi}/include -L${lib.getLib libffi}/lib"
+        export NIX_CFLAGS_COMPILE_FOR_TARGET+=" -I${lib.getDev targetLibffi}/include -L${lib.getLib targetLibffi}/lib"
+        ${if ghc-version == "9.12.2"
+          then ''
+            substituteInPlace compiler/GHC.hs --replace-fail "panic \"corrupted wasi-sdk installation\"" "pure \"${targetPackages.wasilibc}\""
+          '' else ''
+            substituteInPlace compiler/GHC.hs --replace-fail "last <\$> Loader.getGccSearchDirectory logger dflags \"libraries\"" "pure \"${targetPackages.wasilibc}\""
+          ''}
+    ''
     # GHC is a bit confused on its cross terminology, as these would normally be
     # the *host* tools.
-    + lib.optionalString (!targetPlatform.isGhcjs) (''
+    + lib.optionalString (!targetPlatform.isGhcjs && !targetPlatform.isWasm) (''
         export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
         export CXX="${targetCC}/bin/${targetCC.targetPrefix}c++"
     ''
@@ -534,7 +606,34 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
   configurePlatforms = [ "build" "host" ] ++ lib.optional (!targetPlatform.isGhcjs) "target";
 
   enableParallelBuilding = true;
-  postPatch = "patchShebangs .";
+  postPatch = ''
+    patchShebangs .
+  '' + lib.optionalString (targetPlatform.isWasm) ''
+    substituteInPlace utils/jsffi/dyld.mjs \
+      --replace \
+        "${nodejs}/bin/node --disable-warning=ExperimentalWarning ${
+           if builtins.compareVersions ghc-version "9.13" < 0
+             then "--experimental-wasm-type-reflection"
+             else "--max-old-space-size=65536"} --no-turbo-fast-api-calls --wasm-lazy-validation" \
+        "${buildPackages.writeShellScriptBin "node" ''
+            SCRIPT=$1
+            shift
+            LIB_WASM=$1
+            shift
+            exec ${nodejs}/bin/node \
+              --disable-warning=ExperimentalWarning \
+              ${
+                 if builtins.compareVersions ghc-version "9.13" < 0
+                   then "--experimental-wasm-type-reflection"
+                   else "--max-old-space-size=65536"} \
+              --no-turbo-fast-api-calls \
+              --wasm-lazy-validation \
+              "$SCRIPT" \
+              "${lib-wasm}/lib" \
+              "$@"
+          ''
+        }/bin/node"
+  '';
 
   outputs = [ "out" "doc" "generated" ];
 
@@ -548,7 +647,8 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     perl autoconf automake m4 python3 sphinx
     ghc bootPkgs.alex bootPkgs.happy bootPkgs.hscolour
   ] ++ lib.optional (patches != []) autoreconfHook
-  ++ lib.optional useLdLld llvmPackages.bintools;
+  ++ lib.optional useLdLld llvmPackages.bintools
+  ++ lib.optional (targetPlatform.isWasm) nodejs;
 
   # For building runtime libs
   depsBuildTarget = toolsForTarget;
@@ -556,7 +656,9 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
   buildInputs = [ perl bash ] ++ (libDeps hostPlatform);
 
   depsTargetTarget = lib.optionals (!targetPlatform.isGhcjs) (map lib.getDev (libDeps targetPlatform));
-  depsTargetTargetPropagated = lib.optionals (!targetPlatform.isGhcjs) (map (lib.getOutput "out") (libDeps targetPlatform));
+  depsTargetTargetPropagated = lib.optionals (!targetPlatform.isGhcjs) (map (lib.getOutput "out") (libDeps targetPlatform))
+    # Needs to be propagated for `ffi.h`
+    ++ lib.optional targetPlatform.isWasm (lib.getDev targetLibffi);
 
   # required, because otherwise all symbols from HSffi.o are stripped, and
   # that in turn causes GHCi to abort
@@ -794,7 +896,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
       disableLargeAddressSpace = true;
     });
   } // extra-passthru // {
-    buildGHC = extra-passthru.buildGHC.override { inherit hadrianEvalPackages; };
+    buildGHC = extra-passthru.buildGHC.override { inherit ghcEvalPackages; };
   };
 
   meta = {

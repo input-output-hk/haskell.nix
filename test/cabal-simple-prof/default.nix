@@ -29,8 +29,7 @@ let
     .override (lib.optionalAttrs stdenv.hostPlatform.isAndroid { setupBuildFlags = ["--ghc-option=-optl-static" ]; });
 
 in recurseIntoAttrs {
-  # This test seeems to be broken on 8.6 and 8.8 and ghcjs
-  meta.disabled = compiler-nix-name == "ghc865" || compiler-nix-name == "ghc884" || stdenv.hostPlatform.isGhcjs;
+  meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm;
   ifdInputs = {
     inherit (project) plan-nix;
   };

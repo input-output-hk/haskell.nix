@@ -1,0 +1,41 @@
+From cb60da245b2fea7a0c39af0e58f9ef89104a9255 Mon Sep 17 00:00:00 2001
+From: Cheng Shao <terrorjack@type.dance>
+Date: Fri, 21 Feb 2025 20:30:31 +0000
+Subject: [PATCH] wasm: fix dyld for shared libraries created by llvm 20.x
+
+This patch fixes wasm dyld script for shared libraries created by llvm
+20.x. The __wasm_apply_data_relocs function is now optional and may be
+omitted for shared libraries without any runtime relocatable data
+segments, so only call __wasm_apply_data_relocs when it's present.
+---
+ utils/jsffi/dyld.mjs | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/utils/jsffi/dyld.mjs b/utils/jsffi/dyld.mjs
+index 3c1c2106557a..c6cfedbece4f 100755
+--- a/utils/jsffi/dyld.mjs
++++ b/utils/jsffi/dyld.mjs
+@@ -796,12 +796,17 @@ class DyLD {
+ 
+       const init = () => {
+         // See
+-        // https://github.com/llvm/llvm-project/blob/llvmorg-19.1.1/lld/wasm/Writer.cpp#L1430,
+-        // there's also __wasm_init_memory (not relevant yet, we don't
++        // https://gitlab.haskell.org/haskell-wasm/llvm-project/-/blob/release/20.x/lld/wasm/Writer.cpp#L1450,
++        // __wasm_apply_data_relocs is now optional so only call it if
++        // it exists (we know for sure it exists for libc.so though).
++        // There's also __wasm_init_memory (not relevant yet, we don't
+         // use passive segments) & __wasm_apply_global_relocs but
+         // those are included in the start function and should have
+-        // been called upon instantiation.
+-        instance.exports.__wasm_apply_data_relocs();
++        // been called upon instantiation, see
++        // Writer::createStartFunction().
++        if (instance.exports.__wasm_apply_data_relocs) {
++          instance.exports.__wasm_apply_data_relocs();
++        }
+ 
+         instance.exports._initialize();
+       };
+-- 
+GitLab

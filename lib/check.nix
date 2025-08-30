@@ -35,7 +35,8 @@ in stdenv.mkDerivation ((
     dwarf = self drv.dwarf;
   };
 
-  inherit (drv) meta LANG LC_ALL buildInputs;
+  inherit (drv) LANG LC_ALL buildInputs;
+  meta = builtins.removeAttrs drv.meta ["mainProgram"];
 
   nativeBuildInputs = drv.nativeBuildInputs
     ++ [buildPackages.xorg.lndir]

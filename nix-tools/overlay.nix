@@ -9,6 +9,10 @@ let
 
   nix-tools-unchecked = nix-tools-set {};
 
+  nix-tools-eval-on-linux = nix-tools-set {
+    evalSystem = builtins.currentSystem or "x86_64-linux";
+  };
+
   nix-tools-set = args:
     let
       project = final.haskell-nix.cabalProject'
@@ -22,8 +26,6 @@ let
 
             # tests need to fetch hackage
             configureArgs = final.lib.mkDefault "--disable-tests";
-
-            evalPackages = final.buildPackages;
 
             # Tools to include in the development shell
             shell.tools.cabal = "latest";
@@ -83,5 +85,5 @@ let
     toolset // warning;
 in
 {
-  inherit nix-tools nix-tools-unchecked nix-tools-set;
+  inherit nix-tools nix-tools-unchecked nix-tools-eval-on-linux nix-tools-set;
 }

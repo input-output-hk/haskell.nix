@@ -88,6 +88,7 @@ in {
                 onNative = final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform);
                 onCross = final.lib.optionals (final.stdenv.targetPlatform != final.stdenv.hostPlatform);
                 onGhcjs = final.lib.optionals final.stdenv.targetPlatform.isGhcjs;
+                onWasm = final.lib.optionals final.stdenv.targetPlatform.isWasm;
                 on32bit = final.lib.optionals final.stdenv.targetPlatform.is32bit;
                 # Try to avoid reordering the patches unless a patch is added or changed that
                 # will be applied to most versions of the GHC anyway (reordering the patches
@@ -338,6 +339,9 @@ in {
                 ++ onGhcjs (from        "9.13"         ./patches/ghc/ghc-9.13-ghcjs-rts-types.patch)
 
                 ++ onGhcjs (fromUntil   "9.6.7" "9.7"  ./patches/ghc/ghc-9.6-js-support-this-unit-id-10819.patch)
+
+                ++ onWasm (until                "9.13" ./patches/ghc/ghc-9.12-wasm-shared-libs.patch)
+                ++ onWasm (until                "9.13" ./patches/ghc/ghc-9.12-wasm-keep-cafs.patch)
                 ;
         in ({
             ghc8107 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
@@ -1098,8 +1102,9 @@ in {
 
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc9121
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc9121
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.${compiler-nix-name}
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc9122
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc9121
                           or final.buildPackages.buildPackages.haskell.compiler.ghc9101
                           or final.buildPackages.buildPackages.haskell.compiler.ghc984
                           or final.buildPackages.buildPackages.haskell.compiler.ghc983

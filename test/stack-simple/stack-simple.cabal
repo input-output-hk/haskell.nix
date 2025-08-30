@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.1.
+-- This file has been generated from package.yaml by hpack version 0.36.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0df70dbda375296766e47fd09b809934bff5ee3edb5a16e93681d4cb37cef875
+-- hash: 05dd43c0f3d2b6e620434a836103dff6a38dc186400eb95a0ac4a041f42444ae
 
 name:           stack-simple
 version:        0.1.0.0
@@ -41,11 +41,13 @@ executable stack-simple-exe
       Paths_stack_simple
   hs-source-dirs:
       app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , stack-simple
   default-language: Haskell2010
+  if arch(wasm32)
+  else
+    ghc-options: -threaded -rtsopts -with-rtsopts=-N
 
 test-suite stack-simple-test
   type: exitcode-stdio-1.0
@@ -54,8 +56,10 @@ test-suite stack-simple-test
       Paths_stack_simple
   hs-source-dirs:
       test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , stack-simple
   default-language: Haskell2010
+  if arch(wasm32)
+  else
+    ghc-options: -threaded -rtsopts -with-rtsopts=-N

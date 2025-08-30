@@ -16,7 +16,7 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs rec {
-  meta.disabled = stdenv.hostPlatform.isGhcjs
+  meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm
     # Gtk cross compilation seems to be broken in nixpkgs
     || stdenv.hostPlatform.isWindows
     # We can't make static libraries for Gtk

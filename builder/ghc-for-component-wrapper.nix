@@ -132,6 +132,12 @@ let
      ln -s $wrappedGhc/bin/${ghcCommand}-iserv $wrappedGhc/bin/ghc-iserv
      ln -s $wrappedGhc/bin/${ghcCommand}-iserv-prof $wrappedGhc/bin/ghc-iserv-prof
   ''
+  # These scripts break if symlinked (they check import.meta.filename against args)
+  # Also for some reason `libdl.so` is missing `__wasm_apply_data_relocs`
+  + lib.optionalString (stdenv.hostPlatform.isWasm) ''
+     rm $wrappedGhc/lib/*.mjs
+     cp $unwrappedGhc/lib/*.mjs $wrappedGhc/lib/
+  ''
   # Wrap haddock, if the base GHC provides it.
   + ''
     if [[ -x "${haddock}/bin/haddock" ]]; then

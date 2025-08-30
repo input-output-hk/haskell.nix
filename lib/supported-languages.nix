@@ -125,7 +125,7 @@ evalPackages.writeTextFile {
     NoApplicativeDo
     InterruptibleFFI
     NoInterruptibleFFI
-    ${pkgs.lib.optionalString (pkgs.stdenv.targetPlatform.isGhcjs || builtins.compareVersions ghc.version "9.8" <0) ''
+    ${pkgs.lib.optionalString (pkgs.stdenv.targetPlatform.isGhcjs || pkgs.stdenv.targetPlatform.isWasm || builtins.compareVersions ghc.version "9.8" <0) ''
         JavaScriptFFI
     ''}NoJavaScriptFFI
     KindSignatures

@@ -91,6 +91,10 @@
         inherit (lib.systems.examples) ghcjs;
       } // lib.optionalAttrs (nixpkgsName == "unstable"
           && (__match ".*llvm" compiler-nix-name == null)
+          && !builtins.elem compiler-nix-name ["ghc967" "ghc984" "ghc9102"]) {
+        inherit (lib.systems.examples) wasi32;
+      } // lib.optionalAttrs (nixpkgsName == "unstable"
+          && (__match ".*llvm" compiler-nix-name == null)
           && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc902" "ghc928"])
            || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
         inherit (lib.systems.examples) mingwW64;
@@ -151,7 +155,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
             build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };
         in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
             roots = pkgs.haskell-nix.roots' { inherit compiler-nix-name evalPackages; } ifdLevel // {
-              ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { hadrianEvalPackages = evalPackages; };
+              ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { ghcEvalPackages = evalPackages; };
             };
             # TODO: look into cross compiling ghc itself
             # ghc = pkgs.haskell-nix.compiler.${compiler-nix-name};
@@ -161,7 +165,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
             inherit (build) tests;
         })
         # GHCJS builds its own template haskell runner.
-        // pkgs.lib.optionalAttrs (ifdLevel >= 2 && crossSystemName != "ghcjs")
+        // pkgs.lib.optionalAttrs (ifdLevel >= 2 && !builtins.elem crossSystemName ["ghcjs" "wasi32"])
             pkgs.haskell-nix.iserv-proxy-exes.${compiler-nix-name}
         // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
           hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }).getComponent "exe:hello";

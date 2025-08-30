@@ -17,6 +17,9 @@ in recurseIntoAttrs {
   run = stdenv.mkDerivation {
     name = "ghcjs-overlay-test";
 
+    # Double conversion needs updating for wasm
+    meta.disabled = stdenv.hostPlatform.isWasm;
+
     buildCommand = ''
       exe="${packages.ghcjs-overlay-test.components.exes.ghcjs-overlay-test.exePath}"
       size=$(command stat --format '%s' "$exe")

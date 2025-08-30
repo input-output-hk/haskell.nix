@@ -103,7 +103,7 @@ in
       (or it is not present at attribute '${config.compiler.nix-name})').
       Either switch to a version of Nixpkgs which does have this version, or use a version
       of GHC which the current version of Nixpkgs contains.
-    '')).override { hadrianEvalPackages = config.evalPackages; };
+    '')).override { ghcEvalPackages = config.evalPackages; };
     defaultText = "pkgs.buildPackages.haskell-nix.compiler.\${config.compiler.nix-name}";
   };
 
