@@ -646,7 +646,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
   nativeBuildInputs = [
     perl autoconf automake m4 python3 sphinx
     ghc bootPkgs.alex bootPkgs.happy bootPkgs.hscolour
-  ] ++ lib.optional (patches != []) autoreconfHook
+    autoreconfHook ]
   ++ lib.optional useLdLld llvmPackages.bintools
   ++ lib.optional (targetPlatform.isWasm) nodejs;
 
