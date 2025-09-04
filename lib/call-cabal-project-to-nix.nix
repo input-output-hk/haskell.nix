@@ -512,7 +512,7 @@ let
                 PKGS+=" ${name}"
                 LAST_PKG="${name}"
               fi
-            '') (pkgs.haskell-nix.ghc-pre-existing ghc))
+            '') (pkgs.lib.filter (n: n != "system-cxx-std-lib") (pkgs.haskell-nix.ghc-pre-existing ghc)))
           }
           ${ # There is no .cabal file for system-cxx-std-lib
             pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.2" >= 0) (
