@@ -601,6 +601,11 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
       # The official ghc 9.2.3 tarball requires booting.
       + lib.optionalString (ghc-version == "9.2.3" || ghc-version == "9.8.20230704" || src-spec.needsBooting or false) ''
         python3 ./boot
+    '' + lib.optionalString (builtins.compareVersions ghc-version "9.14" > 0) ''
+        mkdir -p libraries/ghc-boot-th-next
+        cp libraries/ghc-boot-th/ghc-boot-th.cabal.in libraries/ghc-boot-th-next/ghc-boot-th-next.cabal.in
+        substituteInPlace libraries/ghc-boot-th-next/ghc-boot-th-next.cabal.in \
+          --replace-fail "ghc-boot-th" "ghc-boot-th-next"
     '';
 
   configurePlatforms = [ "build" "host" ] ++ lib.optional (!targetPlatform.isGhcjs) "target";
