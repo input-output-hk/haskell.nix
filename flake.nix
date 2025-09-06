@@ -103,6 +103,7 @@
       systems = [
         "x86_64-linux"
       ] ++ (if runningHydraEvalTest then [ ] else [
+        "aarch64-linux"
         "x86_64-darwin"
         "aarch64-darwin"
       ]);
