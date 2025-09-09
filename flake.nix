@@ -101,9 +101,9 @@
 
       # systems supported by haskell.nix
       systems = [
-        "x86_64-linux"
+#        "x86_64-linux"
       ] ++ (if runningHydraEvalTest then [ ] else [
-        "x86_64-darwin"
+#        "x86_64-darwin"
         "aarch64-darwin"
       ]);
 
@@ -252,8 +252,8 @@
               cf.defaultNix.hydraJobs;
           in
           self.allJobs.${system}
-          // lib.optionalAttrs (ifdLevel > 2)
-            { nix-tools = nix-tools-hydraJobs.${system} or { }; }
+#          // lib.optionalAttrs (ifdLevel > 2)
+#            { nix-tools = nix-tools-hydraJobs.${system} or { }; }
         );
 
         devShells = forEachSystemPkgs (pkgs:
