@@ -101,9 +101,9 @@
 
       # systems supported by haskell.nix
       systems = [
-#        "x86_64-linux"
+        "x86_64-linux"
       ] ++ (if runningHydraEvalTest then [ ] else [
-#        "x86_64-darwin"
+        "x86_64-darwin"
         "aarch64-darwin"
       ]);
 
@@ -252,8 +252,8 @@
               cf.defaultNix.hydraJobs;
           in
           self.allJobs.${system}
-#          // lib.optionalAttrs (ifdLevel > 2)
-#            { nix-tools = nix-tools-hydraJobs.${system} or { }; }
+          // lib.optionalAttrs (ifdLevel > 2)
+            { nix-tools = nix-tools-hydraJobs.${system} or { }; }
         );
 
         devShells = forEachSystemPkgs (pkgs:
@@ -286,21 +286,21 @@
       (
         let pkgs = nixpkgs.legacyPackages."x86_64-linux"; in
         {
-#          hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
-#            name = "nix-tools";
-#            constituents = (if runningHydraEvalTest then [ ] else [
-#              "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
-#              "x86_64-darwin.nix-tools.static.zipped.nix-tools-static"
-#              "aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
-#              "x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
-#            ]) ++ [
-#              "x86_64-linux.nix-tools.static.zipped.nix-tools-static"
-#              "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
-#              "x86_64-linux.nix-tools.static.zipped.nix-tools-static-no-ifd"
-#              "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64-no-ifd"
-#              (pkgs.writeText "gitrev" (self.rev or "0000000000000000000000000000000000000000"))
-#            ];
-#          };
+          hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
+            name = "nix-tools";
+            constituents = (if runningHydraEvalTest then [ ] else [
+              "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
+              "x86_64-darwin.nix-tools.static.zipped.nix-tools-static"
+              "aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+              "x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+            ]) ++ [
+              "x86_64-linux.nix-tools.static.zipped.nix-tools-static"
+              "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
+              "x86_64-linux.nix-tools.static.zipped.nix-tools-static-no-ifd"
+              "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64-no-ifd"
+              (pkgs.writeText "gitrev" (self.rev or "0000000000000000000000000000000000000000"))
+            ];
+          };
         }
       )));
 

@@ -1,4 +1,3 @@
--- Test IFDs 5
 if impl(ghc>=9.12.1)
   -- allow newer packages, that are bound to be newer due to
   -- being shipped with a newer compiler.  If you extend this
