@@ -46,6 +46,7 @@ in recurseIntoAttrs {
 
     # Disable for now (CI machines currently hang without timing out)
     || stdenv.hostPlatform.isWindows || stdenv.hostPlatform.isAndroid
+    || (stdenv.buildPlatform.isx86_64 && stdenv.hostPlatform.isAarch64)
     ;
 
   ifdInputs = {
