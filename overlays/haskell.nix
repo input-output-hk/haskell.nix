@@ -1181,5 +1181,10 @@ final: prev: {
             && !final.stdenv.hostPlatform.isGhcjs
             && !final.stdenv.hostPlatform.isWasm)
               final.haskell-nix.iserv-proxy-exes.${compiler-nix-name});
+
+      make-install-plan = final.callPackage ../make-install-plan {};
+      make-install-plan-bootstrap = let
+        flake = builtins.getFlake (toString ../make-install-plan);
+        in flake.packages.${final.system}.make-install-plan;
     };
 }
