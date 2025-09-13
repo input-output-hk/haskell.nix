@@ -1,0 +1,30 @@
+{
+  "nodes": {
+    "ghc914X": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1757057465,
+        "narHash": "sha256-3lP5S2JR6Cq+2SAEf1LSX//jmfDgNCZTaCBvBHCV8xY=",
+        "ref": "stable-ghc-9.14",
+        "rev": "a1edbb57a9febd57dc1c7c4089a4d3c7a3e27bff",
+        "revCount": 68327,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/stable-haskell/ghc"
+      },
+      "original": {
+        "ref": "stable-ghc-9.14",
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/stable-haskell/ghc"
+      }
+    },
+    "root": {
+      "inputs": {
+        "ghc914X": "ghc914X"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

@@ -3,7 +3,7 @@
 { ifdLevel # This is passed in from flake.nix
 , checkMaterialization ? false
 , system ? builtins.currentSystem
-, evalSystem ? builtins.currentSystem or "x86_64-linux"
+, evalSystem ? "aarch64-darwin"
   # NOTE: we apply checkMaterialization when defining nixpkgsArgs
 , haskellNix ? import ./default.nix { inherit system ; }
 }:
@@ -75,7 +75,8 @@
         ghc910llvm = false;
         ghc912 = true;
         ghc912llvm = true;
-        ghc913 = true;
+        ghc914X = true;
+        ghc915 = true;
       })));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values
