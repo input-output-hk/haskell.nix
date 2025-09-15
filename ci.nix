@@ -41,6 +41,8 @@
         "dwarfdump-20181024"
       ];
       allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+        "platform-tools"
+        "ndk"
         "android-sdk-ndk"
         "android-sdk-platform-tools"
         "aarch64-unknown-linux-android-ndk-toolchain-wrapper"
