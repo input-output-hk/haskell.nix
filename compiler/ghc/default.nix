@@ -315,6 +315,8 @@ let
       compiler-nix-name =
         if builtins.compareVersions ghc-version "9.4.7" < 0
           then "ghc928"
+        else if buildPackages.haskell.compiler ? ghc967
+          then "ghc967"
         else if buildPackages.haskell.compiler ? ghc966
           then "ghc966"
         else if buildPackages.haskell.compiler ? ghc964
