@@ -1,7 +1,8 @@
 final: prev:
 let
     buildBootstrapper.compilerNixName =
-      if final.buildPackages.haskell.compiler ? ghc964 then "ghc964"
+      if final.buildPackages.haskell.compiler ? ghc967 then "ghc967"
+      else if final.buildPackages.haskell.compiler ? ghc964 then "ghc964"
       else "ghc8107";
     latestVerMap = {
       "8.10" = "8.10.7";
@@ -28,10 +29,10 @@ let
           (builtins.attrNames latestVerMap));
     traceWarnOld = v: x:
       let
-        bootstrapGhc = final.buildPackages.haskell.compiler.ghc8107;
+        oldVersion = "9.6";
       in
-      if builtins.compareVersions x.version bootstrapGhc.version < 0 then
-          throw "Desired GHC (${x.version}) is older than the bootstrap GHC (${bootstrapGhc.version}) for this platform (${final.stdenv.targetPlatform.config})."
+      if builtins.compareVersions x.version oldVersion < 0 then
+          throw "Desired GHC (${x.version}) is older than the oldest GHC haskell.nix might work with (GHC ${oldVersion})."
       else x // final.lib.optionalAttrs (x.version != latestVerMap.${v}) { latestVersion = latestVerMap.${v}; };
     errorOldGhcjs = v: up: throw "ghcjs ${v} is no longer supported by haskell.nix. Consider using ${latestVerMap.${up}}";
 in {
@@ -50,7 +51,8 @@ in {
             };
             # ghc 9.0.2 is no longer cached for nixpkgs-unstable and it seems to be broken
             nixpkgsBootCompiler =
-              if final.buildPackages.haskell.compiler ? ghc964 then "ghc964"
+              if final.buildPackages.haskell.compiler ? ghc967 then "ghc967"
+              else if final.buildPackages.haskell.compiler ? ghc964 then "ghc964"
               else "ghc902";
             bootPkgsGhc94 = bootPkgs // {
                 alex = final.buildPackages.haskell-nix.tool nixpkgsBootCompiler "alex" {

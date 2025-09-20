@@ -3,7 +3,7 @@
 { ifdLevel # This is passed in from flake.nix
 , checkMaterialization ? false
 , system ? builtins.currentSystem
-, evalSystem ? builtins.currentSystem or "x86_64-linux"
+, evalSystem ? "aarch64-darwin"
   # NOTE: we apply checkMaterialization when defining nixpkgsArgs
 , haskellNix ? import ./default.nix { inherit system ; }
 }:
@@ -41,6 +41,8 @@
         "dwarfdump-20181024"
       ];
       allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+        "platform-tools"
+        "ndk"
         "android-sdk-ndk"
         "android-sdk-platform-tools"
         "aarch64-unknown-linux-android-ndk-toolchain-wrapper"
