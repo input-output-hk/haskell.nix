@@ -138,7 +138,7 @@ let
         })
         targetPackages.buildPackages.llvmPackages.clang
         targetPackages.buildPackages.llvmPackages.llvm
-        targetPackages.buildPackages.binaryen
+        targetPackages.pkgsBuildBuild.binaryen
       ];
       outputs = ["out" "dev"];
       NIX_NO_SELF_RPATH = true;
