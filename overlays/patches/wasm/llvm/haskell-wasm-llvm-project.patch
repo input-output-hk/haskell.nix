@@ -339,6 +339,16 @@ index 1f824b80bcd4..1025d3ee3026 100644
      } else {
        getStreamer().emitELFSize(Sym, Expr);
      }
+diff --git a/llvm/test/MC/WebAssembly/function-size-warning.s b/llvm/test/MC/WebAssembly/function-size-warning.s
+index 627002dd3578..fd410d9ae67c 100644
+--- a/llvm/test/MC/WebAssembly/function-size-warning.s
++++ b/llvm/test/MC/WebAssembly/function-size-warning.s
+@@ -12,4 +12,4 @@ foo:
+ # assembly files.
+ .size foo, 0
+ 
+-# CHECK: warning: .size directive ignored for function symbols
++# CHECK-ERROR: error: .size directive ignored for function symbols
 diff --git a/llvm/test/MC/WebAssembly/null-output.s b/llvm/test/MC/WebAssembly/null-output.s
 index fb15eecffc86..513e37d35039 100644
 --- a/llvm/test/MC/WebAssembly/null-output.s
