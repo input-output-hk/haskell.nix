@@ -397,7 +397,7 @@ let
         " '*.*.ghc.*.opts += -fPIC' '*.*.cc.*.opts += -fPIC'"
       # C options for wasm
       + lib.optionalString targetPlatform.isWasm (
-          " 'stage1.*.ghc.*.opts += -optc-Wno-error=int-conversion -optc-O3 -optc-mcpu=lime1 -optc-mreference-types -optc-msimd128 -optc-mtail-call -optc-DXXH_NO_XXH3'"
+          " 'stage1.*.ghc.*.opts += -optc-Wno-error=int-conversion -optc-O3 -optc-mcpu=lime1 -optc-mreference-types -optc-msimd128 -optc-DXXH_NO_XXH3'"
         + " 'stage1.*.ghc.cpp.opts += -optc-fno-exceptions'")
       # `-fexternal-dynamic-refs` causes `undefined reference` errors when building GHC cross compiler for windows
       + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64 && !targetPlatform.isWindows)
@@ -626,7 +626,6 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
                  if builtins.compareVersions ghc-version "9.13" < 0
                    then "--experimental-wasm-type-reflection"
                    else "--max-old-space-size=65536"} \
-              --no-turbo-fast-api-calls \
               --wasm-lazy-validation \
               "$SCRIPT" \
               "${lib-wasm}/lib" \
