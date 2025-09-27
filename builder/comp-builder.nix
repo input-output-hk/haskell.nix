@@ -499,7 +499,7 @@ let
     nativeBuildInputs =
       [ghc buildPackages.removeReferencesTo]
       ++ executableToolDepends
-      ++ (lib.optional stdenv.hostPlatform.isGhcjs buildPackages.nodejs)
+      ++ (lib.optional stdenv.hostPlatform.isGhcjs pkgsBuildBuild.nodejs)
       ++ (lib.optional (ghc.useLdLld or false) llvmPackages.bintools);
 
     outputs = ["out"]
