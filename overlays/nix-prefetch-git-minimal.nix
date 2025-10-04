@@ -17,9 +17,12 @@ final: prev: {
   # This can reduce closure size of nix-tools:
   #  * Eliminates dependency on python3 (70MB)
   #  * Allows sharing with `fetchgit` as it also uses `gitMinimal` (50MB)
-  inherit (final.callPackages (final.path + "/pkgs/tools/package-management/nix-prefetch-scripts") {
-    git = final.gitMinimal;
-  }) nix-prefetch-git;
+  inherit (
+    let f = import (final.path + "/pkgs/tools/package-management/nix-prefetch-scripts");
+    in
+      if (builtins.functionArgs f) ? git
+        then final.callPackages f { git = final.gitMinimal; }
+        else prev) nix-prefetch-git;
 
   # fetchgit use `buildPackages.gitMinimal` and on nixpkgs 21.11
   # and earlier that causes problems when cross compiling.
