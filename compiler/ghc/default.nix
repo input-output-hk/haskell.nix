@@ -856,11 +856,6 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         for a in libraries/*/*.cabal.in utils/*/*.cabal.in compiler/ghc.cabal.in; do
           ${hadrian}/bin/hadrian ${hadrianArgs} "''${a%.*}"
         done
-      '' + lib.optionalString (ghc-version == "9.8.20230704") ''
-        for a in bytearray-access-ops.txt.pp addr-access-ops.txt.pp primops.txt; do
-          ${hadrian}/bin/hadrian ${hadrianArgs} _build/stage0/compiler/build/$a
-          cp _build/stage0/compiler/build/$a compiler/GHC/Builtin/$a
-        done
       '' + lib.optionalString (stdenv.isDarwin && (__tryEval libcxxabi).success) ''
         substituteInPlace mk/system-cxx-std-lib-1.0.conf \
           --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
@@ -953,6 +948,10 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     export XATTR=$(mktemp -d)/nothing
   '';
 } // lib.optionalAttrs useHadrian {
+  preUnpack = ''
+    mkdir -p $out/build
+    cd $out/build
+  '';
   postConfigure = lib.optionalString (stdenv.isDarwin && (__tryEval libcxxabi).success) ''
     substituteInPlace mk/system-cxx-std-lib-1.0.conf \
       --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
@@ -995,7 +994,6 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
   installPhase =
     if installStage1
       then ''
-        mkdir $out
         cp -r _build/stage1/bin $out
         # let's assume that if we find a non-prefixed genprimop,
         # we also find a non-prefixed deriveConstants
@@ -1012,6 +1010,8 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         mkdir $doc
         cp -r _build/stage1/share $doc
         runHook postInstall
+        cd $out
+        rm -rf $out/build
       ''
       # there appears to be a bug in GHCs configure script not properly passing dllwrap, and windres to the
       # generated settings file. Hence we patch it back in here.
@@ -1042,6 +1042,8 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         make install
         cd ../../..
         runHook postInstall
+        cd $out
+        rm -rf $out/build
       '';
 }));
 in self
