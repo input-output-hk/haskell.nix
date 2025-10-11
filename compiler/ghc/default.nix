@@ -9,6 +9,7 @@ let self =
 # build-tools
 , bootPkgs
 , buildPackages
+, pkgsBuildBuild
 , autoconf, automake, coreutils, fetchurl, fetchpatch, perl, python3, m4, sphinx, numactl, elfutils, libcxx, libcxxabi ? throw "No libcxxabi"
 , autoreconfHook
 , bash
@@ -95,7 +96,7 @@ let self =
 #
 # We use this instead of `buildPackages` so that plan evaluation
 # can work on platforms other than the `buildPlatform`.
-, ghcEvalPackages ? buildPackages
+, ghcEvalPackages ? pkgsBuildBuild
 }@args:
 
 assert !(enableIntegerSimple || enableNativeBignum) -> gmp != null;
@@ -128,23 +129,23 @@ let
       INTEGER_LIBRARY = ${if enableIntegerSimple then "integer-simple" else "integer-gmp"}
     '';
 
-  nodejs = buildPackages.nodejs_24;
+  nodejs = pkgsBuildBuild.nodejs_24;
 
-  libffi-wasm = buildPackages.runCommand "libffi-wasm" {
+  libffi-wasm = pkgsBuildBuild.runCommand "libffi-wasm" {
       nativeBuildInputs = [
-        (buildPackages.haskell-nix.tool "ghc912" "libffi-wasm" {
-          src = buildPackages.haskell-nix.sources.libffi-wasm;
+        (pkgsBuildBuild.haskell-nix.tool "ghc912" "libffi-wasm" {
+          src = pkgsBuildBuild.haskell-nix.sources.libffi-wasm;
           evalPackages = ghcEvalPackages;
         })
         targetPackages.buildPackages.llvmPackages.clang
         targetPackages.buildPackages.llvmPackages.llvm
-        targetPackages.buildPackages.binaryen
+        pkgsBuildBuild.binaryen
       ];
       outputs = ["out" "dev"];
       NIX_NO_SELF_RPATH = true;
     } ''
       mkdir cbits
-      cp ${buildPackages.haskell-nix.sources.libffi-wasm}/cbits/* cbits/
+      cp ${pkgsBuildBuild.haskell-nix.sources.libffi-wasm}/cbits/* cbits/
       libffi-wasm
       wasm32-unknown-wasi-clang -Wall -Wextra -mcpu=mvp -Oz -DNDEBUG -Icbits -c cbits/ffi.c -o cbits/ffi.o
       wasm32-unknown-wasi-clang -Wall -Wextra -mcpu=mvp -Oz -DNDEBUG -Icbits -c cbits/ffi_call.c -o cbits/ffi_call.o
@@ -159,7 +160,7 @@ let
       wasm-opt --low-memory-unused --converge --debuginfo --flatten --rereloop --gufa -O4 -Oz libffi.so -o $out/lib/libffi.so
     '';
 
-  lib-wasm = buildPackages.symlinkJoin {
+  lib-wasm = pkgsBuildBuild.symlinkJoin {
     name = "lib-wasm";
     paths = [ targetPackages.wasilibc libffi-wasm ];
   };
@@ -315,13 +316,15 @@ let
       compiler-nix-name =
         if builtins.compareVersions ghc-version "9.4.7" < 0
           then "ghc928"
-        else if buildPackages.haskell.compiler ? ghc966
+        else if pkgsBuildBuild.haskell.compiler ? ghc967
+          then "ghc967"
+        else if pkgsBuildBuild.haskell.compiler ? ghc966
           then "ghc966"
-        else if buildPackages.haskell.compiler ? ghc964
+        else if pkgsBuildBuild.haskell.compiler ? ghc964
           then "ghc964"
         else "ghc962";
     in
-    buildPackages.haskell-nix.cabalProject' ({
+    pkgsBuildBuild.haskell-nix.cabalProject' ({
       inherit compiler-nix-name;
       name = "hadrian";
       compilerSelection = p: p.haskell.compiler;
@@ -343,8 +346,8 @@ let
       cabalProjectFreeze = null;
       src = haskell-nix.haskellLib.cleanSourceWith {
         src = {
-          outPath = buildPackages.srcOnly {
-            stdenv = buildPackages.stdenvNoCC;
+          outPath = pkgsBuildBuild.srcOnly {
+            stdenv = pkgsBuildBuild.stdenvNoCC;
             name = "hadrian";
             inherit src;
           };
@@ -354,7 +357,7 @@ let
         includeSiblings = true;
       };
       # When building the plan we do not need a patched version
-      # of the source and `buildPackages.srcOnly` requires introduces
+      # of the source and `pkgsBuildBuild.srcOnly` requires introduces
       # a dependency on a build machine.
       evalSrc = haskell-nix.haskellLib.cleanSourceWith {
         src = {
@@ -615,7 +618,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
            if builtins.compareVersions ghc-version "9.13" < 0
              then "--experimental-wasm-type-reflection"
              else "--max-old-space-size=65536"} --no-turbo-fast-api-calls --wasm-lazy-validation" \
-        "${buildPackages.writeShellScriptBin "node" ''
+        "${pkgsBuildBuild.writeShellScriptBin "node" ''
             SCRIPT=$1
             shift
             LIB_WASM=$1
@@ -853,11 +856,6 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         for a in libraries/*/*.cabal.in utils/*/*.cabal.in compiler/ghc.cabal.in; do
           ${hadrian}/bin/hadrian ${hadrianArgs} "''${a%.*}"
         done
-      '' + lib.optionalString (ghc-version == "9.8.20230704") ''
-        for a in bytearray-access-ops.txt.pp addr-access-ops.txt.pp primops.txt; do
-          ${hadrian}/bin/hadrian ${hadrianArgs} _build/stage0/compiler/build/$a
-          cp _build/stage0/compiler/build/$a compiler/GHC/Builtin/$a
-        done
       '' + lib.optionalString (stdenv.isDarwin && (__tryEval libcxxabi).success) ''
         substituteInPlace mk/system-cxx-std-lib-1.0.conf \
           --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
@@ -950,6 +948,10 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     export XATTR=$(mktemp -d)/nothing
   '';
 } // lib.optionalAttrs useHadrian {
+  preUnpack = ''
+    mkdir -p $out/build
+    cd $out/build
+  '';
   postConfigure = lib.optionalString (stdenv.isDarwin && (__tryEval libcxxabi).success) ''
     substituteInPlace mk/system-cxx-std-lib-1.0.conf \
       --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
@@ -992,7 +994,6 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
   installPhase =
     if installStage1
       then ''
-        mkdir $out
         cp -r _build/stage1/bin $out
         # let's assume that if we find a non-prefixed genprimop,
         # we also find a non-prefixed deriveConstants
@@ -1009,6 +1010,8 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         mkdir $doc
         cp -r _build/stage1/share $doc
         runHook postInstall
+        cd $out
+        rm -rf $out/build
       ''
       # there appears to be a bug in GHCs configure script not properly passing dllwrap, and windres to the
       # generated settings file. Hence we patch it back in here.
@@ -1039,6 +1042,8 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         make install
         cd ../../..
         runHook postInstall
+        cd $out
+        rm -rf $out/build
       '';
 }));
 in self

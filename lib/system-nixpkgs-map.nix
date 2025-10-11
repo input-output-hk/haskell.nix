@@ -386,6 +386,7 @@ in
           # In future versions of `nixpkgs` these will be removed
           # so make sure they are there.
           && darwin ? apple_sdk
+          && (builtins.tryEval (darwin.apple_sdk ? frameworks)).success
           && darwin.apple_sdk ? frameworks
           && darwin.apple_sdk.frameworks ? ${n}
           && !(darwin.apple_sdk.frameworks.${n}.passthru.isDarwinCompatStub or false)

@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellLib, buildPackages }:
+{ stdenv, lib, haskellLib, pkgsBuildBuild }:
 let self = drvOrig:
 
 let
@@ -39,8 +39,8 @@ in stdenv.mkDerivation ((
   meta = builtins.removeAttrs drv.meta ["mainProgram"];
 
   nativeBuildInputs = drv.nativeBuildInputs
-    ++ [buildPackages.xorg.lndir]
-    ++ lib.optional (stdenv.hostPlatform.isGhcjs) buildPackages.nodejs;
+    ++ [pkgsBuildBuild.xorg.lndir]
+    ++ lib.optional (stdenv.hostPlatform.isGhcjs) pkgsBuildBuild.nodejs;
 
   inherit (component) doCheck doCrossCheck;
 
