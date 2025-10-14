@@ -94,21 +94,6 @@ index 5054868b5ff4..e4fcd949ff71 100644
    }
  }
  
-diff --git a/compiler-rt/cmake/Modules/AddCompilerRT.cmake b/compiler-rt/cmake/Modules/AddCompilerRT.cmake
-index fb2aee8e42ee..a5de2dca1bc9 100644
---- a/compiler-rt/cmake/Modules/AddCompilerRT.cmake
-+++ b/compiler-rt/cmake/Modules/AddCompilerRT.cmake
-@@ -390,8 +390,8 @@ function(add_compiler_rt_runtime name type)
-       target_link_libraries(${libname} PRIVATE ${builtins_${libname}})
-     endif()
-     if(${type} STREQUAL "SHARED")
--      if(APPLE OR WIN32)
--        set_property(TARGET ${libname} PROPERTY BUILD_WITH_INSTALL_RPATH ON)
-+      if(COMMAND llvm_setup_rpath)
-+        llvm_setup_rpath(${libname})
-       endif()
-       if(WIN32 AND NOT CYGWIN AND NOT MINGW)
-         set_target_properties(${libname} PROPERTIES IMPORT_PREFIX "")
 diff --git a/lld/wasm/InputChunks.cpp b/lld/wasm/InputChunks.cpp
 index 181221a77b10..c813e62e7b93 100644
 --- a/lld/wasm/InputChunks.cpp
@@ -301,25 +286,6 @@ index 83772ed8d2b1..0a7360d9357a 100644
      if(${CMAKE_SYSTEM_NAME} MATCHES "(FreeBSD|DragonFly)")
        set_property(TARGET ${name} APPEND_STRING PROPERTY
                     LINK_FLAGS " -Wl,-z,origin ")
-@@ -2562,16 +2561,9 @@ function(llvm_setup_rpath name)
-     return()
-   endif()
- 
--  # Enable BUILD_WITH_INSTALL_RPATH unless CMAKE_BUILD_RPATH is set and not
--  # building for macOS or AIX, as those platforms seemingly require it.
--  # On AIX, the tool chain doesn't support modifying rpaths/libpaths for XCOFF
--  # on install at the moment, so BUILD_WITH_INSTALL_RPATH is required.
-+  # Enable BUILD_WITH_INSTALL_RPATH unless CMAKE_BUILD_RPATH is set.
-   if("${CMAKE_BUILD_RPATH}" STREQUAL "")
--    if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin|AIX")
--      set_property(TARGET ${name} PROPERTY BUILD_WITH_INSTALL_RPATH ON)
--    else()
--      set_property(TARGET ${name} APPEND PROPERTY BUILD_RPATH "${_build_rpath}")
--    endif()
-+    set_property(TARGET ${name} PROPERTY BUILD_WITH_INSTALL_RPATH ON)
-   endif()
- 
-   set_target_properties(${name} PROPERTIES
 diff --git a/llvm/lib/MC/MCParser/WasmAsmParser.cpp b/llvm/lib/MC/MCParser/WasmAsmParser.cpp
 index 1f824b80bcd4..1025d3ee3026 100644
 --- a/llvm/lib/MC/MCParser/WasmAsmParser.cpp
