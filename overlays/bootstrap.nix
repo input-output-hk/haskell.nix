@@ -301,10 +301,10 @@ in {
                       else until "9.0" ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols.patch
                         ++ until "9.0" ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols-2.patch
                 )
-                ++ onWindowsOrMusl (fromUntil "9.6"    "9.7"  ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch)
-                ++ onWindowsOrMusl (fromUntil "9.8.2"  "9.11" ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch)
-                ++ onWindowsOrMusl (fromUntil "9.6"    "9.7"  ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch)
-                ++ onWindowsOrMusl (fromUntil "9.8.2"  "9.11" ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch)
+                ++ onWindowsOrMusl (fromUntil "9.6"    "9.7"    ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch)
+                ++ onWindowsOrMusl (fromUntil "9.8.2"  "9.10.3" ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch)
+                ++ onWindowsOrMusl (fromUntil "9.6"    "9.7"    ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch)
+                ++ onWindowsOrMusl (fromUntil "9.8.2"  "9.10.3" ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch)
                 ++ fromUntil "9.9"   "9.11"  ./patches/ghc/ghc-9.9-Cabal-3.11.patch
                 ++ fromUntil "9.8"   "9.8.3" ./patches/ghc/ghc-9.8-text-upper-bound.patch
                 ++ fromUntil "9.8.3" "9.8.4"  ./patches/ghc/ghc-9.8.3-text-upper-bound.patch
