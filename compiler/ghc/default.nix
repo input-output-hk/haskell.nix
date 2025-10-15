@@ -967,6 +967,26 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
   '';
   buildPhase = ''
     runHook preBuild
+  '' + lib.optionalString (!enableShared && targetPlatform.isAndroid && targetPlatform.isAarch64)
+  # This is rather idiotic, but we need to create the dynamic (.so) files because
+  # hadrian expects them in the src/Rules/Rts.hs:160 or thereabout.
+  ''
+      mkdir -p _build/stage1/lib/aarch64-android-ghc-${ghc-version}/
+      touch _build/stage1/lib/aarch64-android-ghc-${ghc-version}/libHSrts-1.0.2_thr_debug-ghc${ghc-version}.so
+      touch _build/stage1/lib/aarch64-android-ghc-${ghc-version}/libHSrts-1.0.2_thr-ghc${ghc-version}.so
+      touch _build/stage1/lib/aarch64-android-ghc-${ghc-version}/libHSrts-1.0.2_debug-ghc${ghc-version}.so
+      touch _build/stage1/lib/aarch64-android-ghc-${ghc-version}/libHSrts-1.0.2-ghc${ghc-version}.so
+  '' + lib.optionalString (!enableShared && targetPlatform.isAndroid && targetPlatform.isAarch32)
+  # This is rather idiotic, but we need to create the dynamic (.so) files because
+  # hadrian expects them in the src/Rules/Rts.hs:160 or thereabout.
+  ''
+      mkdir -p _build/stage1/lib/arm-android-ghc-${ghc-version}/
+      touch _build/stage1/lib/arm-android-ghc-${ghc-version}/libHSrts-1.0.2_thr_debug-ghc${ghc-version}.so
+      touch _build/stage1/lib/arm-android-ghc-${ghc-version}/libHSrts-1.0.2_thr-ghc${ghc-version}.so
+      touch _build/stage1/lib/arm-android-ghc-${ghc-version}/libHSrts-1.0.2_debug-ghc${ghc-version}.so
+      touch _build/stage1/lib/arm-android-ghc-${ghc-version}/libHSrts-1.0.2-ghc${ghc-version}.so
+  ''
+  + ''
     ${hadrian}/bin/hadrian ${hadrianArgs}
   '' + lib.optionalString (installStage1 && !stdenv.targetPlatform.isGhcjs && builtins.compareVersions ghc-version "9.8" < 0) ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:libiserv

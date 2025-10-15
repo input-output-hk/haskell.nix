@@ -333,6 +333,8 @@ in {
 
                 ++ onAndroid (from      "9.6"          ./patches/ghc/ghc-9.6-COMPAT_R_ARM_PREL31.patch)
                 ++ onAndroid (from      "9.10"         ./patches/ghc/ghc-9.10-ignore-libc.patch)
+                # unbreak modern clang with proper _atomic declarations.
+                ++ onAndroid (fromUntil "9.6"  "9.12"  ./patches/ghc/7db8c9927fae3369fc4ecff68f80c4cb32eea757.patch)
 
                 ++ onGhcjs (from        "9.12"         ./patches/ghc/ghc-9.12-ghcjs-rts-mem-heap8.patch)
                 # Fix for `fatal error: 'rts/Types.h' file not found` when building `primitive`
