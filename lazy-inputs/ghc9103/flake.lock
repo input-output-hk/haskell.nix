@@ -1,0 +1,30 @@
+{
+  "nodes": {
+    "ghc9103": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1757514624,
+        "narHash": "sha256-Oxhgpohc+2F9NOr8E6RumC7i4zorBDtM1VviVbInD88=",
+        "ref": "refs/heads/master",
+        "rev": "3f4d7d38b9661435bdde981451ac50c4335ed090",
+        "revCount": 63020,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/ghc/ghc"
+      },
+      "original": {
+        "rev": "3f4d7d38b9661435bdde981451ac50c4335ed090",
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/ghc/ghc"
+      }
+    },
+    "root": {
+      "inputs": {
+        "ghc9103": "ghc9103"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
