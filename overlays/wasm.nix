@@ -1,11 +1,11 @@
 final: prev: prev.lib.optionalAttrs prev.stdenv.targetPlatform.isWasm {
-  llvmPackages = final.llvmPackages_20.override {
+  llvmPackages = final.llvmPackages_21.override {
     patchesFn = p: p // { "llvm/gnu-install-dirs.patch" = [{path = ./patches/wasm;}]; };
     monorepoSrc =
       final.stdenv.mkDerivation {
         pname = "llvm-source";
-        version = final.llvmPackages_20.llvm.version + "-haskell";
-        src = final.llvmPackages_20.llvm.monorepoSrc;
+        version = final.llvmPackages_21.llvm.version + "-haskell";
+        src = final.llvmPackages_21.llvm.monorepoSrc;
         patches = ./patches/wasm/llvm/haskell-wasm-llvm-project.patch;
         buildPhase = "true";
         installPhase = ''
