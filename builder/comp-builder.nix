@@ -90,6 +90,8 @@
 # LLVM
 , useLLVM ? ghc.useLLVM or false
 , smallAddressSpace ? false
+
+, prebuilt-depends ? []
 }:
 # makeOverridable is called here after all the `? DEFAULT` arguments
 # will have been applied.  This makes sure that `c.override (oldAttrs: {...})`
@@ -160,6 +162,7 @@ let self =
 , enableTSanRTS
 , useLLVM
 , smallAddressSpace
+, prebuilt-depends
 }@drvArgs:
 
 let
@@ -213,7 +216,7 @@ let
   configFiles = makeConfigFiles {
     component = componentForSetup;
     inherit (package) identifier;
-    inherit fullName flags needsProfiling enableDWARF;
+    inherit fullName flags needsProfiling enableDWARF prebuilt-depends;
   };
 
   enableFeature = enable: feature:
@@ -852,5 +855,6 @@ in drv; in self) {
           enableDWARF
           enableTSanRTS
           useLLVM
-          smallAddressSpace;
+          smallAddressSpace
+          prebuilt-depends;
 }

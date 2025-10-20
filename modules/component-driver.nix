@@ -37,6 +37,11 @@ in
     default = [];
     description = "pkgs to globally provide to Setup.hs builds";
   };
+  options.prebuilt-depends = lib.mkOption {
+    type = lib.types.listOf lib.types.package;
+    default = [];
+    description = "pre-built (perhaps proprietary) Haskell packages to make available as dependencies";
+  };
 
   # Dependencies (with reinstallable-lib:ghc)
   #

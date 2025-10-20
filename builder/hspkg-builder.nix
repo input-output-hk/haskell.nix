@@ -58,6 +58,7 @@ let
     inherit allComponent componentId component package name src flags setup cabalFile cabal-generator patches
             shellHook
             ;
+    inherit (config) prebuilt-depends;
   };
 
 in rec {

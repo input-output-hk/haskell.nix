@@ -1,6 +1,6 @@
 { stdenv, lib, haskellLib, ghc, nonReinstallablePkgs, runCommand, writeText, writeScript }@defaults:
 
-{ identifier, component, fullName, flags ? {}, needsProfiling ? false, enableDWARF ? false, chooseDrv ? drv: drv, nonReinstallablePkgs ? defaults.nonReinstallablePkgs }:
+{ identifier, component, fullName, flags ? {}, needsProfiling ? false, enableDWARF ? false, chooseDrv ? drv: drv, nonReinstallablePkgs ? defaults.nonReinstallablePkgs, prebuilt-depends ? [] }:
 
 let
   # Sort and remove duplicates from nonReinstallablePkgs.
@@ -57,7 +57,7 @@ let
       ((if needsProfiling then (x: map (p: p.profiled or p) x) else x: x)
       (map haskellLib.dependToLib component.depends))
     )
-  );
+  ) ++ prebuilt-depends;
   script = ''
     ${target-pkg} init $configFiles/${packageCfgDir}
 
@@ -149,17 +149,6 @@ let
       echo "allow-older: ${identifier.name}:*" >> $configFiles/cabal.config
     ''}
 
-    for p in "''${pkgsHostTarget[@]}"; do
-      if [ -e $p/envDep ]; then
-        cat $p/envDep >> $configFiles/ghc-environment
-      fi
-      ${ lib.optionalString component.doExactConfig ''
-        if [ -d $p/exactDep ]; then
-          cat $p/exactDep/configure-flags >> $configFiles/configure-flags
-          cat $p/exactDep/cabal.config >> $configFiles/cabal.config
-        fi
-      ''}
-    done
     for p in ${lib.concatStringsSep " " nonReinstallablePkgs'}; do
       if [ -e $ghcDeps/envDeps/$p ]; then
         cat $ghcDeps/envDeps/$p >> $configFiles/ghc-environment
@@ -171,6 +160,18 @@ let
         cat $ghcDeps/exactDeps/$p/configure-flags >> $configFiles/configure-flags
         cat $ghcDeps/exactDeps/$p/cabal.config >> $configFiles/cabal.config
       fi
+    done
+  '' + ''
+    for p in "''${pkgsHostTarget[@]}"; do
+      if [ -e $p/envDep ]; then
+        cat $p/envDep >> $configFiles/ghc-environment
+      fi
+      ${ lib.optionalString component.doExactConfig ''
+        if [ -d $p/exactDep ]; then
+          cat $p/exactDep/configure-flags >> $configFiles/configure-flags
+          cat $p/exactDep/cabal.config >> $configFiles/cabal.config
+        fi
+      ''}
     done
   ''
   # This code originates in the `generic-builder.nix` from nixpkgs.  However GHC has been fixed

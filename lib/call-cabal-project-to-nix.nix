@@ -62,6 +62,7 @@
 , evalPackages
 , supportHpack ? false      # Run hpack on package.yaml files with no .cabal file
 , ignorePackageYaml ? false # Ignore package.yaml files even if they exist
+, prebuilt-depends ? []
 , ...
 }@args:
 let
@@ -371,6 +372,7 @@ let
   };
 
   dummy-ghc-pkg-dump = evalPackages.runCommand "dummy-ghc-pkg-dump" {
+      buildInputs = prebuilt-depends;
       nativeBuildInputs = [
         evalPackages.haskell-nix.nix-tools-unchecked.exes.cabal2json
         evalPackages.jq
@@ -535,6 +537,15 @@ let
                 LAST_PKG="ghcjs-th"
               ''
           }
+          for l in "''${pkgsHostTarget[@]}"; do
+            if [ -d "$l/package.conf.d" ]; then
+              files=("$l/package.conf.d/"*.conf)
+              for file in "''${files[@]}"; do
+                 cat "$file" >> $out
+                 echo '---' >> $out
+              done
+            fi
+          done
           for pkg in $PKGS; do
             varname="$(echo $pkg | tr "-" "_")"
             ver="VER_$varname"
