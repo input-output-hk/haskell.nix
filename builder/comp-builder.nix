@@ -91,6 +91,63 @@
 , useLLVM ? ghc.useLLVM or false
 , smallAddressSpace ? false
 
+# Note [prebuilt dependencies]
+#
+# Typical cabal project planning starts with the libraries that come with
+# the compiler and then plans to build every other needed dependency from
+# source (fetched through hackage repositories or source-repository
+# dependencies). In cases where some library that isn't part of the compiler
+# is only available as a pre-built shared object file (such as for some
+# closed-source module from a vendor, or in principle a component whose
+# compilation is extremely expensive), we need to be able to tell cabal
+# about additional prebuilt dependencies to include in its plan and link to
+# as needed at build time.
+#
+# This can be done by passing the needed libraries in prebuilt-depends. During
+# cabal planning and builds, these libraries (and their dependencies) will be
+# present in the ghc-pkg database that cabal will draw from for its dependency
+# resolution, thereby skipping lookup from hackage or building from source.
+#
+# The entries in the prebuilt dependencies list may have dependencies that are
+# part of the compiler-provided package set, or may have overlap with each other.
+# GHC can actually handle this use case fine, since types from different packages
+# (even of the same name) will not unify, so at worst you will get a compile error,
+# but cabal will need to choose one for the packages you are building. The entries
+# in the list are given priority over the compiler-provided ones, with the later
+# entries having greater priority than the earlier ones.
+#
+# For your build to succeed, your prebuilt-dependencies must meet the following:
+#
+# 1. They are built with the same compiler version and RTS way.
+# 2. They have all of their dependencies within the package db directory or
+#    included as propagatedBuildInputs
+# 3. They must include the `envDep` and `exactDep` files that make-config.files.nix
+#    expects for configuring cabal precisely.
+#
+# The recommended way to meet this requirement is to build the relevant libraries
+# with haskell.nix too, since it sets up the dependencies appropriately. An example
+# workflow would be:
+#
+# 1. Build libraries foo and bar with haskell.nix (the same plan)
+# 2. Note down the store paths for foo and bar library outputs
+# 3. Make a full nix export of those store paths (using e.g. `nix-store --export $(nix-store --query --requisites $barPath $fooPath) > foobar.closure`
+# 4. On the consumer machine, import the store paths (e.g. `nix-store --import foobar.closure` and then add gc roots)
+# 5. In the consumer haskell.nix build, add the imported store paths to your prebuilt-depends. E.g.:
+#
+#      prebuilt-depends = let foo = {
+#        # We need to make this look like a call to derivation for stdenv to do the right thing
+#        name = "foo-lib-foo-0.1.0.0";
+#        type = "derivation";
+#        outputs = [ "out" ];
+#        out = foo;
+#        all = [ foo ];
+#        # $fooPath is already in the store due to the import, so we use the storePath
+#        # builtin to add it as a source dependency to the build. Note that this does
+#        # not work in pure evaluation mode, you must use --impure with flakes. An
+#        # alternative would be to bundle up all of the needed libraries into tarballs that
+#        # are fetched and unpacked as proper fixed-output derivations.
+#        outPath = builtins.storePath $fooPath;
+#      }; in [ foo ]; # Could also do the same for bar of course
 , prebuilt-depends ? []
 }:
 # makeOverridable is called here after all the `? DEFAULT` arguments

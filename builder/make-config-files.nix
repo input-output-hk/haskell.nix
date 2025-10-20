@@ -161,7 +161,12 @@ let
         cat $ghcDeps/exactDeps/$p/cabal.config >> $configFiles/cabal.config
       fi
     done
-  '' + ''
+  ''
+  # We put the packages in buildInputs *after* the GHC deps on the command line
+  # to ensure that any prebuilt dependencies (see Note [prebuilt dependencies])
+  # take priority over the GHC-provided ones. We can't relink the prebuilt
+  # libraries, so this is the most likely to avoid conflicts.
+  + ''
     for p in "''${pkgsHostTarget[@]}"; do
       if [ -e $p/envDep ]; then
         cat $p/envDep >> $configFiles/ghc-environment
