@@ -867,8 +867,9 @@ in {
 
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc966
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc966
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc967
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc967
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
                           or final.buildPackages.buildPackages.haskell.compiler.ghc963
@@ -893,8 +894,9 @@ in {
 
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc966
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc966
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc967
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc967
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
                           or final.buildPackages.buildPackages.haskell.compiler.ghc963
@@ -920,7 +922,8 @@ in {
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc983
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc966
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc967
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
                           or final.buildPackages.buildPackages.haskell.compiler.ghc963
@@ -946,7 +949,8 @@ in {
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc984
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc966
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc967
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
                           or final.buildPackages.buildPackages.haskell.compiler.ghc963
@@ -977,6 +981,7 @@ in {
                          # or final.buildPackages.buildPackages.haskell.compiler.ghc983
                              final.buildPackages.buildPackages.haskell.compiler.ghc982
                           or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
@@ -1008,6 +1013,7 @@ in {
                          # or final.buildPackages.buildPackages.haskell.compiler.ghc983
                              final.buildPackages.buildPackages.haskell.compiler.ghc982
                           or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
@@ -1040,6 +1046,7 @@ in {
                           or final.buildPackages.buildPackages.haskell.compiler.ghc983
                           or final.buildPackages.buildPackages.haskell.compiler.ghc982
                           or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
@@ -1073,6 +1080,7 @@ in {
                           or final.buildPackages.buildPackages.haskell.compiler.ghc983
                           or final.buildPackages.buildPackages.haskell.compiler.ghc982
                           or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
@@ -1114,6 +1122,7 @@ in {
                           or final.buildPackages.buildPackages.haskell.compiler.ghc983
                           or final.buildPackages.buildPackages.haskell.compiler.ghc982
                           or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
@@ -1138,8 +1147,9 @@ in {
             } // final.lib.optionalAttrs (builtins.compareVersions version "9.7" <0) {
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc966
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc966
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc967
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc967
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
                           or final.buildPackages.buildPackages.haskell.compiler.ghc963
