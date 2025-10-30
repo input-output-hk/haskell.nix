@@ -46,6 +46,8 @@ let self =
 
 , enableDWARF ? false
 
+, enableIPE ? false
+
 , enableTerminfo ? !stdenv.targetPlatform.isAndroid &&
     # Terminfo does not work on older ghc cross arm and windows compilers
      (!haskell-nix.haskellLib.isCrossTarget || !(stdenv.targetPlatform.isAarch32 || stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isWindows) || builtins.compareVersions ghc-version "8.10" >= 0)
@@ -385,6 +387,7 @@ let
           + lib.optionalString enableDWARF "+debug_info"
           + lib.optionalString ((enableNativeBignum && hadrianHasNativeBignumFlavour) || targetPlatform.isGhcjs || targetPlatform.isWasm) "+native_bignum"
           + lib.optionalString (targetPlatform.isGhcjs || targetPlatform.isWasm) "+no_profiled_libs"
+          + lib.optionalString enableIPE "+ipe"
       } --docs=no-sphinx -j --verbose"
       # This is needed to prevent $GCC from emitting out of line atomics.
       # Those would then result in __aarch64_ldadd1_sync and others being referenced, which
