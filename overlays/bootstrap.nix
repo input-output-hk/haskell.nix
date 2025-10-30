@@ -340,7 +340,7 @@ in {
                 # unbreak modern clang with proper _atomic declarations.
                 ++ onAndroid (fromUntil "9.6"  "9.6.5" ./patches/ghc/7db8c9927fae3369fc4ecff68f80c4cb32eea757.patch)
 
-                ++ onGhcjs (from        "9.12"         ./patches/ghc/ghc-9.12-ghcjs-rts-mem-heap8.patch)
+                ++ onGhcjs (fromUntil   "9.12" "9.13"  ./patches/ghc/ghc-9.12-ghcjs-rts-mem-heap8.patch)
                 # Fix for `fatal error: 'rts/Types.h' file not found` when building `primitive`
                 ++ onGhcjs (from        "9.13"         ./patches/ghc/ghc-9.13-ghcjs-rts-types.patch)
 
