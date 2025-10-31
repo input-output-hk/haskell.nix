@@ -63,6 +63,10 @@ let self =
       else "perf-cross-ncg"
     )
 
+, # Extra flavour transformers to pass to Hadrian. For example, +debug_ghc or
+  # +assertions to work on debugging the compiler.
+  extraFlavourTransformers ? []
+
 , # Whether to disable the large address space allocator
   # necessary fix for iOS: https://www.reddit.com/r/haskell/comments/4ttdz1/building_an_osxi386_to_iosarm64_cross_compiler/d5qvd67/
   disableLargeAddressSpace ? stdenv.targetPlatform.isDarwin && stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isAndroid
@@ -388,6 +392,7 @@ let
           + lib.optionalString ((enableNativeBignum && hadrianHasNativeBignumFlavour) || targetPlatform.isGhcjs || targetPlatform.isWasm) "+native_bignum"
           + lib.optionalString (targetPlatform.isGhcjs || targetPlatform.isWasm) "+no_profiled_libs"
           + lib.optionalString enableIPE "+ipe"
+          + lib.concatStrings extraFlavourTransformers
       } --docs=no-sphinx -j --verbose"
       # This is needed to prevent $GCC from emitting out of line atomics.
       # Those would then result in __aarch64_ldadd1_sync and others being referenced, which
