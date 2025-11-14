@@ -50,7 +50,7 @@ let self =
     # Terminfo does not work on older ghc cross arm and windows compilers
      (!haskell-nix.haskellLib.isCrossTarget || !(stdenv.targetPlatform.isAarch32 || stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isWindows) || builtins.compareVersions ghc-version "8.10" >= 0)
 
-, # Wheter to build in NUMA support
+, # Whether to build in NUMA support
   enableNUMA ? true
 
 , # What flavour to build. An empty string indicates no
@@ -282,7 +282,7 @@ let
         "fp_cv_prog_ar_supports_dash_l=no"
     ] ++ lib.optionals (targetPlatform.isDarwin) [
         "--without-libcharset"
-    ] ++ lib.optional (targetPlatform.isGhcjs) "--target=javascript-unknown-ghcjs" # TODO use configurePlatforms once tripple is updated in nixpkgs
+    ] ++ lib.optional (targetPlatform.isGhcjs) "--target=javascript-unknown-ghcjs" # TODO use configurePlatforms once triple is updated in nixpkgs
     ;
 
   # Splicer will pull out correct variations
@@ -374,7 +374,7 @@ let
 
   hadrian = hadrianProject.hsPkgs.hadrian.components.exes.hadrian;
 
-  # For a discription of hadrian command line args
+  # For a description of hadrian command line args
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/README.md
   # For build flavours and flavour transformers
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/doc/flavours.md
@@ -927,7 +927,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     export XATTR=$(mktemp -d)/nothing
   ''
   # We need to point at a stand in `windows.h` header file so that the RTS headers can
-  # work on the hostPlatform.  We also need to work around case sensitve file system issues.
+  # work on the hostPlatform.  We also need to work around case sensitive file system issues.
   + lib.optionalString stdenv.targetPlatform.isWindows ''
     export NIX_CFLAGS_COMPILE_${
         # We want this only to apply to the non windows hostPlatform (the
