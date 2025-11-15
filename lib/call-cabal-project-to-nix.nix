@@ -89,7 +89,7 @@ let
       #
       # > The option `packages.Win32.package.identifier.name' is used but not defined.
       #
-      (compilerSelection pkgs)."${compiler-nix-name}";
+      (compilerSelection pkgs.buildPackages)."${compiler-nix-name}";
 
 in let
   ghc = if ghc' ? latestVersion
