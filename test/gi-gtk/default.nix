@@ -27,7 +27,9 @@ in recurseIntoAttrs rec {
     # Cross compilation to aarch64 is also broken
     || stdenv.hostPlatform.isAarch64 && !stdenv.buildPlatform.isAarch64
     # glu is marked ase broken for isAndroid
-    || stdenv.hostPlatform.isAndroid;
+    || stdenv.hostPlatform.isAndroid
+    # Skip until we update haskell.nix to Cabal 3.16
+    || builtins.elem compiler-nix-name ["ghc91320251028"];
 
   ifdInputs = {
     inherit (project) plan-nix;
