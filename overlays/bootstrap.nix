@@ -949,7 +949,8 @@ in {
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc984
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc967
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc984
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
