@@ -90,7 +90,7 @@ let
     export WINEDLLOVERRIDES="winemac.drv=d"
     export WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag
     export LC_ALL=en_US.UTF-8
-    export WINEPREFIX=$TMP
+    export WINEPREFIX=''${WINEPREFIX:-$(mktemp -d)}
     Path="''${Path:-}"
     unset configureFlags
     unset configurePhase
