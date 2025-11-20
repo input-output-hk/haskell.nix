@@ -89,11 +89,11 @@
         static = p: p.pkgsStatic;
       } // lib.optionalAttrs (nixpkgsName == "unstable"
           && (__match ".*llvm" compiler-nix-name == null)
-          && !builtins.elem compiler-nix-name ["ghc9102"]) {
+          && !builtins.elem compiler-nix-name ["ghc9102" "ghc9103"]) {
         inherit (lib.systems.examples) ghcjs;
       } // lib.optionalAttrs (nixpkgsName == "unstable"
           && (__match ".*llvm" compiler-nix-name == null)
-          && !builtins.elem compiler-nix-name ["ghc967" "ghc984" "ghc9102"]
+          && !builtins.elem compiler-nix-name ["ghc967" "ghc984" "ghc9102" "ghc9103"]
           && system != "x86_64-darwin") {
         inherit (lib.systems.examples) wasi32;
       } // lib.optionalAttrs (nixpkgsName == "unstable"

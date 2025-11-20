@@ -34,7 +34,7 @@ in recurseIntoAttrs {
     #   (#103:librdrand_la-randombytes_internal_random.o) for relocation 4 in section 1 of kind: 0
     || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl && !stdenv.buildPlatform.isAarch64)
     # Not sure why this is failing with a seg fault
-    || (builtins.elem compiler-nix-name ["ghc9102" "ghc9102llvm"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
+    || (builtins.elem compiler-nix-name ["ghc9102" "ghc9102llvm" "ghc9103" "ghc9103llvm"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
     # unhandled ELF relocation(Rel) type 10
     || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_32)
 
