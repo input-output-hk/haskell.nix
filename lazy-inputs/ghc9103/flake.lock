@@ -5,18 +5,18 @@
       "locked": {
         "lastModified": 1757514624,
         "narHash": "sha256-Oxhgpohc+2F9NOr8E6RumC7i4zorBDtM1VviVbInD88=",
-        "ref": "refs/heads/master",
+        "ref": "ghc-9.10.3-iog",
         "rev": "3f4d7d38b9661435bdde981451ac50c4335ed090",
         "revCount": 63020,
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/ghc/ghc"
+        "url": "https://github.com/stable-haskell/ghc"
       },
       "original": {
-        "rev": "3f4d7d38b9661435bdde981451ac50c4335ed090",
+        "ref": "ghc-9.10.3-iog",
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/ghc/ghc"
+        "url": "https://github.com/stable-haskell/ghc"
       }
     },
     "root": {
