@@ -143,7 +143,7 @@ lib.runTests {
             secure: True
             root-keys:
             key-threshold: 0
-            --sha256: sha256-y1vQnXI1XzkjnC4h66tVDmu2TZjZPcMrZEnE3m0XOfg=
+            --sha256: sha256-tyeqsCew1ptGCrNAIrw5R2sz+oSqWbWrd/wDAPh1hMs=
           -- end of block
       ''));
       expected = __toJSON {
