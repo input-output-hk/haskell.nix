@@ -246,7 +246,7 @@ in {
                 ++ onAndroid (fromUntil "9.0" "9.10" ./patches/ghc/ghc-9.6-hadrian-android.patch)
                 ++ onAndroid (from "9.10" ./patches/ghc/ghc-9.10-hadrian-android.patch)
                 ++ onAndroid (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.10-relax-llvm-max-version.patch)
-                ++ onAndroid (from "9.12" ./patches/ghc/ghc-define-undefined-elf-st-visibility.patch)
+                ++ onAndroid (from "9.10.3" ./patches/ghc/ghc-define-undefined-elf-st-visibility.patch)
                 ++ onMusl (onAarch64 (fromUntil "9.4"  "9.8"  ./patches/ghc/ghc-9.6-hadrian-strip-cmd.patch))
                 ++ onMusl (onAarch64 (fromUntil "9.8"  "9.10" ./patches/ghc/ghc-9.8-hadrian-strip-cmd.patch))
                 ++ onMusl (onAarch64 (fromUntil "9.10" "9.12" ./patches/ghc/ghc-9.10-hadrian-strip-cmd.patch))
