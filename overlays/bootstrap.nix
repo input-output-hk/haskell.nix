@@ -1046,6 +1046,7 @@ in {
                          # or final.buildPackages.buildPackages.haskell.compiler.ghc983
                              final.buildPackages.buildPackages.haskell.compiler.ghc982
                           or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
