@@ -148,9 +148,9 @@ lib.runTests {
       ''));
       expected = __toJSON {
         name = "ghcjs-overlay";
-        repoContents = "/nix/store/gzjj6rjjgvkm5midldy292ghbq7hszna-ghcjs-overlay";
+        repoContents = "/nix/store/2gimg55rlc60pjiimpww10zflyf1bqh9-ghcjs-overlay";
         repo = {
-          ghcjs-overlay = "/nix/store/gzjj6rjjgvkm5midldy292ghbq7hszna-ghcjs-overlay";
+          ghcjs-overlay = "/nix/store/2gimg55rlc60pjiimpww10zflyf1bqh9-ghcjs-overlay";
         };
         hackage = {
           Cabal = {
