@@ -29,7 +29,9 @@ in recurseIntoAttrs ({
   # Does not work on ghcjs because it needs zlib. Wasm needs network fixed.
   meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm
     # For some reason the `.tix` file is not created on armv7a android (not sure why)
-    || stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32;
+    || stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32
+    # The `input.txt` is not written (or just not found) for mingwW64 (ucrt64 works ok)
+    || (stdenv.hostPlatform.isWindows && stdenv.hostPlatform.libc != "ucrt");
   run = stdenv.mkDerivation {
     name = "coverage-test";
 
