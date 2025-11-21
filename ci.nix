@@ -89,11 +89,11 @@
         static = p: p.pkgsStatic;
       } // lib.optionalAttrs (nixpkgsName == "unstable"
           && (__match ".*llvm" compiler-nix-name == null)
-          && !builtins.elem compiler-nix-name ["ghc9102"]) {
+          && !builtins.elem compiler-nix-name ["ghc9102" "ghc9103"]) {
         inherit (lib.systems.examples) ghcjs;
       } // lib.optionalAttrs (nixpkgsName == "unstable"
           && (__match ".*llvm" compiler-nix-name == null)
-          && !builtins.elem compiler-nix-name ["ghc967" "ghc984" "ghc9102"]
+          && !builtins.elem compiler-nix-name ["ghc967" "ghc984" "ghc9102" "ghc9103"]
           && system != "x86_64-darwin") {
         inherit (lib.systems.examples) wasi32;
       } // lib.optionalAttrs (nixpkgsName == "unstable"
@@ -115,7 +115,7 @@
         inherit (lib.systems.examples) musl32;
       } // lib.optionalAttrs (system == "x86_64-linux" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
         inherit (lib.systems.examples) aarch64-android-prebuilt;
-      } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName != "unstable" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948" "ghc91320250523"]) {
+      } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName != "unstable" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948" "ghc9103" "ghc9103llvm" "ghc91320250523"]) {
         inherit (lib.systems.examples) armv7a-android-prebuilt;
       } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc8107" "ghc902"]) {
         # TODO fix this for the compilers we build with hadrian (ghc >=9.4)
@@ -142,7 +142,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
           hello = (pkgs.haskell-nix.hackage-package ({ name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }
             // lib.optionalAttrs (builtins.compareVersions pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.13" >= 0) {
               shell.tools.hoogle.cabalProjectLocal = ''
-                allow-newer: *:*
+                allow-newer: hashable:ghc-bignum, integer-logarithms:ghc-bignum
               '';
           })).getComponent "exe:hello";
           # Make sure the default shell tools (hoogle) are built
