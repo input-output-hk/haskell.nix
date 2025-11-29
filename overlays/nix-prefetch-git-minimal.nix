@@ -21,7 +21,7 @@ final: prev: {
     let f = import (final.path + "/pkgs/tools/package-management/nix-prefetch-scripts");
     in
       if (builtins.functionArgs f) ? git
-        then final.callPackages f { git = final.gitMinimal; }
+        then final.callPackages f { gitMinimal = final.gitMinimal; }
         else prev) nix-prefetch-git;
 
   # fetchgit use `buildPackages.gitMinimal` and on nixpkgs 21.11
