@@ -18,7 +18,7 @@
 
   # short names for nixpkgs versions
   nixpkgsVersions = {
-    "R2505" = inputs.nixpkgs-2505;
+    "R2511" = inputs.nixpkgs-2511;
     "unstable" = inputs.nixpkgs-unstable;
   };
 
@@ -64,7 +64,7 @@
       # cabal-install and nix-tools plans.  When removing a ghc version
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
-      nixpkgs.lib.optionalAttrs (builtins.elem nixpkgsName ["R2411" "R2505"]) {
+      nixpkgs.lib.optionalAttrs (builtins.elem nixpkgsName ["R2411" "R2505" "R2511"]) {
         ghc96 = false;
         ghc98 = false;
         ghc98llvm = false;
