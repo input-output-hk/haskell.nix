@@ -1,5 +1,5 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, util, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -25,7 +25,7 @@ let
   packages = (project false).hsPkgs;
   packages-ei = (project true).hsPkgs;
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm
     # On aarch64 this test breaks form musl cross compiles on x86_64-linux
     # Error is:

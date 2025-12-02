@@ -18,7 +18,7 @@ let
   };
 in 
 
-recurseIntoAttrs ({
+lib.recurseIntoAttrs ({
   ifdInputs = {
     plan-nix = addMetaAttrs meta project.plan-nix;
   };

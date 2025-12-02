@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, haskell-nix, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, util, haskell-nix, haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -15,7 +15,7 @@ let
 
   packages = project.hsPkgs;
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   ifdInputs = {
     inherit (project) plan-nix;
   };

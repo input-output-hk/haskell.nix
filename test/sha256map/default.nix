@@ -1,4 +1,4 @@
-{ pkgs, lib, stdenv, haskell-nix, testSrc, zlib, compiler-nix-name, evalPackages, recurseIntoAttrs } : recurseIntoAttrs {
+{ pkgs, lib, stdenv, haskell-nix, testSrc, zlib, compiler-nix-name, evalPackages } : lib.recurseIntoAttrs {
   # The version of pandoc used in this test does not build with ghcjs or ghc 8.10
   meta.disabled = stdenv.hostPlatform.isGhcjs
       || builtins.compareVersions pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "8.10" >= 0;

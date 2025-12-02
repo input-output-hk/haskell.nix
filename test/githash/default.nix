@@ -1,4 +1,4 @@
-{ stdenv, lib, haskell-nix, haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, runCommand, gitReallyMinimal, buildPackages }:
+{ stdenv, lib, haskell-nix, haskellLib, testSrc, compiler-nix-name, evalPackages, runCommand, gitReallyMinimal, buildPackages }:
 
 with lib;
 
@@ -40,7 +40,7 @@ let
   githash-test =
     packages.githash-test.components.exes.githash-test;
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   # githash runs git from TH code and this needs a cross compiled git exe
   # to work correctly.  Cross compiling git is currently broken.
   meta.disabled = __elem compiler-nix-name ["ghc901" "ghc902"] || haskellLib.isCrossHost ||

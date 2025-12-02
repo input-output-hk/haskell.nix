@@ -1,4 +1,4 @@
-{ stdenv, lib, fetchFromGitHub, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages, buildPackages, sources }:
+{ stdenv, lib, fetchFromGitHub, runCommand, testSrc, compiler-nix-name, evalPackages, buildPackages, sources }:
 
 with lib;
 
@@ -18,7 +18,7 @@ let
   exampleProject = import "${exampleProjectSrc}" { config = { haskellNix = { coverage = true; }; }; };
   exampleCoverageReport = exampleProject.cardanoShellHaskellPackages.projectCoverageReport;
 
-in recurseIntoAttrs ({
+in lib.recurseIntoAttrs ({
   # Does not work on ghcjs because it needs zlib.
   meta.disabled = stdenv.hostPlatform.isGhcjs;
   run = stdenv.mkDerivation {

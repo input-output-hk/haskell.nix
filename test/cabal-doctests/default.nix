@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, cabalProject', haskellLib, gmp6, zlib, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, util, cabalProject', haskellLib, gmp6, zlib, runCommand, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -18,7 +18,7 @@ let
     disabled = stdenv.buildPlatform != stdenv.hostPlatform;
   };
 
-in recurseIntoAttrs ({
+in lib.recurseIntoAttrs ({
   # Making cabal-doctest work for cross compilers will be difficult.
   meta.disabled = stdenv.buildPlatform != stdenv.hostPlatform || builtins.compareVersions
     buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.0" >= 0;

@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -28,7 +28,7 @@ let
   exe = (project.getComponent "cabal-simple:exe:cabal-simple")
     .override (lib.optionalAttrs stdenv.hostPlatform.isAndroid { setupBuildFlags = ["--ghc-option=-optl-static" ]; });
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm;
   ifdInputs = {
     inherit (project) plan-nix;

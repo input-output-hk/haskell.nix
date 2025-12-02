@@ -39,7 +39,7 @@ let
         // lib.optionalAttrs (componentsByName ? lib) {
           library = lookupComponent "" "" componentsByName.lib;
         };
-      checks = pkgs.recurseIntoAttrs (
+      checks = pkgs.lib.recurseIntoAttrs (
         lib.filterAttrs (_: x: x != {}) (
           builtins.mapAttrs
             (_: d: pkgs.haskell-nix.haskellLib.check d)
