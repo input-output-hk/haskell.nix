@@ -1,4 +1,4 @@
-{ stdenv, stackProject', testSrc, compiler-nix-name, evalPackages }:
+{ lib, stdenv, stackProject', testSrc, compiler-nix-name, evalPackages }:
 
 let
   project = stackProject' {

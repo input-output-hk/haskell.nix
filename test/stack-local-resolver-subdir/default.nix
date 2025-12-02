@@ -1,4 +1,4 @@
-{ project', testSrc, compiler-nix-name, evalPackages }:
+{ lib, project', testSrc, compiler-nix-name, evalPackages }:
 
 let
   project = project' {
