@@ -67,9 +67,7 @@
       nixpkgs.lib.optionalAttrs (builtins.elem nixpkgsName ["R2411" "R2505" "R2511"]) {
         ghc96 = false;
         ghc98 = false;
-        ghc98llvm = false;
         ghc910 = false;
-        ghc910llvm = false;
         ghc912 = false;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc96 = true;
