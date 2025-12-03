@@ -31,7 +31,7 @@ let
         static-nix-tools' = pins:
           let
             # TODO replace once haskell-nix-examples nix-tools is in haskell.nix
-            zipFile = (import pins final).${final.system};
+            zipFile = (import pins final).${final.stdenv.hostPlatform.system};
             tarball = final.runCommand "nix-tools" {
               nativeBuildInputs = [ final.unzip ];
             } ''
@@ -54,7 +54,7 @@ let
         # Version of nix-tools built with a pinned version of haskell.nix.
         pinned-nix-tools-lib = (import final.haskell-nix.sources.flake-compat {
             pkgs = final;
-            inherit (final) system;
+            inherit (final.stdenv.hostPlatform) system;
             src = ../nix-tools;
             override-inputs = {
               # Avoid downloading another `hackage.nix`.
@@ -75,7 +75,7 @@ let
           };
         # For use building hadrian.  This way updating anything that modifies the
         # way hadrian is built will not cause a GHC rebuild.
-        pinned-haskell-nix = pinned-nix-tools-lib.haskell-nix final.system;
+        pinned-haskell-nix = pinned-nix-tools-lib.haskell-nix final.stdenv.hostPlatform.system;
       });
 
     bootstrap = import ./bootstrap.nix;

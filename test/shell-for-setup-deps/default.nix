@@ -1,4 +1,4 @@
-{ stdenv, lib, cabal-install, cabalProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, cabal-install, cabalProject', runCommand, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -14,7 +14,7 @@ let
     withHoogle = true;
   };
 
-in recurseIntoAttrs ({
+in lib.recurseIntoAttrs ({
   # Making this work for cross compilers will be difficult as setup-deps are
   # built for the build platform and the shell will be for the host platform.
   # We probably need a shell that provides both build and host ghc
