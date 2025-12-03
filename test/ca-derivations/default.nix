@@ -1,6 +1,6 @@
 # Test if derivations are content addressed building two derivations producing
 # the same outputs and checking if the path stores are equals
-{ stdenv, pkgs, lib, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, CADerivationsEnabled }:
+{ stdenv, pkgs, lib, mkCabalProjectPkgSet, project', haskellLib, testSrc, compiler-nix-name, evalPackages, CADerivationsEnabled }:
 
 with lib;
 
@@ -38,7 +38,7 @@ let
   exe-withComment = projectWithComment.hsPkgs.cabal-simple.components.exes.cabal-simple.exePath;
 
 in
-recurseIntoAttrs {
+lib.recurseIntoAttrs {
 
   meta.disabled = !CADerivationsEnabled;
 

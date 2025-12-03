@@ -43,7 +43,7 @@ with lib.types;
     };
     evalSystem = mkOption {
       type = str;
-      default = pkgs.pkgsBuildBuild.stdenv.system;
+      default = pkgs.pkgsBuildBuild.stdenv.hostPlatform.system;
       description = ''
         Specifies the system on which `cabal` and `nix-tools` should run.
         If not specified the `pkgsBuildBuild` system will be used.
@@ -55,7 +55,7 @@ with lib.types;
     evalPackages = mkOption {
       type = attrs;
       default =
-        if pkgs.pkgsBuildBuild.stdenv.system == config.evalSystem
+        if pkgs.pkgsBuildBuild.stdenv.hostPlatform.system == config.evalSystem
         then pkgs.pkgsBuildBuild
         else
           import pkgs.path {

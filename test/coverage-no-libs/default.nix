@@ -1,4 +1,4 @@
-{ stdenv, lib, cabal-install, cabalProject', stackProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, cabal-install, cabalProject', stackProject', runCommand, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -13,7 +13,7 @@ let
   cabalProj = (cabalProject' (projectArgs // { inherit compiler-nix-name; }));
   stackProj = (stackProject' projectArgs);
 
-in recurseIntoAttrs ({
+in lib.recurseIntoAttrs ({
   # Does not work on ghcjs because it needs zlib.
   meta.disabled = stdenv.hostPlatform.isGhcjs;
   run = stdenv.mkDerivation {

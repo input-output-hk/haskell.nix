@@ -20,7 +20,7 @@ in rec {
   tests = import ./test/default.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
 
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
-    pkgs.recurseIntoAttrs ({
+    pkgs.lib.recurseIntoAttrs ({
       cabal-latest = tool compiler-nix-name "cabal" ({
         inherit evalPackages;
       } // pkgs.lib.optionalAttrs (ghcFromTo "9.13" "9.14") {
@@ -100,8 +100,8 @@ in rec {
 
   # These are pure parts of maintainer-script so they can be built by hydra
   # and added to the cache to speed up buildkite.
-  maintainer-script-cache = pkgs.recurseIntoAttrs (
-      (pkgs.lib.optionalAttrs (pkgs.system == "x86_64-linux") {
+  maintainer-script-cache = pkgs.lib.recurseIntoAttrs (
+      (pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
         inherit (maintainer-scripts) check-hydra;
       })
     // (pkgs.lib.optionalAttrs (ifdLevel > 2) {

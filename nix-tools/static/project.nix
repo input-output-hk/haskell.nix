@@ -46,7 +46,7 @@ let
   };
 
 
-  add-static-libs-to-darwin = pkgs.lib.mkIf pkgs.hostPlatform.isDarwin {
+  add-static-libs-to-darwin = pkgs.lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
     packages.cabal-install.ghcOptions = [
       "-L${pkgs.lib.getLib pkgs.static-gmp}/lib"
     ];
