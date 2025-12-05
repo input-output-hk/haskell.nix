@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellLib, project', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, haskellLib, project', testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -13,7 +13,7 @@ let
 
   packages = project.hsPkgs;
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   ifdInputs = {
     inherit (project) plan-nix;
   };

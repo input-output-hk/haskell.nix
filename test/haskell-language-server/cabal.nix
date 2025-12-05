@@ -1,4 +1,4 @@
-{ lib, stdenv, testSrc, haskell-nix, compiler-nix-name, evalPackages, recurseIntoAttrs, buildPackages }:
+{ lib, stdenv, testSrc, haskell-nix, compiler-nix-name, evalPackages, buildPackages }:
 let
   project = haskell-nix.cabalProject' {
     inherit compiler-nix-name evalPackages;
@@ -6,7 +6,7 @@ let
     src = haskell-nix.sources."hls-2.11";
     configureArgs = "--disable-benchmarks --disable-tests"; # This makes cabalProject' more like the `tool` function
   };
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   ifdInputs = {
     inherit (project) plan-nix;
   };

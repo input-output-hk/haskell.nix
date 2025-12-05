@@ -1,4 +1,4 @@
-{ stdenv, lib, cabal-install, cabalProject', stackProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, cabal-install, cabalProject', stackProject', runCommand, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -25,7 +25,7 @@ let
   crossSuffix = lib.optionalString (stdenv.hostPlatform != stdenv.buildPlatform) "-${stdenv.hostPlatform.config}";
   crossSuffix' = lib.optionalString (stdenv.hostPlatform != stdenv.buildPlatform && stdenv.hostPlatform.isStatic) "-static" + crossSuffix;
 
-in recurseIntoAttrs ({
+in lib.recurseIntoAttrs ({
   # Does not work on ghcjs because it needs zlib. Wasm needs network fixed.
   meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm
     # For some reason the `.tix` file is not created on armv7a android (not sure why)

@@ -1,4 +1,4 @@
-{ stdenv, lib, buildPackages, mkCabalProjectPkgSet, callCabalProjectToNix, loadCabalPlan, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, buildPackages, mkCabalProjectPkgSet, callCabalProjectToNix, loadCabalPlan, haskellLib, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -28,7 +28,7 @@ let
   };
   packages = pkgSet.config.hsPkgs;
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   ifdInputs = {
     plan-nix = callProjectResults.projectNix;
   };

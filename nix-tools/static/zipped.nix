@@ -31,7 +31,7 @@ let
       ];
     in 
       customPkgs.packaging.asZip {
-        name = "${customPkgs.hostPlatform.system}-nix-tools-static";
+        name = "${customPkgs.stdenv.hostPlatform.system}-nix-tools-static";
         drvs' = [ 
           hsPkgs.cabal-install.components.exes.cabal 
           hsPkgs.hpack.components.exes.hpack 
@@ -45,12 +45,12 @@ let
       stringifyInputs = inputs: pkgs.lib.mapAttrsToList (name: value: pkgs.lib.trace "${name}=${value}" "${value}") inputs;
       # stringifyInputs = inputs: map (x: "${x}") (builtins.attrValues inputs);
 
-      fragment-drv = "static-nix-tools-outputs.hydraJobs.${pkgs.hostPlatform.system}.zipped.${fragment-name}";
+      fragment-drv = "static-nix-tools-outputs.hydraJobs.${pkgs.stdenv.hostPlatform.system}.zipped.${fragment-name}";
     in
-      pkgs.runCommand "${pkgs.hostPlatform.system}-all-nix-tools" {
+      pkgs.runCommand "${pkgs.stdenv.hostPlatform.system}-all-nix-tools" {
         requiredSystemFeatures = [ "recursive-nix" ];
         nativeBuildInputs = 
-          # [ inputs.nixpkgs-unstable.legacyPackages.${pkgs.system}.nix pkgs.gitMinimal ]
+          # [ inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.nix pkgs.gitMinimal ]
           [ (pkgs.lib.trace pkgs.nix.version pkgs.nix) pkgs.gitMinimal ]
           ++ stringifyInputs inputs
           ++ stringifyInputs inputs.haskellNix.inputs;
@@ -59,7 +59,7 @@ let
         mkdir $out
         cp $(nix --offline --extra-experimental-features "flakes nix-command" \
           build --accept-flake-config --no-link --print-out-paths --no-allow-import-from-derivation \
-          --system ${pkgs.hostPlatform.system} \
+          --system ${pkgs.stdenv.hostPlatform.system} \
           ${../.}#${fragment-drv})/*.zip $out/
       '';
  
@@ -81,12 +81,12 @@ let
 
 
   allZippedTools = 
-    pkgs.lib.optionalAttrs (pkgs.system == "x86_64-darwin" || pkgs.system == "aarch64-darwin") { 
+    pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-darwin" || pkgs.stdenv.hostPlatform.system == "aarch64-darwin") {
       "nix-tools-static" = zippedToolsForDarwin;
       "nix-tools-static-no-ifd" = zippedToolsNoIfdFor "nix-tools-static";
     } 
     // 
-    pkgs.lib.optionalAttrs (pkgs.system == "x86_64-linux") {
+    pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
       "nix-tools-static" = zippedToolsForLinux;
       "nix-tools-static-arm64" = zippedToolsForLinuxArm64;
 

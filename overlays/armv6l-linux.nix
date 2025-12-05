@@ -2,10 +2,10 @@ final: prev:
 let
   isLinuxCross =
        prev.haskell-nix.haskellLib.isCrossHost
-    && prev.hostPlatform.isLinux
-    && (prev.hostPlatform.isAarch32
-     || prev.hostPlatform.isAarch64
-     || prev.hostPlatform.isi686);
+    && prev.stdenv.hostPlatform.isLinux
+    && (prev.stdenv.hostPlatform.isAarch32
+     || prev.stdenv.hostPlatform.isAarch64
+     || prev.stdenv.hostPlatform.isi686);
 
 in
 {

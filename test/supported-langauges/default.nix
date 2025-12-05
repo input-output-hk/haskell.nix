@@ -1,4 +1,4 @@
-{ stdenv, pkgs, lib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, pkgs, lib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 let
   ghc = buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { ghcEvalPackages = evalPackages; };
@@ -7,7 +7,7 @@ let
     inherit pkgs evalPackages ghc;
   };
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   check = stdenv.mkDerivation {
     name = "support-languages-check";
 

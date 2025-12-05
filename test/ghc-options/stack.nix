@@ -1,4 +1,4 @@
-{ stdenv, lib, stackProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, stackProject', haskellLib, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -9,7 +9,7 @@ let
   };
   packages = project.hsPkgs;
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   # This test is somehow broken for ghcjs
   meta.disabled = stdenv.hostPlatform.isGhcjs || compiler-nix-name != "ghc984";
 

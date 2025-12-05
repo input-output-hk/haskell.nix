@@ -1,6 +1,6 @@
 # Build a project enabling content addressed derivations for
 # only a subset of the components
-{ stdenv, pkgs, lib, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, CADerivationsEnabled }:
+{ stdenv, pkgs, lib, mkCabalProjectPkgSet, project', haskellLib, testSrc, compiler-nix-name, evalPackages, CADerivationsEnabled }:
 
 with lib;
 
@@ -34,7 +34,7 @@ let
   exeB = projectB.hsPkgs.cabal-simple.components.exes.cabal-simple.exePath;
 
 in
-recurseIntoAttrs {
+lib.recurseIntoAttrs {
 
   meta.disabled = !CADerivationsEnabled;
 

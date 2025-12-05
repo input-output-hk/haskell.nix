@@ -1,7 +1,6 @@
 { stackProject'
 , stdenv, lib, gmp6, openssl, zlib, libffi
 , buildPackages
-, recurseIntoAttrs
 , testSrc
 , compiler-nix-name
 , evalPackages
@@ -30,7 +29,7 @@ let
   packagesGmp = (project { gpl = true; }).hsPkgs;
   packagesIntegerSimple = (project { gpl = false; }).hsPkgs;
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs || compiler-nix-name != compiler;
 
   ifdInputs = {

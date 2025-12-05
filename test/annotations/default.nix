@@ -1,4 +1,4 @@
-{ stdenv, lib, util, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -8,7 +8,7 @@ let
     src = testSrc "annotations";
   };
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   meta.disabled = 
     # This fail looking for ghci.  Adding ghci as a `build-depends` works, but should not be needed
     stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm
