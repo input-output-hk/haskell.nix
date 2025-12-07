@@ -29,7 +29,7 @@
             pkgs'.nix-tools-set { compilerSelection = lib.mkForce (p: p.haskell-nix.compiler); };
 
           # tarball filename e.g. nix-tools-0.1.0.0-x86_64-unknown-linux-musl.tar.gz
-          tarball-filename = "${toolset.name}-${pkgs.hostPlatform.config}.tar.gz";
+          tarball-filename = "${toolset.name}-${pkgs.stdenv.hostPlatform.config}.tar.gz";
         in
         pkgs.runCommand tarball-filename
           { preferLocalBuild = true; }
@@ -80,13 +80,13 @@
           # project's hydraJobs
           pkgs.nix-tools-eval-on-linux.project.flake'.hydraJobs
           # tarballs with static builds.
-          // lib.optionalAttrs (pkgs.buildPlatform.system == "x86_64-linux")
+          // lib.optionalAttrs (pkgs.stdenv.buildPlatform.system == "x86_64-linux")
             { binary-tarball = mkTarball pkgs.pkgsCross.musl64; }
           # aarch64-multiplatform-musl cross compile is currently broken
-          # // lib.optionalAttrs (pkgs.buildPlatform.system == "aarch64-linux")
+          # // lib.optionalAttrs (pkgs.stdenv.buildPlatform.system == "aarch64-linux")
           #   { binary-tarball = mkTarball pkgs.pkgsCross.aarch64-multiplatform-musl; }
           // {
-            static = static-nix-tools-outputs.hydraJobs.${pkgs.system};
+            static = static-nix-tools-outputs.hydraJobs.${pkgs.stdenv.hostPlatform.system};
           }
         );
     };

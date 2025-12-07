@@ -59,7 +59,7 @@ let
       (name: val:
         if name == "ifdInputs"
         then
-          pkgs.recurseIntoAttrs
+          pkgs.lib.recurseIntoAttrs
             (builtins.mapAttrs (_: v: pkgs.haskell-nix.withInputs v) val)
         else val
       );
@@ -97,7 +97,7 @@ let
   # >>> filterNonIfdInputsSetRecurse { foobar = "hello" }
   # { recurseForDerivations = true; }
   filterNonIfdInputsSetRecurse = attrs:
-    pkgs.recurseIntoAttrs (filterAttrsIfdInputs attrs);
+    pkgs.lib.recurseIntoAttrs (filterAttrsIfdInputs attrs);
 
   # Filter all out all the keys/values for child values of this attribute set
   # where the key is not equal to "ifdInputs".
@@ -261,7 +261,7 @@ let
   optionalIfdTests = ifdLevel:
     pkgs.lib.optionalAttrs (ifdLevel > 1) (allTestsWithIfdInputs ifdLevel);
 in filterAttrsOnlyRecursive (_: v: !(isDisabled v))
-  (pkgs.recurseIntoAttrs (optionalIfdTests ifdLevel))
+  (pkgs.lib.recurseIntoAttrs (optionalIfdTests ifdLevel))
 
 ## more possible test cases
 # 1. fully static linking

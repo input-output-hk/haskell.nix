@@ -1,7 +1,8 @@
 final: prev:
 let
     buildBootstrapper.compilerNixName =
-      if final.buildPackages.haskell.compiler ? ghc964 then "ghc964"
+      if final.buildPackages.haskell.compiler ? ghc967 then "ghc967"
+      else if final.buildPackages.haskell.compiler ? ghc964 then "ghc964"
       else "ghc8107";
     latestVerMap = {
       "8.10" = "8.10.7";
@@ -10,7 +11,7 @@ let
       "9.4" = "9.4.8";
       "9.6" = "9.6.7";
       "9.8" = "9.8.4";
-      "9.10" = "9.10.2";
+      "9.10" = "9.10.3";
       "9.12" = "9.12.2";
     };
     gitInputs = {
@@ -28,10 +29,10 @@ let
           (builtins.attrNames latestVerMap));
     traceWarnOld = v: x:
       let
-        bootstrapGhc = final.buildPackages.haskell.compiler.ghc8107;
+        oldVersion = "9.6";
       in
-      if builtins.compareVersions x.version bootstrapGhc.version < 0 then
-          throw "Desired GHC (${x.version}) is older than the bootstrap GHC (${bootstrapGhc.version}) for this platform (${final.stdenv.targetPlatform.config})."
+      if builtins.compareVersions x.version oldVersion < 0 then
+          throw "Desired GHC (${x.version}) is older than the oldest GHC haskell.nix might work with (GHC ${oldVersion})."
       else x // final.lib.optionalAttrs (x.version != latestVerMap.${v}) { latestVersion = latestVerMap.${v}; };
     errorOldGhcjs = v: up: throw "ghcjs ${v} is no longer supported by haskell.nix. Consider using ${latestVerMap.${up}}";
 in {
@@ -50,7 +51,8 @@ in {
             };
             # ghc 9.0.2 is no longer cached for nixpkgs-unstable and it seems to be broken
             nixpkgsBootCompiler =
-              if final.buildPackages.haskell.compiler ? ghc964 then "ghc964"
+              if final.buildPackages.haskell.compiler ? ghc967 then "ghc967"
+              else if final.buildPackages.haskell.compiler ? ghc964 then "ghc964"
               else "ghc902";
             bootPkgsGhc94 = bootPkgs // {
                 alex = final.buildPackages.haskell-nix.tool nixpkgsBootCompiler "alex" {
@@ -244,7 +246,7 @@ in {
                 ++ onAndroid (fromUntil "9.0" "9.10" ./patches/ghc/ghc-9.6-hadrian-android.patch)
                 ++ onAndroid (from "9.10" ./patches/ghc/ghc-9.10-hadrian-android.patch)
                 ++ onAndroid (fromUntil "9.10" "9.11" ./patches/ghc/ghc-9.10-relax-llvm-max-version.patch)
-                ++ onAndroid (from "9.12" ./patches/ghc/ghc-define-undefined-elf-st-visibility.patch)
+                ++ onAndroid (from "9.10.3" ./patches/ghc/ghc-define-undefined-elf-st-visibility.patch)
                 ++ onMusl (onAarch64 (fromUntil "9.4"  "9.8"  ./patches/ghc/ghc-9.6-hadrian-strip-cmd.patch))
                 ++ onMusl (onAarch64 (fromUntil "9.8"  "9.10" ./patches/ghc/ghc-9.8-hadrian-strip-cmd.patch))
                 ++ onMusl (onAarch64 (fromUntil "9.10" "9.12" ./patches/ghc/ghc-9.10-hadrian-strip-cmd.patch))
@@ -301,10 +303,10 @@ in {
                       else until "9.0" ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols.patch
                         ++ until "9.0" ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols-2.patch
                 )
-                ++ onWindowsOrMusl (fromUntil "9.6"    "9.7"  ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch)
-                ++ onWindowsOrMusl (fromUntil "9.8.2"  "9.11" ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch)
-                ++ onWindowsOrMusl (fromUntil "9.6"    "9.7"  ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch)
-                ++ onWindowsOrMusl (fromUntil "9.8.2"  "9.11" ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch)
+                ++ onWindowsOrMusl (fromUntil "9.6"    "9.7"    ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch)
+                ++ onWindowsOrMusl (fromUntil "9.8.2"  "9.10.3" ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch)
+                ++ onWindowsOrMusl (fromUntil "9.6"    "9.7"    ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch)
+                ++ onWindowsOrMusl (fromUntil "9.8.2"  "9.10.3" ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch)
                 ++ fromUntil "9.9"   "9.11"  ./patches/ghc/ghc-9.9-Cabal-3.11.patch
                 ++ fromUntil "9.8"   "9.8.3" ./patches/ghc/ghc-9.8-text-upper-bound.patch
                 ++ fromUntil "9.8.3" "9.8.4"  ./patches/ghc/ghc-9.8.3-text-upper-bound.patch
@@ -333,6 +335,8 @@ in {
 
                 ++ onAndroid (from      "9.6"          ./patches/ghc/ghc-9.6-COMPAT_R_ARM_PREL31.patch)
                 ++ onAndroid (from      "9.10"         ./patches/ghc/ghc-9.10-ignore-libc.patch)
+                # unbreak modern clang with proper _atomic declarations.
+                ++ onAndroid (fromUntil "9.6"  "9.6.5" ./patches/ghc/7db8c9927fae3369fc4ecff68f80c4cb32eea757.patch)
 
                 ++ onGhcjs (from        "9.12"         ./patches/ghc/ghc-9.12-ghcjs-rts-mem-heap8.patch)
                 # Fix for `fatal error: 'rts/Types.h' file not found` when building `primitive`
@@ -342,6 +346,12 @@ in {
 
                 ++ onWasm (until                "9.13" ./patches/ghc/ghc-9.12-wasm-shared-libs.patch)
                 ++ onWasm (until                "9.13" ./patches/ghc/ghc-9.12-wasm-keep-cafs.patch)
+
+                # See https://github.com/IntersectMBO/plutus/issues/7415#issuecomment-3531989244
+                ++ fromUntil "9.6" "9.9" ./patches/ghc/ghc-profiling-fix.patch
+
+                # See https://gitlab.haskell.org/ghc/ghc/-/merge_requests/15096
+                ++ fromUntil "9.6" "9.13" ./patches/ghc/ghc-16bit-elf-section-header-overflow.patch
                 ;
         in ({
             ghc8107 = traceWarnOld "8.10" (final.callPackage ../compiler/ghc {
@@ -863,8 +873,9 @@ in {
 
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc966
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc966
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc967
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc967
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
                           or final.buildPackages.buildPackages.haskell.compiler.ghc963
@@ -889,8 +900,9 @@ in {
 
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc966
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc966
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc967
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc967
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
                           or final.buildPackages.buildPackages.haskell.compiler.ghc963
@@ -916,7 +928,8 @@ in {
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc983
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc966
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc967
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
                           or final.buildPackages.buildPackages.haskell.compiler.ghc963
@@ -942,7 +955,9 @@ in {
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc984
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc966
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc984
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
                           or final.buildPackages.buildPackages.haskell.compiler.ghc963
@@ -973,6 +988,7 @@ in {
                          # or final.buildPackages.buildPackages.haskell.compiler.ghc983
                              final.buildPackages.buildPackages.haskell.compiler.ghc982
                           or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
@@ -1004,6 +1020,7 @@ in {
                          # or final.buildPackages.buildPackages.haskell.compiler.ghc983
                              final.buildPackages.buildPackages.haskell.compiler.ghc982
                           or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
@@ -1024,6 +1041,38 @@ in {
 
                 ghc-patches = ghc-patches "9.10.2";
             });
+            ghc9103 = traceWarnOld "9.10" (final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9103; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc9103
+                    else # GHC 9.10.1 does not seem to build with ghc 9.8.4
+                         # final.buildPackages.buildPackages.haskell.compiler.ghc984
+                         # or final.buildPackages.buildPackages.haskell.compiler.ghc983
+                             final.buildPackages.buildPackages.haskell.compiler.ghc982
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc965
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc964
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_15;
+                llvmPackages = final.llvmPackages_15;
+
+                src-spec.file = final.haskell-nix.sources.ghc9103;
+                src-spec.version = "9.10.3";
+                src-spec.needsBooting = true;
+
+                ghc-patches = ghc-patches "9.10.3";
+            });
             ghc9121 = traceWarnOld "9.12" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9121; };
 
@@ -1036,6 +1085,7 @@ in {
                           or final.buildPackages.buildPackages.haskell.compiler.ghc983
                           or final.buildPackages.buildPackages.haskell.compiler.ghc982
                           or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
@@ -1069,6 +1119,7 @@ in {
                           or final.buildPackages.buildPackages.haskell.compiler.ghc983
                           or final.buildPackages.buildPackages.haskell.compiler.ghc982
                           or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
@@ -1080,8 +1131,8 @@ in {
                 };
                 inherit sphinx;
 
-                buildLlvmPackages = final.buildPackages.llvmPackages_15;
-                llvmPackages = final.llvmPackages_15;
+                buildLlvmPackages = final.buildPackages.llvmPackages_19;
+                llvmPackages = final.llvmPackages_19;
 
                 src-spec.file = final.haskell-nix.sources.ghc9122;
                 src-spec.version = "9.12.2";
@@ -1110,6 +1161,7 @@ in {
                           or final.buildPackages.buildPackages.haskell.compiler.ghc983
                           or final.buildPackages.buildPackages.haskell.compiler.ghc982
                           or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
                           or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
@@ -1121,8 +1173,8 @@ in {
                 };
                 inherit sphinx;
 
-                buildLlvmPackages = final.buildPackages.llvmPackages_15;
-                llvmPackages = final.llvmPackages_15;
+                buildLlvmPackages = final.buildPackages.llvmPackages_19;
+                llvmPackages = final.llvmPackages_19;
 
                 src-spec.file = src;
                 src-spec.version = version;
@@ -1134,8 +1186,9 @@ in {
             } // final.lib.optionalAttrs (builtins.compareVersions version "9.7" <0) {
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc966
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc966
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc967
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc967
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
                           or final.buildPackages.buildPackages.haskell.compiler.ghc965
                           or final.buildPackages.buildPackages.haskell.compiler.ghc964
                           or final.buildPackages.buildPackages.haskell.compiler.ghc963

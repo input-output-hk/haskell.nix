@@ -62,7 +62,7 @@ let
 
 in rec {
   components = haskellLib.applyComponents (buildComp pkg.allComponent) pkg;
-  checks = pkgs.recurseIntoAttrs (builtins.mapAttrs
+  checks = pkgs.lib.recurseIntoAttrs (builtins.mapAttrs
     (_: d: haskellLib.check d)
       (lib.filterAttrs (_: d: d.config.doCheck) components.tests));
   inherit (package) identifier detailLevel isLocal isProject buildType;

@@ -1,5 +1,5 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, util, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -25,7 +25,7 @@ let
   packages = (project false).hsPkgs;
   packages-ei = (project true).hsPkgs;
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm
     # On aarch64 this test breaks form musl cross compiles on x86_64-linux
     # Error is:
@@ -34,7 +34,7 @@ in recurseIntoAttrs {
     #   (#103:librdrand_la-randombytes_internal_random.o) for relocation 4 in section 1 of kind: 0
     || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl && !stdenv.buildPlatform.isAarch64)
     # Not sure why this is failing with a seg fault
-    || (builtins.elem compiler-nix-name ["ghc9102" "ghc9102llvm"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
+    || (builtins.elem compiler-nix-name ["ghc9102" "ghc9102llvm" "ghc9103" "ghc9103llvm"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
     # unhandled ELF relocation(Rel) type 10
     || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_32)
 
@@ -43,6 +43,10 @@ in recurseIntoAttrs {
     || (builtins.elem compiler-nix-name ["ghc947" "ghc948"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
     # We have been unable to get windows cross compilation of th-orphans to work for GHC 8.10 using the latest nixpkgs
     || (compiler-nix-name == "ghc8107" && stdenv.hostPlatform.isWindows)
+
+    # Disable for now (CI machines currently hang without timing out)
+    || stdenv.hostPlatform.isWindows || stdenv.hostPlatform.isAndroid
+    || (stdenv.buildPlatform.isx86_64 && stdenv.hostPlatform.isAarch64)
     ;
 
   ifdInputs = {

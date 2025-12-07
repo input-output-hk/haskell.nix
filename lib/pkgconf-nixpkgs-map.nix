@@ -3150,7 +3150,7 @@ pkgs:
     "libsixel" = [ "libsixel" ];
     "libskk" = [ "libskk" ];
     "slirp" = [ "libslirp" ];
-    "smartcols" = [ "libsmartcols" ];
+    "smartcols" = [ "util-linux" ];
     "libsmbios_c" = [ "libsmbios" ];
     "smf" = [ "libsmf" ];
     "libsmi" = [ "libsmi" ];

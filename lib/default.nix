@@ -1,4 +1,4 @@
-{ pkgs, stdenv, lib, haskellLib, recurseIntoAttrs, srcOnly }:
+{ pkgs, stdenv, lib, haskellLib, srcOnly }:
 
 
 with haskellLib;
@@ -166,7 +166,7 @@ in {
             components =
               if lib.isDerivation components || components == {}
                 then components
-                else recurseIntoAttrs components;
+                else lib.recurseIntoAttrs components;
           };
         packageFilter = _name: package: (package.isHaskell or false) && packageSel package;
         filteredPkgs = lib.filterAttrs packageFilter haskellPackages;
@@ -177,7 +177,7 @@ in {
           lib.filterAttrs (_: components: components != {}) (
             builtins.mapAttrs (_name: packages:
               builtins.foldl' (a: b: a // b) {} (map (x: x.components) packages)) packagesGroupedByName);
-    in recurseIntoAttrs combined;
+    in lib.recurseIntoAttrs combined;
 
   # Equivalent to collectComponents with (_: true) as selection function.
   # Useful for pre-filtered package-set.
@@ -193,7 +193,7 @@ in {
   # This can be used to collect all the test runs in your project, so that can be run in CI.
   collectChecks = packageSel: haskellPackages:
     let packageFilter = _name: package: (package.isHaskell or false) && packageSel package;
-    in recurseIntoAttrs (lib.filterAttrs (_: x: x != {} && x != recurseIntoAttrs {}) (lib.mapAttrs (_: p: p.checks) (lib.filterAttrs packageFilter haskellPackages)));
+    in lib.recurseIntoAttrs (lib.filterAttrs (_: x: x != {} && x != lib.recurseIntoAttrs {}) (lib.mapAttrs (_: p: p.checks) (lib.filterAttrs packageFilter haskellPackages)));
 
   # Equivalent to collectChecks with (_: true) as selection function.
   # Useful for pre-filtered package-set.
@@ -241,7 +241,7 @@ in {
   # Check a test component
   check = import ./check.nix {
     inherit stdenv lib haskellLib;
-    inherit (pkgs) buildPackages;
+    inherit (pkgs) pkgsBuildBuild;
   };
 
   # Do coverage of a package

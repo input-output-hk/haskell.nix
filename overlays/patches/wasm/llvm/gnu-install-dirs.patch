@@ -1,8 +1,8 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index c9ff3696e22d..bd96aab5e237 100644
+index 73c4fc14f031..42284703a52c 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -1133,9 +1133,9 @@ if (NOT TENSORFLOW_AOT_PATH STREQUAL "")
+@@ -1153,9 +1153,9 @@ if (NOT TENSORFLOW_AOT_PATH STREQUAL "")
    add_subdirectory(${TENSORFLOW_AOT_PATH}/xla_aot_runtime_src
      ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/tf_runtime)
    install(TARGETS tf_xla_runtime EXPORT LLVMExports
@@ -15,7 +15,7 @@ index c9ff3696e22d..bd96aab5e237 100644
    # Once we add more modules, we should handle this more automatically.
    if (DEFINED LLVM_OVERRIDE_MODEL_HEADER_INLINERSIZEMODEL)
 diff --git a/cmake/modules/AddLLVM.cmake b/cmake/modules/AddLLVM.cmake
-index baf47677b247..81954240a9bf 100644
+index 52bf7ca0906a..ba2f4be17f08 100644
 --- a/cmake/modules/AddLLVM.cmake
 +++ b/cmake/modules/AddLLVM.cmake
 @@ -974,8 +974,8 @@ macro(add_llvm_library name)
@@ -29,17 +29,17 @@ index baf47677b247..81954240a9bf 100644
                RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT ${name})
  
        if (NOT LLVM_ENABLE_IDE)
-@@ -2240,7 +2240,7 @@ function(llvm_install_library_symlink name dest type)
+@@ -2258,7 +2258,7 @@ function(llvm_install_library_symlink name dest type)
      set(LLVM_LINK_OR_COPY copy)
    endif()
  
 -  set(output_dir lib${LLVM_LIBDIR_SUFFIX})
 +  set(output_dir ${CMAKE_INSTALL_FULL_LIBDIR}${LLVM_LIBDIR_SUFFIX})
-   if(WIN32 AND "${type}" STREQUAL "SHARED")
+   if((WIN32 OR CYGWIN) AND "${type}" STREQUAL "SHARED")
      set(output_dir "${CMAKE_INSTALL_BINDIR}")
    endif()
-@@ -2516,15 +2516,37 @@ function(llvm_setup_rpath name)
-
+@@ -2534,15 +2534,37 @@ function(llvm_setup_rpath name)
+ 
    if (APPLE)
      set(_install_name_dir INSTALL_NAME_DIR "@rpath")
 -    set(_install_rpath "@loader_path/../lib${LLVM_LIBDIR_SUFFIX}" ${extra_libdir})
@@ -79,19 +79,6 @@ index baf47677b247..81954240a9bf 100644
      if(${CMAKE_SYSTEM_NAME} MATCHES "(FreeBSD|DragonFly)")
        set_property(TARGET ${name} APPEND_STRING PROPERTY
                     LINK_FLAGS " -Wl,-z,origin ")
-@@ -2539,9 +2561,9 @@ function(llvm_setup_rpath name)
-   endif()
-
-   # Enable BUILD_WITH_INSTALL_RPATH unless CMAKE_BUILD_RPATH is set.
--  if("${CMAKE_BUILD_RPATH}" STREQUAL "")
--    set_property(TARGET ${name} PROPERTY BUILD_WITH_INSTALL_RPATH ON)
--  endif()
-+  #if("${CMAKE_BUILD_RPATH}" STREQUAL "")
-+  #  set_property(TARGET ${name} PROPERTY BUILD_WITH_INSTALL_RPATH ON)
-+  #endif()
-
-   set_target_properties(${name} PROPERTIES
-                         INSTALL_RPATH "${_install_rpath}"
 diff --git a/cmake/modules/AddOCaml.cmake b/cmake/modules/AddOCaml.cmake
 index 2d9116b08a52..2dd7cad4ec66 100644
 --- a/cmake/modules/AddOCaml.cmake
@@ -122,7 +109,7 @@ index ef4cfa3acdb5..7478e157a7c2 100644
    "${LLVM_CONFIG_LIBRARY_DIR}"
    # FIXME: Should there be other entries here?
 diff --git a/tools/llvm-config/BuildVariables.inc.in b/tools/llvm-config/BuildVariables.inc.in
-index 370005cd8d7d..7e790bc52111 100644
+index e4e1d449bf4d..3aab6ea7bf8b 100644
 --- a/tools/llvm-config/BuildVariables.inc.in
 +++ b/tools/llvm-config/BuildVariables.inc.in
 @@ -23,6 +23,7 @@
@@ -134,10 +121,10 @@ index 370005cd8d7d..7e790bc52111 100644
  #define LLVM_INSTALL_PACKAGE_DIR "@LLVM_INSTALL_PACKAGE_DIR@"
  #define LLVM_TARGETS_BUILT "@LLVM_TARGETS_BUILT@"
 diff --git a/tools/llvm-config/llvm-config.cpp b/tools/llvm-config/llvm-config.cpp
-index d5b76b1bb6c1..1dbdb2a8f10d 100644
+index 49df8fdcb7f7..c7cb05b82821 100644
 --- a/tools/llvm-config/llvm-config.cpp
 +++ b/tools/llvm-config/llvm-config.cpp
-@@ -366,7 +366,11 @@ int main(int argc, char **argv) {
+@@ -365,7 +365,11 @@ int main(int argc, char **argv) {
        sys::fs::make_absolute(ActivePrefix, Path);
        ActiveBinDir = std::string(Path);
      }

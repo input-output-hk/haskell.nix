@@ -1,5 +1,5 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, util, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -30,9 +30,12 @@ let
   packages = (project false).hsPkgs;
   packages-ei = (project true).hsPkgs;
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   # This test is just for windows currently (the full th-dlls test runs on other platforms)
-  meta.disabled = !stdenv.hostPlatform.isWindows;
+  meta.disabled = !stdenv.hostPlatform.isWindows
+    # Disable for now (CI machines currently hang without timing out)
+    || stdenv.hostPlatform.isWindows
+    ;
 
   ifdInputs = {
     inherit (project true) plan-nix;

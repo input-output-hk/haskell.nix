@@ -11,7 +11,7 @@ let
 
   packages = project.hsPkgs;
 
-in pkgs.recurseIntoAttrs {
+in pkgs.lib.recurseIntoAttrs {
   meta.disabled = !builtins.pathExists ./stack-${compiler-nix-name}.yaml;
   stack-simple-exe = (haskellLib.check packages.stack-simple.components.exes.stack-simple-exe) // {
       # Attributes used for debugging with nix repl

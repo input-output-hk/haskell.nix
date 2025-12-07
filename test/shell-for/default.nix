@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, project' }:
+{ stdenv, lib, haskellLib, testSrc, compiler-nix-name, evalPackages, project' }:
 
 with lib;
 
@@ -50,7 +50,7 @@ let
     packageSetupDeps = false;
   };
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   # Does not work on ghcjs because it needs zlib.
   # Does not work on windows because it needs mintty.
   meta.disabled = stdenv.hostPlatform.isMusl

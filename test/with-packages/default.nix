@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellLib, util, cabalProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, haskellLib, util, cabalProject', testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 with util;
@@ -34,7 +34,7 @@ let
   showDepends = component: concatMapStringsSep " " pkgId (component.depends or []);
   extraFlags = "";
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   # Used for testing externally with nix-shell (../tests.sh).
   # This just adds cabal-install to the existing shells.
   test-shell = (addCabalInstall library.shell).overrideAttrs (_: _: {

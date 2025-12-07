@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -12,7 +12,7 @@ let
 
   packages = project.hsPkgs;
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   # Haddock is not included with cross compilers currently
   meta.disabled = haskellLib.isCrossHost || stdenv.hostPlatform.isStatic;
   ifdInputs = {

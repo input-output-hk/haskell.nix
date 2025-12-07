@@ -1,0 +1,34 @@
+From e90e136c16ef10fc47d339cf8964255a5131c9c9 Mon Sep 17 00:00:00 2001
+From: Luite Stegeman <stegeman@gmail.com>
+Date: Sat, 22 Nov 2025 15:05:37 +0100
+Subject: [PATCH] rts: Handle 16-bit overflow of ELF section header string
+ table
+
+If the section header string table is stored in a section greater
+than 65535, the 16-bit value e_shstrndx in the ELF header does not
+contain the section number, but rather an overflow value SHN_XINDEX
+indicating that we need to look elsewhere.
+
+This fixes the linker by not using e_shstrndx directly but calling
+elf_shstrndx, which correctly handles the overflow value.
+
+Fixes #26603
+---
+ rts/linker/Elf.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index 85a56c120d49..0314abb0c68c 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -205,7 +205,7 @@ ocInit_ELF(ObjectCode * oc)
+     oc->info->sectionHeader = (Elf_Shdr *) ((uint8_t*)oc->image
+                                             + oc->info->elfHeader->e_shoff);
+     oc->info->sectionHeaderStrtab = (char*)((uint8_t*)oc->image +
+-            oc->info->sectionHeader[oc->info->elfHeader->e_shstrndx].sh_offset);
++            oc->info->sectionHeader[elf_shstrndx(oc->info->elfHeader)].sh_offset);
+ 
+     oc->n_sections = elf_shnum(oc->info->elfHeader);
+ 
+-- 
+GitLab

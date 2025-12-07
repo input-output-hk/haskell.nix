@@ -18,7 +18,7 @@
 
   # short names for nixpkgs versions
   nixpkgsVersions = {
-    "R2505" = inputs.nixpkgs-2505;
+    "R2511" = inputs.nixpkgs-2511;
     "unstable" = inputs.nixpkgs-unstable;
   };
 
@@ -41,6 +41,8 @@
         "dwarfdump-20181024"
       ];
       allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+        "platform-tools"
+        "ndk"
         "android-sdk-ndk"
         "android-sdk-platform-tools"
         "aarch64-unknown-linux-android-ndk-toolchain-wrapper"
@@ -62,7 +64,7 @@
       # cabal-install and nix-tools plans.  When removing a ghc version
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
-      nixpkgs.lib.optionalAttrs (builtins.elem nixpkgsName ["R2411" "R2505"]) {
+      nixpkgs.lib.optionalAttrs (builtins.elem nixpkgsName ["R2411" "R2505" "R2511"]) {
         ghc96 = false;
         ghc98 = false;
         ghc910 = false;
@@ -70,9 +72,7 @@
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc96 = true;
         ghc98 = true;
-        ghc98llvm = false;
         ghc910 = true;
-        ghc910llvm = false;
         ghc912 = true;
         ghc912llvm = true;
         ghc914X = true;
@@ -88,11 +88,12 @@
         static = p: p.pkgsStatic;
       } // lib.optionalAttrs (nixpkgsName == "unstable"
           && (__match ".*llvm" compiler-nix-name == null)
-          && !builtins.elem compiler-nix-name ["ghc9102"]) {
+          && !builtins.elem compiler-nix-name ["ghc9102" "ghc9103"]) {
         inherit (lib.systems.examples) ghcjs;
       } // lib.optionalAttrs (nixpkgsName == "unstable"
           && (__match ".*llvm" compiler-nix-name == null)
-          && !builtins.elem compiler-nix-name ["ghc967" "ghc984" "ghc9102"]) {
+          && !builtins.elem compiler-nix-name ["ghc967" "ghc984" "ghc9103"]
+          && system != "x86_64-darwin") {
         inherit (lib.systems.examples) wasi32;
       } // lib.optionalAttrs (nixpkgsName == "unstable"
           && (__match ".*llvm" compiler-nix-name == null)
@@ -111,9 +112,12 @@
       } // lib.optionalAttrs (__match ".*llvm" compiler-nix-name == null && system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
         # Out llvm versions of GHC seem to break for musl32
         inherit (lib.systems.examples) musl32;
-      } // lib.optionalAttrs (system == "x86_64-linux" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948"]) {
+      } // lib.optionalAttrs (system == "x86_64-linux"
+          && !builtins.elem compiler-nix-name ["ghc967" "ghc984" "ghc9103"]) {
         inherit (lib.systems.examples) aarch64-android-prebuilt;
-      } // lib.optionalAttrs (system == "x86_64-linux" && !builtins.elem compiler-nix-name ["ghc902" "ghc928" "ghc948" "ghc91320250523"]) {
+      } // lib.optionalAttrs (system == "x86_64-linux"
+          && nixpkgsName != "unstable"
+          && !builtins.elem compiler-nix-name ["ghc967" "ghc984" "ghc9103" "ghc91320250523"]) {
         inherit (lib.systems.examples) armv7a-android-prebuilt;
       } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc8107" "ghc902"]) {
         # TODO fix this for the compilers we build with hadrian (ghc >=9.4)
@@ -132,7 +136,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
       in filterAttrsOnlyRecursive (_: v: platformFilter v && !(isDisabled v)) ({
         # Native builds
         # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
-        native = pkgs.recurseIntoAttrs ({
+        native = pkgs.lib.recurseIntoAttrs ({
           roots = pkgs.haskell-nix.roots' { inherit compiler-nix-name evalPackages; } ifdLevel;
         } // pkgs.lib.optionalAttrs runTests {
           inherit (build) tests tools maintainer-scripts maintainer-script-cache;
@@ -140,7 +144,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
           hello = (pkgs.haskell-nix.hackage-package ({ name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }
             // lib.optionalAttrs (builtins.compareVersions pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.13" >= 0) {
               shell.tools.hoogle.cabalProjectLocal = ''
-                allow-newer: *:*
+                allow-newer: hashable:ghc-bignum, integer-logarithms:ghc-bignum
               '';
           })).getComponent "exe:hello";
           # Make sure the default shell tools (hoogle) are built
@@ -154,7 +158,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
                 then import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; })
                 else crossSystem (import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; }));
             build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };
-        in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
+        in pkgs.lib.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
             roots = pkgs.haskell-nix.roots' { inherit compiler-nix-name evalPackages; } ifdLevel // {
               ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { ghcEvalPackages = evalPackages; };
             };
