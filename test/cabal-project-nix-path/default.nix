@@ -1,4 +1,4 @@
-{ lib, cabalProject', tool, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ lib, cabalProject', tool, testSrc, compiler-nix-name, evalPackages }:
 let
   # Kind of round about way of getting the source for the hello package from hackage
   # so we can use it in this test.
@@ -22,7 +22,7 @@ let
     '';
   };
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   ifdInputs = {
     inherit (project) plan-nix;
   };

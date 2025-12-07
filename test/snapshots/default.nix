@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellPackages, snapshots, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, haskellPackages, snapshots, runCommand, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -6,7 +6,7 @@ let
   env = snapshots."lts-14.13".ghcWithHoogle
     (ps: with ps; [ conduit conduit-extra resourcet ]);
 
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   # Does not work on ghcjs because it needs zlib.
   meta.disabled = stdenv.hostPlatform.isGhcjs || compiler-nix-name != "ghc865";
   inherit env;

@@ -1,4 +1,4 @@
-{ stdenv, lib, testSrc, haskell-nix, buildPackages, compiler-nix-name, evalPackages, recurseIntoAttrs }:
+{ stdenv, lib, testSrc, haskell-nix, buildPackages, compiler-nix-name, evalPackages }:
 let
   project = buildPackages.haskell-nix.project' {
     inherit compiler-nix-name evalPackages;
@@ -15,7 +15,7 @@ let
       "https://github.com/hsyl20/ghc-api-compat.git"."8fee87eac97a538dbe81ff1ab18cff10f2f9fa15" = "sha256-byehvdxQxhNk5ZQUXeFHjAZpAze4Ct9261ro4c5acZk=";
     };
   };
-in recurseIntoAttrs {
+in lib.recurseIntoAttrs {
   ifdInputs = {
     inherit (project) stack-nix;
   };
