@@ -144,5 +144,14 @@ in {
       type = nullOr (listOf unspecified);
       default = [];
     };
+    prebuilt-depends = mkOption {
+      type = listOf package;
+      default = [];
+      description = ''
+        pre-built (perhaps proprietary) Haskell packages to make available as dependencies
+
+        See Note [prebuilt dependencies] for more details
+      '';
+    };
   };
 }
