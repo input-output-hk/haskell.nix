@@ -139,7 +139,7 @@ let
         dontPatchShebangs = true;
         dontPatchELF = true;
         buildPhase = ''
-            # Copy the ghcjs exectuables
+            # Copy the ghcjs executables
             mkdir -p $out/bin
             cp $src/${libexec}/* $out/bin
 
@@ -161,7 +161,7 @@ let
             install_name_tool -id "@executable_path/libffi.6.dylib" "$out/bin/libffi.6.dylib"
 
             # Modify all the references so we look for the libraries in the system location or
-            # @executable_path (the directory containin the exetubable itself).
+            # @executable_path (the directory containing the exetubable itself).
             for fn in $out/bin/*; do
               install_name_tool -change "${pkgs.libiconv}/lib/libiconv.dylib" /usr/lib/libiconv.dylib "$fn"
               install_name_tool -change "${pkgs.stdenv.libc}/lib/libSystem.B.dylib" /usr/lib/libSystem.B.dylib "$fn"
@@ -211,7 +211,7 @@ let
         dontPatchShebangs = true;
         dontPatchELF = true;
         buildPhase = ''
-            # Copy the ghcjs exectuables
+            # Copy the ghcjs executables
             mkdir -p $out/bin
             lndir ${ghcjs-relocatable-bin}/bin $out/bin
 
@@ -233,7 +233,7 @@ let
             chmod -R +w $out/$(basename ${hostDb})/lib/links
 
             # Modify all the references so we look for the libraries in the system location or
-            # @executable_path (the directory containin the exetubable itself).
+            # @executable_path (the directory containing the exetubable itself).
             for fn in $out/$(basename ${hostDb})/lib/links/*; do
               install_name_tool -change "${pkgs.libiconv}/lib/libiconv.dylib" /usr/lib/libiconv.dylib "$fn"
               install_name_tool -change "${pkgs.stdenv.libc}/lib/libSystem.B.dylib" /usr/lib/libSystem.B.dylib "$fn"
