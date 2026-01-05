@@ -3,7 +3,7 @@ let
   project = haskell-nix.cabalProject' {
     inherit compiler-nix-name evalPackages;
     name = "haskell-language-server";
-    src = haskell-nix.sources."hls-2.11";
+    src = haskell-nix.sources."hls-2.12";
     configureArgs = "--disable-benchmarks --disable-tests"; # This makes cabalProject' more like the `tool` function
   };
 in lib.recurseIntoAttrs {

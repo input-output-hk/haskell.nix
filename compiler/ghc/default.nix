@@ -46,11 +46,13 @@ let self =
 
 , enableDWARF ? false
 
+, enableIPE ? false
+
 , enableTerminfo ? !stdenv.targetPlatform.isAndroid &&
     # Terminfo does not work on older ghc cross arm and windows compilers
      (!haskell-nix.haskellLib.isCrossTarget || !(stdenv.targetPlatform.isAarch32 || stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isWindows) || builtins.compareVersions ghc-version "8.10" >= 0)
 
-, # Wheter to build in NUMA support
+, # Whether to build in NUMA support
   enableNUMA ? true
 
 , # What flavour to build. An empty string indicates no
@@ -60,6 +62,10 @@ let self =
       then "perf-cross"
       else "perf-cross-ncg"
     )
+
+, # Extra flavour transformers to pass to Hadrian. For example, +debug_ghc or
+  # +assertions to work on debugging the compiler.
+  extraFlavourTransformers ? []
 
 , # Whether to disable the large address space allocator
   # necessary fix for iOS: https://www.reddit.com/r/haskell/comments/4ttdz1/building_an_osxi386_to_iosarm64_cross_compiler/d5qvd67/
@@ -282,7 +288,7 @@ let
         "fp_cv_prog_ar_supports_dash_l=no"
     ] ++ lib.optionals (targetPlatform.isDarwin) [
         "--without-libcharset"
-    ] ++ lib.optional (targetPlatform.isGhcjs) "--target=javascript-unknown-ghcjs" # TODO use configurePlatforms once tripple is updated in nixpkgs
+    ] ++ lib.optional (targetPlatform.isGhcjs) "--target=javascript-unknown-ghcjs" # TODO use configurePlatforms once triple is updated in nixpkgs
     ;
 
   # Splicer will pull out correct variations
@@ -374,7 +380,7 @@ let
 
   hadrian = hadrianProject.hsPkgs.hadrian.components.exes.hadrian;
 
-  # For a discription of hadrian command line args
+  # For a description of hadrian command line args
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/README.md
   # For build flavours and flavour transformers
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/doc/flavours.md
@@ -385,6 +391,8 @@ let
           + lib.optionalString enableDWARF "+debug_info"
           + lib.optionalString ((enableNativeBignum && hadrianHasNativeBignumFlavour) || targetPlatform.isGhcjs || targetPlatform.isWasm) "+native_bignum"
           + lib.optionalString (targetPlatform.isGhcjs || targetPlatform.isWasm) "+no_profiled_libs"
+          + lib.optionalString enableIPE "+ipe"
+          + lib.concatStrings extraFlavourTransformers
       } --docs=no-sphinx -j --verbose"
       # This is needed to prevent $GCC from emitting out of line atomics.
       # Those would then result in __aarch64_ldadd1_sync and others being referenced, which
@@ -927,7 +935,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     export XATTR=$(mktemp -d)/nothing
   ''
   # We need to point at a stand in `windows.h` header file so that the RTS headers can
-  # work on the hostPlatform.  We also need to work around case sensitve file system issues.
+  # work on the hostPlatform.  We also need to work around case sensitive file system issues.
   + lib.optionalString stdenv.targetPlatform.isWindows ''
     export NIX_CFLAGS_COMPILE_${
         # We want this only to apply to the non windows hostPlatform (the

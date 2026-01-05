@@ -19,8 +19,8 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.targetPlatform.isWasm {
       domain = "gitlab.haskell.org";
       owner = "haskell-wasm";
       repo = "wasi-libc";
-      rev = "16aa8495f039918edb47046b277bf48b516a9776";
-      hash = "sha256-cun3q5OKjryabVhXMNjwQ0bsmz+pS1eCupRP2he+f1k=";
+      rev = "951e93b336cb0ffac3ab2874640b70ed854fdf27";
+      hash = "sha256-8thdYhX4bZuU/CbBNdcab3tUnugaEvI6RDw7im4eeec=";
       fetchSubmodules = true;
     };
     preBuild = ''
@@ -28,6 +28,7 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.targetPlatform.isWasm {
       makeFlagsArray+=(
         "default"
         "libc_so"
+        "CHECK_SYMBOLS=yes"
         )
       export BUILTINS_LIB=$($CC --print-libgcc-file-name)
     '';
