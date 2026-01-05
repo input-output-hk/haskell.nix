@@ -369,6 +369,23 @@
         "type": "github"
       }
     },
+    "hls-2.12": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1758709460,
+        "narHash": "sha256-xkI8MIIVEVARskfWbGAgP5sHG/lyeKnkm0LIOJ19X5w=",
+        "owner": "haskell",
+        "repo": "haskell-language-server",
+        "rev": "7d983de4fa7ff54369f6dd31444bdb9869aec83e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "haskell",
+        "ref": "2.12.0.0",
+        "repo": "haskell-language-server",
+        "type": "github"
+      }
+    },
     "hpc-coveralls": {
       "flake": false,
       "locked": {
@@ -555,6 +572,7 @@
         "hls-2.7": "hls-2.7",
         "hls-2.8": "hls-2.8",
         "hls-2.9": "hls-2.9",
+        "hls-2.12": "hls-2.12",
         "hpc-coveralls": "hpc-coveralls",
         "iserv-proxy": "iserv-proxy",
         "nixpkgs": [
