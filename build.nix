@@ -60,7 +60,7 @@ in rec {
     } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.13") {
       "hls" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
-        src = pkgs.haskell-nix.sources."hls-2.11";
+        src = pkgs.haskell-nix.sources."hls-2.12";
       };
     })
   );

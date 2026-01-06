@@ -1,4 +1,4 @@
-{ lib, stdenv, mkShell, glibcLocales, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, pkgsBuildBuild, evalPackages, compiler, haskell-nix, ghc }:
+{ lib, stdenv, mkShell, glibcLocales, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, pkgsBuildBuild, evalPackages, compiler, haskell-nix, ghc, llvmPackages }:
 
 { # `packages` function selects packages that will be worked on in the shell itself.
   # These packages will not be built by `shellFor`, but their
@@ -176,6 +176,7 @@ in
       ++ nativeBuildInputs
       ++ mkDrvArgs.nativeBuildInputs or []
       ++ lib.attrValues (pkgsBuildBuild.haskell-nix.tools' evalPackages compiler.nix-name tools)
+      ++ lib.optional (ghcEnv.baseGhc.useLdLld or false) llvmPackages.bintools
       # If this shell is a cross compilation shell include
       # wrapper script for running cabal build with appropriate args.
       # Includes `--with-compiler` in case the `cabal.project` file has `with-compiler:` in it.
