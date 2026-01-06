@@ -163,7 +163,7 @@ let
       llvm-ar -r $out/lib/libffi.a cbits/*.o
 
       wasm32-unknown-wasi-clang -Wall -Wextra -mcpu=mvp -Oz -DNDEBUG -Icbits -fPIC -fvisibility=default -shared -Wl,--keep-section=target_features,--strip-debug cbits/*.c -o libffi.so
-      wasm-opt --low-memory-unused -Os libffi.so -o $out/lib/libffi.so
+      wasm-opt --low-memory-unused --debuginfo -Os libffi.so -o $out/lib/libffi.so
     '';
 
   lib-wasm = pkgsBuildBuild.symlinkJoin {
