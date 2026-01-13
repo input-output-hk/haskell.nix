@@ -28,7 +28,8 @@ let
             configureArgs = final.lib.mkDefault "--disable-tests";
 
             # Tools to include in the development shell
-            shell.tools.cabal = "latest";
+            shell.tools.cabal = {};
+            shell.tools.haskell-language-server = {};
           }
           args
         ];
