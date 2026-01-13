@@ -1,8 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -118,11 +113,11 @@ encodePlanAsJson distDirLayout elaboratedInstallPlan elaboratedSharedConfig targ
       [ "pkg-name" J..= jdisplay (pkgName pkgId)
       , "pkg-version" J..= jdisplay (pkgVersion pkgId)
       , "component-name" J..= jdisplay componentName
-      , "available" J..= map avaialbeTargetToJ ts
+      , "available" J..= map availableTargetToJ ts
       ]
 
-  avaialbeTargetToJ :: AvailableTarget (UnitId, ComponentName) -> J.Value
-  avaialbeTargetToJ target =
+  availableTargetToJ :: AvailableTarget (UnitId, ComponentName) -> J.Value
+  availableTargetToJ target =
     case availableTargetStatus target of
       TargetDisabledByUser -> J.String "TargetDisabledByUser"
       TargetDisabledBySolver -> J.String "TargetDisabledBySolver"
@@ -189,7 +184,7 @@ encodePlanAsJson distDirLayout elaboratedInstallPlan elaboratedSharedConfig targ
          ]
       ++ ( case elabBuildStyle elab of
             BuildInplaceOnly _ ->
-              ["dist-dir" J..= J.String dist_dir] ++ [buildInfoFileLocation]
+              ["dist-dir" J..= J.String dist_dir, buildInfoFileLocation]
             BuildAndInstall ->
               -- TODO: install dirs?
               []
@@ -199,12 +194,10 @@ encodePlanAsJson distDirLayout elaboratedInstallPlan elaboratedSharedConfig targ
           let components =
                 J.object
                   $ [ comp2str c
-                        J..= ( J.object
-                                $ [ "depends" J..= map (jdisplay . confInstId) (map fst ldeps)
+                        J..= J.object (
+                                  [ "depends" J..= map ((jdisplay . confInstId) . fst) ldeps
                                   , "exe-depends" J..= map (jdisplay . confInstId) edeps
-                                  ]
-                                ++ bin_file c
-                             )
+                                  ] ++ bin_file c)
                     | (c, (ldeps, edeps)) <-
                         ComponentDeps.toList
                           $ ComponentDeps.zip
@@ -213,7 +206,7 @@ encodePlanAsJson distDirLayout elaboratedInstallPlan elaboratedSharedConfig targ
                     ]
            in ["components" J..= components]
         ElabComponent comp ->
-          [ "depends" J..= map (jdisplay . confInstId) (map fst $ elabLibDependencies elab)
+          [ "depends" J..= map ((jdisplay . confInstId) . fst) (elabLibDependencies elab)
           , "exe-depends" J..= map jdisplay (elabExeDependencies elab)
           , "component-name" J..= J.String (comp2str (compSolverName comp))
           ]
@@ -285,7 +278,7 @@ encodePlanAsJson distDirLayout elaboratedInstallPlan elaboratedSharedConfig targ
     sourceRepoToJ SourceRepositoryPackage{..} =
       J.object
         $ filter ((/= J.Null) . snd)
-        $ [ "type" J..= jdisplay srpType
+          [ "type" J..= jdisplay srpType
           , "location" J..= J.String srpLocation
           , "branch" J..= fmap J.String srpBranch
           , "tag" J..= fmap J.String srpTag
