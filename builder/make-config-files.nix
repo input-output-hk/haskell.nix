@@ -1,6 +1,6 @@
 { stdenv, lib, haskellLib, ghc, nonReinstallablePkgs, runCommand, writeText, writeScript }@defaults:
 
-{ identifier, component, fullName, flags ? {}, needsProfiling ? false, enableDWARF ? false, chooseDrv ? drv: drv, nonReinstallablePkgs ? defaults.nonReinstallablePkgs, prebuilt-depends ? [] }:
+{ identifier, component, fullName, flags ? {}, needsProfiling ? false, enableDWARF ? false, chooseDrv ? drv: drv, nonReinstallablePkgs ? defaults.nonReinstallablePkgs, prebuilt-depends ? [], instantiations ? {} }:
 
 let
   # Sort and remove duplicates from nonReinstallablePkgs.
@@ -179,6 +179,10 @@ let
       ''}
     done
   ''
+  # Handle backpack instantiations
+  + (builtins.concatStringsSep "\n" (lib.mapAttrsToList (modname: val: ''
+    echo "--instantiate-with=${modname}=$(cut -d ' ' -f 2 ${val.unit}/envDep):${val.module}" >> $configFiles/configure-flags
+  '') instantiations))
   # This code originates in the `generic-builder.nix` from nixpkgs.  However GHC has been fixed
   # to drop unused libraries referenced from libraries; and this patch is usually included in the
   # nixpkgs's GHC builds.  This doesn't sadly make this stupid hack unnecessary.  It resurfaces in

@@ -1,0 +1,33 @@
+cabal-version:       3.4
+name:                backpack
+version:             0.1.0.0
+license:             MIT
+author:              Moritz Angermann
+maintainer:          moritz.angermann@iohk.io
+build-type:          Simple
+
+library sig
+  build-depends: base
+  signatures: Module
+  default-language: Haskell2010
+  hs-source-dirs: sig
+
+library impl
+  build-depends: base
+  exposed-modules: Mod
+  default-language: Haskell2010
+  hs-source-dirs: impl
+
+library consumer
+  build-depends: base, backpack:sig
+  exposed-modules: Consumer
+  signatures: Module
+  default-language: Haskell2010
+  hs-source-dirs: consumer
+
+executable backpack
+  build-depends: base, backpack:consumer, backpack:impl
+  main-is: Main.hs
+  mixins: backpack:consumer requires (Module as Mod)
+  default-language: Haskell2010
+  hs-source-dirs: exe
