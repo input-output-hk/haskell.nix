@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Eta reduce" #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -6,49 +8,51 @@ module ProjectPlanOutput (
   writePlanExternalRepresentation,
 ) where
 
-import Distribution.Client.DistDirLayout
-import Distribution.Client.HashValue (hashValue, showHashValue)
-import Distribution.Client.ProjectPlanning.Types
-import Distribution.Client.Types.ConfiguredId (confInstId)
-import Distribution.Client.Types.PackageLocation (PackageLocation (..))
-import Distribution.Client.Types.Repo (RemoteRepo (..), Repo (..))
-import Distribution.Client.Types.SourceRepo (SourceRepoMaybe, SourceRepositoryPackage (..))
-import Distribution.Client.Version (cabalInstallVersion)
-
-import qualified Distribution.Client.InstallPlan as InstallPlan
-import qualified Distribution.Client.Utils.Json as J
-import qualified Distribution.Simple.InstallDirs as InstallDirs
-
-import qualified Distribution.Solver.Types.ComponentDeps as ComponentDeps
-
-import Distribution.InstalledPackageInfo (InstalledPackageInfo)
-import Distribution.Package
-import qualified Distribution.PackageDescription as PD
-import Distribution.Simple.BuildPaths (
-  buildInfoPref,
-  dllExtension,
-  exeExtension,
- )
-import Distribution.Simple.Compiler (
-  showCompilerId,
- )
-import Distribution.Simple.Utils
-import Distribution.System
-import Distribution.Types.ComponentName
-import Distribution.Types.Version (
-  mkVersion,
- )
-
-import Distribution.Client.Compat.Prelude
-import Prelude ()
-
 import qualified Data.ByteString.Builder as BB
 import qualified Data.Map as Map
 
 import System.FilePath
 
-import Distribution.Client.ProjectPlanning
+import Distribution.System
+import Distribution.InstalledPackageInfo (InstalledPackageInfo)
+import Distribution.Package
+import qualified Distribution.PackageDescription as PD
+import Distribution.Types.ComponentName
+import Distribution.Types.Version (mkVersion)
 import Distribution.Utils.Path (makeSymbolicPath, getSymbolicPath)
+import qualified Distribution.Types.ParStrat as ParStrat
+import qualified Distribution.Verbosity as Verbosity
+
+import qualified Distribution.Simple.InstallDirs as InstallDirs
+import Distribution.Simple.BuildPaths (
+  buildInfoPref,
+  dllExtension,
+  exeExtension,
+ )
+import Distribution.Simple.Compiler (showCompilerId)
+import Distribution.Simple.Utils
+import Distribution.Simple.Command (CommandUI(..), commandShowOptions)
+import qualified Distribution.Simple.Setup as Cabal
+import Distribution.Simple.Program.Db (defaultProgramDb)
+
+import Distribution.Client.BuildReports.Types (ReportLevel(..))
+import Distribution.Client.DistDirLayout
+import Distribution.Client.HashValue (hashValue, showHashValue)
+import Distribution.Client.ProjectOrchestration (BuildTimeSettings(..))
+import Distribution.Client.ProjectPlanning
+import Distribution.Client.ProjectPlanning.Types
+import Distribution.Client.Types.ConfiguredId (confInstId)
+import Distribution.Client.Types.PackageLocation (PackageLocation (..))
+import Distribution.Client.Types.ReadyPackage (GenericReadyPackage(..))
+import Distribution.Client.Types.Repo (RemoteRepo (..), Repo (..))
+import Distribution.Client.Types.SourceRepo (SourceRepoMaybe, SourceRepositoryPackage (..))
+import Distribution.Client.Version (cabalInstallVersion)
+import qualified Distribution.Client.InstallPlan as InstallPlan
+import qualified Distribution.Client.Utils.Json as J
+import qualified Distribution.Solver.Types.ComponentDeps as ComponentDeps
+
+import Distribution.Client.Compat.Prelude
+import Prelude ()
 
 -----------------------------------------------------------------------------
 -- Writing plan.json files
@@ -211,7 +215,112 @@ encodePlanAsJson distDirLayout elaboratedInstallPlan elaboratedSharedConfig targ
           , "component-name" J..= J.String (comp2str (compSolverName comp))
           ]
             ++ bin_file (compSolverName comp)
+      ++ [
+        "configure-args" J..= j_string_list (renderFlags (Cabal.configureCommand defaultProgramDb) configFlags configArgs),
+        "build-args" J..= j_string_list (renderFlags (Cabal.buildCommand defaultProgramDb) buildFlags buildArgs),
+        "copy-args" J..= j_string_list (renderFlags Cabal.copyCommand copyFlags copyArgs),
+        "haddock-args" J..= j_string_list (renderFlags Cabal.haddockCommand haddockFlags haddockArgs),
+        "test-args" J..= j_string_list (renderFlags Cabal.testCommand testFlags testArgs),
+        "benchmark-args" J..= j_string_list (renderFlags Cabal.benchmarkCommand benchFlags benchArgs),
+        "repl-args" J..= j_string_list (renderFlags (Cabal.replCommand defaultProgramDb) replFlags replArgs)
+        ]
    where
+    j_string_list = J.Array . map J.String
+
+    -- The setupHs* functions are defined in Distribution.Client.ProjectPlanning
+    -- and are intended to be opaque to the plan execution layer. We make a concession
+    -- in copyFlags since it's trivial and we need to adapt it to be agnostic to the
+    -- build directory
+
+    -- NOTE: We should filter these flags since the Setup.hs we are going
+    -- to invoke might not support all features that this version of cabal-install
+    -- supports.
+
+    commonFlags :: Cabal.CommonSetupFlags
+    commonFlags = mempty
+
+    configArgs = setupHsConfigureArgs elab
+    configFlags =
+        runIdentity $
+        setupHsConfigureFlags
+          (fmap makeSymbolicPath . Identity)
+          elaboratedInstallPlan
+          (ReadyPackage elab)
+          elaboratedSharedConfig
+          commonFlags
+
+    buildArgs = setupHsBuildArgs elab
+    buildFlags =
+      setupHsBuildFlags
+        Cabal.NoFlag
+        elab
+        elaboratedSharedConfig
+        commonFlags
+
+    -- Simplified version
+    copyArgs = setupHsBuildArgs elab
+    copyFlags =
+        Cabal.CopyFlags
+            { copyCommonFlags = commonFlags
+            , copyDest = Cabal.NoFlag
+            }
+
+    testArgs = setupHsTestArgs elab
+    testFlags =
+        setupHsTestFlags
+          elab
+          commonFlags
+
+    benchArgs = setupHsBenchArgs elab
+    benchFlags =
+      setupHsBenchFlags
+        elab
+        elaboratedSharedConfig
+        commonFlags
+
+    replArgs = setupHsReplArgs elab
+    replFlags =
+      setupHsReplFlags
+        elab
+        elaboratedSharedConfig
+        commonFlags
+
+    haddockArgs = setupHsHaddockArgs elab
+    haddockFlags =
+      setupHsHaddockFlags
+          elab
+          elaboratedSharedConfig
+          buildTimeSettings
+          commonFlags
+
+    -- NOTE: this is only used in setupHsHaddockFlags (for
+    -- buildSettingHaddockOpen),and it is not used during planning. I filled it
+    -- with reasonable defaults but it's mostly going to be ignored.
+    buildTimeSettings = BuildTimeSettings {
+      buildSettingDryRun = False,
+      buildSettingOnlyDeps = False,
+      buildSettingOnlyDownload = False,
+      buildSettingSummaryFile = mempty,
+      buildSettingLogFile = Nothing,
+      buildSettingLogVerbosity = Verbosity.normal,
+      buildSettingBuildReports = NoReports,
+      buildSettingSymlinkBinDir = [],
+      buildSettingNumJobs = ParStrat.Serial,
+      buildSettingKeepGoing = False,
+      buildSettingOfflineMode = False,
+      buildSettingKeepTempFiles = False,
+      buildSettingRemoteRepos = [],
+      buildSettingLocalNoIndexRepos = [],
+      -- non-empty string for troubleshooting
+      buildSettingCacheDir = "<cache-dir>",
+      buildSettingHttpTransport = Nothing,
+      buildSettingIgnoreExpiry = False,
+      buildSettingReportPlanningFailure = False,
+      buildSettingProgPathExtra = [],
+      buildSettingHaddockOpen = False
+    }
+
+
     -- \| Only add build-info file location if the Setup.hs CLI
     -- is recent enough to be able to generate build info files.
     -- Otherwise, write 'null'.
@@ -326,3 +435,7 @@ style2str False BuildAndInstall = "global"
 
 jdisplay :: (Pretty a) => a -> J.Value
 jdisplay = J.String . prettyShow
+
+renderFlags :: CommandUI flags -> flags -> [String] -> [String]
+renderFlags cmd flags extraArgs =
+    commandName cmd : commandShowOptions cmd flags ++ extraArgs
