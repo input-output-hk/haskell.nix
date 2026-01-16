@@ -37,8 +37,14 @@ let
   + ''
     mkdir -p $wrappedGhc/bin
     ${lndir}/bin/lndir -silent $unwrappedGhc $wrappedGhc
-    rm -rf ${libDir}/*/
   ''
+  + (
+    if (builtins.compareVersions ghc.version "9.15" < 0) then ''
+      rm -rf ${libDir}/*/
+    ''
+    else ''
+      rm -rf ${libDir}/package.conf.d
+    '')
   # ... but retain the lib/ghc/bin directory. This may contain `unlit' and friends.
   + ''
     if [ -d $unwrappedGhc/lib/${ghcCommand}-${ghc.version}/bin ]; then
