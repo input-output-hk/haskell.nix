@@ -320,7 +320,9 @@ let
   hadrianProject =
     let
       compiler-nix-name =
-        if builtins.compareVersions ghc-version "9.4.7" < 0
+        if builtins.compareVersions ghc-version "9.15" > 0
+          then "ghc984"
+        else if builtins.compareVersions ghc-version "9.4.7" < 0
           then "ghc928"
         else if pkgsBuildBuild.haskell.compiler ? ghc967
           then "ghc967"
