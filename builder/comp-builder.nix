@@ -220,6 +220,7 @@ let self =
 , useLLVM
 , smallAddressSpace
 , prebuilt-depends
+, instantiations ? {}
 }@drvArgs:
 
 let
@@ -273,7 +274,7 @@ let
   configFiles = makeConfigFiles {
     component = componentForSetup;
     inherit (package) identifier;
-    inherit fullName flags needsProfiling enableDWARF prebuilt-depends;
+    inherit fullName flags needsProfiling enableDWARF prebuilt-depends instantiations;
   };
 
   enableFeature = enable: feature:
@@ -694,7 +695,7 @@ let
               cat $SETUP_ERR | tr '\n' ' ' | tr -d '\r' | grep 'No executables and no library found\. Nothing to do\.'
             fi
             ''}
-      ${lib.optionalString (haskellLib.isLibrary componentId) ''
+      ${lib.optionalString (haskellLib.isLibrary componentId) (''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
         ${ghc.targetPrefix}ghc-pkg -v0 --package-db $configFiles/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
@@ -741,7 +742,10 @@ let
               fi
               '')
         }
-      ''}
+      '' + lib.optionalString (instantiations != {}) ''
+        # An instantiated package will always depend on its indefinite counterpart, and the --dependency= flag added by exactDep/configure-flags is invalid for package IDs with a +
+        rm -fR $out/exactDep
+      '')}
       ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || (haskellLib.isExe componentId && stdenv.hostPlatform.isGhcjs)) ''
         mkdir -p $out/bin
         if [ -f ${testExecutable} ]; then
