@@ -12,12 +12,13 @@ let
       "9.6" = "9.6.7";
       "9.8" = "9.8.4";
       "9.10" = "9.10.3";
-      "9.12" = "9.12.2";
+      "9.12" = "9.12.3";
+      "9.14" = "9.14.1";
     };
     gitInputs = {
       ghc96X = "9.6.7";
-      ghc912X = "9.12.1";
-      ghc913 = "9.13";
+      # ghc914X = "9.14.0";
+      ghc915 = "9.15";
     };
     versionToNixName = v: "ghc${builtins.replaceStrings ["."] [""] v}";
     compilerNameMap =
@@ -338,14 +339,14 @@ in {
                 # unbreak modern clang with proper _atomic declarations.
                 ++ onAndroid (fromUntil "9.6"  "9.6.5" ./patches/ghc/7db8c9927fae3369fc4ecff68f80c4cb32eea757.patch)
 
-                ++ onGhcjs (from        "9.12"         ./patches/ghc/ghc-9.12-ghcjs-rts-mem-heap8.patch)
+                ++ onGhcjs (fromUntil   "9.12"   "9.15"  ./patches/ghc/ghc-9.12-ghcjs-rts-mem-heap8.patch)
                 # Fix for `fatal error: 'rts/Types.h' file not found` when building `primitive`
-                ++ onGhcjs (from        "9.13"         ./patches/ghc/ghc-9.13-ghcjs-rts-types.patch)
+                ++ onGhcjs (fromUntil   "9.12.3" "9.14"  ./patches/ghc/ghc-9.13-ghcjs-rts-types.patch)
 
                 ++ onGhcjs (fromUntil   "9.6.7" "9.7"  ./patches/ghc/ghc-9.6-js-support-this-unit-id-10819.patch)
 
-                ++ onWasm (fromUntil    "9.12"  "9.13" ./patches/ghc/ghc-9.12-wasm-shared-libs.patch)
-                ++ onWasm (fromUntil    "9.12"  "9.13" ./patches/ghc/ghc-9.12-wasm-keep-cafs.patch)
+                ++ onWasm (fromUntil    "9.12"  "9.12.3" ./patches/ghc/ghc-9.12-wasm-shared-libs.patch)
+                ++ onWasm (fromUntil    "9.12"  "9.12.3" ./patches/ghc/ghc-9.12-wasm-keep-cafs.patch)
 
                 # See https://github.com/IntersectMBO/plutus/issues/7415#issuecomment-3531989244
                 ++ fromUntil "9.6" "9.9" ./patches/ghc/ghc-profiling-fix.patch
@@ -1139,6 +1140,77 @@ in {
                 src-spec.needsBooting = true;
 
                 ghc-patches = ghc-patches "9.12.2";
+            });
+            ghc9123 = traceWarnOld "9.12" (final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9123; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc9123
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc9123
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc9122
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc9121
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc9101
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc984
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc983
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc982
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc965
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc964
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_19;
+                llvmPackages = final.llvmPackages_19;
+
+                src-spec.file = final.haskell-nix.sources.ghc9123;
+                src-spec.version = "9.12.3";
+                src-spec.needsBooting = true;
+
+                ghc-patches = ghc-patches "9.12.3";
+            });
+            ghc9141 = traceWarnOld "9.14" (final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9141; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc9141
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc9141
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc9123
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc9122
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc9121
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc9101
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc984
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc983
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc982
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc967
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc966
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc965
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc964
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_19;
+                llvmPackages = final.llvmPackages_19;
+
+                src-spec.file = final.haskell-nix.sources.ghc9141;
+                src-spec.version = "9.14.1";
+                src-spec.needsBooting = true;
+
+                ghc-patches = ghc-patches "9.14.1";
             });
         } // (__listToAttrs (final.lib.mapAttrsToList (source-name: ver:
           let
