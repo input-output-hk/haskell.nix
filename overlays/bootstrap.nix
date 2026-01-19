@@ -341,7 +341,7 @@ in {
 
                 ++ onGhcjs (fromUntil   "9.12"   "9.15"  ./patches/ghc/ghc-9.12-ghcjs-rts-mem-heap8.patch)
                 # Fix for `fatal error: 'rts/Types.h' file not found` when building `primitive`
-                ++ onGhcjs (fromUntil   "9.12.3" "9.14"  ./patches/ghc/ghc-9.13-ghcjs-rts-types.patch)
+                ++ onGhcjs (fromUntil   "9.12.3" "9.15"  ./patches/ghc/ghc-9.13-ghcjs-rts-types.patch)
 
                 ++ onGhcjs (fromUntil   "9.6.7" "9.7"  ./patches/ghc/ghc-9.6-js-support-this-unit-id-10819.patch)
 
