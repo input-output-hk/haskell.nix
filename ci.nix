@@ -145,7 +145,25 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
           hello = (pkgs.haskell-nix.hackage-package ({ name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }
             // lib.optionalAttrs (builtins.compareVersions pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.13" >= 0) {
               shell.tools.hoogle.cabalProjectLocal = ''
-                allow-newer: hashable:ghc-bignum, integer-logarithms:ghc-bignum
+                -- The following `allow-newer` are needed for
+                -- constraints: hoogle >=5.0.18.4, tls ==2.0.6, warp-tls <3.4.10, aeson >=2.2.3.0
+                allow-newer:
+                  aeson:template-haskell,
+                  aeson:containers,
+                  aeson:time,
+                  base64:base,
+                  cborg:base,
+                  cborg:containers,
+                  indexed-traversable:base,
+                  indexed-traversable:containers,
+                  indexed-traversable-instances:base,
+                  semialign:base,
+                  semialign:containers,
+                  serialise:base,
+                  serialise:containers,
+                  these:base,
+                  time-compat:base,
+                  uuid-types:template-haskell
               '';
           })).getComponent "exe:hello";
           # Make sure the default shell tools (hoogle) are built
