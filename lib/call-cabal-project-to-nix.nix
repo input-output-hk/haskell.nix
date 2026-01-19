@@ -493,6 +493,7 @@ let
                 EXPOSED_MODULES_${varname name}="$(tr '\n' ' ' <<< "$exposed_modules $reexported_modules")"
                 deps="$(jq -r '.components.lib."build-depends"[]|select(.package)|.package' $json_cabal_file)"
                 deps+=" $(jq -r '.components.lib."build-depends"[]|select((.if.flag or ._if.not.flag) and ._if.not.flag != "vendor-filepath")._then[]|.package' $json_cabal_file)"
+                deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.impl == "ghc")|._then[]|.package' $json_cabal_file)"
                 ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
                 deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.os == "windows")|._then[]|.package' $json_cabal_file)"
                 ''}
