@@ -29,6 +29,7 @@ let
 
             # Tools to include in the development shell
             shell.tools.cabal = "latest";
+            shell.buildInputs = [ final.git ];
           }
           args
         ];
