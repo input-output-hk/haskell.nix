@@ -299,8 +299,12 @@ let
     name = "dummy-" + ghc.name;
     executable = true;
     destination = "/bin/${ghc.targetPrefix}ghc";
+    # New versions of cabal pass `-package-env=-`, but dummy-ghc can safely ignore it.
     text = ''
       #!${evalPackages.runtimeShell}
+      if [[ "$1" == "-package-env=-" ]]; then
+        shift
+      fi
       case "$*" in
         --version*)
           echo "The Glorious Glasgow Haskell Compilation System, version ${ghc.version}"
