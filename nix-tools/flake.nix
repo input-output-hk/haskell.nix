@@ -87,6 +87,7 @@
           #   { binary-tarball = mkTarball pkgs.pkgsCross.aarch64-multiplatform-musl; }
           // {
             static = static-nix-tools-outputs.hydraJobs.${pkgs.stdenv.hostPlatform.system};
+            haskellNixSource = "${inputs.haskellNix}";
           }
         );
     };
