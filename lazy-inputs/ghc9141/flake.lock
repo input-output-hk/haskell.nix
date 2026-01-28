@@ -1,0 +1,30 @@
+{
+  "nodes": {
+    "ghc9141": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1766035851,
+        "narHash": "sha256-wsClYVCoinEem20jHTFjiTOMgU8MsEaZ1RAgAMsK078=",
+        "ref": "ghc-9.14.1-iog",
+        "rev": "902339d332fb4ce2b3c87dcac1ee6495d41ad886",
+        "revCount": 68392,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/stable-haskell/ghc"
+      },
+      "original": {
+        "ref": "ghc-9.14.1-iog",
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/stable-haskell/ghc"
+      }
+    },
+    "root": {
+      "inputs": {
+        "ghc9141": "ghc9141"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
