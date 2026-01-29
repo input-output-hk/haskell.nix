@@ -14,6 +14,7 @@
     isLhc = false;
     isUhc = false;
     isEta = false;
+    isMhs = false;
   };
   os = {
     # OSs
