@@ -15,14 +15,14 @@ common warnings
 
 common cabal-deps
   build-depends:
-    Cabal ^>=3.14,
-    Cabal-syntax ^>=3.14
+    Cabal ^>=3.16,
+    Cabal-syntax ^>=3.16
 
 common cabal-install-deps
   import: cabal-deps
   build-depends:
-    cabal-install ^>=3.14,
-    cabal-install-solver ^>=3.14
+    cabal-install ^>=3.16,
+    cabal-install-solver ^>=3.16
 
 library
   import:              warnings
