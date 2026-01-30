@@ -50,17 +50,9 @@ in rec {
           version = "2.11.1";
           inherit evalPackages;
         };
-    } // pkgs.lib.optionalAttrs (ghcFromTo "8.10.7" "9.0") {
-      # This version will build for ghc < 9.8, but we are only going to test it for
-      # ghc < 9.0 (since newer versions do not work with ghc 8.10.7).
-      "hls-22" = tool compiler-nix-name "haskell-language-server" {
-        inherit evalPackages;
-        src = pkgs.haskell-nix.sources."hls-2.2";
-      };
-    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.13") {
+    } // {
       "hls" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
-        src = pkgs.haskell-nix.sources."hls-2.12";
       };
     })
   );
