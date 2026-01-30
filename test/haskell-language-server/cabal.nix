@@ -1,8 +1,7 @@
 { lib, stdenv, testSrc, haskell-nix, compiler-nix-name, evalPackages, buildPackages }:
 let
-  project = haskell-nix.tool compiler-nix-name {
+  project = haskell-nix.tool compiler-nix-name "haskell-language-server" {
     inherit evalPackages;
-    name = "haskell-language-server";
   };
 in lib.recurseIntoAttrs {
   ifdInputs = {
