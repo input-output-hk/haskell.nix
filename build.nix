@@ -50,7 +50,7 @@ in rec {
           version = "2.11.1";
           inherit evalPackages;
         };
-    } // {
+    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.13") {
       "hls" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
       };
