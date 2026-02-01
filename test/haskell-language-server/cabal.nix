@@ -1,13 +1,13 @@
 { lib, stdenv, testSrc, haskell-nix, compiler-nix-name, evalPackages, buildPackages }:
 let
-  project = haskell-nix.tool compiler-nix-name "haskell-language-server" {
+  hls = haskell-nix.tool compiler-nix-name "haskell-language-server" {
     inherit evalPackages;
   };
 in lib.recurseIntoAttrs {
   ifdInputs = {
-    inherit (project) plan-nix;
+    inherit (hls.project) plan-nix;
   };
-  build = project.getComponent "haskell-language-server:exe:haskell-language-server";
+  build = hls;
 
   # hls does not need to be cross compiled.
   meta.disabled =
