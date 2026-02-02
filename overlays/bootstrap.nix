@@ -813,7 +813,7 @@ in {
                 ghc-patches = ghc-patches "9.6.4";
             });
 
-            # Fails with 
+            # These two fail with:
             #  > 0;Finished in 0.13sError when running Shake build system:
             #  >   at action, called at src/Rules.hs:38:19 in hadrian-0.1.0.0-6oumpzlPaSIEQ7o4N98UQ4-hadrian:Rules
             #  >   at error, called at src/Settings/Program.hs:21:17 in hadrian-0.1.0.0-6oumpzlPaSIEQ7o4N98UQ4-hadrian:Settings.Program
@@ -822,14 +822,13 @@ in {
             ghc964Profiled_try1 = try_ghc964Profiled {
               extraFlavourTransformers = [ "+profiled_ghc" ];
             };
-
             ghc964Profiled_try2 = try_ghc964Profiled {
-              extraFlavourTransformers = [ "+profiled_ghc" ];
-              enableShared = false;
+              extraFlavourTransformers = [ "+profiled_ghc+no_dynamic_libs" ];
             };
 
             ghc964Profiled_try3 = try_ghc964Profiled {
-              extraFlavourTransformers = [ "+profiled_ghc+no_dynamic_libs" ];
+              extraFlavourTransformers = [ "+profiled_ghc" ];
+              enableShared = false;
             };
 
             ghc964Profiled_try4 = try_ghc964Profiled {
