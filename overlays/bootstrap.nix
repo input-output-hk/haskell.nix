@@ -70,6 +70,28 @@ in {
             };
             sphinx = final.buildPackages.sphinx;
 
+            try_ghc964Profiled = args: traceWarnOld "9.6" (final.callPackage ../compiler/ghc (args // {
+              extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc964; };
+              bootPkgs = bootPkgsGhc94 // {
+                ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                  then final.buildPackages.buildPackages.haskell-nix.compiler.ghc964
+                  else final.buildPackages.buildPackages.haskell.compiler.ghc964
+                        or final.buildPackages.buildPackages.haskell.compiler.ghc963
+                        or final.buildPackages.buildPackages.haskell.compiler.ghc962
+                        or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                        or final.buildPackages.buildPackages.haskell.compiler.ghc944
+                        or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+              };
+              inherit sphinx;
+              buildLlvmPackages = final.buildPackages.llvmPackages_12;
+              llvmPackages = final.llvmPackages_12;
+              src-spec.file = final.haskell-nix.sources.ghc964;
+              src-spec.version = "9.6.4";
+              src-spec.needsBooting = true;
+              ghc-patches = ghc-patches "9.6.4";
+            }));
+
+
             ghc-patches = version: let
                 # Returns true iff this derivation's version is strictly older than ver.
                 versionLessThan = ver: builtins.compareVersions ver version == 1;
@@ -790,6 +812,30 @@ in {
 
                 ghc-patches = ghc-patches "9.6.4";
             });
+
+            # Fails with 
+            #  > 0;Finished in 0.13sError when running Shake build system:
+            #  >   at action, called at src/Rules.hs:38:19 in hadrian-0.1.0.0-6oumpzlPaSIEQ7o4N98UQ4-hadrian:Rules
+            #  >   at error, called at src/Settings/Program.hs:21:17 in hadrian-0.1.0.0-6oumpzlPaSIEQ7o4N98UQ4-hadrian:Settings.Program
+            #  > * Raised the exception:
+            #  > programContext: profiling+dynamic not supported
+            ghc964Profiled_try1 = try_ghc964Profiled {
+              extraFlavourTransformers = [ "+profiled_ghc" ];
+            };
+
+            ghc964Profiled_try2 = try_ghc964Profiled {
+              extraFlavourTransformers = [ "+profiled_ghc" ];
+              enableShared = false;
+            };
+
+            ghc964Profiled_try3 = try_ghc964Profiled {
+              extraFlavourTransformers = [ "+profiled_ghc+no_dynamic_libs" ];
+            };
+
+            ghc964Profiled_try4 = try_ghc964Profiled {
+              extraFlavourTransformers = [ "+profiled_ghc+no_dynamic_ghc" ];
+            };
+
             ghc965 = traceWarnOld "9.6" (final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc965; };
 
