@@ -89,7 +89,7 @@ final: prev:
           conduit.patches            = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version }: if builtins.compareVersions version "1.3.1.1" < 0 then ./patches/conduit-1.3.0.2.patch else null) ];
           streaming-commons.patches  = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version }: if builtins.compareVersions version "0.2.3.1" < 0 then ./patches/streaming-commons-0.2.0.0.patch else null) ];
           x509-system.patches        = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/x509-system-1.6.6.patch ];
-          crypton-x509-system.patches = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/crypton-x509-system.patch ];
+          crypton-x509-system.patches = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version }: if builtins.compareVersions version "1.7" < 0 then ./patches/crypton-x509-system-1.6.patch else ./patches/crypton-x509-system) ];
 
           # Set all of these to [], as these form the
           # dependency graph of the libiserv, iserv-proxy, and iserv-remote
