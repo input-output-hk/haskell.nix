@@ -235,6 +235,7 @@ let
     js-template-haskell = callTest ./js-template-haskell {};
     gi-gtk = callTest ./gi-gtk { inherit util; };
     literate-haskell = callTest ./literate-haskell {};
+    backpack = callTest ./backpack {};
     unit = unitTests;
   };
 
