@@ -497,6 +497,10 @@ let
                 EXPOSED_MODULES_${varname name}="$(tr '\n' ' ' <<< "$exposed_modules $reexported_modules")"
                 deps="$(jq -r '.components.lib."build-depends"[]|select(.package)|.package' $json_cabal_file)"
                 deps+=" $(jq -r '.components.lib."build-depends"[]|select((.if.flag or ._if.not.flag) and ._if.not.flag != "vendor-filepath")._then[]|.package' $json_cabal_file)"
+                ''
+                # containers-0.8 uses `if impl(ghc) build-depends: template-haskell`
+                + ''
+                deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.impl == "ghc")|._then[]|.package' $json_cabal_file)"
                 ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
                 deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.os == "windows")|._then[]|.package' $json_cabal_file)"
                 ''}
@@ -518,7 +522,7 @@ let
                 PKGS+=" ${name}"
                 LAST_PKG="${name}"
               fi
-            '') (pkgs.haskell-nix.ghc-pre-existing ghc))
+            '') (pkgs.lib.filter (n: n != "system-cxx-std-lib") (pkgs.haskell-nix.ghc-pre-existing ghc)))
           }
           ${ # There is no .cabal file for system-cxx-std-lib
             pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.2" >= 0) (
