@@ -328,22 +328,22 @@ in {
                 ++ fromUntil "9.8.4" "9.8.5" ./patches/ghc/ghc-9.8.4-remove-unused-containers-h-include13709.diff
 
                 # See https://gitlab.haskell.org/ghc/ghc/-/merge_requests/12586
-                ++ onWindows (fromUntil "9.6.6" "9.12" ./patches/ghc/ghc-win32-io-manager-compilation.patch)
+                ++ onWindows (fromUntil "9.6.6" "9.12"   ./patches/ghc/ghc-win32-io-manager-compilation.patch)
 
                 # See https://gitlab.haskell.org/ghc/ghc/-/issues/16130
-                ++ onAndroid (fromUntil "9.6.6" "9.12" ./patches/ghc/ghc-9.6-static-linker-script-support.patch)
-                ++ onAndroid (from      "9.12.1"       ./patches/ghc/ghc-9.12-static-linker-script-support.patch)
+                ++ onAndroid (fromUntil "9.6.6"  "9.12"  ./patches/ghc/ghc-9.6-static-linker-script-support.patch)
+                ++ onAndroid (from      "9.12.1" "9.15"  ./patches/ghc/ghc-9.12-static-linker-script-support.patch)
 
-                ++ onAndroid (from      "9.6"          ./patches/ghc/ghc-9.6-COMPAT_R_ARM_PREL31.patch)
-                ++ onAndroid (from      "9.10"         ./patches/ghc/ghc-9.10-ignore-libc.patch)
+                ++ onAndroid (from      "9.6"            ./patches/ghc/ghc-9.6-COMPAT_R_ARM_PREL31.patch)
+                ++ onAndroid (from      "9.10"           ./patches/ghc/ghc-9.10-ignore-libc.patch)
                 # unbreak modern clang with proper _atomic declarations.
-                ++ onAndroid (fromUntil "9.6"  "9.6.5" ./patches/ghc/7db8c9927fae3369fc4ecff68f80c4cb32eea757.patch)
+                ++ onAndroid (fromUntil "9.6"  "9.6.5"   ./patches/ghc/7db8c9927fae3369fc4ecff68f80c4cb32eea757.patch)
 
                 ++ onGhcjs (fromUntil   "9.12"   "9.15"  ./patches/ghc/ghc-9.12-ghcjs-rts-mem-heap8.patch)
                 # Fix for `fatal error: 'rts/Types.h' file not found` when building `primitive`
                 ++ onGhcjs (fromUntil   "9.12.3" "9.15"  ./patches/ghc/ghc-9.13-ghcjs-rts-types.patch)
 
-                ++ onGhcjs (fromUntil   "9.6.7" "9.7"  ./patches/ghc/ghc-9.6-js-support-this-unit-id-10819.patch)
+                ++ onGhcjs (fromUntil   "9.6.7" "9.7"    ./patches/ghc/ghc-9.6-js-support-this-unit-id-10819.patch)
 
                 ++ onWasm (fromUntil    "9.12"  "9.12.3" ./patches/ghc/ghc-9.12-wasm-shared-libs.patch)
                 ++ onWasm (fromUntil    "9.12"  "9.12.3" ./patches/ghc/ghc-9.12-wasm-keep-cafs.patch)
