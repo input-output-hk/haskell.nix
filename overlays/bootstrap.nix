@@ -257,6 +257,10 @@ in {
                 ++ onAndroid (fromUntil "9.8.3" "9.10"  ./patches/ghc/ghc-9.8.3-iog.patch)
                 ++ onAndroid (fromUntil "9.6" "9.9" ./patches/ghc/ghc-9.6-debug-secno.patch)
                 ++ onAndroid (from "9.8.1" ./patches/ghc/ghc-9.8-android-convert-os.patch)
+                # Revert https://gitlab.haskell.org/ghc/ghc/-/merge_requests/14157
+                # as it seems to break armv7a-android with llvm 19 and 21.
+                # Hopefully this patch will not be needed for llvm 22.
+                ++ onAndroid (onAarch32 (from "9.12.3" ./patches/ghc-armv7a-android-llvm-fix.patch))
 
                 # Allow loading static external plugins into cross compilers
                 ++ onCross (fromUntil "9.6.1"  "9.11"   ./patches/ghc/5c80a27488acfe3610ddfcb99a1e961002e386d0.patch)
