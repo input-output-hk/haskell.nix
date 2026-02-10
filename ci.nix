@@ -77,7 +77,7 @@
         ghc912 = true;
         ghc914 = true;
         ghc914llvm = true;
-        ghc915 = true;
+        # ghc915 = true;
       })));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values
