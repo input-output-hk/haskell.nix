@@ -69,13 +69,15 @@
         ghc98 = false;
         ghc910 = false;
         ghc912 = false;
+        ghc914 = false;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc96 = true;
         ghc98 = true;
         ghc910 = true;
         ghc912 = true;
-        ghc912llvm = true;
-        ghc913 = true;
+        ghc914 = true;
+        ghc914llvm = true;
+        # ghc915 = true;
       })));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values
@@ -143,7 +145,25 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
           hello = (pkgs.haskell-nix.hackage-package ({ name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }
             // lib.optionalAttrs (builtins.compareVersions pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.13" >= 0) {
               shell.tools.hoogle.cabalProjectLocal = ''
-                allow-newer: hashable:ghc-bignum, integer-logarithms:ghc-bignum
+                -- The following `allow-newer` are needed for
+                -- constraints: hoogle >=5.0.18.4, tls ==2.0.6, warp-tls <3.4.10, aeson >=2.2.3.0
+                allow-newer:
+                  aeson:template-haskell,
+                  aeson:containers,
+                  aeson:time,
+                  base64:base,
+                  cborg:base,
+                  cborg:containers,
+                  indexed-traversable:base,
+                  indexed-traversable:containers,
+                  indexed-traversable-instances:base,
+                  semialign:base,
+                  semialign:containers,
+                  serialise:base,
+                  serialise:containers,
+                  these:base,
+                  time-compat:base,
+                  uuid-types:template-haskell
               '';
           })).getComponent "exe:hello";
           # Make sure the default shell tools (hoogle) are built
