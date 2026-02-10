@@ -103,11 +103,11 @@
     "hackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1770597288,
-        "narHash": "sha256-SvzKmFHE+GaDSXJb2KwYodMUWRTKNKbLTJVmGvJLTWc=",
+        "lastModified": 1770685064,
+        "narHash": "sha256-e2G/GFzIdTXosxq+3Z0OXbSUmXy9tDbZZ6wsmfy7Hf8=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "10d91ea33163997ce6603dcb9f717137472eb8e9",
+        "rev": "84628a8e4b5d580766d49d62a5e2e065cbb8604e",
         "type": "github"
       },
       "original": {
@@ -119,11 +119,11 @@
     "hackage-for-stackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1770597278,
-        "narHash": "sha256-SbLhB7MS11vFCnEe9r+Vaa185dCm5NUlp/FIKG60WgE=",
+        "lastModified": 1770683900,
+        "narHash": "sha256-03cshwLY80e5jBUgNBmoFoiH1e3VvhAX+1ME4NVt5g4=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "de41ec4200ff36b49a919fdedbab7c8bac4ba8ce",
+        "rev": "c7d9e737cd1e07136982e0df0f9aa12391e2c883",
         "type": "github"
       },
       "original": {
