@@ -332,7 +332,7 @@ in {
 
                 # See https://gitlab.haskell.org/ghc/ghc/-/issues/16130
                 ++ onAndroid (fromUntil "9.6.6"  "9.12"  ./patches/ghc/ghc-9.6-static-linker-script-support.patch)
-                ++ onAndroid (from      "9.12.1" "9.15"  ./patches/ghc/ghc-9.12-static-linker-script-support.patch)
+                ++ onAndroid (fromUntil "9.12.1" "9.15"  ./patches/ghc/ghc-9.12-static-linker-script-support.patch)
 
                 ++ onAndroid (from      "9.6"            ./patches/ghc/ghc-9.6-COMPAT_R_ARM_PREL31.patch)
                 ++ onAndroid (from      "9.10"           ./patches/ghc/ghc-9.10-ignore-libc.patch)
