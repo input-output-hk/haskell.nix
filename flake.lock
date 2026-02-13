@@ -86,11 +86,11 @@
     "hackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1767573041,
-        "narHash": "sha256-N04obTGr+j9QtyAQtLo+POl+4RWDmPIpNC1lVEMFWrk=",
+        "lastModified": 1770685064,
+        "narHash": "sha256-e2G/GFzIdTXosxq+3Z0OXbSUmXy9tDbZZ6wsmfy7Hf8=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "78ee0be59f59c7ecf7b89e8c76d20d8d641e1fa5",
+        "rev": "84628a8e4b5d580766d49d62a5e2e065cbb8604e",
         "type": "github"
       },
       "original": {
@@ -102,11 +102,11 @@
     "hackage-for-stackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1767573031,
-        "narHash": "sha256-GxYz2y4P3hC0+/hY4UfzaFVyF4X2Ez4e4haFwQnNOSA=",
+        "lastModified": 1770683900,
+        "narHash": "sha256-03cshwLY80e5jBUgNBmoFoiH1e3VvhAX+1ME4NVt5g4=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "084d4b47882bac2e3aae71e8644d23ef7609bca4",
+        "rev": "c7d9e737cd1e07136982e0df0f9aa12391e2c883",
         "type": "github"
       },
       "original": {
@@ -212,6 +212,23 @@
       "original": {
         "owner": "haskell",
         "ref": "2.11.0.0",
+        "repo": "haskell-language-server",
+        "type": "github"
+      }
+    },
+    "hls-2.12": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1758709460,
+        "narHash": "sha256-xkI8MIIVEVARskfWbGAgP5sHG/lyeKnkm0LIOJ19X5w=",
+        "owner": "haskell",
+        "repo": "haskell-language-server",
+        "rev": "7d983de4fa7ff54369f6dd31444bdb9869aec83e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "haskell",
+        "ref": "2.12.0.0",
         "repo": "haskell-language-server",
         "type": "github"
       }
@@ -352,23 +369,6 @@
         "type": "github"
       }
     },
-    "hls-2.12": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1758709460,
-        "narHash": "sha256-xkI8MIIVEVARskfWbGAgP5sHG/lyeKnkm0LIOJ19X5w=",
-        "owner": "haskell",
-        "repo": "haskell-language-server",
-        "rev": "7d983de4fa7ff54369f6dd31444bdb9869aec83e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "haskell",
-        "ref": "2.12.0.0",
-        "repo": "haskell-language-server",
-        "type": "github"
-      }
-    },
     "hpc-coveralls": {
       "flake": false,
       "locked": {
@@ -388,11 +388,11 @@
     "iserv-proxy": {
       "flake": false,
       "locked": {
-        "lastModified": 1761801472,
-        "narHash": "sha256-2aCGboNCF602huvmbyTcfhe6s+D4/n/NlOefd0c0SC0=",
+        "lastModified": 1770174258,
+        "narHash": "sha256-x6QYupvHZM7rRpVO4AIC5gUWFprFQ59A95FPC7/Owjg=",
         "owner": "stable-haskell",
         "repo": "iserv-proxy",
-        "rev": "bbee090fc67bb5cc6ad4508fa5def560b7672591",
+        "rev": "91ef7ffdeedfb141a4d69dcf9e550abe3e1160c6",
         "type": "github"
       },
       "original": {
@@ -546,6 +546,7 @@
         "hls-2.0": "hls-2.0",
         "hls-2.10": "hls-2.10",
         "hls-2.11": "hls-2.11",
+        "hls-2.12": "hls-2.12",
         "hls-2.2": "hls-2.2",
         "hls-2.3": "hls-2.3",
         "hls-2.4": "hls-2.4",
@@ -554,7 +555,6 @@
         "hls-2.7": "hls-2.7",
         "hls-2.8": "hls-2.8",
         "hls-2.9": "hls-2.9",
-        "hls-2.12": "hls-2.12",
         "hpc-coveralls": "hpc-coveralls",
         "iserv-proxy": "iserv-proxy",
         "nixpkgs": [
@@ -574,11 +574,11 @@
     "stackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1767572145,
-        "narHash": "sha256-9QuELF58+ysYmF5/WYxlluJj/bJCPa6D6daTXben37A=",
+        "lastModified": 1770596307,
+        "narHash": "sha256-88b6YzeBaQr9ihSWAOxVGewCDfROKt2rOIHymadu3DI=",
         "owner": "input-output-hk",
         "repo": "stackage.nix",
-        "rev": "2ae6ad5edc7e5875f0778e45c3c2ff23310397b6",
+        "rev": "ff21e9b6a976faed56963ae5fa5d5396dc48ea63",
         "type": "github"
       },
       "original": {

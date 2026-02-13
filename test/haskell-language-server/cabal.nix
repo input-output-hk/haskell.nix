@@ -1,16 +1,13 @@
 { lib, stdenv, testSrc, haskell-nix, compiler-nix-name, evalPackages, buildPackages }:
 let
-  project = haskell-nix.cabalProject' {
-    inherit compiler-nix-name evalPackages;
-    name = "haskell-language-server";
-    src = haskell-nix.sources."hls-2.12";
-    configureArgs = "--disable-benchmarks --disable-tests"; # This makes cabalProject' more like the `tool` function
+  hls = haskell-nix.tool compiler-nix-name "haskell-language-server" {
+    inherit evalPackages;
   };
 in lib.recurseIntoAttrs {
   ifdInputs = {
-    inherit (project) plan-nix;
+    inherit (hls.project) plan-nix;
   };
-  build = project.getComponent "haskell-language-server:exe:haskell-language-server";
+  build = hls;
 
   # hls does not need to be cross compiled.
   meta.disabled =

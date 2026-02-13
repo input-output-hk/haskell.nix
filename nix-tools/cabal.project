@@ -1,8 +1,9 @@
-index-state: 2025-04-12T00:00:00Z
+index-state: 2026-01-18T00:00:00Z
 
 -- Needed for building aarch64-linux musl version with GHC 9.6
-constraints: containers installed, Cabal >=3.14.1.0
+constraints: containers installed, Cabal >=3.16.1.0
 allow-older: Cabal-syntax-json:base, Cabal-syntax-json:containers
+allow-newer: Cabal-syntax-json:Cabal, Cabal-syntax-json:Cabal-syntax
 
 packages: nix-tools
 
