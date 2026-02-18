@@ -532,7 +532,8 @@ in {
         , apps ? mkFlakeApps haskellPackages
         , checks ? mkFlakeChecks (collectChecks' haskellPackages)
         , coverage ? {}
-        , devShells ? { default = project.shell; }
+        , devShell ? project.shell
+        , devShells ? { default = devShell; }
         , checkedProject ? project.appendModule { checkMaterialization = true; }
         , ciJobs ? mkFlakeCiJobs project { inherit checks coverage packages devShells checkedProject; }
         , hydraJobs ? ciJobs
