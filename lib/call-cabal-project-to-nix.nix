@@ -264,7 +264,11 @@ let
       inherit (repoResult) repos extra-hackages;
       makeFixedProjectFile = ''
         HOME=$(mktemp -d)
-        cp -f ${evalPackages.writeText "cabal.project" sourceRepoFixedProjectFile} ./cabal.project
+        cp -f ${evalPackages.writeText "cabal.project" (
+          # Add the string context of rawCabalProject to make sure
+          # any nix store paths are included as build inputs.
+          builtins.appendContext sourceRepoFixedProjectFile
+            (builtins.getContext rawCabalProject))} ./cabal.project
         chmod +w -R ./cabal.project
       '' + pkgs.lib.strings.concatStrings (
             map (f: ''
