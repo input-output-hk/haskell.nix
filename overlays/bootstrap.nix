@@ -318,7 +318,7 @@ in {
                 ++ fromUntil "9.10"  "9.10.2" ./patches/ghc/ghc-9.10-containers-upper-bound.patch
                 ++ fromUntil "9.10"  "9.14"  ./patches/ghc/ghc-9.10-merge-objects.patch
                 ++ fromUntil "9.12"  "9.13"  ./patches/ghc/ghc-9.12-Cabal-3.14.patch
-                ++ fromUntil "9.12"  "9.13"  ./patches/ghc/ghc-9.12-alex-3.5.2.0.patch
+                ++ fromUntil "9.12"  "9.12.3"  ./patches/ghc/ghc-9.12-alex-3.5.2.0.patch
 
                 # This patch will make windows stop emitting absolute relocations. This is one way in which binutils 2.36+ (with ASLR enabled), will just choke on the
                 # assembly we generate because it's always absolute (32bit) addressing modes.
