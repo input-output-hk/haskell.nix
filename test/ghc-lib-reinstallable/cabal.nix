@@ -4,9 +4,14 @@
 with lib;
 
 let
+  ghcVersion = buildPackages.haskell-nix.compiler.${compiler-nix-name}.version;
+
   project = haskell-nix.cabalProject {
     inherit compiler-nix-name evalPackages;
     src = testSrc "ghc-lib-reinstallable";
+    cabalProjectLocal = ''
+      constraints: ghc ==${ghcVersion}
+    '';
     modules = [{
       # Configure packages for os-string
       packages.directory.components.library.configureFlags = ["-f os-string"];
@@ -22,7 +27,7 @@ in lib.recurseIntoAttrs {
   meta = {
     # Only run this test for GHC 9.12+ where the fix is needed
     disabled =
-      (__compareVersions compiler-nix-name "ghc9120" < 0)
+      (builtins.compareVersions ghcVersion "9.12" < 0)
       || stdenv.hostPlatform.isGhcjs
       || stdenv.hostPlatform.isWindows;  # Skip on Windows for now
   };
@@ -62,7 +67,7 @@ in lib.recurseIntoAttrs {
       platforms = lib.platforms.unix;
       # Disable for GHC versions before 9.12 and for problematic platforms
       disabled =
-        (__compareVersions compiler-nix-name "ghc9120" < 0)
+        (builtins.compareVersions ghcVersion "9.12" < 0)
         || stdenv.hostPlatform.isGhcjs
         || stdenv.hostPlatform.isWindows;
     };

@@ -477,6 +477,8 @@ let
                 cabal_file=${ghcSrc}/libraries/${name}/${name}.cabal.in
               elif [ -f ${ghcSrc}/utils/haddock/${name}/${name}.cabal ]; then
                 cabal_file=${ghcSrc}/utils/haddock/${name}/${name}.cabal
+              elif [ -f ${ghcSrc}/${name}/${name}.cabal ]; then
+                cabal_file=${ghcSrc}/${name}/${name}.cabal
               fi
               if [[ "$cabal_file" != "" ]]; then
                 fixed_cabal_file=$(mktemp)
@@ -499,17 +501,17 @@ let
                 ''}
 
                 EXPOSED_MODULES_${varname name}="$(tr '\n' ' ' <<< "$exposed_modules $reexported_modules")"
-                deps="$(jq -r '.components.lib."build-depends"[]|select(.package)|.package' $json_cabal_file)"
-                deps+=" $(jq -r '.components.lib."build-depends"[]|select((.if.flag or ._if.not.flag) and ._if.not.flag != "vendor-filepath")._then[]|.package' $json_cabal_file)"
+                deps="$(jq -r '.components.lib."build-depends"//[]|.[]|select(.package)|.package' $json_cabal_file)"
+                deps+=" $(jq -r '.components.lib."build-depends"//[]|.[]|select((.if.flag or ._if.not.flag) and ._if.not.flag != "vendor-filepath")._then[]|.package' $json_cabal_file)"
                 ''
                 # containers-0.8 uses `if impl(ghc) build-depends: template-haskell`
                 + ''
-                deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.impl == "ghc")|._then[]|.package' $json_cabal_file)"
+                deps+=" $(jq -r '.components.lib."build-depends"//[]|.[]|select(._if.impl == "ghc")|._then[]|.package' $json_cabal_file)"
                 ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
-                deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.os == "windows")|._then[]|.package' $json_cabal_file)"
+                deps+=" $(jq -r '.components.lib."build-depends"//[]|.[]|select(._if.os == "windows")|._then[]|.package' $json_cabal_file)"
                 ''}
                 ${pkgs.lib.optionalString (!pkgs.stdenv.targetPlatform.isWindows) ''
-                deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.not.os == "windows")|._then[]|.package' $json_cabal_file)"
+                deps+=" $(jq -r '.components.lib."build-depends"//[]|.[]|select(._if.not.os == "windows")|._then[]|.package' $json_cabal_file)"
                 ''
                 # Fix problem with `haskeline` using a `terminfo` flag
                 # For haskell-nix ghc we can use ghc.enableTerminfo to get the flag setting
