@@ -28,6 +28,7 @@ in lib.recurseIntoAttrs {
     disabled =
       stdenv.hostPlatform.isAndroid
       || stdenv.hostPlatform.isGhcjs
+      || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.is32bit)
       || stdenv.hostPlatform.isWasm
       || stdenv.hostPlatform.isWindows;
   };
