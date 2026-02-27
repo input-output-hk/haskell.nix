@@ -12,23 +12,21 @@ let
     cabalProjectLocal = ''
       constraints: ghc ==${ghcVersion}
     '';
-    modules = [{
-      # Configure packages for os-string
+    # Configure packages for os-string (only needed for GHC 9.12+)
+    modules = lib.optional (builtins.compareVersions ghcVersion "9.12" >= 0) {
       packages.directory.components.library.configureFlags = ["-f os-string"];
       packages.file-io.components.library.configureFlags = ["-f os-string"];
       packages.unix.components.library.configureFlags = ["-f os-string"];
       packages.process.components.library.configureFlags = ["-f os-string"];
-    }];
+    };
   };
 
   packages = project.hsPkgs;
 
 in lib.recurseIntoAttrs {
   meta = {
-    # Only run this test for GHC 9.12+ where the fix is needed
     disabled =
-      (builtins.compareVersions ghcVersion "9.12" < 0)
-      || stdenv.hostPlatform.isAndroid
+      stdenv.hostPlatform.isAndroid
       || stdenv.hostPlatform.isGhcjs
       || stdenv.hostPlatform.isWasm
       || stdenv.hostPlatform.isWindows;
