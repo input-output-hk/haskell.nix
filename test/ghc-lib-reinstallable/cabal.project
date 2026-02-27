@@ -1,0 +1,6 @@
+packages: .
+
+-- Force GHC to be reinstalled (needed to test reinstallable GHC lib)
+constraints: ghc source, Cabal source
+allow-newer:  *:*
+allow-boot-library-installs: True

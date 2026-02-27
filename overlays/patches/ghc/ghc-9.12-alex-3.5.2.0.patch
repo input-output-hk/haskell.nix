@@ -1,0 +1,27 @@
+diff --git a/compiler/GHC/Parser/Lexer.x b/compiler/GHC/Parser/Lexer.x
+index fe08dc69cd..57157cd8bb 100644
+--- a/compiler/GHC/Parser/Lexer.x
++++ b/compiler/GHC/Parser/Lexer.x
+@@ -41,6 +41,7 @@
+ -- Alex "Haskell code fragment top"
+ 
+ {
++{-# LANGUAGE CPP #-}
+ {-# LANGUAGE ViewPatterns #-}
+ {-# LANGUAGE LambdaCase #-}
+ {-# LANGUAGE MultiWayIf #-}
+@@ -3471,10 +3472,14 @@ topNoLayoutContainsCommas [] = False
+ topNoLayoutContainsCommas (ALRLayout _ _ : ls) = topNoLayoutContainsCommas ls
+ topNoLayoutContainsCommas (ALRNoLayout b _ : _) = b
+ 
++#ifdef MIN_TOOL_VERSION_alex
++#if !MIN_TOOL_VERSION_alex(3,5,2)
+ -- If the generated alexScan/alexScanUser functions are called multiple times
+ -- in this file, alexScanUser gets broken out into a separate function and
+ -- increases memory usage. Make sure GHC inlines this function and optimizes it.
+ {-# INLINE alexScanUser #-}
++#endif
++#endif
+ 
+ lexToken :: P (PsLocated Token)
+ lexToken = do

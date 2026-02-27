@@ -179,6 +179,7 @@ in {
                 ++ fromUntil "9.8.1"  "9.9.20231203"  ./patches/ghc/MR10116.patch
                 ++ onNative (fromUntil "9.4.1" "9.6"   ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc94.patch)
                 ++ onNative (fromUntil "9.6.1" "9.14"  ./patches/ghc/hadrian-build-deriveConstants-genprimopcode.patch)
+                ++ onNative (fromUntil "9.14"  "9.15"  ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc914.patch)
                 ++ onGhcjs (fromUntil "9.6.1" "9.6.3" ./patches/ghc/ghc-9.6-Merge-libiserv-with-ghci.patch)
                 ++ onGhcjs (fromUntil "9.6.3" "9.8"   ./patches/ghc/ghc-9.6.3-Merge-libiserv-with-ghci.patch)
                 ++ onGhcjs (fromUntil "9.6.1" "9.8"   ./patches/ghc/ghc-9.6-Assorted-changes-to-avoid-head-tail.patch)
@@ -317,6 +318,9 @@ in {
                 ++ fromUntil "9.8.3" "9.8.4"  ./patches/ghc/ghc-9.8.3-text-upper-bound.patch
                 ++ fromUntil "9.10"  "9.10.2" ./patches/ghc/ghc-9.10-containers-upper-bound.patch
                 ++ fromUntil "9.10"  "9.14"  ./patches/ghc/ghc-9.10-merge-objects.patch
+                ++ fromUntil "9.12"  "9.13"  ./patches/ghc/ghc-9.12-Cabal-3.14.patch
+                ++ fromUntil "9.12"  "9.12.3"  ./patches/ghc/ghc-9.12-alex-3.5.2.0.patch
+                ++ fromUntil "9.14"  "9.15"  ./patches/ghc/ghc-9.14-Cabal-3.14.patch
 
                 # This patch will make windows stop emitting absolute relocations. This is one way in which binutils 2.36+ (with ASLR enabled), will just choke on the
                 # assembly we generate because it's always absolute (32bit) addressing modes.
