@@ -28,8 +28,10 @@ in lib.recurseIntoAttrs {
     # Only run this test for GHC 9.12+ where the fix is needed
     disabled =
       (builtins.compareVersions ghcVersion "9.12" < 0)
+      || stdenv.hostPlatform.isAndroid
       || stdenv.hostPlatform.isGhcjs
-      || stdenv.hostPlatform.isWindows;  # Skip on Windows for now
+      || stdenv.hostPlatform.isWasm
+      || stdenv.hostPlatform.isWindows;
   };
 
   ifdInputs = {
@@ -63,14 +65,7 @@ in lib.recurseIntoAttrs {
       touch $out
     '';
 
-    meta = {
-      platforms = lib.platforms.unix;
-      # Disable for GHC versions before 9.12 and for problematic platforms
-      disabled =
-        (builtins.compareVersions ghcVersion "9.12" < 0)
-        || stdenv.hostPlatform.isGhcjs
-        || stdenv.hostPlatform.isWindows;
-    };
+    meta.platforms = lib.platforms.unix;
 
     passthru = {
       # Used for debugging with nix repl

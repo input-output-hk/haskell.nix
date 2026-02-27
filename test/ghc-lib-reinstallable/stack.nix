@@ -26,8 +26,10 @@ in lib.recurseIntoAttrs {
     # Stack test is disabled for most compiler versions (only works with specific resolver)
     disabled =
       !(builtins.elem compiler-nix-name ["ghc9122" "ghc9123"])
+      || stdenv.hostPlatform.isAndroid
       || stdenv.hostPlatform.isGhcjs
-      || stdenv.hostPlatform.isWindows;  # Skip on Windows for now
+      || stdenv.hostPlatform.isWasm
+      || stdenv.hostPlatform.isWindows;
   };
 
   ifdInputs = {
@@ -61,14 +63,7 @@ in lib.recurseIntoAttrs {
       touch $out
     '';
 
-    meta = {
-      platforms = lib.platforms.unix;
-      # Disable for GHC versions other than 9.12.2/9.12.3 and for problematic platforms
-      disabled =
-        !(builtins.elem compiler-nix-name ["ghc9122" "ghc9123"])
-        || stdenv.hostPlatform.isGhcjs
-        || stdenv.hostPlatform.isWindows;
-    };
+    meta.platforms = lib.platforms.unix;
 
     passthru = {
       # Used for debugging with nix repl
