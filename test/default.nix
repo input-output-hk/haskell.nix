@@ -178,6 +178,7 @@ let
 
   # All tests.
   allTests = {
+    backpack = callTest ./backpack { };
     cabal-simple = callTest ./cabal-simple { inherit util; };
     cabal-simple-debug = callTest ./cabal-simple-debug { inherit util; };
     cabal-simple-prof = callTest ./cabal-simple-prof { inherit util; };
