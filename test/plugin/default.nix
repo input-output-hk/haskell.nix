@@ -19,7 +19,7 @@ in lib.recurseIntoAttrs {
   };
 
   meta.disabled =
-       builtins.elem compiler-nix-name [ "ghc91320250523" ]
+       __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.13" >= 0
     || stdenv.hostPlatform.isMusl
     || stdenv.hostPlatform.isGhcjs
     || stdenv.hostPlatform.isWasm

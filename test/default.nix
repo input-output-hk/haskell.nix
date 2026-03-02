@@ -202,6 +202,8 @@ let
     ghc-options-stack = callTest ./ghc-options/stack.nix {};
     exe-only = callTest ./exe-only { inherit util; };
     stack-source-repo = callTest ./stack-source-repo {};
+    ghc-lib-reinstallable-cabal = callTest ./ghc-lib-reinstallable/cabal.nix {};
+    ghc-lib-reinstallable-stack = callTest ./ghc-lib-reinstallable/stack.nix {};
     cabal-doctests = callTest ./cabal-doctests { inherit util; };
     extra-hackage = callTest ./extra-hackage {};
     ghcjs-overlay = callTest ./ghcjs-overlay {};
