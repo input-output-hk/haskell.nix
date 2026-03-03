@@ -264,11 +264,7 @@ let
       inherit (repoResult) repos extra-hackages;
       makeFixedProjectFile = ''
         HOME=$(mktemp -d)
-        cp -f ${evalPackages.writeText "cabal.project" (
-          # Add the string context of rawCabalProject to make sure
-          # any nix store paths are included as build inputs.
-          builtins.appendContext sourceRepoFixedProjectFile
-            (builtins.getContext rawCabalProject))} ./cabal.project
+        cp -f ${evalPackages.writeText "cabal.project" sourceRepoFixedProjectFile} ./cabal.project
         chmod +w -R ./cabal.project
       '' + pkgs.lib.strings.concatStrings (
             map (f: ''
@@ -779,4 +775,8 @@ in {
   projectNix = plan-json;
   inherit index-state-max src;
   inherit (fixedProject) sourceRepos extra-hackages;
+  # Zero-length string carrying context from rawCabalProject.
+  # Used in load-cabal-plan.nix to add context to URLs referencing store paths
+  # without using builtins.appendContext (which fails for non-local paths).
+  rawCabalProjectContext = builtins.substring 0 0 rawCabalProject;
 }
