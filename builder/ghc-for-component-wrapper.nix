@@ -141,8 +141,10 @@ let
   # These scripts break if symlinked (they check import.meta.filename against args)
   # Also for some reason `libdl.so` is missing `__wasm_apply_data_relocs`
   + lib.optionalString (stdenv.hostPlatform.isWasm) ''
-     rm $wrappedGhc/lib/*.mjs
-     cp $unwrappedGhc/lib/*.mjs $wrappedGhc/lib/
+     rm -f $wrappedGhc/lib/*.mjs
+     for f in $unwrappedGhc/lib/*.mjs; do
+       [ -e "$f" ] && cp "$f" $wrappedGhc/lib/
+     done
   ''
   # Wrap haddock, if the base GHC provides it.
   + ''

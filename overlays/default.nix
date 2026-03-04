@@ -97,6 +97,7 @@ let
     lazy-inputs = import ../lazy-inputs;
     rcodesign = import ./rcodesign.nix;
     wasm = import ./wasm.nix;
+    stable-haskell = import ./stable-haskell.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -134,8 +135,9 @@ let
     wasm
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
-    cacheCompilerDeps
     lazy-inputs
+    stable-haskell
+    cacheCompilerDeps
     rcodesign
   ];
   combined = builtins.foldl' composeExtensions (_: _: { }) ordered;

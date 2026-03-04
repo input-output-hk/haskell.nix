@@ -479,6 +479,8 @@ let
                 cabal_file=${ghcSrc}/utils/haddock/${name}/${name}.cabal
               elif [ -f ${ghcSrc}/${name}/${name}.cabal ]; then
                 cabal_file=${ghcSrc}/${name}/${name}.cabal
+              elif [ -f ${ghcSrc}/${name}/${name}.cabal.in ]; then
+                cabal_file=${ghcSrc}/${name}/${name}.cabal.in
               fi
               if [[ "$cabal_file" != "" ]]; then
                 fixed_cabal_file=$(mktemp)

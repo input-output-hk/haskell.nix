@@ -69,6 +69,14 @@ in
 
   config.nonReinstallablePkgs = if config.preExistingPkgs != []
    then ["rts"] ++ config.preExistingPkgs
+    # GHC 9.14+ rts.conf depends on libffi-clib at the ghc-pkg level, but
+    # cabal doesn't include it in preExistingPkgs (it's a C library wrapper
+    # that cabal doesn't track as a Haskell dependency).  Adding it here
+    # ensures make-config-files.nix copies its .conf from the compiler's
+    # package DB so the per-component DB is consistent.  Harmless for
+    # compilers that don't have libffi-clib (the find glob matches nothing).
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "9.14" >= 0) [
+      "libffi-clib"]
     ++ lib.optionals (builtins.compareVersions config.compiler.version "8.11" < 0 && pkgs.stdenv.hostPlatform.isGhcjs) [
       "ghcjs-prim" "ghcjs-th"]
    else
