@@ -86,11 +86,11 @@
     "hackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1772844365,
-        "narHash": "sha256-LM7c9a0YTAPfts0aWrxIxJg/w/fg10KOo6ruXbYjOUM=",
+        "lastModified": 1772930185,
+        "narHash": "sha256-E0bHQky6LVpInolHoXW1XXHd5s6q0Ee5+5ivuIaCVGM=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "7c072845120ef34f96f39b9bdff53fe22c2256b2",
+        "rev": "819aa2b2f892e450bedb7a888ae59c1ffc403b0f",
         "type": "github"
       },
       "original": {
@@ -102,11 +102,11 @@
     "hackage-for-stackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1772843567,
-        "narHash": "sha256-lJ815yY7u2TpN7UXUjVV4yH2qCGGiQw3PdEEuHfprL4=",
+        "lastModified": 1772930174,
+        "narHash": "sha256-IBwL+zqaLQo7icOkrtf6lCRzwjpJMb2l5LZlyD1lj4s=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "adfbef799e1e3a837e693c35e964a172b2cadb75",
+        "rev": "b3ae4e616da86f3084c4d0ab09d31477391c99be",
         "type": "github"
       },
       "original": {
@@ -574,11 +574,11 @@
     "stackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1772842633,
-        "narHash": "sha256-s16ieCAf8b8zzStdl+eEcrybdbn4t603HbxQ/cCg8s4=",
+        "lastModified": 1772929041,
+        "narHash": "sha256-SP+bDMKQSpl7MUCqs9lVSssS5uo+csP+bmiKLpV37VA=",
         "owner": "input-output-hk",
         "repo": "stackage.nix",
-        "rev": "3ec6f7b01124f50f3f1e5550c1887a68626ad9a5",
+        "rev": "ae0a0a37ff791b7178b6168c49a7da05e4af7c3b",
         "type": "github"
       },
       "original": {
