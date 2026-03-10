@@ -25,11 +25,24 @@ let
           map (dname: { name = dname; value = null; }) (lookupPreExisting (p.depends or p.components.lib.depends)));
     }) plan-json.install-plan);
   # Lookup a dependency in `hsPkgs`
-  lookupDependency = hsPkgs: d:
-    pkgs.lib.optional (by-id.${d}.type != "pre-existing") (
-        if by-id.${d}.component-name or "lib" == "lib"
-          then hsPkgs.${d} or hsPkgs."${by-id.${d}.pkg-name}-${by-id.${d}.pkg-version}" or hsPkgs.${by-id.${d}.pkg-name}
-          else hsPkgs.${d}.components.sublibs.${pkgs.lib.removePrefix "lib:" by-id.${d}.component-name});
+  lookupDependency = let
+    lookupDependency' = hsPkgs: d: let
+      instantiated-with = by-id.${d}.instantiated-with or {};
+      instantiations = pkgs.lib.mapAttrs (_: value: value // {
+        unit = lookupDependency' hsPkgs value.unit-id;
+      }) instantiated-with;
+      lib-comp' = hsPkgs.${d} or hsPkgs."${by-id.${d}.pkg-name}-${by-id.${d}.pkg-version}" or hsPkgs.${by-id.${d}.pkg-name};
+      lib-comp = if instantiations == {} then lib-comp' else lib-comp' // {
+        inherit instantiations;
+      };
+      sublib-comp' = hsPkgs.${d}.components.sublibs.${pkgs.lib.removePrefix "lib:" by-id.${d}.component-name};
+      sublib-comp = if instantiations == {} then sublib-comp' else sublib-comp'.override { inherit instantiations; };
+      comp = if by-id.${d}.component-name or "lib" == "lib"
+             then lib-comp
+             else sublib-comp;
+      in comp;
+  in hsPkgs: d:
+      pkgs.lib.optional (by-id.${d}.type != "pre-existing") (lookupDependency' hsPkgs d);
   # Lookup an executable dependency in `hsPkgs.pkgsBuildBuild`
   lookupExeDependency = hsPkgs: d:
     # Try to lookup by ID, but if that fails use the name (currently a different plan is used by pkgsBuildBuild when cross compiling)
