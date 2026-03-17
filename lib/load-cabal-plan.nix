@@ -5,12 +5,14 @@ let
   plan-json = builtins.fromJSON (
     builtins.unsafeDiscardStringContext (
       builtins.readFile (callProjectResults.projectNix + "/plan.json")));
-  # Function to add context back to the strings we get from `plan.json`
+  # Add context back to strings from `plan.json` that reference store paths.
+  # Uses concatenation with a zero-length context string instead of
+  # builtins.appendContext (which fails for store paths that don't exist locally).
   addContext = s:
     let storeDirMatch = builtins.match ".*(${builtins.storeDir}/[^/]+).*" s;
     in if storeDirMatch == null
       then s
-      else builtins.appendContext s { ${builtins.head storeDirMatch} = { path = true; }; };
+      else callProjectResults.rawCabalProjectContext + s;
   # All the units in the plan indexed by unit ID.
   by-id = pkgs.lib.listToAttrs (map (x: { name = x.id; value = x; }) plan-json.install-plan);
   # Find the names of all the pre-existing packages used by a list of dependencies

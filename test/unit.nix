@@ -122,6 +122,51 @@ lib.runTests {
     };
   };
 
+  # Verify that parseBlockLines (called inside parseSourceRepositoryPackageBlock)
+  # preserves string context on parsed attribute values like `location`.
+  # This is critical for repository blocks where the URL may contain
+  # interpolated store paths (e.g. `url: file:${CHaP}`).
+  testParseBlockLinesPreservesContext =
+    let
+      storePath = builtins.toFile "test-context" "test";
+      storePathStr = builtins.unsafeDiscardStringContext storePath;
+      # Interpolate a store path into the block to give it context.
+      # pkgs.lib.splitString (used inside parseSourceRepositoryPackageBlock)
+      # preserves this context, but builtins.match (used in parseBlockLines)
+      # would strip it without our fix.
+      blockWithContext = ''
+          type: git
+          location: file:${storePath}
+          tag: 487eea1c249537d34c27f6143dff2b9d5586c657
+          --sha256: 077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123
+        rest of file
+      '';
+      result = haskellLib.parseSourceRepositoryPackageBlock "cabal.project" {} {} "" blockWithContext;
+      urlContext = builtins.getContext result.sourceRepo.url;
+    in {
+      expr = urlContext ? ${storePathStr};
+      expected = true;
+    };
+
+  # Verify that parseSourceRepositoryPackages preserves string context
+  # from the project file through builtins.split into initialText.
+  testParseSourceRepoPackagesPreservesContext =
+    let
+      storePath = builtins.toFile "test-context" "test";
+      storePathStr = builtins.unsafeDiscardStringContext storePath;
+      projectFile = ''
+        packages: ./*.cabal
+        repository test-repo
+          url: file:${storePath}
+          secure: True
+      '';
+      result = haskellLib.parseSourceRepositoryPackages "cabal.project" {} {} projectFile;
+      initialTextContext = builtins.getContext result.initialText;
+    in {
+      expr = initialTextContext ? ${storePathStr};
+      expected = true;
+    };
+
   testParseRepositoryBlock =
     let
       # The Cabal2Nix output in hackage-to-nix is imported into a lambda
