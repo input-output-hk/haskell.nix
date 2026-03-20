@@ -10,7 +10,7 @@ let
   nix-tools-unchecked = nix-tools-set {};
 
   nix-tools-eval-on-linux = nix-tools-set {
-    evalSystem = builtins.currentSystem or "x86_64-linux";
+    evalSystem = "x86_64-linux";
   };
 
   nix-tools-set = args:
@@ -30,6 +30,7 @@ let
             # Tools to include in the development shell
             shell.tools.cabal = {};
             shell.tools.haskell-language-server = {};
+            shell.buildInputs = [ final.git ];
           }
           args
         ];

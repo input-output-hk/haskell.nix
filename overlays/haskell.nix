@@ -1131,6 +1131,9 @@ final: prev: {
           ] ++ final.lib.optionals (builtins.compareVersions ghc.version "9.12" > 0) [
             "haddock-api"
             "haddock-library"
+          ] ++ final.lib.optionals (builtins.compareVersions ghc.version "9.14" >= 0) [
+            "rts-headers"
+            "rts-fs"
           ] ++ final.lib.optionals (
                   !final.stdenv.targetPlatform.isGhcjs
                && !final.stdenv.targetPlatform.isWindows

@@ -361,8 +361,10 @@ in {
     # `d` in the `nix` error should include the name
     # eg. `packages.Cabal.components.library`.
     if d ? components
-      then d.components.library
-      else d;
+    then if d ? instantiations
+         then d.components.library.override { inherit (d) instantiations; }
+         else d.components.library
+    else d;
 
   projectOverlays = import ./project-overlays.nix {
     inherit lib haskellLib;
@@ -532,7 +534,8 @@ in {
         , apps ? mkFlakeApps haskellPackages
         , checks ? mkFlakeChecks (collectChecks' haskellPackages)
         , coverage ? {}
-        , devShells ? { default = project.shell; }
+        , devShell ? project.shell
+        , devShells ? { default = devShell; }
         , checkedProject ? project.appendModule { checkMaterialization = true; }
         , ciJobs ? mkFlakeCiJobs project { inherit checks coverage packages devShells checkedProject; }
         , hydraJobs ? ciJobs

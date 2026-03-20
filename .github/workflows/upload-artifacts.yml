@@ -44,10 +44,10 @@ jobs:
       - name: "Pull nix-tools"
         run: |
           ls -lah .
-          cp $(nix build --builders "" --max-jobs 0 ${{ steps.flake-metadata.outputs.LOCKED_URL }}#hydraJobs.aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd --no-link --print-out-paths)/*.zip .
-          cp $(nix build --builders "" --max-jobs 0 ${{ steps.flake-metadata.outputs.LOCKED_URL }}#hydraJobs.x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd --no-link --print-out-paths)/*.zip .
-          cp $(nix build --builders "" --max-jobs 0 ${{ steps.flake-metadata.outputs.LOCKED_URL }}#hydraJobs.x86_64-linux.nix-tools.static.zipped.nix-tools-static-no-ifd --no-link --print-out-paths)/*.zip .
-          cp $(nix build --builders "" --max-jobs 0 ${{ steps.flake-metadata.outputs.LOCKED_URL }}#hydraJobs.x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64-no-ifd --no-link --print-out-paths)/*.zip .
+          cp $(nix build --impure --builders "" --max-jobs 0 ${{ steps.flake-metadata.outputs.LOCKED_URL }}#hydraJobs.aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd --no-link --print-out-paths)/*.zip .
+          cp $(nix build --impure --builders "" --max-jobs 0 ${{ steps.flake-metadata.outputs.LOCKED_URL }}#hydraJobs.x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd --no-link --print-out-paths)/*.zip .
+          cp $(nix build --impure --builders "" --max-jobs 0 ${{ steps.flake-metadata.outputs.LOCKED_URL }}#hydraJobs.x86_64-linux.nix-tools.static.zipped.nix-tools-static-no-ifd --no-link --print-out-paths)/*.zip .
+          cp $(nix build --impure --builders "" --max-jobs 0 ${{ steps.flake-metadata.outputs.LOCKED_URL }}#hydraJobs.x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64-no-ifd --no-link --print-out-paths)/*.zip .
 
       - name: Configure Git
         if: startsWith(github.ref, 'refs/tags/')

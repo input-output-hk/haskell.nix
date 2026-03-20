@@ -5,12 +5,14 @@ let
   plan-json = builtins.fromJSON (
     builtins.unsafeDiscardStringContext (
       builtins.readFile (callProjectResults.projectNix + "/plan.json")));
-  # Function to add context back to the strings we get from `plan.json`
+  # Add context back to strings from `plan.json` that reference store paths.
+  # Uses concatenation with a zero-length context string instead of
+  # builtins.appendContext (which fails for store paths that don't exist locally).
   addContext = s:
     let storeDirMatch = builtins.match ".*(${builtins.storeDir}/[^/]+).*" s;
     in if storeDirMatch == null
       then s
-      else builtins.appendContext s { ${builtins.head storeDirMatch} = { path = true; }; };
+      else callProjectResults.rawCabalProjectContext + s;
   # All the units in the plan indexed by unit ID.
   by-id = pkgs.lib.listToAttrs (map (x: { name = x.id; value = x; }) plan-json.install-plan);
   # Find the names of all the pre-existing packages used by a list of dependencies
@@ -25,11 +27,24 @@ let
           map (dname: { name = dname; value = null; }) (lookupPreExisting (p.depends or p.components.lib.depends)));
     }) plan-json.install-plan);
   # Lookup a dependency in `hsPkgs`
-  lookupDependency = hsPkgs: d:
-    pkgs.lib.optional (by-id.${d}.type != "pre-existing") (
-        if by-id.${d}.component-name or "lib" == "lib"
-          then hsPkgs.${d} or hsPkgs."${by-id.${d}.pkg-name}-${by-id.${d}.pkg-version}" or hsPkgs.${by-id.${d}.pkg-name}
-          else hsPkgs.${d}.components.sublibs.${pkgs.lib.removePrefix "lib:" by-id.${d}.component-name});
+  lookupDependency = let
+    lookupDependency' = hsPkgs: d: let
+      instantiated-with = by-id.${d}.instantiated-with or {};
+      instantiations = pkgs.lib.mapAttrs (_: value: value // {
+        unit = lookupDependency' hsPkgs value.unit-id;
+      }) instantiated-with;
+      lib-comp' = hsPkgs.${d} or hsPkgs."${by-id.${d}.pkg-name}-${by-id.${d}.pkg-version}" or hsPkgs.${by-id.${d}.pkg-name};
+      lib-comp = if instantiations == {} then lib-comp' else lib-comp' // {
+        inherit instantiations;
+      };
+      sublib-comp' = hsPkgs.${d}.components.sublibs.${pkgs.lib.removePrefix "lib:" by-id.${d}.component-name};
+      sublib-comp = if instantiations == {} then sublib-comp' else sublib-comp'.override { inherit instantiations; };
+      comp = if by-id.${d}.component-name or "lib" == "lib"
+             then lib-comp
+             else sublib-comp;
+      in comp;
+  in hsPkgs: d:
+      pkgs.lib.optional (by-id.${d}.type != "pre-existing") (lookupDependency' hsPkgs d);
   # Lookup an executable dependency in `hsPkgs.pkgsBuildBuild`
   lookupExeDependency = hsPkgs: d:
     # Try to lookup by ID, but if that fails use the name (currently a different plan is used by pkgsBuildBuild when cross compiling)

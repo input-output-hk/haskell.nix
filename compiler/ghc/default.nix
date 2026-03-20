@@ -320,7 +320,9 @@ let
   hadrianProject =
     let
       compiler-nix-name =
-        if builtins.compareVersions ghc-version "9.4.7" < 0
+        if builtins.compareVersions ghc-version "9.15" > 0
+          then "ghc984"
+        else if builtins.compareVersions ghc-version "9.4.7" < 0
           then "ghc928"
         else if pkgsBuildBuild.haskell.compiler ? ghc967
           then "ghc967"
@@ -612,6 +614,11 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
       # The official ghc 9.2.3 tarball requires booting.
       + lib.optionalString (ghc-version == "9.2.3" || ghc-version == "9.8.20230704" || src-spec.needsBooting or false) ''
         python3 ./boot
+    '' + lib.optionalString (builtins.compareVersions ghc-version "9.14" > 0) ''
+        mkdir -p libraries/ghc-boot-th-next
+        cp libraries/ghc-boot-th/ghc-boot-th.cabal.in libraries/ghc-boot-th-next/ghc-boot-th-next.cabal.in
+        substituteInPlace libraries/ghc-boot-th-next/ghc-boot-th-next.cabal.in \
+          --replace-fail "ghc-boot-th" "ghc-boot-th-next"
     '';
 
   configurePlatforms = [ "build" "host" ] ++ lib.optional (!targetPlatform.isGhcjs) "target";
@@ -656,7 +663,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
   nativeBuildInputs = [
     perl autoconf automake m4 python3 sphinx
     ghc bootPkgs.alex bootPkgs.happy bootPkgs.hscolour
-  ] ++ lib.optional (patches != []) autoreconfHook
+    autoreconfHook ]
   ++ lib.optional useLdLld llvmPackages.bintools
   ++ lib.optional (targetPlatform.isWasm) nodejs;
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternSynonyms #-}
 module Freeze (projectFreezeConfig) where
 
 import Data.Map.Strict (Map)
@@ -8,7 +9,7 @@ import Distribution.Client.ProjectConfig
 import Distribution.Client.ProjectPlanning
 import Distribution.Client.Targets (UserConstraint (UserConstraint), UserConstraintScope (UserAnyQualifier, UserQualified), UserQualifier (UserQualToplevel))
 import Distribution.Package
-import Distribution.Simple.Flag (Flag (Flag))
+import Distribution.Simple.Flag (Flag, pattern Flag)
 import Distribution.Solver.Types.ConstraintSource (ConstraintSource (ConstraintSourceFreeze))
 import Distribution.Solver.Types.PackageConstraint (PackageProperty (PackagePropertyFlags, PackagePropertyVersion))
 import Distribution.Types.Flag (FlagAssignment, nullFlagAssignment)

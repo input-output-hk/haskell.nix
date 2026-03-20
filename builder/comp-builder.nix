@@ -220,6 +220,7 @@ let self =
 , useLLVM
 , smallAddressSpace
 , prebuilt-depends
+, instantiations ? {}
 }@drvArgs:
 
 let
@@ -273,13 +274,48 @@ let
   configFiles = makeConfigFiles {
     component = componentForSetup;
     inherit (package) identifier;
-    inherit fullName flags needsProfiling enableDWARF prebuilt-depends;
+    inherit fullName flags needsProfiling enableDWARF prebuilt-depends instantiations;
   };
 
   enableFeature = enable: feature:
     (if enable then "--enable-" else "--disable-") + feature;
 
   disableFeature = disable: enableFeature (!disable);
+
+  # When building instantiated backpack packages with GHCJS, GHC's JavaScript
+  # backend may not produce .o files for backpack signature module instantiations.
+  # This ar wrapper filters out missing .o files. The real ar path is read from
+  # GHC's settings file at runtime.
+  arWrapper = let
+    settingsFile = "${ghc}/${configFiles.libDir}/settings";
+  in pkgsBuildBuild.writeShellScript "ar-wrapper" ''
+    REAL_AR=$(grep '"ar command"' ${settingsFile} | sed 's/.*", *"\([^"]*\)".*/\1/')
+    if [ -z "$REAL_AR" ]; then
+      echo "ar-wrapper: Could not find real ar in ${settingsFile}" >&2
+      exit 1
+    fi
+    # Filter out missing .o files from both command-line args and response files
+    args=()
+    for arg in "$@"; do
+      if [[ "$arg" == @* ]]; then
+        # Response file: filter missing .o entries
+        rspfile="''${arg#@}"
+        newrsp="''${rspfile}.filtered"
+        while IFS= read -r line || [ -n "$line" ]; do
+          if [[ "$line" == *.o ]] && [[ ! -e "$line" ]]; then
+            continue
+          fi
+          echo "$line"
+        done < "$rspfile" > "$newrsp"
+        args+=("@$newrsp")
+      elif [[ "$arg" == *.o ]] && [[ ! -e "$arg" ]]; then
+        continue
+      else
+        args+=("$arg")
+      fi
+    done
+    exec "$REAL_AR" "''${args[@]}"
+  '';
 
   finalConfigureFlags = lib.concatStringsSep " " (
     [ "--prefix=$out"
@@ -615,6 +651,17 @@ let
     # (this can result in unwanted dependencies on GHC)
     + ''
       rm -rf $wrappedGhc/share/doc $wrappedGhc/share/man $wrappedGhc/share/devhelp/books
+    '' + lib.optionalString (stdenv.hostPlatform.isGhcjs && instantiations != {}) ''
+      # GHC's JavaScript backend may not produce .o files for backpack
+      # signature module instantiations, causing ar to fail. Replace the
+      # ar command in GHC's settings with a wrapper that filters out
+      # missing .o files.
+      settingsFile="$wrappedGhc/${configFiles.libDir}/settings"
+      if [ -L "$settingsFile" ]; then
+        cp --remove-destination "$(readlink -f "$settingsFile")" "$settingsFile"
+      fi
+      sed -i 's|("ar command", "[^"]*")|("ar command", "${arWrapper}")|' "$settingsFile"
+    '' + ''
       PATH=$wrappedGhc/bin:$PATH
 
       runHook preConfigure
@@ -694,7 +741,7 @@ let
               cat $SETUP_ERR | tr '\n' ' ' | tr -d '\r' | grep 'No executables and no library found\. Nothing to do\.'
             fi
             ''}
-      ${lib.optionalString (haskellLib.isLibrary componentId) ''
+      ${lib.optionalString (haskellLib.isLibrary componentId) (''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
         ${ghc.targetPrefix}ghc-pkg -v0 --package-db $configFiles/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
@@ -741,7 +788,10 @@ let
               fi
               '')
         }
-      ''}
+      '' + lib.optionalString (instantiations != {}) ''
+        # An instantiated package will always depend on its indefinite counterpart, and the --dependency= flag added by exactDep/configure-flags is invalid for package IDs with a +
+        rm -fR $out/exactDep
+      '')}
       ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || (haskellLib.isExe componentId && stdenv.hostPlatform.isGhcjs)) ''
         mkdir -p $out/bin
         if [ -f ${testExecutable} ]; then

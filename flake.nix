@@ -41,10 +41,6 @@
       url = "github:input-output-hk/stackage.nix";
       flake = false;
     };
-    cabal-32 = {
-      url = "github:haskell/cabal/3.2";
-      flake = false;
-    };
     cabal-34 = {
       url = "github:haskell/cabal/3.4";
       flake = false;

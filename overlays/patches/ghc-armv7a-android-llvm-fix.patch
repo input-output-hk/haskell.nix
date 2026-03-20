@@ -1,0 +1,30 @@
+diff --git a/compiler/GHC/CmmToLlvm/Base.hs b/compiler/GHC/CmmToLlvm/Base.hs
+index 23f9e91152..4f9d854add 100644
+--- a/compiler/GHC/CmmToLlvm/Base.hs
++++ b/compiler/GHC/CmmToLlvm/Base.hs
+@@ -526,10 +526,10 @@ generateExternDecls = do
+   modifyEnv $ \env -> env { envAliases = emptyUniqSet }
+   return (concat defss, [])
+ 
+--- | Is a variable one of the special @\@llvm@ globals?
++-- | Is a variable one of the special @$llvm@ globals?
+ isBuiltinLlvmVar :: LlvmVar -> Bool
+ isBuiltinLlvmVar (LMGlobalVar lbl _ _ _ _ _) =
+-    "llvm." `isPrefixOf` unpackFS lbl
++    "$llvm" `isPrefixOf` unpackFS lbl
+ isBuiltinLlvmVar _ = False
+ 
+ -- | Here we take a global variable definition, rename it with a
+diff --git a/compiler/GHC/CmmToLlvm/Data.hs b/compiler/GHC/CmmToLlvm/Data.hs
+index aab22564b0..5e8912e3bc 100644
+--- a/compiler/GHC/CmmToLlvm/Data.hs
++++ b/compiler/GHC/CmmToLlvm/Data.hs
+@@ -124,7 +124,7 @@ genGlobalLabelArray var_nm clbls = do
+             prio = LMStaticLit $ LMIntLit 0xffff i32
+         in LMStaticStrucU [prio, fn, null] entry_ty
+ 
+-    arr_var = LMGlobalVar var_nm arr_ty Appending Nothing Nothing Global
++    arr_var = LMGlobalVar var_nm arr_ty Internal Nothing Nothing Global
+     mkFunTy lbl = LMFunction $ LlvmFunctionDecl lbl ExternallyVisible CC_Ccc LMVoid FixedArgs [] Nothing
+     entry_ty = LMStructU [i32, LMPointer $ mkFunTy $ fsLit "placeholder", LMPointer i8]
+     arr_ty = LMArray (length clbls) entry_ty

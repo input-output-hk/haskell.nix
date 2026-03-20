@@ -36,7 +36,7 @@ let
   # Instantiate the flake fetching the other inputs with the nixpkgs already
   # fetched
   self = (import flake-compat {
-    pkgs = import nixpkgs { };
+    pkgs = import nixpkgs { inherit system; };
     # We bypass flake-compat's rootSrc cleaning by evading its detection of this as a git
     # repo.
     # This is done for 3 reasons:

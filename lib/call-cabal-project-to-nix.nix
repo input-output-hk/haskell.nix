@@ -299,8 +299,12 @@ let
     name = "dummy-" + ghc.name;
     executable = true;
     destination = "/bin/${ghc.targetPrefix}ghc";
+    # New versions of cabal pass `-package-env=-`, but dummy-ghc can safely ignore it.
     text = ''
       #!${evalPackages.runtimeShell}
+      if [[ "$1" == "-package-env=-" ]]; then
+        shift
+      fi
       case "$*" in
         --version*)
           echo "The Glorious Glasgow Haskell Compilation System, version ${ghc.version}"
@@ -469,6 +473,8 @@ let
                 cabal_file=${ghcSrc}/libraries/${name}/${name}.cabal.in
               elif [ -f ${ghcSrc}/utils/haddock/${name}/${name}.cabal ]; then
                 cabal_file=${ghcSrc}/utils/haddock/${name}/${name}.cabal
+              elif [ -f ${ghcSrc}/${name}/${name}.cabal ]; then
+                cabal_file=${ghcSrc}/${name}/${name}.cabal
               fi
               if [[ "$cabal_file" != "" ]]; then
                 fixed_cabal_file=$(mktemp)
@@ -491,13 +497,17 @@ let
                 ''}
 
                 EXPOSED_MODULES_${varname name}="$(tr '\n' ' ' <<< "$exposed_modules $reexported_modules")"
-                deps="$(jq -r '.components.lib."build-depends"[]|select(.package)|.package' $json_cabal_file)"
-                deps+=" $(jq -r '.components.lib."build-depends"[]|select((.if.flag or ._if.not.flag) and ._if.not.flag != "vendor-filepath")._then[]|.package' $json_cabal_file)"
+                deps="$(jq -r '.components.lib."build-depends"//[]|.[]|select(.package)|.package' $json_cabal_file)"
+                deps+=" $(jq -r '.components.lib."build-depends"//[]|.[]|select((.if.flag or ._if.not.flag) and ._if.not.flag != "vendor-filepath")._then[]|.package' $json_cabal_file)"
+                ''
+                # containers-0.8 uses `if impl(ghc) build-depends: template-haskell`
+                + ''
+                deps+=" $(jq -r '.components.lib."build-depends"//[]|.[]|select(._if.impl == "ghc")|._then[]|.package' $json_cabal_file)"
                 ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
-                deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.os == "windows")|._then[]|.package' $json_cabal_file)"
+                deps+=" $(jq -r '.components.lib."build-depends"//[]|.[]|select(._if.os == "windows")|._then[]|.package' $json_cabal_file)"
                 ''}
                 ${pkgs.lib.optionalString (!pkgs.stdenv.targetPlatform.isWindows) ''
-                deps+=" $(jq -r '.components.lib."build-depends"[]|select(._if.not.os == "windows")|._then[]|.package' $json_cabal_file)"
+                deps+=" $(jq -r '.components.lib."build-depends"//[]|.[]|select(._if.not.os == "windows")|._then[]|.package' $json_cabal_file)"
                 ''
                 # Fix problem with `haskeline` using a `terminfo` flag
                 # For haskell-nix ghc we can use ghc.enableTerminfo to get the flag setting
@@ -514,7 +524,7 @@ let
                 PKGS+=" ${name}"
                 LAST_PKG="${name}"
               fi
-            '') (pkgs.haskell-nix.ghc-pre-existing ghc))
+            '') (pkgs.lib.filter (n: n != "system-cxx-std-lib") (pkgs.haskell-nix.ghc-pre-existing ghc)))
           }
           ${ # There is no .cabal file for system-cxx-std-lib
             pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.2" >= 0) (
@@ -765,4 +775,8 @@ in {
   projectNix = plan-json;
   inherit index-state-max src;
   inherit (fixedProject) sourceRepos extra-hackages;
+  # Zero-length string carrying context from rawCabalProject.
+  # Used in load-cabal-plan.nix to add context to URLs referencing store paths
+  # without using builtins.appendContext (which fails for non-local paths).
+  rawCabalProjectContext = builtins.substring 0 0 rawCabalProject;
 }
