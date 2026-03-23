@@ -1,4 +1,5 @@
 index-state: 2026-01-18T00:00:00Z
+with-compiler: ghc-9.6
 
 -- Needed for building aarch64-linux musl version with GHC 9.6
 constraints: containers installed, Cabal >=3.16.1.0
