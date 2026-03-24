@@ -6,16 +6,8 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "ghc-options";
-    # TODO find a way to get the ghc-options into plan.json so we can use it in plan-to-nix
-    modules = [ {
-      packages.test-ghc-options.ghcOptions = ["-DTEST_GHC_OPTION"];
-
-      # This should also work here
-      #   ghcOptions = ["-DTEST_GHC_OPTION"];
-      # or this
-      #   packages.test-ghc-options.components.library.ghcOptions = ["-DTEST_GHC_OPTION"];
-      #   packages.test-ghc-options.components.exes.test-ghc-options-exe.ghcOptions = ["-DTEST_GHC_OPTION"];
-    } ];
+    # The ghc-options from cabal.project are now automatically extracted
+    # from the configure-args in plan.json (see modules/install-plan/configure-args.nix).
   };
   packages = project.hsPkgs;
 

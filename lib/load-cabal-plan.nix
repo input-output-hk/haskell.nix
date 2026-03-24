@@ -193,6 +193,7 @@ in {
   });
   modules = [
     { inherit plan-json; }
+    (import ../modules/install-plan/configure-args.nix)
     (import ../modules/install-plan/non-reinstallable.nix)
     (import ../modules/install-plan/override-package-by-name.nix)
     (import ../modules/install-plan/planned.nix { inherit getComponents; })
