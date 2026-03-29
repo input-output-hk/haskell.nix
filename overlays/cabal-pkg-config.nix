@@ -39,9 +39,14 @@ final: prev:
     in prev.pkg-config.overrideAttrs (attrs:
       let
         # These vars moved from attrs to attrs.env in nixpkgs adc8900df1758eda56abd68f7d781d1df74fa531
-        # Support both for the time being.
-        targetPrefix = attrs.targetPrefix or attrs.env.targetPrefix;
-        baseBinName = attrs.baseBinName or attrs.env.baseBinName;
+        # ... and then in 706de78 they moved to .passthru
+        # Support all three for the time being.
+        targetPrefix = attrs.targetPrefix
+                    or attrs.env.targetPrefix
+                    or attrs.passthru.targetPrefix;
+        baseBinName = attrs.baseBinName
+                   or attrs.env.baseBinName
+                   or attrs.passthru.baseBinName;
       in {
       installPhase = attrs.installPhase + ''
         mv $out/bin/${targetPrefix}${baseBinName} \
