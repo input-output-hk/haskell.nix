@@ -5989,6 +5989,27 @@ hix-shell
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="mar-24-2026"><a class="header" href="#mar-24-2026">Mar 24, 2026</a></h2>
+<p>GHC options set in <code>cabal.project</code> files (via <code>package</code> or
+<code>program-options</code> stanzas) are now automatically picked up from
+<code>plan.json</code> and applied during builds.</p>
+<p>Previously, <code>ghc-options</code> specified in a <code>cabal.project</code> file like:</p>
+<pre><code>package my-package
+  ghc-options: -DSOME_FLAG
+</code></pre>
+<p>were silently ignored by Haskell.nix.  Users had to duplicate them
+in a <code>modules</code> setting:</p>
+<pre><code class="language-nix">modules = [{
+  packages.my-package.ghcOptions = ["-DSOME_FLAG"];
+}];
+</code></pre>
+<p>This is no longer necessary.  The <code>configure-args</code> added to <code>plan.json</code>
+by <code>nix-tools</code> (PR #2484) are now parsed, and <code>--ghc-option</code> /
+<code>--ghcjs-option</code> entries are extracted and applied automatically.</p>
+<p>If you were already setting <code>ghcOptions</code> in <code>modules</code> to work around
+this limitation, the options will be applied twice (once from
+<code>plan.json</code>, once from <code>modules</code>).  This is harmless for most flags
+but you may want to remove the redundant <code>modules</code> entry.</p>
 <h2 id="jul-3-2025"><a class="header" href="#jul-3-2025">Jul 3, 2025</a></h2>
 <p>Some time ago the behavior of <code>shellFor</code> changed so that the arguments
 are now checked against <code>modules/shell.nix</code>.  This was done as part of a fix
