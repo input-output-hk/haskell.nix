@@ -25,7 +25,7 @@ in lib.recurseIntoAttrs {
     # Only run this test for GHC 9.12+ where the fix is needed
     # Stack test is disabled for most compiler versions (only works with specific resolver)
     disabled =
-      !(builtins.elem compiler-nix-name ["ghc9122" "ghc9123"])
+      !(builtins.elem compiler-nix-name ["ghc9122" "ghc9123" "ghc9124"])
       || stdenv.hostPlatform.isAndroid
       || stdenv.hostPlatform.isGhcjs
       || stdenv.hostPlatform.isWasm
