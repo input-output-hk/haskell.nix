@@ -1,6 +1,37 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Mar 24, 2026
+
+GHC options set in `cabal.project` files (via `package` or
+`program-options` stanzas) are now automatically picked up from
+`plan.json` and applied during builds.
+
+Previously, `ghc-options` specified in a `cabal.project` file like:
+
+```
+package my-package
+  ghc-options: -DSOME_FLAG
+```
+
+were silently ignored by Haskell.nix.  Users had to duplicate them
+in a `modules` setting:
+
+```nix
+modules = [{
+  packages.my-package.ghcOptions = ["-DSOME_FLAG"];
+}];
+```
+
+This is no longer necessary.  The `configure-args` added to `plan.json`
+by `nix-tools` (PR #2484) are now parsed, and `--ghc-option` /
+`--ghcjs-option` entries are extracted and applied automatically.
+
+If you were already setting `ghcOptions` in `modules` to work around
+this limitation, the options will be applied twice (once from
+`plan.json`, once from `modules`).  This is harmless for most flags
+but you may want to remove the redundant `modules` entry.
+
 ## Jul 3, 2025
 
 Some time ago the behavior of `shellFor` changed so that the arguments
