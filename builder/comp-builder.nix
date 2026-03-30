@@ -896,8 +896,8 @@ let
       preBuild postBuild
       preInstall postInstall;
   }
-  // lib.optionalAttrs (hardeningDisable != [] || stdenv.hostPlatform.isMusl) {
-    hardeningDisable = hardeningDisable ++ lib.optional stdenv.hostPlatform.isMusl "pie";
+  // lib.optionalAttrs (hardeningDisable != []) {
+    inherit hardeningDisable;
   });
 in drv; in self) {
   inherit componentId
