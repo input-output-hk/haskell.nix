@@ -210,9 +210,8 @@ let
               nativeBuildInputs = [ evalPackages.rsync evalPackages.gitMinimal ];
             } ''
             mkdir $out
-            rsync -a --prune-empty-dirs "${fetched}/" "$out/"
+            rsync -a --prune-empty-dirs --chmod=u+w "${fetched}/" "$out/"
             cd $out
-            chmod -R +w .
             git init -b minimal
             git add --force .
             GIT_COMMITTER_NAME='No One' GIT_COMMITTER_EMAIL= git commit -m "Minimal Repo For Haskell.Nix" --author 'No One <>'
@@ -647,9 +646,8 @@ let
         exit 1
       ''}
     else
-      rsync -a ${cleanedSource}/ ./
+      rsync -a --chmod=u+w ${cleanedSource}/ ./
     fi
-    chmod +w -R .
     # Decide what to do for each `package.yaml` file.
     for hpackFile in $(find . -name package.yaml); do (
       # Look to see if a `.cabal` file exists
@@ -731,7 +729,7 @@ let
     #
     # This is also important as `plan-to-nix` will look for the .cabal files when generating
     # the relevant `pkgs.nix` file with the local .cabal expressions.
-    rsync -a --prune-empty-dirs \
+    rsync -a --prune-empty-dirs --chmod=u+w \
           --include '*/' --include '*.cabal' --include 'package.yaml' \
           --exclude '*' \
           $tmp/ $out/
