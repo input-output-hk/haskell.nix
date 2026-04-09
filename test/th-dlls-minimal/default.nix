@@ -33,8 +33,8 @@ let
 in lib.recurseIntoAttrs {
   # This test is just for windows currently (the full th-dlls test runs on other platforms)
   meta.disabled = !stdenv.hostPlatform.isWindows
-    # Disable for now (CI machines currently hang without timing out)
-    || stdenv.hostPlatform.isWindows
+    # Rosetta error: invalid gdt selector index 5 (wine crashes under Rosetta with msvcrt)
+    || (stdenv.hostPlatform.isWindows && stdenv.hostPlatform.libc != "ucrt")
     ;
 
   ifdInputs = {

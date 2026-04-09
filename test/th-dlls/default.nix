@@ -44,8 +44,10 @@ in lib.recurseIntoAttrs {
     # We have been unable to get windows cross compilation of th-orphans to work for GHC 8.10 using the latest nixpkgs
     || (compiler-nix-name == "ghc8107" && stdenv.hostPlatform.isWindows)
 
-    # Disable for now (CI machines currently hang without timing out)
-    || stdenv.hostPlatform.isWindows || stdenv.hostPlatform.isAndroid
+    # Rosetta error: invalid gdt selector index 5 (wine crashes under Rosetta with msvcrt)
+    || (stdenv.hostPlatform.isWindows && stdenv.hostPlatform.libc != "ucrt")
+    # Android TH requires linker pool patch (separate PR)
+    || stdenv.hostPlatform.isAndroid
     || (stdenv.buildPlatform.isx86_64 && stdenv.hostPlatform.isAarch64)
     ;
 

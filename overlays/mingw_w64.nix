@@ -35,8 +35,7 @@ let
         unset configurePhase
         WINEPREFIX=''${WINEPREFIX:-$(mktemp -d)}
         REMOTE_ISERV=''${REMOTE_ISERV:-$(mktemp -d)}
-        PORT=$((5000 + $RANDOM % 5000))
-        (>&2 echo "---> Starting ${interpreter.exeName} on port $PORT")
+        (>&2 echo "---> Starting iserv-proxy with piped ${interpreter.exeName} via wine")
         REMOTE_ISERV=$(mktemp -d)
         ln -s ${interpreter}/bin/* $REMOTE_ISERV
         # See coment in comp-builder.nix for where this comes from and why it's here
@@ -54,18 +53,11 @@ let
           ln -s "$l" "''${l#lib}"
         done
         )
-        echo "To re-use the same wine-prefix and remote-iserv, set the following environment variables:"
-        echo "export WINEPREFIX=$WINEPREFIX"
-        echo "export REMOTE_ISERV=$REMOTE_ISERV"
         # Not sure why this `unset` helps.  It might avoids some kind of overflow issue.  We see `wine` fail to start when building `cardano-wallet-cli` test `unit`.
         unset pkgsHostTargetAsString
         unset LINK_DLL_FOLDERS
-        WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 $REMOTE_ISERV/${interpreter.exeName} tmp $PORT ${no-load-call} $ISERV_ARGS &
-        (>&2 echo "---| ${interpreter.exeName} should have started on $PORT")
-        RISERV_PID="$!"
-        ISERV_TARGET=WINE ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT" ${no-load-call} $PROXY_ARGS
-        (>&2 echo "---> killing ${interpreter.exeName}...")
-        kill $RISERV_PID
+        WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP \
+          ${iserv-proxy}/bin/iserv-proxy $@ --pipe ${wine}/bin/wine64 $REMOTE_ISERV/${interpreter.exeName} tmp --stdio ${no-load-call} $ISERV_ARGS
       '';
 
   wineIservWrapper = symlinkJoin { name = "iserv-wrapper"; paths = [ (wineIservWrapperScript false) (wineIservWrapperScript true) ]; };

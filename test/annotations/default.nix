@@ -16,8 +16,10 @@ in lib.recurseIntoAttrs {
     || (builtins.elem compiler-nix-name ["ghc947" "ghc948"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
     # unhandled ELF relocation(Rel) type 10
     || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_32)
-    # Disable for now (CI machines currently timing out)
-    || stdenv.hostPlatform.isWindows || stdenv.hostPlatform.isAndroid
+    # Rosetta error: invalid gdt selector index 5 (wine crashes under Rosetta with msvcrt)
+    || (stdenv.hostPlatform.isWindows && stdenv.hostPlatform.libc != "ucrt")
+    # Android TH requires linker pool patch (separate PR)
+    || stdenv.hostPlatform.isAndroid
     || (stdenv.buildPlatform.isx86_64 && stdenv.hostPlatform.isAarch64)
     ;
   ifdInputs = {

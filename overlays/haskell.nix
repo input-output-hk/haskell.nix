@@ -1071,7 +1071,7 @@ final: prev: {
               inherit (exes final.pkgsBuildBuild) iserv-proxy;
               iserv-proxy-interpreter = (exes final).iserv-proxy-interpreter.override
                 (final.lib.optionalAttrs final.stdenv.hostPlatform.isAndroid {
-                  setupBuildFlags = ["--ghc-option=-optl-static" ] ++ final.lib.optional final.stdenv.hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";
+                  setupBuildFlags = ["--ghc-option=-optl-static" "--ghc-option=-optl-ldl"] ++ final.lib.optional final.stdenv.hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";
                   enableDebugRTS = true;
                 } // final.lib.optionalAttrs final.stdenv.hostPlatform.isWindows {
                   setupBuildFlags = ["--ghc-option=-optl-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000" ];

@@ -26,7 +26,7 @@ let
   };
 
   exe = (project.getComponent "cabal-simple:exe:cabal-simple")
-    .override (lib.optionalAttrs stdenv.hostPlatform.isAndroid { setupBuildFlags = ["--ghc-option=-optl-static" ]; });
+    .override (lib.optionalAttrs stdenv.hostPlatform.isAndroid { setupBuildFlags = ["--ghc-option=-optl-static" "--ghc-option=-optl-ldl"]; });
 
 in lib.recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm;
