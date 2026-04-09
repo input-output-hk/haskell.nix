@@ -1,0 +1,243 @@
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -113,6 +113,86 @@
+ #  include "elf_plt.h"
+ #  include "elf_reloc.h"
+ #endif
++
++/* Note [Linker memory pool for aarch64]
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ * On aarch64, ADRP relocations have a ±4GB range. When running under qemu
++ * user-mode emulation, mmap hint addresses are ignored, so the m32 allocator's
++ * rx and rw pages can end up far apart (>4GB). This causes ADR_GOT_PAGE
++ * relocation overflow (cf GHC #24432).
++ *
++ * To fix this, we pre-allocate a single contiguous pool and sub-allocate
++ * from it for all linker needs (sections, GOT, BSS, COMMON). The pool is
++ * split into RW (growing down from the middle) and RX (growing up from
++ * the middle), guaranteeing all allocations are within ±POOL_SIZE/2.
++ */
++#if USE_LINKER_POOL
++
++#define POOL_SIZE_MB 512
++#define POOL_SIZE ((size_t)POOL_SIZE_MB * 1024 * 1024)
++
++static void * pool_base = NULL;
++static void * pool_rw_ptr = NULL;  /* grows down from midpoint */
++static void * pool_rx_ptr = NULL;  /* grows up from midpoint */
++
++
++void linkerPoolProtect(void) {
++    /* The pool is initially mapped RWX by mmapAnonForLinker.
++     * We intentionally leave it RWX rather than flipping protections,
++     * as mprotect on large regions under qemu can hang or be very slow.
++     * This is a trade-off: we lose W^X hardening but gain reliability
++     * under emulation. */
++}
++
++/* Round a pointer up to the next aligned address */
++static void * poolAlignPtrUp(void *ptr, StgWord align) {
++    return (void*)(((uintptr_t)ptr + align) & ~(uintptr_t)align);
++}
++
++/* Round a pointer down to the previous aligned address */
++static void * poolAlignPtrDown(void *ptr, StgWord align) {
++    return (void*)((uintptr_t)ptr & ~(uintptr_t)align);
++}
++
++void * linkerPoolAlloc(SectionKind kind, StgWord align, StgWord size) {
++    if (pool_base == NULL) {
++        /* Map as RWX so code sections can execute without needing mprotect
++         * later. Avoids mprotect calls that can hang under qemu. */
++        pool_base = mmapForLinker(POOL_SIZE, MEM_READ_WRITE_EXECUTE,
++                                  MAP_ANONYMOUS, -1, 0);
++        if (pool_base == NULL) {
++            barf("linkerPoolAlloc: failed to allocate %dMB pool", POOL_SIZE_MB);
++        }
++        pool_rw_ptr = (uint8_t*)pool_base + POOL_SIZE / 4;
++        pool_rx_ptr = pool_rw_ptr;
++    }
++
++    void *ret;
++
++    if (kind == SECTIONKIND_CODE_OR_RODATA) {
++        pool_rx_ptr = poolAlignPtrUp(pool_rx_ptr, align);
++        ret = pool_rx_ptr;
++        pool_rx_ptr = (uint8_t*)pool_rx_ptr + size;
++        if ((uintptr_t)pool_rx_ptr > (uintptr_t)pool_base + POOL_SIZE) {
++            barf("linkerPoolAlloc: RX pool exhausted (tried to allocate %zu)", size);
++        }
++    } else {
++        pool_rw_ptr = (uint8_t*)pool_rw_ptr - size;
++        pool_rw_ptr = poolAlignPtrDown(pool_rw_ptr, align);
++        ret = pool_rw_ptr;
++        if ((uintptr_t)pool_rw_ptr < (uintptr_t)pool_base) {
++            barf("linkerPoolAlloc: RW pool exhausted (tried to allocate %zu)", size);
++        }
++    }
++    return ret;
++}
++
++/* GOT is data but must be near code, so use RX side */
++void * linkerPoolAllocGot(StgWord size) {
++    return linkerPoolAlloc(SECTIONKIND_CODE_OR_RODATA, 0x7, size);
++}
++
++#endif /* USE_LINKER_POOL */
+ 
+ /*
+    Note [Many ELF Sections]
+@@ -814,7 +894,17 @@
+               /* Use mmapForLinker to allocate .bss, otherwise the malloced
+                * address might be out of range for sections that are mmaped.
+                */
++#if USE_LINKER_POOL
+               alloc = SECTION_MMAP;
++              start = linkerPoolAlloc(kind, align > 0 ? align - 1 : 0, size);
++              if (start == NULL) {
++                barf("failed to pool-allocate memory for bss.");
++              }
++              mapped_start = start;
++              mapped_offset = 0;
++              mapped_size = size;
++#else
++              alloc = SECTION_MMAP;
+               start = mmapAnonForLinker(size);
+               if (start == NULL) {
+                 barf("failed to mmap memory for bss. "
+@@ -823,6 +913,7 @@
+               mapped_start = start;
+               mapped_offset = 0;
+               mapped_size = roundUpToPage(size);
++#endif
+           }
+           CHECK(start != 0x0);
+ #else
+@@ -863,6 +954,11 @@
+           unsigned stub_space = STUB_SIZE * nstubs;
+           unsigned full_size = size+stub_space;
+ 
++#if USE_LINKER_POOL
++          start = linkerPoolAlloc(kind, align > 0 ? align - 1 : 0, full_size);
++          if (start == NULL) goto fail;
++          alloc = SECTION_MMAP;
++#else
+           // use M32 allocator to avoid fragmentation and relocations impossible
+           // to fulfil (cf #24432)
+           bool executable = kind == SECTIONKIND_CODE_OR_RODATA;
+@@ -873,6 +969,7 @@
+           start = m32_alloc(allocator, full_size, align);
+           if (start == NULL) goto fail;
+           alloc = SECTION_M32;
++#endif
+ 
+           /* copy only the image part over; we don't want to copy data
+            * into the stub part.
+@@ -971,7 +1068,11 @@
+       }
+       void * common_mem = NULL;
+       if(common_size > 0) {
++#if USE_LINKER_POOL
++          common_mem = linkerPoolAlloc(SECTIONKIND_RWDATA, 0x7, common_size);
++#else
+           common_mem = mmapAnonForLinker(common_size);
++#endif
+           if (common_mem == NULL) {
+             barf("ocGetNames_ELF: Failed to allocate memory for SHN_COMMONs");
+           }
+@@ -2045,7 +2146,12 @@
+     flushInstructionCache( oc );
+ #endif
+ 
++#if USE_LINKER_POOL
++    linkerPoolProtect();
++    return true;
++#else
+     return ocMprotect_Elf(oc);
++#endif
+ }
+ 
+ /*
+--- a/rts/linker/Elf.h
++++ b/rts/linker/Elf.h
+@@ -16,4 +16,11 @@
+ int ocAllocateExtras_ELF ( ObjectCode *oc );
+ void *loadNativeObjFromLinkerScript_ELF( char **errmsg );
+ 
++#if defined(aarch64_HOST_ARCH) && defined(OBJFORMAT_ELF) && RTS_LINKER_USE_MMAP
++#define USE_LINKER_POOL 1
++void linkerPoolProtect(void);
++void * linkerPoolAlloc(SectionKind kind, StgWord align, StgWord size);
++void * linkerPoolAllocGot(StgWord size);
++#endif
++
+ #include "EndPrivate.h"
+--- a/rts/linker/elf_got.c
++++ b/rts/linker/elf_got.c
+@@ -1,5 +1,6 @@
+ #include "Rts.h"
+ #include "elf_got.h"
++#include "linker/Elf.h"
+ #include "linker/MMap.h"
+ 
+ #include <string.h>
+@@ -11,16 +12,21 @@
+  */
+ bool
+ needGotSlot(Elf_Sym * symbol) {
+-    /* using global here should give an upper bound */
+-    /* I don't believe we need to relocate STB_LOCAL
+-     * symbols via the GOT; however I'm unsure about
+-     * STB_WEAK.
+-     *
+-     * Any more restrictive filter here would result
+-     * in a smaller GOT, which is preferable.
++    /* Any symbol that might be referenced via a GOT relocation needs a slot.
++     * STB_LOCAL symbols can have GOT-relative relocations in some toolchains
++     * (e.g. Android NDK's libm.a has local data symbols like approx_tab
++     * referenced via R_AARCH64_ADR_GOT_PAGE).
+      */
++    /* Include named local object/func symbols — some toolchains
++     * (e.g. Android NDK) generate GOT-relative relocations for local
++     * data symbols like approx_tab in libm.a. Exclude unnamed symbols,
++     * STT_FILE symbols (source filenames), and STT_NOTYPE symbols. */
+     return ELF_ST_BIND(symbol->st_info) == STB_GLOBAL
+         || ELF_ST_BIND(symbol->st_info) == STB_WEAK
++        || (ELF_ST_BIND(symbol->st_info) == STB_LOCAL
++            && symbol->st_name != 0
++            && ELF_ST_TYPE(symbol->st_info) != STT_FILE
++            && ELF_ST_TYPE(symbol->st_info) != STT_NOTYPE)
+         // Section symbols exist primarily for relocation
+         // and as such may need a GOT slot.
+         || ELF_ST_TYPE(symbol->st_info) == STT_SECTION;
+@@ -53,9 +59,13 @@
+     }
+     if(got_slots > 0) {
+         oc->info->got_size = got_slots * sizeof(void *);
++#if USE_LINKER_POOL
++        void * mem = linkerPoolAllocGot(oc->info->got_size);
++#else
+         void * mem = mmapAnonForLinker(oc->info->got_size);
++#endif
+         if (mem == NULL) {
+-            errorBelch("MAP_FAILED. errno=%d", errno);
++            errorBelch("makeGot: allocation failed (size=%zu)", oc->info->got_size);
+             return EXIT_FAILURE;
+         }
+ 
+@@ -126,10 +136,15 @@
+         }
+     }
+ 
++#if USE_LINKER_POOL
++    // When using the linker pool, we cannot mprotect individual
++    // sub-allocations. Protection is handled by linkerPoolProtect().
++#else
+     // We are done initializing the GOT; freeze it.
+     if(mprotect(oc->info->got_start, oc->info->got_size, PROT_READ) != 0) {
+         sysErrorBelch("unable to protect memory");
+     }
++#endif
+     return EXIT_SUCCESS;
+ }
+ 

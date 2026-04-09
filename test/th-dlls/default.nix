@@ -46,9 +46,6 @@ in lib.recurseIntoAttrs {
 
     # Rosetta error: invalid gdt selector index 5 (wine crashes under Rosetta with msvcrt)
     || (stdenv.hostPlatform.isWindows && stdenv.hostPlatform.libc != "ucrt")
-    # Android TH requires linker pool patch (separate PR)
-    || stdenv.hostPlatform.isAndroid
-    || (stdenv.buildPlatform.isx86_64 && stdenv.hostPlatform.isAarch64)
     ;
 
   ifdInputs = {
