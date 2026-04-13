@@ -5,7 +5,7 @@ stdenv.mkDerivation {
 
     name = "ghc-source-dist";
 
-    buildInputs = [ ghc alex happy hscolour ] ++ (with pkgs; [ automake bash git cacert python3 autoconf xorg.lndir ]);
+    buildInputs = [ ghc alex happy hscolour ] ++ (with pkgs; [ automake bash git cacert python3 autoconf (pkgs.lndir or xorg.lndir) ]);
 
     inherit src;
 

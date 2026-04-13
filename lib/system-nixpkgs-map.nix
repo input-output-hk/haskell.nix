@@ -12,7 +12,7 @@ let
     # Find the versions of mcfgthreads used by stdenv.cc
     (pkgs.threadsCrossFor or (_x: { package = pkgs.windows.mcfgthreads; }) pkgs.stdenv.cc.version).package
     # If we just use `pkgs.buildPackages.gcc.cc` here it breaks the `th-dlls` test. TODO figure out why exactly.
-    (pkgs.buildPackages.runCommand "gcc-only" { nativeBuildInputs = [ pkgs.buildPackages.xorg.lndir ]; } ''
+    (pkgs.buildPackages.runCommand "gcc-only" { nativeBuildInputs = [ (pkgs.buildPackages.lndir or pkgs.buildPackages.xorg.lndir) ]; } ''
       mkdir $out
       lndir ${pkgs.buildPackages.gcc.cc} $out
     '')
@@ -45,15 +45,15 @@ in
   GLEW = [ glew ];
   GLU = [ libGLU ];
   alut = [ freealut ];
-  X11 = with xorg; [ libX11 ];
-  Xrandr = [ xorg.libXrandr ];
-  Xrender = [ xorg.libXrender ];
-  Xss = [ xorg.libXScrnSaver ];
-  Xext = [ xorg.libXext ];
-  Xi = [ xorg.libXi ];
-  Xxf86vm = [ xorg.libXxf86vm ];
-  Xcursor = [ xorg.libXcursor ];
-  Xinerama = [ xorg.libXinerama ];
+  X11 = [ (pkgs.libx11 or xorg.libX11) ];
+  Xrandr = [ (pkgs.libxrandr or xorg.libXrandr) ];
+  Xrender = [ (pkgs.libxrender or xorg.libXrender) ];
+  Xss = [ (pkgs.libxscrnsaver or xorg.libXScrnSaver) ];
+  Xext = [ (pkgs.libxext or xorg.libXext) ];
+  Xi = [ (pkgs.libxi or xorg.libXi) ];
+  Xxf86vm = [ (pkgs.libxxf86vm or xorg.libXxf86vm) ];
+  Xcursor = [ (pkgs.libxcursor or xorg.libXcursor) ];
+  Xinerama = [ (pkgs.libxinerama or xorg.libXinerama) ];
   mysqlclient = [ mysql ];
   Imlib2 = [ imlib2 ];
   asound = [ alsaLib ];
@@ -106,7 +106,7 @@ in
   tensorflow = [ libtensorflow ];
   # odbc package requires unixODBC packages to be installed in order to successfully
   # compile C sources (https://github.com/fpco/odbc/blob/master/cbits/odbc.c)
-  odbc = [ unixODBC ];
+  odbc = [ (pkgs.unixodbc or unixODBC) ];
   opencv = [ opencv3 ];
   phonenumber = [ libphonenumber ];
   icuuc = [ icu ];

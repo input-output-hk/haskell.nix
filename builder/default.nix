@@ -43,7 +43,7 @@ let
     inherit lib ghc haskellLib;
     inherit (pkgs) stdenv;
     inherit (buildPackages.buildPackages) runCommand makeWrapper;
-    inherit (buildPackages.buildPackages.xorg) lndir;
+    lndir = buildPackages.buildPackages.lndir or buildPackages.buildPackages.xorg.lndir;
   };
 
   # Builds a derivation which contains a ghc package-db of
