@@ -1340,7 +1340,7 @@ in {
                 ghcVersion = "8.10.7";
                 compiler-nix-name = "ghc8107";
             }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.10.7" {
-                nativeBuildInputs = [ final.xorg.lndir ];
+                nativeBuildInputs = [ (final.lndir or final.xorg.lndir) ];
                 passthru = {
                     inherit targetPrefix;
                     version = "8.10.7";

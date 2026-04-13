@@ -24,8 +24,8 @@ in addPackageKeys {
   # The `extra-libraries` field in `X11.cabal` does not include Xss and Xinerama
   # see https://github.com/input-output-hk/haskell.nix/pull/988
   packages.X11.components.library.libs = [
-    pkgs.xorg.libXScrnSaver
-    pkgs.xorg.libXinerama
+    (pkgs.libxscrnsaver or pkgs.xorg.libXScrnSaver)
+    (pkgs.libxinerama or pkgs.xorg.libXinerama)
   ];
 
   # odbc needs this package to provide odbcss.h on Linux and macOS, see
@@ -151,11 +151,11 @@ in addPackageKeys {
   ];
 
   packages.bindings-GLFW.components.library.libs = [
-    pkgs.xorg.libXext
+    (pkgs.libxext or pkgs.xorg.libXext)
   ];
 
   packages.GLFW-b.components.library.libs = [
-    pkgs.xorg.libXi
+    (pkgs.libxi or pkgs.xorg.libXi)
   ];
 
   packages.closed.components.tests.readme.build-tools = [
