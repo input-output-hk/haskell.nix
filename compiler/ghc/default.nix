@@ -689,6 +689,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
 
   hardeningDisable = [ "format" "stackprotector" ]
                    ++ lib.optional stdenv.targetPlatform.isAarch32 "pic"
+                   ++ lib.optional (stdenv.targetPlatform.isMusl && builtins.elem "pie" (targetCC.defaultHardeningFlags or [])) "pie"
                    ++ lib.optional enableDWARF "fortify";
 
   postInstall = lib.optionalString (enableNUMA && targetPlatform.isLinux && !targetPlatform.isAarch32 && !targetPlatform.isAndroid) ''
