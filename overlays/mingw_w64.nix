@@ -57,7 +57,7 @@ let
         unset pkgsHostTargetAsString
         unset LINK_DLL_FOLDERS
         WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP \
-          ${iserv-proxy}/bin/iserv-proxy $@ --pipe ${wine}/bin/wine64 $REMOTE_ISERV/${interpreter.exeName} tmp --stdio ${no-load-call} $ISERV_ARGS
+          ${iserv-proxy}/bin/iserv-proxy $@ --pipe ${lib.getExe wine} $REMOTE_ISERV/${interpreter.exeName} tmp --stdio ${no-load-call} $ISERV_ARGS
       '';
 
   wineIservWrapper = symlinkJoin { name = "iserv-wrapper"; paths = [ (wineIservWrapperScript false) (wineIservWrapperScript true) ]; };
@@ -93,7 +93,7 @@ let
       fi
     done
     export Path
-    ${wine}/bin/wine64 $@
+    ${lib.getExe wine} $@
   '';
   testWrapper = ["${wineTestWrapper}/bin/test-wrapper"];
 
