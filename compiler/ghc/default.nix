@@ -49,8 +49,14 @@ let self =
 , enableIPE ? false
 
 , enableTerminfo ? !stdenv.targetPlatform.isAndroid &&
+    # Before https://gitlab.haskell.org/ghc/ghc/-/merge_requests/13932,
+    # hadrian can't build terminfo correctly for cross-compilation (it
+    # passes the same --with-curses-libraries to both stage0 and stage1,
+    # but they need different ncurses for their respective platforms).
+    (builtins.compareVersions ghc-version "9.15" >= 0
+      || (stdenv.buildPlatform.config == stdenv.hostPlatform.config && stdenv.hostPlatform.config == stdenv.targetPlatform.config))
     # Terminfo does not work on older ghc cross arm and windows compilers
-     (!haskell-nix.haskellLib.isCrossTarget || !(stdenv.targetPlatform.isAarch32 || stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isWindows) || builtins.compareVersions ghc-version "8.10" >= 0)
+    && (!haskell-nix.haskellLib.isCrossTarget || !(stdenv.targetPlatform.isAarch32 || stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isWindows) || builtins.compareVersions ghc-version "8.10" >= 0)
 
 , # Whether to build in NUMA support
   enableNUMA ? true
@@ -251,7 +257,7 @@ let
   # `--with` flags for libraries needed for RTS linker
   configureFlags = [
         "--datadir=$doc/share/doc/ghc"
-    ] ++ lib.optionals (!targetPlatform.isGhcjs && !targetPlatform.isWasm && !targetPlatform.isAndroid) ["--with-curses-includes=${lib.getDev targetPackages.ncurses}/include" "--with-curses-libraries=${lib.getLib targetPackages.ncurses}/lib"
+    ] ++ lib.optionals (enableTerminfo && !targetPlatform.isGhcjs && !targetPlatform.isWasm && !targetPlatform.isAndroid) ["--with-curses-includes=${lib.getDev targetPackages.ncurses}/include" "--with-curses-libraries=${lib.getLib targetPackages.ncurses}/lib"
     ] ++ lib.optionals (targetLibffi != null && !targetPlatform.isGhcjs && !targetPlatform.isWasm) ["--with-system-libffi" "--with-ffi-includes=${lib.getDev targetLibffi}/include" "--with-ffi-libraries=${lib.getLib targetLibffi}/lib"
     ] ++ lib.optionals (targetPlatform.isWasm) [
         "--with-system-libffi"
@@ -292,7 +298,9 @@ let
     ;
 
   # Splicer will pull out correct variations
-  libDeps = platform: lib.optionals (enableTerminfo && !targetPlatform.isGhcjs && !targetPlatform.isWasm && !targetPlatform.isAndroid) [ (lib.getLib targetPackages.ncurses) (lib.getDev targetPackages.ncurses) ]
+  # Always include ncurses in libDeps because hadrian builds terminfo
+  # unconditionally for stage0 regardless of enableTerminfo.
+  libDeps = platform: lib.optionals (!targetPlatform.isGhcjs && !targetPlatform.isWasm && !targetPlatform.isAndroid) [ (lib.getLib targetPackages.ncurses) (lib.getDev targetPackages.ncurses) ]
     ++ lib.optional (!targetPlatform.isGhcjs) targetLibffi
     ++ lib.optional (!enableIntegerSimple && !targetPlatform.isGhcjs && !targetPlatform.isWasm) gmp
     ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows && !targetPlatform.isWasm) libiconv
