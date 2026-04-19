@@ -51,12 +51,16 @@ let
       + lib.optionalString (__compareVersions ghc.version "9.6.1" >= 0) "/lib");
   packageCfgDir  = "${libDir}/package.conf.d";
 
+  # Fused single-pass: dependToLib → profiled → dwarf → chooseDrv.
+  # Nix does not perform list fusion, so chaining four `map` calls
+  # allocates four intermediate lists.  A single `map` avoids this.
   libDeps = haskellLib.uniqueWithName (
-    map chooseDrv (
-      (if enableDWARF then (x: map (p: p.dwarf or p) x) else x: x)
-      ((if needsProfiling then (x: map (p: p.profiled or p) x) else x: x)
-      (map haskellLib.dependToLib component.depends))
-    )
+    map (d:
+      let base = haskellLib.dependToLib d;
+          prof = if needsProfiling then base.profiled or base else base;
+          dw   = if enableDWARF then prof.dwarf or prof else prof;
+      in chooseDrv dw
+    ) component.depends
   ) ++ prebuilt-depends;
   script = ''
     ${target-pkg} init $configFiles/${packageCfgDir}
