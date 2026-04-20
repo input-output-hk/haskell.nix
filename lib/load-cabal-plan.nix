@@ -15,17 +15,39 @@ let
       else callProjectResults.rawCabalProjectContext + s;
   # All the units in the plan indexed by unit ID.
   by-id = pkgs.lib.listToAttrs (map (x: { name = x.id; value = x; }) plan-json.install-plan);
-  # Find the names of all the pre-existing packages used by a list of dependencies
-  # (includes transitive dependencies)
-  lookupPreExisting = depends:
-    pkgs.lib.concatMap (d: builtins.attrNames pre-existing-depends.${d}) depends;
+
+  # Single-pass categorization via builtins.groupBy (runs in C++, O(n log k)).
+  # Replaces three separate concatMap+optional filters over the full plan.
+  partitioned = let
+    grouped = builtins.groupBy (p:
+      if p.type == "pre-existing" then "preExisting"
+      else if p.type == "configured" && p.style == "local" then "local"
+      else "nonLocal"
+    ) plan-json.install-plan;
+  in {
+    preExisting = grouped.preExisting or [];
+    nonLocal = grouped.nonLocal or [];
+    local = grouped.local or [];
+  };
+
+  # Memoized transitive pre-existing dependency lookup.
+  # For each unit ID, stores the set of pre-existing package names
+  # reachable through its dependency graph.  Uses Nix lazy evaluation
+  # for memoization -- each entry is computed at most once.
   pre-existing-depends =
     pkgs.lib.listToAttrs (map (p: {
       name = p.id;
-      value = pkgs.lib.optionalAttrs (p.type == "pre-existing") { ${p.pkg-name} = null; } //
-        pkgs.lib.listToAttrs (
-          map (dname: { name = dname; value = null; }) (lookupPreExisting (p.depends or p.components.lib.depends)));
+      value =
+        let
+          directDeps = p.depends or p.components.lib.depends;
+          selfEntry = pkgs.lib.optionalAttrs (p.type == "pre-existing") { ${p.pkg-name} = null; };
+          transitiveDeps = pkgs.lib.listToAttrs (
+            map (dname: { name = dname; value = null; })
+              (pkgs.lib.concatMap (d: builtins.attrNames pre-existing-depends.${d}) directDeps));
+        in selfEntry // transitiveDeps;
     }) plan-json.install-plan);
+  lookupPreExisting = depends:
+    pkgs.lib.concatMap (d: builtins.attrNames pre-existing-depends.${d}) depends;
   # Lookup a dependency in `hsPkgs`
   lookupDependency = let
     lookupDependency' = hsPkgs: d: let
@@ -98,14 +120,12 @@ in {
   pkgs = (hackage: {
     packages = pkgs.lib.listToAttrs (
       # Include entries for the `pre-existing` packages, but leave them as `null`
-      pkgs.lib.concatMap (p:
-        pkgs.lib.optional (p.type == "pre-existing") {
+      map (p: {
           name = p.id;
           value.revision = null;
-        }) plan-json.install-plan
+        }) partitioned.preExisting
       # The other packages that are not part of the project itself.
-      ++ pkgs.lib.concatMap (p:
-        pkgs.lib.optional (p.type == "configured" && (p.style == "global" || p.style == "inplace") ) {
+      ++ map (p: {
           name = p.id;
           value.revision =
             {hsPkgs, ...}@args:
@@ -147,16 +167,15 @@ in {
                   setup-depends = []; # The correct setup depends will be in `components.setup.depends`
                 };
               };
-        }) plan-json.install-plan);
+        }) partitioned.nonLocal);
     compiler = {
       inherit (selectedCompiler) version;
     };
   });
-  # Packages in the project (those that are both configure and local)
+  # Packages in the project (those that are both configured and local)
   extras = (_hackage: {
     packages = pkgs.lib.listToAttrs (
-      pkgs.lib.concatMap (p:
-        pkgs.lib.optional (p.type == "configured" && p.style == "local") {
+      map (p: {
           name = p.id;
           value =
             {hsPkgs, ...}@args:
@@ -189,7 +208,7 @@ in {
                   setup-depends = []; # The correct setup depends will be in `components.setup.depends`
                 };
               };
-        }) plan-json.install-plan);
+        }) partitioned.local);
   });
   modules = [
     { inherit plan-json; }
