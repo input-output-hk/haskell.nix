@@ -205,7 +205,7 @@ let
       in pkgs.stdenv.mkDerivation {
         name = "${compilerName}-${ghcVersion}-bundle";
         src = booted-ghcjs;
-        nativeBuildInputs = [ pkgs.makeWrapper pkgs.xorg.lndir ];
+        nativeBuildInputs = [ pkgs.makeWrapper (pkgs.lndir or pkgs.xorg.lndir) ];
         dontConfigure = true;
         dontInstall = true;
         dontPatchShebangs = true;

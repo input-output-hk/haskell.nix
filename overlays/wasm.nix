@@ -1,4 +1,23 @@
 final: prev: prev.lib.optionalAttrs prev.stdenv.targetPlatform.isWasm {
+  # Remove lit's max-time.py self-test. It hangs in the nix build sandbox
+  # due to a Python multiprocessing.Pool deadlock (`_help_stuff_finish`
+  # acquires `inqueue._rlock` without releasing it) combined with a leaked
+  # signal mask that leaves SIGTERM blocked in the worker, so `pool.terminate()`
+  # can't kill it. nix-shell builds complete fine; only nix-build hangs.
+  llvmPackages_21 =
+    let
+      f = llvmFinal: llvmPrev: {
+        libllvm = llvmPrev.libllvm.overrideAttrs (old: {
+          postPatch = (old.postPatch or "") + ''
+            rm utils/lit/tests/max-time.py
+          '';
+        });
+      };
+      # Preserve `.override` after `overrideScope`; see nixpkgs#447012.
+      override = args: (prev.llvmPackages_21.override args).overrideScope f;
+    in prev.lib.makeOverridable
+      (prev.lib.mirrorFunctionArgs prev.llvmPackages_21.override override)
+      { };
   llvmPackages = final.llvmPackages_21.override {
     patchesFn = p: p // { "llvm/gnu-install-dirs.patch" = [{path = ./patches/wasm;}]; };
     monorepoSrc =

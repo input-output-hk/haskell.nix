@@ -18,8 +18,8 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
         # `isMusl` does not always mean `isStatic`, so setting `enableStatic` to true here.
         enableStatic = true;
       });
-  gmp = prev.gmp.override { withStatic = true; };
-  ncurses = prev.ncurses.override { enableStatic = true; };
+  gmp = (prev.gmp.override { withStatic = true; }).overrideAttrs (_: prev.lib.optionalAttrs (prev.stdenv.hostPlatform != prev.stdenv.buildPlatform) { doCheck = false; });
+  ncurses = (prev.ncurses.override { enableStatic = true; }).overrideAttrs (_: prev.lib.optionalAttrs (prev.stdenv.hostPlatform != prev.stdenv.buildPlatform) { dontCheckForBrokenSymlinks = true; });
   libsodium = prev.libsodium.overrideAttrs (_: { dontDisableStatic = true; });
   zstd = prev.zstd.override { static = true; };
   xz = prev.xz.override { enableStatic = true; };
@@ -57,6 +57,8 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
 
   # Fails on cross compile
   nix = prev.nix.overrideAttrs (_: { doInstallCheck = false; });
+  # Cross-compiled test binaries can't run on the build host
+  libffi = prev.libffi.overrideAttrs (_: prev.lib.optionalAttrs (prev.stdenv.hostPlatform != prev.stdenv.buildPlatform) { doCheck = false; });
 } // prev.lib.optionalAttrs (prev.lib.versionAtLeast prev.lib.trivial.release "20.03") {
   # Fix infinite recursion between openssh and fetchcvs
   openssh = prev.openssh.override { withFIDO = false; };

@@ -1,0 +1,22 @@
+--- a/utils/hp2ps/Utilities.c
++++ b/utils/hp2ps/Utilities.c
+@@ -2,9 +2,8 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include "Error.h"
++#include <stdlib.h>
+
+-extern void* malloc();
+-
+ char*
+ Basename(char *name)
+ {
+@@ -89,8 +88,6 @@
+ xrealloc(void *p, size_t n)
+ {
+     void *r;
+-    extern void *realloc();
+-
+     r = realloc(p, n);
+     if (!r) {
+ 	/*NOTREACHED*/

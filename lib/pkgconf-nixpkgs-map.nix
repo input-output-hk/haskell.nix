@@ -15,6 +15,94 @@ pkgs:
           (name: optionals (x ? ${name})
             (let p = __tryEval (x.${name}); in optional p.success p.value))
           names));
+
+    # Prefer the new package name when available, fall back to old name
+    # for backwards compatibility with older nixpkgs.
+    prefer = new: old: if pkgs ? ${new} then new else old;
+
+    # Compatibility set for the deprecated xorg.* package set.
+    # New nixpkgs promotes xorg packages to top-level with new names.
+    # This set maps old xorg attribute names to the new top-level packages,
+    # falling back to pkgs.xorg for older nixpkgs.
+    xorgCompat = let
+      xorg = pkgs.xorg or {};
+      renames = {
+      fontutil = "font-util";
+      libFS = "libfs";
+      libICE = "libice";
+      libSM = "libsm";
+      libWindowsWM = "libwindowswm";
+      libX11 = "libx11";
+      libXScrnSaver = "libxscrnsaver";
+      libXTrap = "libxtrap";
+      libXau = "libxau";
+      libXaw = "libxaw";
+      libXaw3d = "libxaw3d";
+      libXcomposite = "libxcomposite";
+      libXcursor = "libxcursor";
+      libXdamage = "libxdamage";
+      libXdmcp = "libxdmcp";
+      libXext = "libxext";
+      libXfixes = "libxfixes";
+      libXfont = "libxfont_1";
+      libXfont2 = "libxfont_2";
+      libXft = "libxft";
+      libXi = "libxi";
+      libXinerama = "libxinerama";
+      libXmu = "libxmu";
+      libXp = "libxp";
+      libXpm = "libxpm";
+      libXpresent = "libxpresent";
+      libXrandr = "libxrandr";
+      libXrender = "libxrender";
+      libXres = "libxres";
+      libXt = "libxt";
+      libXtst = "libxtst";
+      libXv = "libxv";
+      libXvMC = "libxvmc";
+      libXxf86dga = "libxxf86dga";
+      libXxf86misc = "libxxf86misc";
+      libXxf86vm = "libxxf86vm";
+      libdmx = "libdmx";
+      libfontenc = "libfontenc";
+      libpciaccess = "libpciaccess";
+      libpthreadstubs = "libpthread-stubs";
+      libxcb = "libxcb";
+      libxcvt = "libxcvt";
+      libxkbfile = "libxkbfile";
+      libxshmfence = "libxshmfence";
+      lndir = "lndir";
+      pixman = "pixman";
+      utilmacros = "util-macros";
+      xbitmaps = "xbitmaps";
+      xcbproto = "xcb-proto";
+      xcbutil = "libxcb-util";
+      xcbutilcursor = "libxcb-cursor";
+      xcbutilerrors = "libxcb-errors";
+      xcbutilimage = "libxcb-image";
+      xcbutilkeysyms = "libxcb-keysyms";
+      xcbutilrenderutil = "libxcb-render-util";
+      xcbutilwm = "libxcb-wm";
+      xf86inputevdev = "xf86-input-evdev";
+      xf86inputjoystick = "xf86-input-joystick";
+      xf86inputlibinput = "xf86-input-libinput";
+      xf86inputmouse = "xf86-input-mouse";
+      xf86inputsynaptics = "xf86-input-synaptics";
+      xkbcomp = "xkbcomp";
+      xkeyboardconfig = "xkeyboard-config";
+      xlibsWrapper = "xlibsWrapper";
+      xorgproto = "xorgproto";
+      xorgserver = "xorg-server";
+      xorgsgmldoctools = "xorg-sgml-doctools";
+      xtrans = "xtrans";
+      };
+    in xorg // builtins.listToAttrs (builtins.concatMap (entry:
+      let old = entry.name; new = entry.value; in
+      if pkgs ? ${new} then [{ name = old; value = pkgs.${new}; }]
+      else if xorg ? ${old} then [{ name = old; value = xorg.${old}; }]
+      else []
+    ) (lib.mapAttrsToList lib.nameValuePair renames));
+
   in lookupAttrsIn pkgs ({
     # Based on https://github.com/NixOS/cabal2nix/blob/11c68fdc79461fb74fa1dfe2217c3709168ad752/src/Distribution/Nixpkgs/Haskell/FromCabal/Name.hs#L23
 
@@ -1174,7 +1262,7 @@ pkgs:
 #    "osi" = [ "clp" ];
     "osi-clp" = [ "clp" ];
 #    "osi-unittests" = [ "clp" ];
-    "libclucene-core" = [ "clucene_core_2" ];
+    "libclucene-core" = [ (prefer "clucene-core_2" "clucene_core_2") ];
     "clustalo" = [ "clustal-omega" ];
     "cally-1.0" = [ "clutter" ];
     "clutter-1.0" = [ "clutter" ];
@@ -1422,7 +1510,7 @@ pkgs:
     "enca" = [ "enca" ];
 #    "enchant-2" = [ "enchant" ];
 #    "enchant" = [ "enchant1" ];
-    "enchant-2" = [ "enchant2" ];
+    "enchant-2" = [ (prefer "enchant_2" "enchant2") ];
     "libenet" = [ "enet" ];
     "ecore-audio" = [ "enlightenment" ];
     "ecore-con" = [ "enlightenment" ];
@@ -1517,7 +1605,7 @@ pkgs:
 #    "gamin" = [ "fam" ];
     "farstream-0.2" = [ "farstream" ];
     "fast-cpp-csv-parser" = [ "fast-cpp-csv-parser" ];
-    "libfastjson" = [ "fastJson" ];
+    "libfastjson" = [ (prefer "libfastjson" "fastJson") ];
     "fasttext" = [ "fasttext" ];
     "FAudio" = [ "faudio" ];
     "fcft" = [ "fcft" ];
@@ -1723,7 +1811,7 @@ pkgs:
     "glew" = [ "glew" ];
 #    "glew" = [ "glew-egl" ];
 #    "glew" = [ "glew110" ];
-    "glewmx" = [ "glew110" ];
+    "glewmx" = [ (prefer "glew_1_10" "glew110") ];
 #    "glfw3" = [ "glfw" ];
 #    "glfw3" = [ "glfw-wayland" ];
     "libglfw" = [ "glfw2" ];
@@ -1936,9 +2024,9 @@ pkgs:
     "gobject-introspection-no-export-1.0" = [ "gobject-introspection" ];
     "libgoffice-0.10" = [ "goffice" ];
     "gom-1.0" = [ "gom" ];
-    "goocanvas" = [ "goocanvas" ];
-    "goocanvas-2.0" = [ "goocanvas2" ];
-    "goocanvas-3.0" = [ "goocanvas3" ];
+    "goocanvas" = [ (prefer "goocanvas_1" "goocanvas") ];
+    "goocanvas-2.0" = [ (prefer "goocanvas_2" "goocanvas2") ];
+    "goocanvas-3.0" = [ (prefer "goocanvas_3" "goocanvas3") ];
     "goocanvasmm-2.0" = [ "goocanvasmm2" ];
     "googleapis" = [ "google-cloud-cpp" ];
     "google_cloud_cpp_api_annotations_protos" = [ "google-cloud-cpp" ];
@@ -2208,7 +2296,7 @@ pkgs:
     "gwengui-gtk3" = [ "gwenhywfar" ];
     "gwengui-qt5" = [ "gwenhywfar" ];
     "gwenhywfar" = [ "gwenhywfar" ];
-    "g-wrap-2.0-guile" = [ "gwrap" ];
+    "g-wrap-2.0-guile" = [ (prefer "g-wrap" "gwrap") ];
     "gwyddion" = [ "gwyddion" ];
     "libh2o-evloop" = [ "h2o" ];
     "libh2o" = [ "h2o" ];
@@ -2455,7 +2543,7 @@ pkgs:
     "libdnssec" = [ "knot-dns" ];
     "libknot" = [ "knot-dns" ];
     "libzscanner" = [ "knot-dns" ];
-    "libkres" = [ "knot-resolver" ];
+    "libkres" = [ (prefer "knot-resolver_5" "knot-resolver") ];
 #    "gssrpc" = [ "krb5" ];
 #    "kadm-client" = [ "krb5" ];
 #    "kadm-server" = [ "krb5" ];
@@ -2891,7 +2979,7 @@ pkgs:
 #    "cblas" = [ "liblapack" ];
     "lapacke" = [ "liblapack" ];
     "lapack" = [ "liblapack" ];
-    "libclastfm" = [ "liblastfmSF" ];
+    "libclastfm" = [ (prefer "liblastfm-vambrose" "liblastfmSF") ];
     "liblcf" = [ "liblcf" ];
     "libliftoff" = [ "libliftoff" ];
     "liblo" = [ "liblo" ];
@@ -5285,9 +5373,9 @@ pkgs:
     "unibilium" = [ "unibilium" ];
     "unicorn" = [ "unicorn" ];
     "UnitTest++" = [ "unittest-cpp" ];
-    "odbccr" = [ "unixODBC" ];
-    "odbcinst" = [ "unixODBC" ];
-    "odbc" = [ "unixODBC" ];
+    "odbccr" = [ (prefer "unixodbc" "unixODBC") ];
+    "odbcinst" = [ (prefer "unixodbc" "unixODBC") ];
+    "odbc" = [ (prefer "unixodbc" "unixODBC") ];
     "libcw" = [ "unixcw" ];
     "libunshield" = [ "unshield" ];
     "upower-glib" = [ "upower" ];
@@ -5468,7 +5556,7 @@ pkgs:
     "wolfssl" = [ "wolfssl" ];
 #    "libobs" = [ "wrapOBS" ];
     "wv-1.0" = [ "wv" ];
-    "libwxsvg" = [ "wxSVG" ];
+    "libwxsvg" = [ (prefer "wxsvg" "wxSVG") ];
     "wxsqlite3" = [ "wxsqlite3" ];
     "x264" = [ "x264" ];
     "x265" = [ "x265" ];
@@ -5574,7 +5662,7 @@ pkgs:
     "zziplib" = [ "zziplib" ];
     "zzipmmapped" = [ "zziplib" ];
 } // pkgs.haskell-nix.extraPkgconfigMappings) //
-  lookupAttrsIn pkgs.xorg {
+  lookupAttrsIn xorgCompat {
     # Adding xlibsWrapper since it was used here beofre.
     # Putting libX11 first though so it can be used to get the version
     # in out dummy pkc-config (see ../overlays/cabal-pkg-config.nix)

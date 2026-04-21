@@ -84,7 +84,7 @@ let
             # TODO reinstate the pin of find a work around for ghcjs to send TH splice in chunks.
             nodejs-18_x
             makeWrapper
-            xorg.lndir
+            (pkgs.buildPackages.lndir or xorg.lndir)
             gmp
             (pkgs.buildPackages.pkg-config or pkgconfig)
         ]

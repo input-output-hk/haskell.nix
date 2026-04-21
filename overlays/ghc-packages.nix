@@ -130,14 +130,14 @@ in rec {
           let nix24srcFix = src: src // { filterPath = { path, ... }: path; };
           # Add in the generated files needed by ghc-boot
           in if subDir == "libraries/ghc-boot"
-            then nix24srcFix (final.buildPackages.runCommand "ghc-boot-src" { nativeBuildInputs = [final.buildPackages.xorg.lndir]; } ''
+            then nix24srcFix (final.buildPackages.runCommand "ghc-boot-src" { nativeBuildInputs = [(final.buildPackages.lndir or final.buildPackages.xorg.lndir)]; } ''
               mkdir $out
               lndir -silent ${ghc.passthru.configured-src}/${subDir} $out
               lndir -silent ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC $out/GHC
             '') // { srcForCabal2Nix = ghc.passthru.configured-src + "/${subDir}"; }
           else if subDir == "compiler"
             then final.haskell-nix.haskellLib.cleanSourceWith {
-              src = nix24srcFix (final.buildPackages.runCommand "ghc-src" { nativeBuildInputs = [final.buildPackages.xorg.lndir]; } ''
+              src = nix24srcFix (final.buildPackages.runCommand "ghc-src" { nativeBuildInputs = [(final.buildPackages.lndir or final.buildPackages.xorg.lndir)]; } ''
                 mkdir $out
                 lndir -silent ${ghc.passthru.configured-src} $out
                 if [[ -f ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC/Version.hs ]]; then
