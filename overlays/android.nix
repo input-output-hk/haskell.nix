@@ -43,7 +43,7 @@ final: prev: {
     hardeningDisable = [ "fortify" "stackprotector" "format" ];
     configureFlags = old.configureFlags ++ [ "--disable-shared" ];
   });
-  zlib = prev.zlib.override { shared = false; static = true; };
+  zlib = prev.zlib.override { shared = false; };
   # kernel tls (ktls) doesn't work with the android kernel. And will complain
   # about lots of implicitly declared functions and undeclared identifiers,
   # because the android (linux) kernel doesn't expose those.

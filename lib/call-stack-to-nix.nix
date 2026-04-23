@@ -48,7 +48,7 @@ let
   } // evalPackages.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (runCommand (if name == null then "stack-to-nix-pkgs" else name + "-stack-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools evalPackages.nix-prefetch-git evalPackages.cacert evalPackages.xorg.lndir ];
+    nativeBuildInputs = [ nix-tools evalPackages.nix-prefetch-git evalPackages.cacert (evalPackages.lndir or evalPackages.xorg.lndir) ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = evalPackages.lib.optionalString (evalPackages.stdenv.hostPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
