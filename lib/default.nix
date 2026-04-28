@@ -611,16 +611,33 @@ in {
   # How to run ldd when checking for static linking
   lddForTests = "${pkgs.pkgsBuildBuild.glibc.bin}/bin/ldd";
 
-  # Deduplicate a list of derivations (or other values) by `.name`.
-  # Uses `builtins.listToAttrs` (O(n log n) in C++) instead of the
-  # previous `groupBy` + `lib.unique` approach which was O(n²) when
-  # names collided.  First occurrence wins.
+  # Like `lib.unique`, but uses an item's name as a partition key so that
+  # `lib.unique` only has to scan within each name bucket -- the common case
+  # being one item per name, where this collapses to an O(n) walk.
+  #
+  # Originally written for derivations, whose `.name` already encodes
+  # name+version (e.g. `ghc984-conduit-1.3.5.0`).  haskell.nix package
+  # values don't carry `.name` -- they expose `.identifier.{name,version}`
+  # instead -- so we synthesize a key from those, with a space separator
+  # rather than the derivation `"${name}-${version}"` shape so a derivation
+  # key can never collide with a package key derived from the same words.
+  # Items with neither attribute share a single bucket (still correct via
+  # the inner `lib.unique`, just slower).
+  #
+  # Crucially, items that share a key but differ structurally must both
+  # survive -- this matches `lib.unique` semantics.  The bucket is an
+  # optimization, not a truncation.
   uniqueWithName = list:
-    builtins.attrValues (builtins.listToAttrs (
-      map (x: {
-        name = if __typeOf x == "set" then x.name or "noname" else "notset";
-        value = x;
-      }) list));
+    let
+      keyOf = x:
+        if __typeOf x != "set" then "_notset"
+        else if x ? name then x.name
+        else if x ? identifier.name
+          then "${x.identifier.name} ${x.identifier.version or ""}"
+        else "_noname";
+    in
+      lib.concatMap lib.unique
+        (builtins.attrValues (builtins.groupBy keyOf list));
 
   # Assert that each item in the list has a unique name.
   # Uses a single `groupBy` to find duplicates rather than
