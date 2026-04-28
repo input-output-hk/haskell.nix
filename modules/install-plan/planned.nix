@@ -3,12 +3,9 @@
 # plan is definitive -- no other module sets `planned` on these
 # components, so the override priority machinery is unnecessary.
 #
-# Extracts component keys directly from the plan.json structure
-# instead of calling the full `getComponents` function, which would
-# invoke expensive dependency resolution against an empty hsPkgs.
+# Extracts component keys directly from the plan.json structure.
 # The key mapping mirrors `haskellLib.componentPrefix`:
 #   lib → library, exe:name → exes.name, test:name → tests.name, etc.
-{getComponents}:
 {config, lib, ...}:
 let
   # Map from plan.json component prefixes to module system keys

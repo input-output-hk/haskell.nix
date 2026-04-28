@@ -215,7 +215,7 @@ in {
     (import ../modules/install-plan/configure-args.nix)
     (import ../modules/install-plan/non-reinstallable.nix)
     (import ../modules/install-plan/override-package-by-name.nix)
-    (import ../modules/install-plan/planned.nix { inherit getComponents; })
+    (import ../modules/install-plan/planned.nix)
     (import ../modules/install-plan/redirect.nix)
   ];
 }
