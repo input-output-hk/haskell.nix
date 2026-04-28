@@ -23,6 +23,20 @@ in [
     }
   )
 
+  # alfred-margaret 2.1.1.0 (released 2026-04-24) uses `foldl'` from Prelude,
+  # which was only added to Prelude in base-4.20 (GHC 9.10). It is pulled in
+  # transitively when building hoogle (via hackage-revdeps).
+  ({config, lib, pkgs, ...}:
+    { _file = "haskell.nix/overlays/hackage-quirks.nix#hoogle"; } //
+    lib.mkIf (config.name == "hoogle"
+        && builtins.compareVersions
+             pkgs.buildPackages.haskell-nix.compiler.${config.compiler-nix-name}.version "9.10" < 0) {
+      cabalProjectLocal = ''
+        constraints: alfred-margaret <2.1.1.0
+      '';
+    }
+  )
+
   # Map the following into modules that use `mkIf` to check the name of the
   # hackage package in a way that is lazy enought not to cause infinite recursion
   # issues.
