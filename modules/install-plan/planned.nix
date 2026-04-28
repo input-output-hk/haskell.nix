@@ -4,13 +4,18 @@
 # components, so the override priority machinery is unnecessary.
 #
 # Extracts component keys directly from the plan.json structure.
-# The key mapping mirrors `haskellLib.componentPrefix`:
-#   lib → library, exe:name → exes.name, test:name → tests.name, etc.
+# The plan-json component prefixes (e.g. `exe:foo`) are inverted from
+# `haskellLib.componentPrefix` so that adding a new component type to
+# that single source of truth flows through here automatically.
+{componentPrefix}:
 {config, lib, ...}:
 let
-  # Map from plan.json component prefixes to module system keys
-  prefixMap = { "exe" = "exes"; "test" = "tests"; "bench" = "benchmarks";
-                "flib" = "foreignlibs"; "lib" = "sublibs"; };
+  # Invert componentPrefix (collection -> prefix) into prefix -> collection,
+  # e.g. { exes = "exe"; tests = "test"; ... } becomes
+  #      { exe = "exes"; test = "tests"; ... }
+  prefixMap = lib.listToAttrs
+    (lib.mapAttrsToList (collection: prefix: { name = prefix; value = collection; })
+      componentPrefix);
   # Extract the module-system component structure from a plan entry
   # without invoking dependency resolution.
   plannedComponents = p:
