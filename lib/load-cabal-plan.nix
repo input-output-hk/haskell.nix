@@ -18,11 +18,17 @@ let
 
   # Single-pass categorization via builtins.groupBy (runs in C++, O(n log k)).
   # Replaces three separate concatMap+optional filters over the full plan.
+  # The buckets match what the previous filter expressions accepted exactly.
+  # Anything outside that set (e.g. a future cabal type/style we don't yet
+  # recognize) throws rather than being silently dropped or misclassified
+  # as a global hackage package -- silent drops were a footgun that hid
+  # genuinely unhandled plan shapes.
   partitioned = let
     grouped = builtins.groupBy (p:
       if p.type == "pre-existing" then "preExisting"
       else if p.type == "configured" && p.style == "local" then "local"
-      else "nonLocal"
+      else if p.type == "configured" && (p.style == "global" || p.style == "inplace") then "nonLocal"
+      else throw "load-cabal-plan: unexpected install-plan entry ${p.id or "<no id>"}: type=${p.type or "<unset>"} style=${p.style or "<unset>"}"
     ) plan-json.install-plan;
   in {
     preExisting = grouped.preExisting or [];
