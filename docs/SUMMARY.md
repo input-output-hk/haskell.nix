@@ -10,6 +10,7 @@
     - [Bumping Hackage and Stackage snapshots](./tutorials/hackage-stackage.md)
     - [Materialization: Speeding up Nix evaluation](./tutorials/materialization.md)
     - [Cross-compiling your project](./tutorials/cross-compilation.md)
+    - [Building WebAssembly packages](./tutorials/wasm.md)
     - [Generating coverage information](./tutorials/coverage.md)
     - [Build a specific package from Hackage or Stackage](./tutorials/building-package-from-stackage-hackage.md)
     - [Content addressed derivations](./tutorials/ca-derivations.md)
