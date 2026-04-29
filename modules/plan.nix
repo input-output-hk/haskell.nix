@@ -34,7 +34,7 @@ in
     };
     use-package-keys = mkOption {
       type = bool;
-      default = false;
+      default = true;
     };
     package-keys = mkOption {
       type = listOf str;

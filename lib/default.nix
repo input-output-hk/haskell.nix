@@ -611,20 +611,62 @@ in {
   # How to run ldd when checking for static linking
   lddForTests = "${pkgs.pkgsBuildBuild.glibc.bin}/bin/ldd";
 
-  # Version of `lib.unique` that should be fast if the name attributes are unique
-  uniqueWithName = list:
-    lib.concatMap lib.unique (
-      builtins.attrValues (
-        builtins.groupBy (x: if __typeOf x == "set" then x.name or "noname" else "notset") list));
+  # Key used by `uniqueWithName` and `checkUnique` to partition lists.
+  # Derivations carry a name+version-encoded `.name`
+  # (e.g. `ghc984-conduit-1.3.5.0`).  haskell.nix package values don't --
+  # they expose `.identifier.{name,version}` -- so we synthesize a key
+  # with a space separator rather than the derivation `"${name}-${version}"`
+  # shape, so a derivation key can never collide with a package key derived
+  # from the same words.  Items with neither share a bucket; correctness
+  # still holds via the inner `lib.unique`, just at a slower path.
+  uniqueWithNameKey = x:
+    if __typeOf x != "set" then "_notset"
+    else if x ? name then x.name
+    else if x ? identifier.name
+      then "${x.identifier.name} ${x.identifier.version or ""}"
+    else "_noname";
 
-  # Assert that each item in the list is unique
+  # Like `lib.unique`, but uses `uniqueWithNameKey` as a partition key so
+  # `lib.unique` only has to scan within each bucket -- the common case
+  # being one item per key, where this collapses to an O(n) walk.
+  #
+  # Items that share a key but differ structurally must both survive
+  # -- this matches `lib.unique` semantics.  The bucket is an
+  # optimization, not a truncation.
+  uniqueWithName = list:
+    lib.concatMap lib.unique
+      (builtins.attrValues (builtins.groupBy uniqueWithNameKey list));
+
+  # Check that items in `x` are "sufficiently" unique by `uniqueWithNameKey`.
+  # Errors when two items share a key AND are structurally identical -- a
+  # genuine redundant duplicate that `lib.unique` would collapse, and that
+  # almost never reflects intent.
+  # Warns (but passes) when items share a key but differ structurally --
+  # typically a list-merge accident where an explicit override appended to
+  # a default rather than replacing it (use `lib.mkForce`).  Master's
+  # `checkUnique` allowed this silently; bd93f01d3 unintentionally tightened
+  # it to an error; we keep master's tolerance but flag it for visibility.
   checkUnique = msg: x:
-    if __length x == __length (uniqueWithName x)
-      then x
-      else builtins.throw "Duplicate items found in ${msg} ${
-        __toJSON (__attrNames (lib.filterAttrs (_: v: __length v > 1) (
-          builtins.groupBy (x: if __typeOf x == "set" then x.name or "noname" else "notset") x)))
-      }";
+    let
+      grouped = builtins.groupBy uniqueWithNameKey x;
+      # `lib.unique` would shrink the bucket -> structurally-identical dupes.
+      structuralDupes = lib.filterAttrs
+        (_: v: __length (lib.unique v) < __length v) grouped;
+      # >1 entries that survive `lib.unique` -> distinct items sharing a key.
+      nameOnlyDupes = lib.filterAttrs
+        (_: v: __length v > 1 && __length (lib.unique v) == __length v) grouped;
+    in
+      if structuralDupes != {}
+        then builtins.throw "Duplicate items found in ${msg} ${
+          __toJSON (__attrNames structuralDupes)
+        }"
+      else if nameOnlyDupes != {}
+        then builtins.trace
+          "warning: items in ${msg} share a name but differ structurally (likely a list-merge that should use lib.mkForce): ${
+            __toJSON (__attrNames nameOnlyDupes)
+          }"
+          x
+      else x;
 
   types = import ./types.nix { inherit lib; };
 
