@@ -207,7 +207,10 @@ in
 
     # This helps tools like `ghcide` (that use the ghc api) to find
     # the correct global package DB.
-    NIX_GHC_LIBDIR = ghcEnv.drv + "/" + configFiles.libDir;
+    NIX_GHC = "${ghcEnv.drv}/bin/${configFiles.ghcCommand}";
+    NIX_GHCPKG = "${ghcEnv.drv}/bin/${configFiles.ghcCommand}-pkg";
+    NIX_GHC_LIBDIR = "${ghcEnv.drv}/${configFiles.libDir}";
+    NIX_GHC_DOCDIR = "${ghcEnv.drv}/${configFiles.docDir}";
 
     passthru = (mkDrvArgs.passthru or {}) // {
       ghc = ghcEnv.drv;

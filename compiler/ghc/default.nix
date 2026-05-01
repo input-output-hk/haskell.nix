@@ -459,6 +459,7 @@ let
       then "lib"
       else "lib/${targetPrefix}ghc-${ghc-version}" + lib.optionalString (useHadrian) "/lib";
   packageConfDir = "${libDir}/package.conf.d";
+  docDir = "share/doc/ghc/html";
 
   # This work around comes from nixpkgs/pkgs/development/compilers/ghc
   #

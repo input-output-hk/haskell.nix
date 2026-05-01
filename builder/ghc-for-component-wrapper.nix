@@ -22,7 +22,7 @@ let
 
   inherit (configFiles) targetPrefix ghcCommand ghcCommandCaps packageCfgDir;
   libDir         = "$wrappedGhc/${configFiles.libDir}";
-  docDir         = "$wrappedGhc/share/doc/ghc/html";
+  docDir         = "$wrappedGhc/${configFiles.docDir}";
   # For musl we can use haddock from the buildGHC
   haddock        = if stdenv.hostPlatform.isMusl
     then ghc.buildGHC or ghc # `or ghc` is here because nixpkgs GHC does not have `buildGHC`
