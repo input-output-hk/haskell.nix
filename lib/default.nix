@@ -42,7 +42,7 @@ in {
       comps = conf.components or { };
       # ensure that comps.library exists and is not null.
       libComp = acc:
-        if comps ? library then f comps.library acc else acc;
+        if (comps.library or null) != null then f comps.library acc else acc;
       subComps = acc:
         lib.foldr
           (ty: acc': foldrAttrVals f acc' (comps.${ty} or { }))
