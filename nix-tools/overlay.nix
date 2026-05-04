@@ -27,6 +27,11 @@ let
             # tests need to fetch hackage
             configureArgs = final.lib.mkDefault "--disable-tests";
 
+            # See ./cabal-install-patches.nix for why this patch is
+            # needed.  Applied here for the regular nix-tools build,
+            # and again from `static/project.nix` for the static build.
+            modules = [ ./cabal-install-patches.nix ];
+
             # Tools to include in the development shell
             shell.tools.cabal = {};
             shell.tools.haskell-language-server = {};
