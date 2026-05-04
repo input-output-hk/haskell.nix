@@ -44,11 +44,12 @@ let
   ghcCommand'    = if isGhcjs then "ghcjs" else "ghc";
   ghcCommand     = "${ghc.targetPrefix}${ghcCommand'}";
   ghcCommandCaps = lib.toUpper ghcCommand';
+  # nixpkgs versions of `ghc` do not have a `.libDir` or `.docDir`.  So these
+  # defaults are for them.
   libDir         = ghc.libDir or
-    # nixpkgs versions of `ghc` do not have a `.libDir`.  So this
-    # default is for them.
     ("lib/${ghcCommand}-${ghc.version}"
       + lib.optionalString (__compareVersions ghc.version "9.6.1" >= 0) "/lib");
+  docDir         = ghc.docDir or "share/doc/ghc/html";
   packageCfgDir  = "${libDir}/package.conf.d";
 
   # Fused single-pass: dependToLib → profiled → dwarf → chooseDrv.
@@ -241,7 +242,7 @@ let
       propagatedBuildInputs = libDeps;
       passthru = {
         inherit (ghc) targetPrefix;
-        inherit script libDeps ghcCommand ghcCommandCaps libDir packageCfgDir component;
+        inherit script libDeps ghcCommand ghcCommandCaps libDir docDir packageCfgDir component;
       };
     } (''
     mkdir -p $out
@@ -250,7 +251,7 @@ let
   '');
 in {
   inherit (ghc) targetPrefix;
-  inherit script libDeps drv ghcCommand ghcCommandCaps libDir packageCfgDir component;
+  inherit script libDeps drv ghcCommand ghcCommandCaps libDir docDir packageCfgDir component;
   # Use ''${pkgroot} relative paths so that we can relocate the package database
   # along with referenced packages and still have it work on systems with
   # or without nix installed.

@@ -583,7 +583,7 @@ in {
         value = lib.makeSearchPath "lib/pkgconfig" shell.buildInputs;
       }
     ] ++ lib.mapAttrsToList lib.nameValuePair ({
-      inherit (shell) NIX_GHC_LIBDIR;
+      inherit (shell) NIX_GHC NIX_GHCPKG NIX_GHC_LIBDIR NIX_GHC_DOCDIR;
     # CABAL_CONFIG is only set if the shell was built with exactDeps=true
     } // lib.optionalAttrs (shell ? CABAL_CONFIG) {
       inherit (shell) CABAL_CONFIG;
