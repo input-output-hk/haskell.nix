@@ -360,6 +360,77 @@ let
           echo ',("Build platform","${platformString pkgs.stdenv.buildPlatform}")'
           echo ',("Host platform","${platformString pkgs.stdenv.hostPlatform}")'
           echo ',("Target platform","${platformString pkgs.stdenv.targetPlatform}")'
+          echo ',("Project Unit Id","ghc-${ghc.version}-inplace")'
+          # Capability fields cabal-install reads to decide what
+          # configure-args to record in plan.json's per-pkg
+          # `configure-args` entries.  Without these, cabal assumes
+          # the compiler can't build shared libs / dynamic-too, so it
+          # records `--disable-shared` / `--disable-library-for-ghci`
+          # — which feeds into the package's UnitId hash.  Mirror real
+          # GHC's capabilities so plan-to-nix's recorded ids match
+          # what cabal would compute against the actual compiler.
+          ${
+            # Capability flags depend on the *target* platform — they
+            # have to mirror what the real cross GHC reports, because
+            # cabal reads `ghc --info` to decide things like
+            # `--enable-shared` vs `--disable-shared`, and those
+            # decisions feed into the package's UnitId hash.
+            #
+            # Reference outputs (verified by running `ghc --info` from
+            # the actual cross GHC derivation in /nix/store):
+            #
+            #   * x86_64-w64-mingw32 (Windows mingw): no
+            #     `Support shared libraries` field at all,
+            #     `Support dynamic-too: NO`, `GHC Dynamic: NO`,
+            #     RTS ways without any `_dyn` ways, Stage 1.
+            #   * ghcjs / wasm: built stage-1 with only `v debug` ways
+            #     and no dynamic linking.
+            #   * native Linux/Darwin: dynamic everything, Stage 2.
+            if pkgs.stdenv.targetPlatform.isGhcjs
+               || pkgs.stdenv.targetPlatform.isWasm
+            then ''
+              echo ',("Support dynamic-too","NO")'
+              echo ',("Support shared libraries","NO")'
+              echo ',("Support reexported-modules","YES")'
+              echo ',("Support thinning and renaming package flags","YES")'
+              echo ',("Tables next to code","YES")'
+              echo ',("Have interpreter","YES")'
+              echo ',("Use interpreter","YES")'
+              echo ',("Have native code generator","YES")'
+              echo ',("target RTS linker only supports shared libraries","NO")'
+              echo ',("GHC Dynamic","NO")'
+              echo ',("RTS ways","v debug")'
+              echo ',("Stage","1")'
+            ''
+            else if pkgs.stdenv.targetPlatform.isWindows
+            then ''
+              echo ',("Support dynamic-too","NO")'
+              echo ',("Support reexported-modules","YES")'
+              echo ',("Support thinning and renaming package flags","YES")'
+              echo ',("Tables next to code","YES")'
+              echo ',("Have interpreter","YES")'
+              echo ',("Use interpreter","YES")'
+              echo ',("Have native code generator","YES")'
+              echo ',("target RTS linker only supports shared libraries","NO")'
+              echo ',("GHC Dynamic","NO")'
+              echo ',("RTS ways","v thr thr_debug thr_debug_p thr_p debug debug_p p")'
+              echo ',("Stage","1")'
+            ''
+            else ''
+              echo ',("Support dynamic-too","YES")'
+              echo ',("Support shared libraries","YES")'
+              echo ',("Support reexported-modules","YES")'
+              echo ',("Support thinning and renaming package flags","YES")'
+              echo ',("Tables next to code","YES")'
+              echo ',("Have interpreter","YES")'
+              echo ',("Use interpreter","YES")'
+              echo ',("Have native code generator","YES")'
+              echo ',("target RTS linker only supports shared libraries","NO")'
+              echo ',("GHC Dynamic","YES")'
+              echo ',("RTS ways","v thr thr_debug thr_debug_p thr_debug_p_dyn thr_debug_dyn thr_p thr_p_dyn thr_dyn debug debug_p debug_p_dyn debug_dyn p p_dyn dyn")'
+              echo ',("Stage","2")'
+            ''
+          }
           echo ']'
           ;;
         --print-libdir*)
@@ -555,6 +626,24 @@ let
               done
             fi
           done
+          # A handful of GHC's pre-existing packages have ids that
+          # are *just* `<name>-<version>` with no `-inplace` suffix in
+          # their installed package conf:
+          #   - `rts`: GHC's runtime, registered with `id: rts-1.0.3`
+          #   - `system-cxx-std-lib`: virtual placeholder for the host
+          #     C++ stdlib, registered with `id: system-cxx-std-lib-1.0`
+          # Every other pre-existing package (base, ghc-prim, text, …)
+          # uses the `-inplace` convention.  Mirror those real ids in
+          # the dummy `ghc-pkg dump` — both as the package's own id
+          # and as the dep id used by other packages — so the unit-id
+          # cabal computes against the dummy matches what it computes
+          # against the real GHC.
+          suffix() {
+            case "$1" in
+              rts|system-cxx-std-lib) echo "" ;;
+              *) echo "-inplace" ;;
+            esac
+          }
           for pkg in $PKGS; do
             varname="$(echo $pkg | tr "-" "_")"
             ver="VER_$varname"
@@ -562,12 +651,13 @@ let
             deps="DEPS_$varname"
             echo "name: $pkg" >> $out
             echo "version: ''${!ver}" >> $out
+            echo "id: $pkg-''${!ver}$(suffix $pkg)" >> $out
             echo "exposed-modules: ''${!exposed_mods}" >> $out
             echo "depends:" >> $out
             for dep in ''${!deps}; do
               ver_dep="VER_$(echo $dep | tr "-" "_")"
               if [[ "''${!ver_dep}" != "" ]]; then
-                echo "  $dep-''${!ver_dep}" >> $out
+                echo "  $dep-''${!ver_dep}$(suffix $dep)" >> $out
               fi
             done
             if [[ "$pkg" != "$LAST_PKG" ]]; then
