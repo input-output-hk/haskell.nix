@@ -29,6 +29,20 @@ let
   };
 
 
+  # Patches `Distribution.Client.PackageHash` so `hashedInstalledPackageId`
+  # consults the `CABAL_INSTALLED_PACKAGE_ID_OS` env var.  haskell.nix
+  # sets that var when invoking `make-install-plan`, pinning the
+  # unit-id format to the *build* platform's OS so plan-nix unit-ids
+  # don't fork from slice-build unit-ids when the eval system differs
+  # from the build system (e.g. evaluating on Darwin while building
+  # x86_64-linux derivations).
+  apply-cabal-install-patches = {
+    packages.cabal-install.patches = [
+      ./cabal-install-patches/installed-package-id-os-override.patch
+    ];
+  };
+
+
   apply-dontStrip-to-nix-tools = {
     packages.nix-tools.components.exes = {
       cabal-name.dontStrip = false;
@@ -73,6 +87,7 @@ let
 
     modules = [
       apply-hnix-patches
+      apply-cabal-install-patches
       apply-dontStrip-to-nix-tools
       add-static-libs-to-darwin
     ];
