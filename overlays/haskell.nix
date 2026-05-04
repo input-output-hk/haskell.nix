@@ -1134,6 +1134,8 @@ final: prev: {
           ] ++ final.lib.optionals (builtins.compareVersions ghc.version "9.14" >= 0) [
             "rts-headers"
             "rts-fs"
+            "template-haskell-lift"
+            "template-haskell-quasiquoter"
           ] ++ final.lib.optionals (
                   !final.stdenv.targetPlatform.isGhcjs
                && !final.stdenv.targetPlatform.isWindows
