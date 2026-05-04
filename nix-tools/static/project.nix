@@ -29,18 +29,10 @@ let
   };
 
 
-  # Patches `Distribution.Client.PackageHash` so `hashedInstalledPackageId`
-  # consults the `CABAL_INSTALLED_PACKAGE_ID_OS` env var.  haskell.nix
-  # sets that var when invoking `make-install-plan`, pinning the
-  # unit-id format to the *build* platform's OS so plan-nix unit-ids
-  # don't fork from slice-build unit-ids when the eval system differs
-  # from the build system (e.g. evaluating on Darwin while building
-  # x86_64-linux derivations).
-  apply-cabal-install-patches = {
-    packages.cabal-install.patches = [
-      ./cabal-install-patches/installed-package-id-os-override.patch
-    ];
-  };
+  # Shared with the regular nix-tools build (see
+  # ../cabal-install-patches.nix) so both builds patch
+  # cabal-install identically.
+  apply-cabal-install-patches = import ../cabal-install-patches.nix;
 
 
   apply-dontStrip-to-nix-tools = {
