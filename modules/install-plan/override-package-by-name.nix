@@ -13,6 +13,12 @@
     (acc: p: acc // { ${p.pkg-name} = (acc.${p.pkg-name} or []) ++ [ p.id ]; })
     {}
     config.plan-json.install-plan;
+  # The install plan keyed by plan id — a name → entry index over
+  # `plan-json.install-plan` for O(log N) lookup of a specific
+  # plan entry by its haskell.nix per-instance UnitID instead of
+  # the linear scan a `lib.findFirst` over the list would do.
+  plan-json-by-id = pkgs.lib.listToAttrs
+    (map (p: { name = p.id; value = p; }) config.plan-json.install-plan);
   packages = pkgs.lib.listToAttrs (map (p: {
       name = p.id;
       value = pkgs.lib.modules.mkAliasDefinitions (options.packages.${p.pkg-name});

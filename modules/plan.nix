@@ -53,6 +53,14 @@ in
       type = attrsOf (listOf str);
       default = {};
     };
+    # `plan-json.install-plan` indexed by plan id, so consumers
+    # can look a single plan entry up by its id with attrset
+    # lookup (O(log N)) rather than scanning the install-plan
+    # list linearly.
+    plan-json-by-id = mkOption {
+      type = attrsOf unspecified;
+      default = {};
+    };
     packages = if !config.use-package-keys
       then mkOption {
         type = attrsOf package;
