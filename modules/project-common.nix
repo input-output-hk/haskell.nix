@@ -100,5 +100,17 @@ with lib.types;
         If set, prevents nix-tools from attempting to load package.yaml even if it is present.
       '';
     };
+    builderVersion = mkOption {
+      type = int;
+      default = 2;
+      description = ''
+        Selects which component builder is used for per-component derivations.
+          * `1` — the Setup.hs-based builder (comp-builder.nix).
+          * `2` (default) — the cabal v2-build-based slicing builder
+            (comp-v2-builder.nix).
+        This is project-wide.  Set it on the project module to switch
+        builders; there is no per-component opt-in.
+      '';
+    };
   };
 }

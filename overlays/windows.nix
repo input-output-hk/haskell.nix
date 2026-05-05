@@ -42,9 +42,12 @@ final: prev:
         import ./mingw_w64.nix {
           inherit (final.stdenv) hostPlatform;
           inherit (final.pkgsBuildBuild) lib writeShellScriptBin;
+          # `runCommand` and `makeWrapper` are used by `wrapGhc`
+          # and must run on the build host.
+          inherit (final.pkgsBuildBuild) runCommand makeWrapper;
           wine = final.pkgsBuildBuild.wine64Packages.minimal;
           inherit (final.windows) mingw_w64_pthreads;
-          inherit (final) gmp;
+          inherit (final) gmp libffi;
           inherit (final.pkgsBuildBuild) symlinkJoin;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
