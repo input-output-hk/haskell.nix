@@ -361,22 +361,23 @@ let
           echo ',("Host platform","${platformString pkgs.stdenv.hostPlatform}")'
           echo ',("Target platform","${platformString pkgs.stdenv.targetPlatform}")'
           echo ',("Project Unit Id","ghc-${ghc.version}-inplace")'
-          # Capability fields cabal-install reads to decide what
-          # configure-args to record in plan.json's per-pkg
-          # `configure-args` entries.  Without these, cabal assumes
-          # the compiler can't build shared libs / dynamic-too, so it
-          # records `--disable-shared` / `--disable-library-for-ghci`
-          # — which feeds into the package's UnitId hash.  Mirror real
-          # GHC's capabilities so plan-to-nix's recorded ids match
-          # what cabal would compute against the actual compiler.
           ${
-            # Capability flags depend on the *target* platform — they
-            # have to mirror what the real cross GHC reports, because
-            # cabal reads `ghc --info` to decide things like
+            # Capability fields cabal-install reads to decide what
+            # configure-args to record in plan.json's per-pkg
+            # `configure-args` entries.  Without these, cabal assumes
+            # the compiler can't build shared libs / dynamic-too,
+            # so it records `--disable-shared` /
+            # `--disable-library-for-ghci` — which feeds into the
+            # package's UnitId hash.  Mirror real GHC's capabilities
+            # so plan-to-nix's recorded ids match what cabal would
+            # compute against the actual compiler.
+            #
+            # The values are conditioned on the *target* platform
+            # because cabal reads `ghc --info` to decide things like
             # `--enable-shared` vs `--disable-shared`, and those
             # decisions feed into the package's UnitId hash.
             #
-            # Reference outputs (verified by running `ghc --info` from
+            # Reference outputs (verified by running `ghc --info` on
             # the actual cross GHC derivation in /nix/store):
             #
             #   * x86_64-w64-mingw32 (Windows mingw): no
@@ -626,19 +627,22 @@ let
               done
             fi
           done
-          # A handful of GHC's pre-existing packages have ids that
-          # are *just* `<name>-<version>` with no `-inplace` suffix in
-          # their installed package conf:
-          #   - `rts`: GHC's runtime, registered with `id: rts-1.0.3`
-          #   - `system-cxx-std-lib`: virtual placeholder for the host
-          #     C++ stdlib, registered with `id: system-cxx-std-lib-1.0`
-          # Every other pre-existing package (base, ghc-prim, text, …)
-          # uses the `-inplace` convention.  Mirror those real ids in
-          # the dummy `ghc-pkg dump` — both as the package's own id
-          # and as the dep id used by other packages — so the unit-id
-          # cabal computes against the dummy matches what it computes
-          # against the real GHC.
-          suffix() {
+          ${
+            # A handful of GHC's pre-existing packages have ids that
+            # are *just* `<name>-<version>` with no `-inplace` suffix
+            # in their installed package conf:
+            #   - `rts`: GHC's runtime, registered as `id: rts-1.0.3`
+            #   - `system-cxx-std-lib`: virtual placeholder for the
+            #     host C++ stdlib, registered as
+            #     `id: system-cxx-std-lib-1.0`
+            # Every other pre-existing package (base, ghc-prim,
+            # text, …) uses the `-inplace` convention.  Mirror those
+            # real ids in the dummy `ghc-pkg dump` — both as the
+            # package's own id and as the dep id used by other
+            # packages — so the unit-id cabal computes against the
+            # dummy matches what it computes against the real GHC.
+            ""
+          }suffix() {
             case "$1" in
               rts|system-cxx-std-lib) echo "" ;;
               *) echo "-inplace" ;;
