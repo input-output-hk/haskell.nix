@@ -1,0 +1,88 @@
+Prune public sublibs that no component in the package reaches.
+
+Cabal's solver builds a single `flagged_deps` list per package that bundles
+every component's dependencies, including public sublibraries.  If any
+sublib has a `build-depends` entry that isn't in the repo, the whole
+package fails to solve — even when the user only targets the main library.
+
+Example: `vector-0.13.2.0` exposes a public `library benchmarks-O2` sublib
+which `build-depends: tasty`.  Targeting `vector:lib:vector` with a
+slicing repo that doesn't contain `tasty` makes the solver fail, because
+the sublib is in `flagged_deps` regardless of whether it's reachable from
+what we build.
+
+This patch walks the intra-package dep graph from the main library and
+every executable component, collects the sublibs they transitively
+reference, and removes the rest from `flagged_deps`.  A sublib that no
+local component reaches cannot contribute to the targeted build, so its
+external deps don't need to be satisfiable.
+
+Caveat: an external package's `build-depends: thispkg:lib:unusedsublib`
+will still require that sublib's deps.  If that matters, a downstream
+solve can reinstate them via the usual cabal mechanisms — this pruning
+only affects the within-package solve.
+
+--- a/src/Distribution/Solver/Modular/IndexConversion.hs
++++ b/src/Distribution/Solver/Modular/IndexConversion.hs
+@@ -189,9 +189,15 @@
+
+     initDR = DependencyReason pn M.empty S.empty
+
++    -- haskell.nix: drop sublibs unreachable from main-lib / exes so an
++    -- unrelated sublib's missing deps can't fail the whole package solve.
++    reachableSubs :: S.Set UnqualComponentName
++    reachableSubs = reachableSubLibs pn mlib sub_libs exes
++    keptSubLibs   = L.filter (\(nm, _) -> nm `S.member` reachableSubs) sub_libs
++
+     flagged_deps
+         = concatMap (\ds ->       conv ComponentLib         libBuildInfo        initDR ds) (maybeToList mlib)
+-       ++ concatMap (\(nm, ds) -> conv (ComponentSubLib nm) libBuildInfo        initDR ds) sub_libs
++       ++ concatMap (\(nm, ds) -> conv (ComponentSubLib nm) libBuildInfo        initDR ds) keptSubLibs
+        ++ concatMap (\(nm, ds) -> conv (ComponentFLib nm)   foreignLibBuildInfo initDR ds) flibs
+        ++ concatMap (\(nm, ds) -> conv (ComponentExe nm)    buildInfo           initDR ds) exes
+        ++ prefix (Stanza (SN pn TestStanzas))
+@@ -239,6 +245,44 @@
+         isPrivate LibraryVisibilityPublic  = False
+
+   in PInfo flagged_deps components fds fr
++
++-- | Sublib components reachable from the main library or any executable of
++-- a package by walking same-package `build-depends` edges.  Unreachable
++-- sublibs are safely prunable from `flagged_deps`: nothing in this package
++-- pulls them in, so their external deps don't need to solve.
++reachableSubLibs
++  :: PN
++  -> Maybe (CondTree ConfVar [Dependency] Library)
++  -> [(UnqualComponentName, CondTree ConfVar [Dependency] Library)]
++  -> [(UnqualComponentName, CondTree ConfVar [Dependency] Executable)]
++  -> S.Set UnqualComponentName
++reachableSubLibs pn mlib sub_libs exes =
++    go S.empty seedNames
++  where
++    subLibMap = M.fromList sub_libs
++
++    allDeps :: CondTree ConfVar [Dependency] a -> [Dependency]
++    allDeps (CondNode _ ds branches) = ds ++ concatMap branchDeps branches
++
++    branchDeps :: CondBranch ConfVar [Dependency] a -> [Dependency]
++    branchDeps (CondBranch _ t mf) = allDeps t ++ maybe [] allDeps mf
++
++    sublibsFrom :: [Dependency] -> [UnqualComponentName]
++    sublibsFrom = concatMap $ \(Dependency name _ libs) ->
++        if name == pn
++          then [nm | LSubLibName nm <- NonEmptySet.toList libs]
++          else []
++
++    seedNames = sublibsFrom (concatMap allDeps (maybeToList mlib))
++             ++ sublibsFrom (concatMap allDeps (L.map snd exes))
++
++    go acc [] = acc
++    go acc (nm:rest)
++      | nm `S.member` acc = go acc rest
++      | otherwise = case M.lookup nm subLibMap of
++          Nothing -> go acc rest
++          Just sl -> go (S.insert nm acc)
++                       (sublibsFrom (allDeps sl) ++ rest)
+
+ -- | Applies the given predicate (for example, testing buildability or
+ -- visibility) to the given component and environment. Values are combined with

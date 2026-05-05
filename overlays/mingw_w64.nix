@@ -1,13 +1,16 @@
 # Cross compilation logic.
 # Returns override fields for use with nix-tools.
 { lib
+, runCommand
 , writeShellScriptBin
+, makeWrapper
 , wine
 , mingw_w64_pthreads
 , iserv-proxy
 , iserv-proxy-interpreter
 , iserv-proxy-interpreter-prof
 , gmp
+, libffi
 , hostPlatform
 , symlinkJoin
 }:
@@ -97,4 +100,67 @@ let
   '';
   testWrapper = ["${wineTestWrapper}/bin/test-wrapper"];
 
-in { inherit testWrapper ghcOptions configureFlags; }
+  ################################################################################
+  # v2 builder ghc wrapper.
+  #
+  # The v2 cabal-slice builder runs `cabal v2-build` inside each
+  # slice, so it can't put `-fexternal-interpreter -pgmi <wrapper>`
+  # into the per-package `ghc-options:` block — that would change
+  # cabal's UnitId hash and fork the same package's UnitId across
+  # slices that need to compose.
+  #
+  # Instead, wrap ghc itself with `--add-flags` so every invocation
+  # silently prepends the iserv-related options.  Cabal still sees
+  # the unwrapped compiler-id (via `ghc --info`), so the UnitId
+  # hash inputs are unchanged.  Other binaries (`ghc-pkg`,
+  # `hsc2hs`, `runghc`, ...) are symlinked through unchanged so
+  # cabal can still invoke them.
+  #
+  # Exposed as a function so callers can hand in the cross ghc
+  # they have on hand (avoids `templateHaskell` having to look up
+  # a ghc by `compiler-nix-name`).
+  wrapGhc = ghc:
+    runCommand "${ghc.name}-with-iserv"
+      { nativeBuildInputs = [ makeWrapper ];
+        passthru = {
+          inherit (ghc) version meta;
+          targetPrefix = ghc.targetPrefix or "";
+        };
+      } ''
+        mkdir -p $out/bin
+        prefix="${ghc.targetPrefix or ""}"
+        # Wrap `ghc` and `ghci` with the iserv ghc-options.
+        for prog in ghc ghci ghc-${ghc.version} ghci-${ghc.version}; do
+          if [ -x ${ghc}/bin/$prefix$prog ]; then
+            makeWrapper \
+              ${ghc}/bin/$prefix$prog \
+              $out/bin/$prefix$prog \
+              --add-flags ${lib.escapeShellArg (lib.concatStringsSep " " ghcOptions)}
+          fi
+        done
+        # Symlink every other bin from the real ghc unchanged so
+        # cabal can find ghc-pkg, hsc2hs, runghc, runhaskell,
+        # haddock, etc. as it expects.
+        for f in ${ghc}/bin/$prefix*; do
+          base=$(basename "$f")
+          [ -e "$out/bin/$base" ] || ln -s "$f" "$out/bin/$base"
+        done
+        # Forward $ghc/lib/ and $ghc/share/ so `ghc --print-libdir`
+        # (which makeWrapper preserves via getExecutablePath) still
+        # finds the boot libs.
+        for d in lib share; do
+          [ -d ${ghc}/$d ] && ln -s ${ghc}/$d $out/$d
+        done
+      '';
+
+  # Host-platform runtime DLLs that `iserv-proxy-interpreter.exe`
+  # is linked against and must be loadable when wine starts it.
+  # The wineIservWrapper symlinks every `*.dll` it can find under
+  # `pkgsHostTargetAsString` into REMOTE_ISERV; surfacing these
+  # explicitly via the v2 slice's buildInputs makes them appear in
+  # `pkgsHostTarget` so the wrapper can pick up `libmcfgthread-2.dll`,
+  # `libgmp-10.dll`, `libffi-8.dll`, etc.  Mirrors the `-L<...>/lib`
+  # entries v1 already passes through `ghcOptions`.
+  iservRuntimeLibs = [ mingw_w64_pthreads gmp libffi ];
+
+in { inherit testWrapper ghcOptions configureFlags wrapGhc iservRuntimeLibs; }

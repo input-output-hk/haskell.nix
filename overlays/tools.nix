@@ -73,6 +73,11 @@ in { haskell-nix = prev.haskell-nix // {
             config = {
               # Disable benchmarks and tests by default (since we only want the exe component)
               configureArgs = "--disable-benchmarks --disable-tests";
+              # Tools default to the v1 builder: every v2 slice lists
+              # the v2 `cabal-install` tool as a nativeBuildInput, so
+              # building tools themselves via v2 would cycle.  Users
+              # can still opt in explicitly per-tool via a module.
+              builderVersion = lib.mkDefault 1;
             };
           })
         ]);
