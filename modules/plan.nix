@@ -40,6 +40,19 @@ in
       type = listOf str;
       default = [];
     };
+    # Map from canonical pkg-name to the list of plan ids
+    # (haskell.nix's per-instance UnitIDs) under that name.  A given
+    # name can have multiple ids — e.g. when the plan holds several
+    # instances that differ only in their dep UnitIDs, or when a
+    # multi-component package is split into per-component entries.
+    # Consumers looking for "all configurations of this canonical
+    # package" should iterate through these ids and read from
+    # `config.packages.${id}` so lookups are unambiguous without
+    # relying on name-only matches against `config.packages`.
+    package-ids-by-name = mkOption {
+      type = attrsOf (listOf str);
+      default = {};
+    };
     packages = if !config.use-package-keys
       then mkOption {
         type = attrsOf package;

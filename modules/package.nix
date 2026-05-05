@@ -51,6 +51,15 @@ in
         defaultText = "\${config.package.identifier.name}-\${config.package.identifier.version}";
       };
 
+      # cabal-install unit-id from plan.json's per-entry `id`.
+      # Set by `modules/install-plan/planned.nix` for plan-id-keyed
+      # packages.  Null when not derived from a plan.json entry
+      # (e.g. setup deps before plan resolution).
+      identifier.unit-id = lib.mkOption {
+        type = types.nullOr types.str;
+        default = null;
+      };
+
       license = lib.mkOption {
         type = types.str;
       };
