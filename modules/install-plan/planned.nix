@@ -38,6 +38,27 @@ let
 in {
   packages = lib.listToAttrs (map (p: {
     name = p.id;
-    value.components = plannedComponents p;
+    value = {
+      components = plannedComponents p;
+      # Populate the package's `identifier` so consumers that read
+      # `package.identifier.name` / `.version` (e.g. hspkg-builder's
+      # `homeDependIds`) don't throw on these plan-id-keyed entries.
+      # The canonical-name-keyed entry already has a real identifier
+      # via `load-cabal-plan.nix`; this adds it for the per-plan-id
+      # ones too.
+      #
+      # `unit-id` is plan.json's per-entry `id` — for Simple-build
+      # packages this is the cabal-install unit-id of *this specific
+      # component* (one entry per lib / sublib / exe / test / bench).
+      # For Custom-build packages plan.json emits a single entry for
+      # the whole package and shares the id across components.
+      package = {
+        identifier = {
+          name = p.pkg-name or p.id;
+          version = p.pkg-version or "0";
+          unit-id = p.id;
+        };
+      };
+    };
   }) config.plan-json.install-plan);
 }
