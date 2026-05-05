@@ -1,0 +1,14 @@
+cabal-version:       3.0
+name:                consumer
+version:             0.1.0.0
+license:             MIT
+author:              haskell.nix test
+maintainer:          haskell.nix@iohk.io
+build-type:          Simple
+
+executable consumer
+  main-is:             Main.hs
+  build-depends:       base
+                     , provider
+                     , provider:slib
+  default-language:    Haskell2010

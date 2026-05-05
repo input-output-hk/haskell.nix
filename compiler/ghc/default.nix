@@ -345,6 +345,9 @@ let
       name = "hadrian";
       compilerSelection = p: p.haskell.compiler;
       evalPackages = ghcEvalPackages;
+      # TODO remove: keeps GHC rebuilds from being triggered every
+      # time the v2 code path changes while v2 is still evolving.
+      builderVersion = 1;
       modules = [{
         reinstallableLibGhc = false;
         # Apply the patches in a way that does not require using something

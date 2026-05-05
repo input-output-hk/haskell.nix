@@ -1454,6 +1454,10 @@ in {
                 version = "1.24.4";
                 index-state = final.haskell-nix.internalHackageIndexState;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/hscolour";
+                # TODO remove: hscolour is part of the GHC build
+                # chain.  Pinning to v1 for now so changes to the v2
+                # code path don't re-trigger GHC rebuilds.
+                builderVersion = 1;
             })).getComponent "exe:HsColour";
     };
   };

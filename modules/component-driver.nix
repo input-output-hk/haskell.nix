@@ -4,12 +4,27 @@ let
     inherit haskellLib;
     ghc = config.ghc.package;
     compiler-nix-name = config.compiler.nix-name;
-    inherit (config) nonReinstallablePkgs hsPkgs compiler evalPackages;
+    inherit (config) nonReinstallablePkgs hsPkgs compiler evalPackages builderVersion crossTemplateHaskellSupport;
   };
 
 in
 
 {
+  # Selects which component builder produces the primary derivation
+  # (1 = Setup.hs / comp-builder, 2 = cabal v2-build / comp-v2-builder).
+  # Propagated from the project-level `builderVersion`.
+  options.builderVersion = lib.mkOption {
+    type = lib.types.int;
+    default = 1;
+  };
+  # Propagated from the project-level `crossTemplateHaskellSupport`.
+  # When false, the v2 cabal-slice builder uses the unwrapped ghc
+  # for all slices in this project — needed for projects that
+  # the wrapper itself depends on (iserv-proxy).
+  options.crossTemplateHaskellSupport = lib.mkOption {
+    type = lib.types.bool;
+    default = true;
+  };
   # Packages in that are `pre-existing` in the cabal plan
   options.preExistingPkgs = lib.mkOption {
     type = lib.types.listOf lib.types.str;

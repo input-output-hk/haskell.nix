@@ -718,6 +718,14 @@ let
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
+    # Pin the unit-id format that `make-install-plan`'s patched
+    # cabal uses to the *build* platform's OS.  Without this the
+    # format tracks the eval system (which on a Darwin host
+    # evaluating a Linux derivation gives the `VeryShort` form),
+    # and plan-nix unit-ids fork from what slice cabal v2-build
+    # computes on Linux.  See
+    # nix-tools/cabal-install-patches/installed-package-id-os-override.patch.
+    CABAL_INSTALLED_PACKAGE_ID_OS = pkgs.stdenv.buildPlatform.parsed.kernel.name;
     meta.platforms = pkgs.lib.platforms.all;
     preferLocalBuild = false;
     outputs = [

@@ -24,6 +24,8 @@
     - [IOHKs nix library](./template/iohk-nix.md)
 - [Dev Notes](./dev/index.html)
     - [Architecture](./dev/dev-architecture.md)
+    - [V1 Component Builder](./dev/builder-v1.md)
+    - [V2 Component Builder](./dev/builder-v2.md)
     - [Installing nix-tools](./dev/installing-nix-tools.md)
     - [How to update nix-tools](./dev/nix-tools-pin.md)
     - [Manually generating Nix expressions](./dev/manually-generating-nix-expressions.md)

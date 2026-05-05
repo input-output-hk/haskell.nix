@@ -182,6 +182,7 @@ let
     cabal-simple-debug = callTest ./cabal-simple-debug { inherit util; };
     cabal-simple-prof = callTest ./cabal-simple-prof { inherit util; };
     cabal-sublib = callTest ./cabal-sublib { inherit util; };
+    cabal-sublib-shell = callTest ./cabal-sublib-shell {};
     with-packages = callTest ./with-packages { inherit util; };
     builder-haddock = callTest ./builder-haddock {};
     stack-simple = callTest ./stack-simple {};

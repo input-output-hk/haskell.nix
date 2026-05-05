@@ -699,7 +699,7 @@ final: prev: {
                         in if ghc.isHaskellNixCompiler or false then ghc.override { ghcEvalPackages = evalPackages; } else ghc;
                       compiler.nix-name = final.lib.mkForce config.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
-                      inherit (config) prebuilt-depends;
+                      inherit (config) prebuilt-depends builderVersion;
                     } ];
                   extra-hackages = config.extra-hackages or [] ++ callProjectResults.extra-hackages;
                 };
@@ -834,6 +834,13 @@ final: prev: {
             #     ];
             #   }
             #
+            # `shellFor` uses whatever `builderVersion` the project is
+            # configured with.  Under `builderVersion = 2` v1's
+            # shellFor path doesn't work anyway (it reaches into
+            # v1-only passthru attrs like `executableToolDepends`,
+            # `config`, `env`, etc.), so the cross-shell merge below
+            # also dispatches on the builder to drop v1-only keys
+            # before invoking the v2 shell.
             shellFor = extraArgs: (appendModule { shell = extraArgs; }).shell;
             shell = shellFor' rawProject.args.shell.crossPlatforms;
             shellFor' = crossPlatforms:
@@ -846,8 +853,19 @@ final: prev: {
                     # The main shell's hoogle will probably be faster to build.
                     withHoogle = final.lib.mkForce false;
                   }) (crossPlatforms projectCross);
-              in rawProject.hsPkgs.shellFor (shellArgs // {
-                  # Add inputs from the cross compilation shells
+                builderV = rawProject.pkg-set.config.builderVersion or 1;
+              in rawProject.hsPkgs.shellFor (
+                # Under `builderVersion = 2`, drop v1-only keys the
+                # v2 shell doesn't accept.  `allToolDeps` IS honoured
+                # in v2 (build-tool-depends are surfaced via
+                # `executableToolDepends`), so keep it.
+                (if builderV == 2
+                  then builtins.removeAttrs shellArgs [
+                    "exactDeps" "packageSetupDeps"
+                    "enableDWARF" "components" "additional"
+                  ]
+                  else shellArgs)
+                // {
                   inputsFrom = shellArgs.inputsFrom or [] ++ crossShells;
                 });
 
@@ -951,7 +969,9 @@ final: prev: {
                     ++ final.lib.optional (config.ghc != null) { ghc.package = config.ghc.override { ghcEvalPackages = evalPackages; }; }
                     ++ final.lib.optional (config.compiler-nix-name != null)
                         { compiler.nix-name = final.lib.mkForce config.compiler-nix-name; }
-                    ++ [ { evalPackages = final.lib.mkDefault evalPackages; } ];
+                    ++ [ { evalPackages = final.lib.mkDefault evalPackages;
+                           inherit (config) builderVersion;
+                         } ];
                 };
 
                 project = addProjectAndPackageAttrs {
@@ -1051,21 +1071,47 @@ final: prev: {
                     # by disabling the `--ghc-option` normally passed to `setupBuildFlags`
                     # when cross compiling.
                     setupBuildFlags = final.lib.mkForce [];
+                    # The v2 cross-TH wrapper depends on
+                    # iserv-proxy-interpreter; building the
+                    # iserv-proxy project itself with that wrapper
+                    # applied would recurse on its own inputs.
+                    # Opt out so iserv-proxy's slices use the
+                    # unwrapped ghc.
+                    crossTemplateHaskellSupport = false;
                   };
                 }];
-              } // final.lib.optionalAttrs (
-                     final.stdenv.hostPlatform.isAarch64
-                  && builtins.compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8" < 0) {
-                # The th-dlls test fails for aarch64 cross GHC 9.6.7 when the threaded rts is used
-                cabalProjectLocal = ''
-                  package iserv-proxy
-                    flags: -threaded
-                '';
-              } // final.lib.optionalAttrs (__compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.10" > 0) {
-                  cabalProjectLocal = ''
+
+                cabalProjectLocal =
+                  # aarch64 + GHC < 9.8: th-dlls test fails when
+                  # iserv-proxy is built with the threaded RTS.
+                  final.lib.optionalString (
+                       final.stdenv.hostPlatform.isAarch64
+                    && builtins.compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8" < 0
+                  ) ''
+                    package iserv-proxy
+                      flags: -threaded
+                  ''
+                  # GHC > 9.10: bound relaxation for base / bytestring
+                  # shipped with newer compilers.
+                  + final.lib.optionalString (
+                      __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.10" > 0
+                  ) ''
                     allow-newer: *:base, *:bytestring
+                  ''
+                  # Windows host: iserv-proxy-interpreter.exe needs
+                  # these linker flags to avoid a "32 bit pseudo
+                  # relocation … out of range" error when wine
+                  # launches it, plus `-debug` for clearer runtime
+                  # diagnostics.  The `if os(mingw32)` guard keeps
+                  # them from leaking into the build-platform
+                  # iserv-proxy build (the same cabalProjectLocal
+                  # is shared by both).
+                  + final.lib.optionalString final.stdenv.hostPlatform.isWindows ''
+                    if os(mingw32)
+                      package iserv-proxy
+                        ghc-options: -debug -optl-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000
                   '';
-                })).hsPkgs.iserv-proxy.components.exes;
+              })).hsPkgs.iserv-proxy.components.exes;
             in rec {
               # We need the proxy for the build system and the interpreter for the target
               inherit (exes final.pkgsBuildBuild) iserv-proxy;

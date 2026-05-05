@@ -23,7 +23,7 @@ let
       ];
      })
      ({pkgs, ...}: lib.optionalAttrs externalInterpreter {
-      packages.th-dlls-minimal.components.library.ghcOptions = [ "-fexternal-interpreter" ];
+      packages.th-dlls-minimal.ghcOptions = [ "-fexternal-interpreter" ];
     })];
   };
 
