@@ -33,6 +33,23 @@ let outerGhc = ghc; in
 , localRepo ? null           # derivation with <pkg>-<ver>.tar.gz files
 , preBuild                   # stage sources, write cabal.project, cd into project dir
 , target ? "all"
+, extraSublibSeeds ? []      # list of `{ pkg = ...; sublib = ...; }`
+                             # records that the patched
+                             # `prune-unreachable-sublibs.patch` should
+                             # add as extra reachability seeds in
+                             # cabal's solver index — required when
+                             # the slice's `target` is itself a sublib
+                             # of `pkg` (otherwise the unreachable-from-
+                             # main-lib pruning drops it and cabal
+                             # raises [Cabal-7127] "package does not
+                             # contain a library with that name").
+                             # Set automatically by `comp-v2-builder.nix`
+                             # for sublib slices.  Only the targeted
+                             # sublib (and its transitively-required
+                             # sublibs) are kept — unrelated sublibs
+                             # like `lib:testlib` are still pruned, so
+                             # their deps (e.g. QuickCheck) don't
+                             # leak into the install plan.
 , passthru ? {}              # extra attrs to attach to the derivation
 , extraBuildInputs ? []      # e.g. component.libs / frameworks — things ld needs at link time
 , extraNativeBuildInputs ? [] # e.g. build-tools — tools on PATH at build time
@@ -185,6 +202,13 @@ stdenv.mkDerivation ({
   LC_ALL = "en_US.UTF-8";
 } // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
   LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive";
+} // lib.optionalAttrs (extraSublibSeeds != []) {
+  # Read by the patched `prune-unreachable-sublibs.patch` to add
+  # extra reachability seeds when walking each package's sublib graph.
+  # Format: comma-separated `pkg/sublib` entries.  Set by
+  # `comp-v2-builder.nix` for slices whose `target` is itself a sublib.
+  HASKELLNIX_EXTRA_SUBLIB_SEEDS =
+    lib.concatMapStringsSep "," (s: "${s.pkg}/${s.sublib}") extraSublibSeeds;
 } // {
   # GHCJS runs Template Haskell splices by linking the splice as a
   # JS module and executing it via node at compile-time, so node has
@@ -207,20 +231,38 @@ stdenv.mkDerivation ({
                         # to extract / pretty-print plan.json entries for
                         # the diff between plan-nix and the slice's
                         # actual `dist-newstyle/cache/plan.json`.
-                        pkgsBuildBuild.jq ]
+                        pkgsBuildBuild.jq
+                        # cabal-install clones `source-repository-package`
+                        # blocks via `git clone file://...`, which needs
+                        # `git` on PATH (cabal raises [Cabal-6666] "The
+                        # program 'git' is required but it could not be
+                        # found." otherwise).  `gitMinimal` keeps the
+                        # closure small.
+                        pkgsBuildBuild.gitMinimal ]
     ++ lib.optional stdenv.hostPlatform.isGhcjs pkgsBuildBuild.nodejs
     ++ extraNativeBuildInputs;
-  # `depSlices` go in `buildInputs` so stdenv exposes them via
-  # `pkgsHostTarget` (a bash array of host-platform inputs) — the
-  # buildPhase walks that array to find each slice's `store/`
-  # subdir and `lndir` it into our composed cabal store.  Same
-  # pattern as v1's `make-config-files.nix:102-114`, where the
-  # array is walked to find `package.conf.d` dirs.  Slices have
-  # no `lib/` / `include/` at the $out level so stdenv's normal
-  # NIX_LDFLAGS / NIX_CFLAGS injection finds nothing to add — the
-  # presence in buildInputs is purely for propagation + iteration.
-  buildInputs = extraBuildInputs ++ depSlices;
-  propagatedBuildInputs = propagated;
+  # `depSlices` go in `propagatedBuildInputs` so stdenv chains each
+  # slice's `nix-support/propagated-build-inputs` transitively.
+  # Concretely: `cardano-lmdb:lib:ffi` declares `pkgconfig = [lmdb]`
+  # in its own `propagated`; with chaining, `cardano-lmdb:lib:cardano-lmdb`
+  # records lmdb in its own propagation file, and a downstream
+  # consumer (`cardano-lmdb-simple`) gets lmdb in its build env
+  # automatically — no manual `transitiveDepLibs` walk required.
+  # Normal nixpkgs deps like `lmdb` carry `__spliced` so they
+  # auto-swap to the consumer's pkg-set under cross-compilation; the
+  # only entries that don't auto-swap are the slice $outs themselves
+  # (ad-hoc mkDerivation results), which are mostly inert directories
+  # of cabal-store symlinks anyway.
+  #
+  # The buildPhase finds slices by walking `pkgsHostTarget` (the bash
+  # array stdenv builds from buildInputs *and* propagatedBuildInputs)
+  # for entries that expose a `store/` subdir.  Same pattern as v1's
+  # `make-config-files.nix:102-114`.  Slices have no `lib/`/`include/`
+  # at $out so stdenv's NIX_LDFLAGS / NIX_CFLAGS injection finds
+  # nothing to add — propagation is for iteration + transitive
+  # sysLib chaining only.
+  buildInputs = extraBuildInputs;
+  propagatedBuildInputs = propagated ++ depSlices;
   # `fixupPhase` is what stdenv uses to write
   # `nix-support/propagated-build-inputs` from `propagatedBuildInputs`.
   # Without it the slice's `propagated` (pkgconfig deps, frameworks,
@@ -329,7 +371,15 @@ stdenv.mkDerivation ({
       # Exe-only units have a dir like <ghcDir>/<unit-id>/bin/<name>
       # but no corresponding .conf in package.db.  We need to catch
       # those too so a downstream compose can find them.
-      ( cd $ghcDir && ls -d */ 2>/dev/null | sed 's|/$||' ) \
+      #
+      # `find -maxdepth 1 -type d` rather than `ls -d */` because the
+      # OS-prefix patch on cabal-install puts `-` at the start of
+      # some unit-ids (e.g. `-clsss-...`), and bash expands `*/` into
+      # those names as args to `ls`, which then interprets the
+      # leading `-` as flags and silently produces no output.
+      ( cd $ghcDir \
+          && find . -mindepth 1 -maxdepth 1 -type d \
+          | sed 's|^\./||' ) \
         > $buildRoot/unitdirs-before || true
     else
       : > $buildRoot/confs-before
@@ -420,6 +470,17 @@ stdenv.mkDerivation ({
     # them and falls back to "near compiler" lookup, which fails for
     # cross GHCs that ship only prefixed binaries).
     cabalGlobalArgs="--store-dir=$storeDir"
+    # Match v1's `-j` behaviour: cap parallelism at 4 even when nix
+    # gives us more cores.  Going much wider tends to thrash memory
+    # on big modules (cardano-ledger templates, plutus-core deriving,
+    # etc.) and slow the overall build.  `--jobs` on `cabal v2-build`
+    # passes through to `Setup build -jN`, which is a build-phase
+    # flag (per-module ghc parallelism within a package) and therefore
+    # *not* part of `pkgHashConfigureOptions` — UnitIds stay stable.
+    # `--ghc-options=-jN` would do the same compile-time work but
+    # would land in the unit-id hash, breaking plan-nix matching.
+    jobs=$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES))
+    cabalGlobalArgs="$cabalGlobalArgs --jobs=$jobs"
     cabalCmdArgs="${crossWithFlags}"
 
     ${lib.optionalString (expectedPackage != null) ''
@@ -720,7 +781,7 @@ stdenv.mkDerivation ({
         case "$unitId" in
           lib|package.db|incoming) continue ;;
         esac
-        if grep -qx "$unitId" $buildRoot/unitdirs-before 2>/dev/null; then
+        if grep -qx -- "$unitId" $buildRoot/unitdirs-before 2>/dev/null; then
           continue
         fi
         if [ ! -f $ghcDir/package.db/$unitId.conf ]; then
@@ -801,6 +862,86 @@ stdenv.mkDerivation ({
       done
     } | sort -u > $out/nix-support/transitive-deps
 
+    # Drop the package-db cache files from $out.  They're real files
+    # `ghc-pkg recache` regenerated for this slice's specific composed
+    # package.db, but downstream consumers compose a *different* set
+    # of confs and run their own `recache`, so this cache is always
+    # stale on arrival.  Leaving it in $out also means every dep
+    # slice's `package.cache` collides at lndir time in the consumer
+    # ("Keeping existing link to ..." spam scaling O(deps) per
+    # consumer).  Cheaper to delete now and let downstream recreate.
+    if [ -n "$ghcDir" ]; then
+      rm -f $ghcDir/package.db/package.cache \
+            $ghcDir/package.db/package.cache.lock
+    fi
+
+    # Clear dep-slice content out of $out/store now that this slice's
+    # own unit is captured.  Downstream consumers don't read another
+    # slice's $out/store directly — they walk
+    # `nix-support/transitive-deps` and lndir each entry's $out/store
+    # back into their own composed cabal-store.  So all the
+    # lndir-composed dep symlinks (and the dep-slice unit dirs they
+    # populated) are pure overhead in this slice's $out:
+    # fixupPhase walks every entry, NAR serialisation `lstat`s every
+    # entry, and Nix's reference scan follows them.  A deep dep graph
+    # leaves 10k+ symlinks in here.
+    #
+    # When the expected unit-id is known (from plan-nix), keep only
+    # `<uid>/` and `package.db/<uid>.conf` and `rm -rf` the rest of
+    # the package-db / unit dirs.  Falls back to walking the tree
+    # with `find -type l -delete` when the unit-id isn't known
+    # (`source-repo` packages, `style: "local"` packages, or any
+    # other case where `expectedUnitId` was set to null in
+    # comp-v2-builder).
+    if [ -n "$ghcDir" ]; then
+      ${if expectedUnitId == null then ''
+        find $ghcDir -type l -delete
+        find $ghcDir -mindepth 1 -type d -empty -delete
+      '' else let uid = lib.escapeShellArg expectedUnitId; in ''
+        keep=${uid}
+        # Move the keepers aside, wipe $ghcDir, then restore them.
+        # Cheaper than walking the tree.  The keepers cabal put here
+        # for *this slice's unit* are:
+        #   * `$ghcDir/<uid>/`             — per-unit lib/share/etc.
+        #   * `$ghcDir/package.db/<uid>.conf` — pkg-db entry
+        #   * `$ghcDir/lib/libHS<uid>-*.{dylib,so,a}` — the shared
+        #     dylib cabal puts in the flat `$ghcDir/lib/` alongside
+        #     the per-unit dir (one per ghc-version suffix; rare
+        #     profiled variants too).  Without this, downstream
+        #     consumers can't find the dylib at link time.
+        side=$buildRoot/keep
+        mkdir -p $side/package.db $side/lib
+        if [ -e "$ghcDir/$keep" ]; then
+          mv "$ghcDir/$keep" "$side/$keep"
+        fi
+        if [ -e "$ghcDir/package.db/$keep.conf" ]; then
+          mv "$ghcDir/package.db/$keep.conf" "$side/package.db/$keep.conf"
+        fi
+        shopt -s nullglob
+        for f in "$ghcDir/lib/libHS$keep"-*; do
+          mv "$f" "$side/lib/$(basename "$f")"
+        done
+        shopt -u nullglob
+        rm -rf "$ghcDir"
+        mkdir -p "$ghcDir/package.db"
+        if [ -e "$side/$keep" ]; then
+          mv "$side/$keep" "$ghcDir/$keep"
+        fi
+        if [ -e "$side/package.db/$keep.conf" ]; then
+          mv "$side/package.db/$keep.conf" "$ghcDir/package.db/$keep.conf"
+        fi
+        shopt -s nullglob
+        kept_libs=("$side/lib/libHS$keep"-*)
+        if [ ''${#kept_libs[@]} -gt 0 ]; then
+          mkdir -p "$ghcDir/lib"
+          for f in "''${kept_libs[@]}"; do
+            mv "$f" "$ghcDir/lib/$(basename "$f")"
+          done
+        fi
+        shopt -u nullglob
+      ''}
+    fi
+
     ${lib.optionalString (expectedUnitId != null) ''
       # The slice must produce exactly one unit-id: the plan-id
       # plan-nix recorded for this component.  Any divergence is a
@@ -819,7 +960,7 @@ stdenv.mkDerivation ({
       #     silently fork dep hashes.
       expected_uid=${lib.escapeShellArg expectedUnitId}
       actual_uids=$(sort -u $buildRoot/captured-unit-ids)
-      if printf '%s\n' "$actual_uids" | grep -Fxq "$expected_uid"; then
+      if printf '%s\n' "$actual_uids" | grep -Fxq -- "$expected_uid"; then
         missing=""
       else
         missing="$expected_uid"

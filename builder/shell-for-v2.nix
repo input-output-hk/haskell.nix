@@ -98,38 +98,89 @@ let
     (map (p: p.setup.config or null)
       (lib.filter (p: (p.buildType or "Simple") != "Simple") selectedPackages));
 
-  # Names of the selected packages — so we can filter out self-refs
-  # (we don't want to pre-install the packages the user works on).
-  # Plain string list, so use the `genAttrs`-then-`attrNames` trick
-  # for an O(n log n) dedupe.
-  selectedPkgNames = builtins.attrNames
-    (lib.genAttrs (map (p: p.identifier.name) selectedPackages) (_: null));
+  # Resolve a `component.depends` entry to its haskell.nix package
+  # value (`hsPkgs.<name>`).  A dep is either:
+  #   * a package record (has `.components`) — return as-is, OR
+  #   * a sublib slice (has `.passthru.identifier.name`) — look up
+  #     the package the slice comes from in `hsPkgs`.
+  depPkg = d:
+    if d ? components then d
+    else hsPkgs.${d.passthru.identifier.name or ""} or null;
 
+  # Build-tool exe (`executableToolDepends` entry) → its package.
+  exePkg = t: hsPkgs.${t.passthru.identifier.name or ""} or null;
+
+  pkgIsLocal = p: p != null && (p.isLocal or false);
+
+  # Transitive closure of local packages reachable from
+  # `selectedPackages` by following the dep graph through *only
+  # other local packages*.  We stop expanding the moment we hit an
+  # external dep — the slice's `nix-support/transitive-deps` file
+  # carries that dep's own transitive closure, which `composeStore`
+  # reads at build time.  So all we need at the nix-eval layer is
+  # every local package whose components might contribute external
+  # deps to the shell.
+  localPkgClosure =
+    let
+      visit = acc: pkg:
+        let name = pkg.identifier.name or "";
+        in if name == "" || acc ? ${name} || !(pkgIsLocal pkg)
+           then acc
+           else
+             let
+               acc'  = acc // { ${name} = pkg; };
+               comps = haskellLib.getAllComponents pkg;
+               libDepLocals = lib.filter pkgIsLocal
+                 (map depPkg
+                   (lib.concatMap (c: c.config.depends or []) comps));
+               exeDepLocals = lib.filter pkgIsLocal
+                 (map exePkg
+                   (lib.concatMap (c: c.executableToolDepends or [])
+                     comps));
+             in lib.foldl' visit acc' (libDepLocals ++ exeDepLocals);
+    in lib.attrValues (lib.foldl' visit {} selectedPackages);
+
+  # All components of every local pkg in the closure plus the
+  # selected setup configs (Custom-build packages' setup-depends).
+  localComps = lib.concatMap haskellLib.getAllComponents localPkgClosure
+            ++ selectedSetupConfigs;
+
+  # External dep predicate: keep deps whose resolved package is
+  # *not* a local project package.  Mirrors what the user asked for
+  # — exclude local packages but include their (external)
+  # dependencies.
   isExternal = d:
+    let dp = depPkg d; in
     (d ? identifier)
-    && !(lib.elem d.identifier.name selectedPkgNames);
-
-  # Union of all direct library deps across selected components
-  # and selected setup configs.  Entries are *package values*
-  # (the `hsPkgs.<name>` attrset), not slice derivations — to get
-  # the actual v2 library slice we follow each through to
-  # `.components.library` (which `hspkg-builder.nix` populates
-  # with the v2 derivation under `builderVersion = 2`).
-  # Filtering out the user's own home packages leaves the
-  # *direct* external slices the shell needs to compose;
-  # `composeStore` reconstructs the transitive closure at build
-  # time from each slice's `$out/nix-support/transitive-deps`
-  # file, so we don't walk that closure here.
-  directDeps = lib.concatMap (c: (c.config.depends or c.depends or []))
-    (selectedComps ++ selectedSetupConfigs);
+    && (dp == null || !(pkgIsLocal dp));
 
   # `haskellLib.dependToLib` resolves a `component.depends` entry
   # to its library derivation: for a top-level lib dep that's
   # `p.components.library`, but for a sublib dep the entry is
   # already the sublib derivation and gets returned unchanged.
-  ownDepSlices = lib.filter (s: s != null)
+  # Filtering out local packages here is what gives the shell its
+  # "local pkgs aren't pre-installed in the cabal store" property
+  # — the user iterates on them, so cabal compiles them from the
+  # working tree on demand.
+  ownLibDepSlices = lib.filter (s: s != null)
     (map haskellLib.dependToLib
-      (lib.filter isExternal directDeps));
+      (lib.filter isExternal
+        (lib.concatMap (c: c.config.depends or c.depends or [])
+          localComps)));
+  # Same exclusion for build-tool exes carried via
+  # `passthru.executableToolDepends` — keep prebuilt external tools
+  # (alex, happy, hsc2hs, ...) so cabal sees them in the store, but
+  # drop tools whose source is a local package so cabal rebuilds
+  # them from the user's tree.  Also filter to v2 slices (have
+  # `passthru.transitiveTarballs`) to skip nixpkgs-side tools like
+  # `gcc` or `pkgconf` which aren't haskell-nix-built.
+  ownBuildToolSlices = lib.filter
+    (t: t != null
+        && t ? passthru
+        && (t.passthru ? transitiveTarballs)
+        && !(pkgIsLocal (exePkg t)))
+    (lib.concatMap (c: c.executableToolDepends or []) localComps);
+  ownDepSlices = ownLibDepSlices ++ ownBuildToolSlices;
 
   # When the user combines this shell with other v2 shells via
   # `inputsFrom` (notably the cross shells the haskell-nix overlay
@@ -524,6 +575,13 @@ mkShell {
     ++ hoogleDrvs
     ++ buildToolDrvs
     ++ additionalTools
+    # On Darwin the apple-sdk overlay sets `DEVELOPER_DIR` to the
+    # nix-store SDK path (just headers/libs, no tools), so the
+    # `/usr/bin/git` xcrun shim fails with `tool 'git' not found`.
+    # Nix-managed git on PATH bypasses the shim entirely.  Cheap to
+    # include unconditionally — most v2 shell users want git on
+    # PATH anyway, and `gitMinimal` keeps the closure small.
+    ++ [ pkgs.buildPackages.gitMinimal ]
     ++ nativeBuildInputs
     ++ inputsFromNativeBuildInputs;
   buildInputs = buildInputs ++ inputsFromBuildInputs;

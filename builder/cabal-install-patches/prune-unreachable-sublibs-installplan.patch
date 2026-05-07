@@ -34,15 +34,19 @@ exported) so both sites share one implementation.
    ) where
 
  import Distribution.Client.Compat.Prelude
-@@ -96,6 +99,7 @@
+@@ -96,6 +99,11 @@
    , mergeBy
    )
  import qualified Distribution.Compat.Graph as Graph
 +import qualified Distribution.Compat.NonEmptySet as NonEmptySet
++import Distribution.Types.PackageName (unPackageName)
++import Distribution.Types.UnqualComponentName (mkUnqualComponentName)
++import qualified System.Environment as Env
++import qualified System.IO.Unsafe as Unsafe
  import Distribution.Compiler
    ( CompilerInfo (..)
    )
-@@ -1108,13 +1112,59 @@
+@@ -1108,13 +1116,76 @@
              -- but no finalizePDs picks components we are not building, eg. exes.
              -- See #3775
              --
@@ -72,10 +76,12 @@ exported) so both sites share one implementation.
 +-- | Sublib component names reachable from the main library or any executable
 +-- of a finalized PackageDescription.  Mirrors the GenericPackageDescription
 +-- pruning in Distribution.Solver.Modular.IndexConversion so solver output
-+-- and install-plan validation agree on which sublibs are live.
++-- and install-plan validation agree on which sublibs are live.  Extra seeds
++-- (from `HASKELLNIX_EXTRA_SUBLIB_SEEDS`) keep a sublib reachable when a
++-- slice targets it directly — same env-var contract as the solver patch.
 +reachablePDSubLibs :: PD.PackageDescription -> Set.Set PD.UnqualComponentName
 +reachablePDSubLibs pd =
-+    go Set.empty seed
++    go Set.empty (seed ++ extraSeeds)
 +  where
 +    thisPn = packageName pd
 
@@ -95,6 +101,21 @@ exported) so both sites share one implementation.
 +    seed = sublibNamesIn $
 +      maybe [] (PD.targetBuildDepends . PD.libBuildInfo) (PD.library pd)
 +      ++ concatMap (PD.targetBuildDepends . PD.buildInfo) (PD.executables pd)
++
++    extraSeeds :: [PD.UnqualComponentName]
++    extraSeeds = Unsafe.unsafePerformIO $ do
++      v <- Env.lookupEnv "HASKELLNIX_EXTRA_SUBLIB_SEEDS"
++      pure $ case v of
++        Nothing -> []
++        Just s  -> [ mkUnqualComponentName sub
++                   | entry <- splitOn ',' s
++                   , (pkg, '/':sub) <- [break (== '/') entry]
++                   , pkg == unPackageName thisPn
++                   ]
++
++    splitOn c s = case break (== c) s of
++      (a, [])    -> [a]
++      (a, _:rest) -> a : splitOn c rest
 +
 +    go acc [] = acc
 +    go acc (n:rest)
