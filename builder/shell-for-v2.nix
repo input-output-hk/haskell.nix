@@ -26,7 +26,12 @@
 { # Same shape as shellFor's `packages`: packages the user works on.
   # Their *dependencies* are composed into the shell's cabal store;
   # the packages themselves are not.
-  packages ? ps: builtins.attrValues (haskellLib.selectLocalPackages ps)
+  # Default to *project* packages (working-tree), not all *local*
+  # packages.  `selectLocalPackages` also includes
+  # source-repository-packages, but SRPs are pinned upstream code
+  # the user doesn't iterate on — we want them pre-built into the
+  # cabal store, not excluded from it.
+  packages ? ps: builtins.attrValues (haskellLib.selectProjectPackages ps)
   # Extra tools built from hackage and placed on PATH.  Same shape as
   # shellFor's `tools` argument: each value is a versionOrMod passed
   # to `haskell-nix.tool`.
@@ -110,67 +115,78 @@ let
   # Build-tool exe (`executableToolDepends` entry) → its package.
   exePkg = t: hsPkgs.${t.passthru.identifier.name or ""} or null;
 
-  pkgIsLocal = p: p != null && (p.isLocal or false);
+  # "Project" here means "the user iterates on it from the working
+  # tree".  `isLocal` would also flag source-repository-packages as
+  # local; we treat those as external so their slices land in the
+  # shell's cabal store.
+  pkgIsProject = p: p != null && (p.isProject or false);
 
-  # Transitive closure of local packages reachable from
+  # Transitive closure of project packages reachable from
   # `selectedPackages` by following the dep graph through *only
-  # other local packages*.  We stop expanding the moment we hit an
-  # external dep — the slice's `nix-support/transitive-deps` file
-  # carries that dep's own transitive closure, which `composeStore`
-  # reads at build time.  So all we need at the nix-eval layer is
-  # every local package whose components might contribute external
-  # deps to the shell.
-  localPkgClosure =
+  # other project packages*.  We stop expanding the moment we hit a
+  # non-project dep — the slice's `nix-support/transitive-deps`
+  # file carries that dep's own transitive closure, which
+  # `composeStore` reads at build time.  So all we need at the
+  # nix-eval layer is every project package whose components might
+  # contribute external deps to the shell.
+  # Dedup by `identifier.id` (the cabal unit-id, e.g.
+  # `cardano-wallet-unit-2026.4.17-inplace-test-common`) rather than
+  # by `identifier.name`.  v2 plan-nix gives each unit-id its own
+  # `hsPkgs` entry — components are split across siblings — so
+  # deduping by package name would drop every sibling after the
+  # first and miss its components' deps (e.g. `unit`'s `x509` dep
+  # gets lost if `test-common` was visited first).
+  projectPkgClosure =
     let
       visit = acc: pkg:
-        let name = pkg.identifier.name or "";
-        in if name == "" || acc ? ${name} || !(pkgIsLocal pkg)
+        let id = pkg.identifier.id or pkg.identifier.name or "";
+        in if id == "" || acc ? ${id} || !(pkgIsProject pkg)
            then acc
            else
              let
-               acc'  = acc // { ${name} = pkg; };
+               acc'  = acc // { ${id} = pkg; };
                comps = haskellLib.getAllComponents pkg;
-               libDepLocals = lib.filter pkgIsLocal
+               libDepProjects = lib.filter pkgIsProject
                  (map depPkg
                    (lib.concatMap (c: c.config.depends or []) comps));
-               exeDepLocals = lib.filter pkgIsLocal
+               exeDepProjects = lib.filter pkgIsProject
                  (map exePkg
                    (lib.concatMap (c: c.executableToolDepends or [])
                      comps));
-             in lib.foldl' visit acc' (libDepLocals ++ exeDepLocals);
+             in lib.foldl' visit acc' (libDepProjects ++ exeDepProjects);
     in lib.attrValues (lib.foldl' visit {} selectedPackages);
 
-  # All components of every local pkg in the closure plus the
+  # All components of every project pkg in the closure plus the
   # selected setup configs (Custom-build packages' setup-depends).
-  localComps = lib.concatMap haskellLib.getAllComponents localPkgClosure
-            ++ selectedSetupConfigs;
+  projectComps = lib.concatMap haskellLib.getAllComponents projectPkgClosure
+              ++ selectedSetupConfigs;
 
   # External dep predicate: keep deps whose resolved package is
-  # *not* a local project package.  Mirrors what the user asked for
-  # — exclude local packages but include their (external)
-  # dependencies.
+  # *not* a project package.  Mirrors what the user asked for —
+  # exclude project packages but include their (external)
+  # dependencies (including source-repository-packages).
   isExternal = d:
     let dp = depPkg d; in
     (d ? identifier)
-    && (dp == null || !(pkgIsLocal dp));
+    && (dp == null || !(pkgIsProject dp));
 
   # `haskellLib.dependToLib` resolves a `component.depends` entry
   # to its library derivation: for a top-level lib dep that's
   # `p.components.library`, but for a sublib dep the entry is
   # already the sublib derivation and gets returned unchanged.
-  # Filtering out local packages here is what gives the shell its
-  # "local pkgs aren't pre-installed in the cabal store" property
+  # Filtering out project packages here is what gives the shell its
+  # "project pkgs aren't pre-installed in the cabal store" property
   # — the user iterates on them, so cabal compiles them from the
   # working tree on demand.
   ownLibDepSlices = lib.filter (s: s != null)
     (map haskellLib.dependToLib
       (lib.filter isExternal
         (lib.concatMap (c: c.config.depends or c.depends or [])
-          localComps)));
+          projectComps)));
   # Same exclusion for build-tool exes carried via
   # `passthru.executableToolDepends` — keep prebuilt external tools
   # (alex, happy, hsc2hs, ...) so cabal sees them in the store, but
-  # drop tools whose source is a local package so cabal rebuilds
+  # drop tools whose source is a project package so cabal rebuilds
   # them from the user's tree.  Also filter to v2 slices (have
   # `passthru.transitiveTarballs`) to skip nixpkgs-side tools like
   # `gcc` or `pkgconf` which aren't haskell-nix-built.
@@ -178,8 +194,8 @@ let
     (t: t != null
         && t ? passthru
         && (t.passthru ? transitiveTarballs)
-        && !(pkgIsLocal (exePkg t)))
-    (lib.concatMap (c: c.executableToolDepends or []) localComps);
+        && !(pkgIsProject (exePkg t)))
+    (lib.concatMap (c: c.executableToolDepends or []) projectComps);
   ownDepSlices = ownLibDepSlices ++ ownBuildToolSlices;
 
   # When the user combines this shell with other v2 shells via
@@ -485,8 +501,17 @@ let
       then lib.concatMap haskellLib.getAllComponents
              (lib.filter (x: !(x.isRedirect or false)) (builtins.attrValues hsPkgs))
       else selectedComps;
+  # Drop tools whose source is a project package — those are
+  # things the user is iterating on (e.g. cardano-wallet's own exes
+  # that other project packages list as build-tool-depends).
+  # Mirrors the project-package exclusion applied to
+  # `ownBuildToolSlices`, and matches v1's `removeSelectedInputs`
+  # filter.  Without this, any project exe that's a build-tool of
+  # another project package gets pre-built and pulled into the
+  # shell closure.
   buildToolDrvs = haskellLib.uniqueWithName
-    (lib.concatMap (c: c.executableToolDepends or []) buildToolComponents);
+    (lib.filter (t: t != null && !(pkgIsProject (exePkg t)))
+      (lib.concatMap (c: c.executableToolDepends or []) buildToolComponents));
 
   # Merge inputs from any `inputsFrom` shells (typical nix pattern).
   inputsFromBuildInputs       = lib.concatMap (d: d.buildInputs       or []) inputsFrom;
