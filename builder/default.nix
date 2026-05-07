@@ -74,6 +74,7 @@ let
       packages.cabal-install.patches = [
         ./cabal-install-patches/prune-unreachable-sublibs-installplan.patch
         ./cabal-install-patches/skip-installed-revdeps-in-completed.patch
+        ./cabal-install-patches/setup-build-num-jobs-env.patch
       ];
     }];
   };

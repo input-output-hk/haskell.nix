@@ -470,18 +470,23 @@ stdenv.mkDerivation ({
     # them and falls back to "near compiler" lookup, which fails for
     # cross GHCs that ship only prefixed binaries).
     cabalGlobalArgs="--store-dir=$storeDir"
-    # Match v1's `-j` behaviour: cap parallelism at 4 even when nix
-    # gives us more cores.  Going much wider tends to thrash memory
-    # on big modules (cardano-ledger templates, plutus-core deriving,
-    # etc.) and slow the overall build.  `--jobs` on `cabal v2-build`
-    # passes through to `Setup build -jN`, which is a build-phase
-    # flag (per-module ghc parallelism within a package) and therefore
-    # *not* part of `pkgHashConfigureOptions` — UnitIds stay stable.
-    # `--ghc-options=-jN` would do the same compile-time work but
-    # would land in the unit-id hash, breaking plan-nix matching.
-    jobs=$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES))
-    cabalGlobalArgs="$cabalGlobalArgs --jobs=$jobs"
     cabalCmdArgs="${crossWithFlags}"
+    # Match v1's `-j` behaviour: cap GHC's per-module parallelism at
+    # 4 even when nix gives us more cores.  Going much wider tends to
+    # thrash memory on big modules (cardano-ledger templates,
+    # plutus-core deriving, etc.) and slow the overall build.
+    #
+    # cabal-install 3.16's `setupHsBuildFlags` deliberately sets
+    # `buildNumJobs = mempty` (with a "TODO" upstream), so neither
+    # `cabal v2-build --jobs` nor `--ghc-options=-jN` actually
+    # parallelise per-module compilation: `--jobs` is package-level
+    # only, and `--ghc-options=-jN` would land in
+    # `pkgHashConfigureOptions` and break plan-nix UnitId matching.
+    # Our `setup-build-num-jobs-env.patch` reads
+    # `HASKELLNIX_BUILD_NUM_JOBS` from the env at build time and feeds
+    # it to `Setup build -jN`.  Build-phase flag, so UnitIds stay
+    # stable.
+    export HASKELLNIX_BUILD_NUM_JOBS=$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES))
 
     ${lib.optionalString (expectedPackage != null) ''
       # Dry-run the plan first and verify that cabal isn't planning
