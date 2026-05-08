@@ -53,10 +53,27 @@
         in isProgOption && !isGhcOption && !isCfgOption
       ) args;
 
+      # Translate `--enable-X` toggles cabal-install records into
+      # plan.json's `configure-args` back into the haskell.nix module
+      # options.  v1's comp-builder reads `enableProfiling`,
+      # `enableLibraryProfiling`, and `doCoverage` straight off the
+      # component config, so picking them up here lets a project set
+      # `package <pkg>\n  profiling: True` in cabal.project and have
+      # v1 honour it without also needing module-level toggles.
+      # v2 reads these from plan.json directly via its
+      # `projectConfigPragmas`, so the picked-up values are merely
+      # consistent there.
+      hasFlag = name: lib.elem ("--enable-${name}") args;
+      profilingFlags =
+        lib.optionalAttrs (hasFlag "profiling")         { enableProfiling        = true; }
+        // lib.optionalAttrs (hasFlag "library-profiling") { enableLibraryProfiling = true; }
+        // lib.optionalAttrs (hasFlag "coverage")        { doCoverage             = true; };
+
       value =
         lib.optionalAttrs (ghcOptions != []) { inherit ghcOptions; }
         // lib.optionalAttrs (configureOptions != []) { inherit configureOptions; }
-        // lib.optionalAttrs (otherFlags != []) { configureFlags = otherFlags; };
+        // lib.optionalAttrs (otherFlags != []) { configureFlags = otherFlags; }
+        // profilingFlags;
     in lib.optional (value != {}) {
       name = p.id;
       inherit value;
