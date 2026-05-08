@@ -30,6 +30,14 @@ let
   decLibrary = (package true).components.library;
   library = (package false).components.library;
 
+  # `project.shellFor` works under both v1 and v2; v2 lacks v1's
+  # per-component `.shell` / `.env` attributes (see
+  # `docs/dev/builder-v2.md`).  Use the project-level shell with
+  # `exposePackagesVia = "ghc-pkg"` so the wrapped `ghc` /
+  # `runghc` see the component's deps via `GHC_ENVIRONMENT`.
+  libraryShell    = (project false).shellFor { packages = ps: [ ps.test-with-packages ]; exposePackagesVia = "ghc-pkg"; };
+  decLibraryShell = (project true ).shellFor { packages = ps: [ ps.test-with-packages ]; exposePackagesVia = "ghc-pkg"; };
+
   pkgId = p: "${p.identifier.name}-${p.identifier.version}";
   showDepends = component: concatMapStringsSep " " pkgId (component.depends or []);
   extraFlags = "";
@@ -37,14 +45,14 @@ let
 in lib.recurseIntoAttrs {
   # Used for testing externally with nix-shell (../tests.sh).
   # This just adds cabal-install to the existing shells.
-  test-shell = (addCabalInstall library.shell).overrideAttrs (_: _: {
+  test-shell = (addCabalInstall libraryShell).overrideAttrs (_: _: {
     meta = {
       platforms = lib.platforms.all;
     };
   });
 
   # A variant of test-shell with the component option doExactConfig enabled
-  test-shell-dec = (addCabalInstall decLibrary.shell).overrideAttrs (_: _: {
+  test-shell-dec = (addCabalInstall decLibraryShell).overrideAttrs (_: _: {
     meta = {
       platforms = lib.platforms.all;
     };
@@ -81,18 +89,18 @@ in lib.recurseIntoAttrs {
         printf "runghc tests are not working yet for windows or ghcjs. skipping. " >& 2
       ''
       else ''
-        echo "checking that non doExactConfig library.env has the dependencies... "
+        echo "checking that non doExactConfig libraryShell.ghc has the dependencies... "
         echo "with runghc"
-        ${library.env}/bin/${library.env.targetPrefix}runghc ./Point.hs
+        ${libraryShell.ghc}/bin/${libraryShell.ghc.targetPrefix or ""}runghc ./Point.hs
         echo "with ghc"
-        ${library.env}/bin/${library.env.targetPrefix}ghc ${toString extraFlags} Point.hs 1> /dev/null
+        ${libraryShell.ghc}/bin/${libraryShell.ghc.targetPrefix or ""}ghc ${toString extraFlags} Point.hs 1> /dev/null
         ./Point
 
-        echo "checking that doExactConfig library.env has the dependencies... "
+        echo "checking that doExactConfig libraryShell.ghc has the dependencies... "
         echo "with runghc"
-        ${decLibrary.env}/bin/${decLibrary.env.targetPrefix}runghc ./Point.hs
+        ${decLibraryShell.ghc}/bin/${decLibraryShell.ghc.targetPrefix or ""}runghc ./Point.hs
         echo "with ghc"
-        ${decLibrary.env}/bin/${decLibrary.env.targetPrefix}ghc ${extraFlags} Point.hs 1> /dev/null
+        ${decLibraryShell.ghc}/bin/${decLibraryShell.ghc.targetPrefix or ""}ghc ${extraFlags} Point.hs 1> /dev/null
         ./Point
       '') + ''
       touch $out
