@@ -21,7 +21,19 @@ let
     cabalProjectLocal = builtins.readFile ../cabal.project.local
       + lib.optionalString (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64) ''
         constraints: text -simdutf, text source
-    '';
+      ''
+      # v2 reads profiling settings from plan.json's `configure-args`
+      # (the cabal-install-recorded toggles), not from haskell.nix's
+      # module-level `enableProfiling`/`enableLibraryProfiling`.  Inject
+      # them at project level so plan-nix records `--enable-profiling`
+      # / `--enable-library-profiling`, matching the slice's actual
+      # build and keeping its UnitId reproducible.  The module-level
+      # overrides above are kept for the v1 builder.
+      + ''
+        package *
+          library-profiling: True
+          profiling: True
+      '';
     inherit modules;
   };
 
