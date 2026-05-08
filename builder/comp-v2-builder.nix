@@ -813,14 +813,21 @@ let
   componentKindLabel = ctype;
   componentName = cname;
 
-  # Platform-specific executable extension — mirrors comp-builder.nix.
-  # Wasm / old-ghcjs produce `.wasm` / `.jsexe/all.js`; native
-  # Windows produces `.exe`; everything else has no extension.
+  # Platform-specific executable extension.  Wasm produces
+  # `.wasm`; native Windows produces `.exe`; everything else
+  # (including ghcjs under v2) has no extension.
+  #
+  # v1's `comp-builder.nix:450` appends `.jsexe/all.js` for
+  # `isGhcjs && ghc < 9.8`, matching the directory layout that
+  # `Setup.hs install` preserves.  v2 builds via `cabal v2-build`,
+  # whose install step *bundles* the `.jsexe/` contents into a
+  # single self-contained `#!/usr/bin/env node` script at
+  # `bin/<cname>` — there is no `.jsexe/` directory in the slice's
+  # output.  Use the bundled-file path here so v2's exePath /
+  # `find` lookups land on the file cabal actually produced.
   exeExt =
     if stdenv.hostPlatform.isWasm
       then ".wasm"
-    else if stdenv.hostPlatform.isGhcjs && builtins.compareVersions ghc.version "9.8" < 0
-      then ".jsexe/all.js"
     else stdenv.hostPlatform.extensions.executable;
   exeName = cname + exeExt;
 
