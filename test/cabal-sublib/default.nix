@@ -57,8 +57,11 @@ in lib.recurseIntoAttrs {
 
     meta = rec {
       platforms = lib.platforms.all;
-      # broken = stdenv.hostPlatform.isGhcjs && __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.6.1" >= 0;
-      # disabled = broken;
+      # ghcjs/emscripten wasm-ld hits "section too large" linking
+      # `-O`-optimized C backend objects with GHC >= 9.6.1.  Pre-dates
+      # v2 and not a slicer issue — disable on ghcjs for now.
+      broken = stdenv.hostPlatform.isGhcjs && __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.6.1" >= 0;
+      disabled = broken;
     };
 
     passthru = {
