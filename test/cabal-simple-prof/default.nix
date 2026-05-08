@@ -24,14 +24,14 @@ let
       ''
       # v2 reads profiling settings from plan.json's `configure-args`
       # (the cabal-install-recorded toggles), not from haskell.nix's
-      # module-level `enableProfiling`/`enableLibraryProfiling`.  Inject
-      # them at project level so plan-nix records `--enable-profiling`
-      # / `--enable-library-profiling`, matching the slice's actual
-      # build and keeping its UnitId reproducible.  The module-level
-      # overrides above are kept for the v1 builder.
+      # module-level `enableProfiling`/`enableLibraryProfiling`.  Mirror
+      # the modules above in cabal.project shape so plan-nix records
+      # the matching configure-args, keeping the slice's UnitId
+      # reproducible.  The module-level overrides are kept for v1.
       + ''
         package *
           library-profiling: True
+        package cabal-simple
           profiling: True
       '';
     inherit modules;

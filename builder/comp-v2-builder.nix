@@ -1062,29 +1062,36 @@ let
   # allow-newer in the project, etc.).
   allowNewerBlock = "allow-newer: *:*\n";
 
-  # Project-level cabal.project pragmas extracted from plan.json's
-  # per-pkg `configure-args`.  Plan-to-nix runs cabal-install with a
-  # specific set of `--enable-X`/`--disable-X` toggles (--disable-shared,
-  # --disable-static, --disable-library-profiling, --disable-debug-info,
-  # --disable-build-info, --enable-optimization, ...) — these enter
-  # cabal's `pkgHashConfigInputs` and so the unit-id hash of every
-  # package the project plan recorded.  If the slice's `cabal v2-build`
-  # uses different defaults (e.g. cabal's default `--enable-shared` on
-  # darwin), the slice produces a different unit-id even when name +
-  # version + deps are identical.
+  # Project-level and per-package cabal.project pragmas extracted
+  # from plan.json's `configure-args`.  Plan-to-nix runs
+  # cabal-install with a specific set of `--enable-X`/`--disable-X`
+  # toggles (--disable-shared, --disable-static,
+  # --disable-library-profiling, --enable-optimization, ...) —
+  # these enter cabal's `pkgHashConfigInputs` and so the unit-id
+  # hash of every package the project plan recorded.  If the slice's
+  # `cabal v2-build` uses different defaults (e.g. cabal's default
+  # `--enable-shared` on darwin), the slice produces a different
+  # unit-id even when name + version + deps are identical.
   #
-  # Mirroring the same toggles in the slice's cabal.project at project
-  # level keeps the slice's `pkgHashConfigInputs` aligned with plan-nix.
-  # The same flags appear in every configured plan entry's
-  # `configure-args` (verified across 95+ pkgs in a typical project),
-  # so we just read them off the first configured entry.
+  # Mirroring the same toggles in the slice's cabal.project keeps
+  # `pkgHashConfigInputs` aligned with plan-nix.  Each plan entry's
+  # `configure-args` is per-unit; we group by pkg-name (taking the
+  # union of pragmas across units of the same package, since
+  # cabal.project only supports per-package granularity) and:
+  #
+  #   * Emit a `package *` block with the *baseline* — pragmas
+  #     present for every pkg-name.  Applies to transitive hackage
+  #     deps the slice's `cabal v2-build` resolves fresh, so their
+  #     UnitIds line up with plan-nix.
+  #
+  #   * Emit a `package <name>` block for every pkg-name whose
+  #     pragmas extend the baseline (e.g. `package cabal-simple`
+  #     getting `profiling: True` from
+  #     `packages.cabal-simple.enableProfiling = true`).
   projectConfigPragmas =
     let
-      anyConfigured =
-        let xs = lib.filter (p: (p.type or "") == "configured") planJson;
-        in if xs == [] then null else builtins.head xs;
-      args = if anyConfigured == null then []
-             else (anyConfigured.configure-args or []);
+      configuredEntries = lib.filter (p: (p.type or "") == "configured") planJson;
+
       # Whitelist of cabal.project field names that map 1:1 to
       # `--enable-X` / `--disable-X` / `--X=value` Setup configure
       # args.  Keeping this explicit means we don't silently round-trip
@@ -1112,15 +1119,40 @@ let
           else if di != null && isProjectField (builtins.head di) then "${builtins.head di}: False"
           else if kv != null && isProjectField (builtins.head kv) then "${builtins.head kv}: ${builtins.elemAt kv 1}"
           else null;
-      pragmas = lib.filter (s: s != null) (map pragmaOf args);
-      # Wrap in a `package *` block — project-level cabal.project
-      # config only applies to LOCAL packages.  We need these flags
-      # to propagate to hackage-resolved deps too (everything cabal
-      # builds in the slice), otherwise cabal uses platform defaults
-      # for those deps and the unit-id diverges from plan-nix.
-    in if pragmas == [] then ""
-       else "package *\n"
-          + lib.concatMapStrings (p: "  " + p + "\n") pragmas;
+      pragmasOf = args: lib.unique (lib.filter (s: s != null) (map pragmaOf args));
+
+      # pkg-name → union of pragmas across every unit of that package.
+      pragmasByName = lib.foldl' (acc: e:
+        let
+          name = e.pkg-name or "";
+          ps = pragmasOf (e.configure-args or []);
+        in if name == "" then acc
+           else acc // { ${name} = lib.unique ((acc.${name} or []) ++ ps); }
+      ) {} configuredEntries;
+      allPkgNames = builtins.attrNames pragmasByName;
+
+      # Baseline: pragmas present in *every* pkg-name's union.
+      baseline =
+        if allPkgNames == [] then []
+        else
+          let firstPkg = builtins.head allPkgNames;
+          in lib.filter
+               (p: lib.all (n: lib.elem p pragmasByName.${n}) allPkgNames)
+               pragmasByName.${firstPkg};
+      baselineSet = lib.listToAttrs (map (p: { name = p; value = true; }) baseline);
+
+      baselineBlock =
+        if baseline == [] then ""
+        else "package *\n"
+           + lib.concatMapStrings (p: "  " + p + "\n") baseline;
+
+      perPkgBlocks = lib.concatMapStrings (name:
+        let delta = lib.filter (p: !(baselineSet ? ${p})) pragmasByName.${name};
+        in if delta == [] then ""
+           else "package ${name}\n"
+              + lib.concatMapStrings (p: "  " + p + "\n") delta
+      ) allPkgNames;
+    in baselineBlock + perPkgBlocks;
 
   # Cross GHCs only ship the unversioned bin (e.g.
   # `${ghc.targetPrefix}ghc`), not the `-X.Y.Z` suffixed one, so
