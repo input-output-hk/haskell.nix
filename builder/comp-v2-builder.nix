@@ -1581,11 +1581,35 @@ let
     exePath = "${slice}/bin/${exeName}";
   };
 
+  # v1 exposed `.profiled` as an overlay rebuild with
+  # `enableLibraryProfiling = true`.  v2 reads configure-args from
+  # plan.json, so an overlay would emit toggles that plan-nix
+  # doesn't know about and the slice's UnitId would diverge.
+  # Express profiling in `cabal.project` instead; see
+  # `docs/dev/profiling.md` for the migration recipe.  Setting
+  # this at both the top level and inside `passthru` is needed
+  # because mkDerivation only lifts `passthru` → top level at
+  # derivation creation time, so post-hoc `// { passthru = ... }`
+  # doesn't re-lift.
+  profiledThrow = throw ''
+    v2 slices do not provide `.profiled`.  Enable profiling
+    by adding to cabal.project (or `cabalProjectLocal`):
+
+        package ${pkgName}
+          profiling: True
+          library-profiling: True
+
+    (or `package *` for project-wide).  See
+    `docs/dev/profiling.md` for the rationale.
+  '';
+
   decorate = base: base // exePathAttrs // {
       inherit checkAgainstPlan;
+      profiled = profiledThrow;
       passthru = base.passthru // {
         inherit checkAgainstPlan;
         isSlice = true;
+        profiled = profiledThrow;
       } // exePathAttrs;
       meta = (base.meta or {}) // lib.optionalAttrs isExeLike {
         mainProgram = exeName;
