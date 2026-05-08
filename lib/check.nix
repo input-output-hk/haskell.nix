@@ -50,6 +50,12 @@ if drvOrig.passthru.isSlice or false then
         exe=$bindir/${drvOrig.exeName}
       ''}
       ${testWrapperPrefix} "$exe" ${lib.optionalString isTest testFlags} | tee $out/test-stdout
+
+      # Copy over tix files, if they exist.  Mirrors v1's check
+      # (`lib/check.nix:119`) so `lib/cover.nix` can pick them up at
+      # `$out/share/hpc/vanilla/tix/<exeName>/<exe>.tix`.
+      find . -iname '${drvOrig.exeName}.tix' -exec mkdir -p $out/share/hpc/vanilla/tix/${drvOrig.exeName} \; -exec cp {} $out/share/hpc/vanilla/tix/${drvOrig.exeName}/ \;
+
       runHook postCheck
     '';
   } // haskellLib.optionalHooks {

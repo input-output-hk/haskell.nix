@@ -1415,6 +1415,12 @@ let
       # haskellLib.flatLibDepends) can traverse v2 components the
       # same way as v1.
       config = component;
+      # `lib/cover.nix` (HPC coverage report) reads `srcSubDirPath`
+      # off each mix library to know where the .hs sources live for
+      # `hpc markup --srcdir=...`.  v1 plumbs this from `cleanSrc`;
+      # mirror the shape here so cover.nix works against v2 slices.
+      srcSubDir = (haskellLib.rootAndSubDir src).subDir;
+      srcSubDirPath = let r = haskellLib.rootAndSubDir src; in r.root + r.subDir;
       identifier = package.identifier // {
         component-id = "${pkgName}:${componentId.ctype}:${componentId.cname}";
         component-name = componentId.cname;
@@ -1438,12 +1444,40 @@ let
     };
   };
 
+  # When `coverage: True` is set, cabal stores per-package HPC
+  # artifacts under `$out/store/<ghc>/<unit-id>/lib/extra-compilation-artifacts/hpc/`
+  # (mangled cabal unit-id name, e.g. `pkg-0.1.0.0-f77c657f`).
+  # v1 surfaces these at `$out/share/hpc/<way>/{mix,tix}/<pkg>-<ver>/`
+  # so `lib/cover.nix` can find them.  Mirror that here for v2 lib
+  # slices: copy each `hpc/<way>/{mix,tix}` subdir to
+  # `$out/share/hpc/<way>/{mix,tix}/<pkg>-<ver>/` (the predictable
+  # name the cover-report tests look for).  Skipped at zero cost
+  # when no `hpc/` dir was produced (no coverage flag).
+  hpcCopyForLibrary = lib.optionalString isLibrary ''
+    for src_hpc in $out/store/ghc-*/*/lib/extra-compilation-artifacts/hpc; do
+      [ -d "$src_hpc" ] || continue
+      for way_dir in "$src_hpc"/*/; do
+        [ -d "$way_dir" ] || continue
+        way=$(basename "$way_dir")
+        for kind in mix tix; do
+          if [ -d "$way_dir/$kind" ]; then
+            mkdir -p "$out/share/hpc/$way/$kind/${pkgName}-${pkgVersion}"
+            for unit_dir in "$way_dir/$kind"/*/; do
+              [ -d "$unit_dir" ] || continue
+              cp -r "$unit_dir"/. "$out/share/hpc/$way/$kind/${pkgName}-${pkgVersion}/"
+            done
+          fi
+        done
+      done
+    done
+  '';
+
   # Per-kind installPhase tail: surface binaries for exe / test /
   # bench, and run the test as part of the build.  The final binary
   # lands at `$out/bin/${exeName}` (platform-specific extension —
   # `.exe` on native Windows, `.wasm` for wasm, etc.).
   kindSpecificInstallPhase =
-    if isLibrary then ""
+    if isLibrary then hpcCopyForLibrary
     else if useTarball then ''
 
       mkdir -p $out/bin
