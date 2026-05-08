@@ -1483,12 +1483,30 @@ let
     done
   '';
 
+  # Trim cabal's `dist-newstyle/` from the slice's $out at the
+  # end of installPhase: the only consumer that needs it during
+  # this build is `kindSpecificInstallPhase`'s test/bench find
+  # (which runs above before this trim).  Downstream slices /
+  # callers don't read the slice's `$out/dist-newstyle/`, so we
+  # can drop the source-tarball / build-tree bulk to keep slice
+  # outputs small.  Lift `cache/plan.json` to `$out/plan.json`
+  # so it stays available for human debugging.
+  trimDistNewstyle = ''
+    if [ -d $out/dist-newstyle ]; then
+      if [ -f $out/dist-newstyle/cache/plan.json ]; then
+        cp $out/dist-newstyle/cache/plan.json $out/plan.json
+      fi
+      chmod -R u+w $out/dist-newstyle 2>/dev/null || true
+      rm -rf $out/dist-newstyle
+    fi
+  '';
+
   # Per-kind installPhase tail: surface binaries for exe / test /
   # bench, and run the test as part of the build.  The final binary
   # lands at `$out/bin/${exeName}` (platform-specific extension —
   # `.exe` on native Windows, `.wasm` for wasm, etc.).
   kindSpecificInstallPhase =
-    if isLibrary then hpcCopyForLibrary
+    if isLibrary then hpcCopyForLibrary + trimDistNewstyle
     else if useTarball then ''
 
       mkdir -p $out/bin
@@ -1519,6 +1537,7 @@ let
       # here — the bin we just copied came from
       # `$out/store/<uid>/bin/${exeName}`, which survived the
       # cleanup as part of the expected unit's dir.
+      ${trimDistNewstyle}
     '' else ''
 
       mkdir -p $out/bin
@@ -1530,6 +1549,7 @@ let
       fi
       cp "$bin" $out/bin/${exeName}
       chmod +x $out/bin/${exeName}
+      ${trimDistNewstyle}
     '';
 
   # v2 test slices only *build* the test binary — actually running

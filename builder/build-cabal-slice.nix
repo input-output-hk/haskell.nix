@@ -12,7 +12,13 @@
 # Output layout:
 #   $out/store/ghc-<ver>[-inplace]/<unit-id>/        -- newly installed unit
 #   $out/store/ghc-<ver>[-inplace]/package.db/<unit-id>.conf
-#   $out/dist-newstyle/                              -- full dist-newstyle tree
+#   $out/plan.json                                   -- recorded slice plan (lifted from cache)
+#
+# Note: `dist-newstyle/` is staged into `$out` during the build
+# so `comp-v2-builder.nix`'s test/bench install step can grab the
+# unpinged binary, but is trimmed to just `plan.json` at end of
+# installPhase (see `trimDistNewstyle`) — downstream consumers
+# never need the source-tarball / build-tree bulk.
 #
 # Composition: each dep's $out/store/... is copied into the downstream
 # slice's starting store.  Only units NOT already present in that
