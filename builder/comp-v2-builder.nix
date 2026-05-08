@@ -19,6 +19,10 @@
 , templateHaskell ? null }:
 
 { componentId, component, package, name, src, flags ? {}, patches ? [], cabalFile ? null, pkgSet
+, cabal-generator ? null # "hpack" if the package ships only `package.yaml`
+                         # and needs hpack run to produce the .cabal file
+                         # before tarball / build.  Mirrors v1's
+                         # comp-builder.nix handling.
 , packageIdsByName ? {}  # { <canonical-pkg-name> = [<plan-id>...]; }
 , planJson ? []          # plan.json's `install-plan` — used to walk
                          # the transitive lib-dep closure for the
@@ -226,6 +230,20 @@ let
     chmod -R u+w $target
     cp ${builtins.toFile "${pkgName}.cabal" cabalFile} $target/${pkgName}.cabal
   '';
+  # Local packages with `cabal-generator: hpack` ship `package.yaml`
+  # without a generated `.cabal`.  Mirror v1's comp-builder.nix:
+  # run hpack inside the package source dir so the tarball carries
+  # a real `.cabal` for cabal-install to extract.  Skip when an
+  # explicit `cabalFile` override is set (e.g. an X-revision from
+  # `package-description-override`) since that already provides the
+  # .cabal we want.
+  hpackScript = lib.optionalString
+    (cabalFile == null && cabal-generator == "hpack" && package.isLocal) ''
+    chmod -R u+w $target
+    ( cd $target
+      ${pkgs.buildPackages.haskell-nix.nix-tools-unchecked}/bin/hpack
+    )
+  '';
   # When `prePatch`/`postPatch` hooks are defined for a local package
   # we stage the parent directory as well, so hooks like
   # `prePatch = "cd .."` (hadrian) can reach sibling files.  The
@@ -262,6 +280,7 @@ let
               chmod -R u+w $workDir
               target=$workDir/$pkgSubDir
               ${patchApplyScript}
+              ${hpackScript}
               ${cabalFileOverride}
               # Rename the package subdir to match the tarball convention
               # so cabal sees `<name>-<version>/` when unpacking.
@@ -277,6 +296,7 @@ let
                 then "cp -rL ${src}/. $target/"
                 else "tar -xzf ${src} --strip-components=1 -C $target"}
               ${patchApplyScript}
+              ${hpackScript}
               ${cabalFileOverride}
               tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
                   -czf $out -C $workDir ${pkgName}-${pkgVersion}

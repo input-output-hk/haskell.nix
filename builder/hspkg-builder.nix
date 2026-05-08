@@ -62,7 +62,7 @@ let
           inherit (config) prebuilt-depends;
         };
         v2 = comp-v2-builder {
-          inherit componentId component package name src flags patches cabalFile;
+          inherit componentId component package name src flags patches cabalFile cabal-generator;
           inherit (pkg) prePatch postPatch;
           # Compute the set of (pkg-name, pkg-version) pairs that
           # cabal's solver needs to plan for when we target this
