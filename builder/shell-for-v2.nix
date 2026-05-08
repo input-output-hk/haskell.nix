@@ -242,6 +242,20 @@ let
 
     mkdir -p "$tgt_base"
 
+    # ---- Fast path: same composedStore, already synced -----------
+    # After a successful run we drop a marker file at
+    # `~/.cabal/store/.haskell-nix-shell-markers/<basename-of-src>`.
+    # If that marker is present (and `--force` not set), the cabal
+    # store is already in sync with this shell's slices and we can
+    # skip the per-file scan entirely.  Different shells (different
+    # `composedStore`) have distinct basenames, so alternating
+    # shells doesn't invalidate each other's markers.
+    markers_dir="$tgt_base/.haskell-nix-shell-markers"
+    marker="$markers_dir/$(basename "$src")"
+    if [ "$force" != "1" ] && [ -f "$marker" ]; then
+      exit 0
+    fi
+
     # ---- Register nix GC root ------------------------------------
     # Without a gcroot, nix-collect-garbage would happily delete
     # `$src` (and the slice paths it references), leaving every
@@ -274,6 +288,9 @@ let
       ghcName=$(basename "$ghcDir")
       tgt_ghcDir="$tgt_base/$ghcName"
 
+      # Symlinked single-file entries (conf, lib): if the target is
+      # already a symlink pointing at the source path, no work to
+      # do — short-circuit before the per-file `diff -q` fork.
       if [ -d "$ghcDir/package.db" ]; then
         for conf in "$ghcDir/package.db"/*.conf; do
           [ -e "$conf" ] || continue
@@ -281,12 +298,21 @@ let
           tgt="$tgt_ghcDir/package.db/$base"
           if [ ! -e "$tgt" ]; then
             new_items+=("conf	$ghcName	package.db/$base")
+          elif [ -L "$tgt" ] && [ "$(readlink "$tgt")" = "$conf" ]; then
+            : # already linked correctly
           elif ! diff -q "$conf" "$tgt" >/dev/null 2>&1; then
             conflicts+=("conf	$ghcName	package.db/$base")
           fi
         done
       fi
 
+      # Unit dirs: lndir-installed trees of symlinks.  We can't
+      # readlink the dir itself (it's a real dir), so verify a
+      # representative leaf — pick the first symlink under the unit
+      # tree and check it points back into this `$src/$ghcName/$unitId`.
+      # If any leaf does, the whole tree was lndir'd from the same
+      # source, so no further work is needed.  Falls through to the
+      # full `diff -qr` only when the cheap check fails.
       for unitDir in "$ghcDir"/*/; do
         [ -d "$unitDir" ] || continue
         unitId=$(basename "$unitDir")
@@ -294,8 +320,19 @@ let
         tgt="$tgt_ghcDir/$unitId"
         if [ ! -e "$tgt" ]; then
           new_items+=("unit	$ghcName	$unitId")
-        elif ! diff -qr "$unitDir" "$tgt" >/dev/null 2>&1; then
-          conflicts+=("unit	$ghcName	$unitId")
+        else
+          want="$ghcDir$unitId"
+          want="''${want%/}"
+          probe=$(find "$tgt" -type l -print -quit 2>/dev/null)
+          if [ -n "$probe" ]; then
+            target=$(readlink "$probe")
+            case "$target" in
+              "$want"/*) continue ;;
+            esac
+          fi
+          if ! diff -qr "$unitDir" "$tgt" >/dev/null 2>&1; then
+            conflicts+=("unit	$ghcName	$unitId")
+          fi
         fi
       done
 
@@ -306,6 +343,8 @@ let
           tgt="$tgt_ghcDir/lib/$base"
           if [ ! -e "$tgt" ]; then
             new_items+=("lib	$ghcName	lib/$base")
+          elif [ -L "$tgt" ] && [ "$(readlink "$tgt")" = "$libFile" ]; then
+            : # already linked correctly
           elif ! diff -q "$libFile" "$tgt" >/dev/null 2>&1; then
             conflicts+=("lib	$ghcName	lib/$base")
           fi
@@ -415,6 +454,12 @@ let
       done
       "$ghc_pkg" --package-db="$db" recache 2>/dev/null || true
     done
+
+    # ---- Drop sync marker for this composedStore -----------------
+    # Lets the next invocation skip the per-file scan via the
+    # fast path at the top of this script.
+    mkdir -p "$markers_dir"
+    : >"$marker"
   '';
 
   v2ShellHook = ''
