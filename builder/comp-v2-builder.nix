@@ -1326,7 +1326,11 @@ let
   '';
 
   baseSlice = buildCabalStoreSlice {
-    name = "${pkgName}-${pkgVersion}-${componentKindLabel}-${componentName}";
+    # Match v1's `comp-builder.nix:268`-style
+    # `<pkg>-<ctype>-<cname>-<version>` so callers (tests, store
+    # paths) can move from builderVersion 1 → 2 without seeing
+    # different derivation names for the same component.
+    name = "${pkgName}-${componentKindLabel}-${componentName}-${pkgVersion}";
     inherit depSlices;
     ghc = sliceGhc;
     localRepo = slicingRepo;
@@ -1447,27 +1451,27 @@ let
   # When `coverage: True` is set, cabal stores per-package HPC
   # artifacts under `$out/store/<ghc>/<unit-id>/lib/extra-compilation-artifacts/hpc/`
   # (mangled cabal unit-id name, e.g. `pkg-0.1.0.0-f77c657f`).
-  # v1 surfaces these at `$out/share/hpc/<way>/{mix,tix}/<pkg>-<ver>/`
-  # so `lib/cover.nix` can find them.  Mirror that here for v2 lib
-  # slices: copy each `hpc/<way>/{mix,tix}` subdir to
-  # `$out/share/hpc/<way>/{mix,tix}/<pkg>-<ver>/` (the predictable
-  # name the cover-report tests look for).  Skipped at zero cost
-  # when no `hpc/` dir was produced (no coverage flag).
+  # The .mix file *content* is derived from source, not unit-id —
+  # so a sibling test slice that rebuilds the lib inplace
+  # (UnitId `<pkg>-<ver>-inplace`) produces byte-identical .mix
+  # files.  Surface the lib slice's mixes under
+  # `$out/share/hpc/<way>/mix/<pkg>-<ver>-inplace/` so HPC matches
+  # the path against `<pkg>-<ver>-inplace/<Module>` references in
+  # tix files dropped by inplace-built test exes.  Tix files don't
+  # land here (they're produced at test-run time by `lib/check.nix`).
   hpcCopyForLibrary = lib.optionalString isLibrary ''
     for src_hpc in $out/store/ghc-*/*/lib/extra-compilation-artifacts/hpc; do
       [ -d "$src_hpc" ] || continue
       for way_dir in "$src_hpc"/*/; do
         [ -d "$way_dir" ] || continue
         way=$(basename "$way_dir")
-        for kind in mix tix; do
-          if [ -d "$way_dir/$kind" ]; then
-            mkdir -p "$out/share/hpc/$way/$kind/${pkgName}-${pkgVersion}"
-            for unit_dir in "$way_dir/$kind"/*/; do
-              [ -d "$unit_dir" ] || continue
-              cp -r "$unit_dir"/. "$out/share/hpc/$way/$kind/${pkgName}-${pkgVersion}/"
-            done
-          fi
-        done
+        if [ -d "$way_dir/mix" ]; then
+          mkdir -p "$out/share/hpc/$way/mix/${pkgName}-${pkgVersion}-inplace"
+          for unit_dir in "$way_dir/mix"/*/; do
+            [ -d "$unit_dir" ] || continue
+            cp -r "$unit_dir"/. "$out/share/hpc/$way/mix/${pkgName}-${pkgVersion}-inplace/"
+          done
+        fi
       done
     done
   '';
@@ -1547,7 +1551,7 @@ let
   planNixJsonFile = pkgs.buildPackages.writeText "plan-nix.json"
                       (builtins.toJSON planJson);
   checkAgainstPlan = buildCabalStoreSlice {
-    name = "check-${pkgName}-${pkgVersion}-${componentKindLabel}-${componentName}";
+    name = "check-${pkgName}-${componentKindLabel}-${componentName}-${pkgVersion}";
     inherit depSlices;
     ghc = sliceGhc;
     localRepo = slicingRepo;
@@ -1566,7 +1570,7 @@ let
   # only the *direct* set; `composeStore` follows each entry's
   # `$out/nix-support/transitive-deps` file for the closure.
   store = composeStore {
-    name = "store-${ghc.targetPrefix or ""}${pkgName}-${pkgVersion}-${componentKindLabel}-${componentName}";
+    name = "store-${ghc.targetPrefix or ""}${pkgName}-${componentKindLabel}-${componentName}-${pkgVersion}";
     slices = depSlices;
   };
 

@@ -192,7 +192,7 @@ let
 in
 
 stdenv.mkDerivation ({
-  name = "cabal-slice-${name}";
+  inherit name;
   # GHC / hsc2hs / cabal write/read source files; without a UTF-8
   # locale they fall back to the C encoding and crash on non-ASCII
   # input (e.g. `commitBuffer: invalid argument (cannot encode
