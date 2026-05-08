@@ -4,10 +4,16 @@
 with lib;
 
 let
-  project = externalInterpreter: project' {
+  # See `docs/dev/profiling.md` — v2 expects profiling toggles in
+  # cabal.project so plan-nix records `--enable-library-profiling`.
+  project = { externalInterpreter, profiled ? false }: project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "th-dlls-minimal";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    cabalProjectLocal = builtins.readFile ../cabal.project.local
+      + lib.optionalString profiled ''
+        package *
+          library-profiling: True
+      '';
     modules = [
      ({pkgs, ...}: {
       packages.th-dlls-minimal.components.library.preBuild = ''
@@ -27,8 +33,10 @@ let
     })];
   };
 
-  packages = (project false).hsPkgs;
-  packages-ei = (project true).hsPkgs;
+  packages         = (project { externalInterpreter = false;                  }).hsPkgs;
+  packages-ei      = (project { externalInterpreter = true;                   }).hsPkgs;
+  packages-prof    = (project { externalInterpreter = false; profiled = true; }).hsPkgs;
+  packages-ei-prof = (project { externalInterpreter = true;  profiled = true; }).hsPkgs;
 
 in lib.recurseIntoAttrs {
   # This test is just for windows currently (the full th-dlls test runs on other platforms)
@@ -38,13 +46,16 @@ in lib.recurseIntoAttrs {
     ;
 
   ifdInputs = {
-    inherit (project true) plan-nix;
+    plan-nix             = (project { externalInterpreter = false;                  }).plan-nix;
+    plan-nix-ei          = (project { externalInterpreter = true;                   }).plan-nix;
+    plan-nix-profiled    = (project { externalInterpreter = false; profiled = true; }).plan-nix;
+    plan-nix-profiled-ei = (project { externalInterpreter = true;  profiled = true; }).plan-nix;
   };
 
-  build = packages.th-dlls-minimal.components.library;
-  build-profiled = packages.th-dlls-minimal.components.library.profiled;
-  just-template-haskell = packages.th-dlls-minimal.components.exes.just-template-haskell;
-  build-ei = packages-ei.th-dlls-minimal.components.library;
-  build-profiled-ei = packages-ei.th-dlls-minimal.components.library.profiled;
+  build                    = packages.th-dlls-minimal.components.library;
+  build-profiled           = packages-prof.th-dlls-minimal.components.library;
+  just-template-haskell    = packages.th-dlls-minimal.components.exes.just-template-haskell;
+  build-ei                 = packages-ei.th-dlls-minimal.components.library;
+  build-profiled-ei        = packages-ei-prof.th-dlls-minimal.components.library;
   just-template-haskell-ei = packages-ei.th-dlls-minimal.components.exes.just-template-haskell;
 }

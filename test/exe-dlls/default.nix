@@ -36,6 +36,7 @@ in lib.recurseIntoAttrs rec {
 
   ifdInputs = {
     inherit (project) plan-nix;
+    plan-nix-profiled = projectProfiled.plan-nix;
   };
 
   build = packages.exe-dlls.components.exes.exe-dlls;

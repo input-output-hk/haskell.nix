@@ -58,7 +58,10 @@ in lib.recurseIntoAttrs {
     ;
 
   ifdInputs = {
-    inherit (project { externalInterpreter = true; }) plan-nix;
+    plan-nix             = (project { externalInterpreter = false;                  }).plan-nix;
+    plan-nix-ei          = (project { externalInterpreter = true;                   }).plan-nix;
+    plan-nix-profiled    = (project { externalInterpreter = false; profiled = true; }).plan-nix;
+    plan-nix-profiled-ei = (project { externalInterpreter = true;  profiled = true; }).plan-nix;
   };
 
   build = packages.th-dlls.components.library;
