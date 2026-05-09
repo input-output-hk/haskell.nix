@@ -7,7 +7,11 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "sublib-docs";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
+
+      package *
+        documentation: True
+    '';
   };
 
   packages = project.hsPkgs;
@@ -42,8 +46,16 @@ in lib.recurseIntoAttrs {
     '') + ''
 
       printf "check that it looks like we have docs..." >& 2
-      test -f "${packages.sublib-docs.components.library.doc}/share/doc/sublib-docs/html/Lib.html"
-      test -f "${packages.sublib-docs.components.sublibs.slib.doc}/share/doc/sublib-docs/html/slib/Slib.html"
+      # cabal v2-haddock writes docs into each unit's
+      # `share/doc/html/`; the unit-id is cabal-mangled-and-hashed,
+      # so we locate the html via `find` rather than a synthesised
+      # path.
+      test -f "$(find ${packages.sublib-docs.components.library.doc} \
+                       -path '*/share/doc/html/Lib.html' \
+                       -print -quit)"
+      test -f "$(find ${packages.sublib-docs.components.sublibs.slib.doc} \
+                       -path '*/share/doc/html/*Slib.html' \
+                       -print -quit)"
 
       touch $out
     '';

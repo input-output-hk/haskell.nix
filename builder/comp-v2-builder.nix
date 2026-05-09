@@ -168,10 +168,39 @@ let
   ghcOptionsOf       = perPackageOptionOf "ghcOptions";
   configureOptionsOf = perPackageOptionOf "configureOptions";
 
+  # Has plan-nix flagged this canonical package (any of its units)
+  # as documentation-enabled?  Mirrors `docEnabled` above but for
+  # arbitrary pkg-names rather than this slice's own unit.
+  pkgDocEnabled = pname:
+    lib.any
+      (e: (e.pkg-name or "") == pname
+          && lib.elem "--ghc-option=-haddock" (e.configure-args or []))
+      planJson;
+
+  # `documentation: True` widens `pkgHashConfigInputs` (sets the
+  # haddock-* booleans on ElaboratedConfiguredPackage) AND adds
+  # `--ghc-option=-haddock` to the unit's configure-args.  When
+  # we emit a `documentation: True` block here we therefore must
+  # also strip `-haddock` from the per-pkg ghc-options block —
+  # otherwise the slice would get `-haddock` twice in
+  # `pkgHashGhcOptions` and the UnitId would diverge from plan-nix.
   ghcOptionsBlockFor = pname:
-    let opts = ghcOptionsOf pname;
+    let raw = ghcOptionsOf pname;
+        opts = if pkgDocEnabled pname
+               then lib.filter (o: o != "-haddock") raw
+               else raw;
     in if opts == [] then ""
        else "package ${pname}\n  ghc-options: ${lib.concatStringsSep " " opts}\n";
+
+  # Per-package `documentation: True` block.  Emitted when this
+  # package's plan-nix entry has `--ghc-option=-haddock` (the
+  # signal that `documentation: True` was set in the project's
+  # cabal.project).  See `docEnabled` above for the full
+  # rationale.
+  documentationBlockFor = pname:
+    if pkgDocEnabled pname
+      then "package ${pname}\n  documentation: True\n"
+      else "";
 
   configureOptionsBlockFor = pname:
     let opts = configureOptionsOf pname;
@@ -199,6 +228,7 @@ let
   allFlagBlocks             = lib.concatMapStrings flagBlockFor             sliceCanonicalNames;
   allGhcOptionsBlocks       = lib.concatMapStrings ghcOptionsBlockFor       sliceCanonicalNames;
   allConfigureOptionsBlocks = lib.concatMapStrings configureOptionsBlockFor sliceCanonicalNames;
+  allDocBlocks              = lib.concatMapStrings documentationBlockFor    sliceCanonicalNames;
 
   # Resolve version-conditional patches (a `patches` entry may be a
   # function `{ version }: drv-or-null`, same convention v1 uses).
@@ -1282,7 +1312,7 @@ let
   cabalProject = ''
     with-compiler: ${withCompiler}
     active-repositories: hackage.haskell-nix
-    ${packagesLine}${sourceRepoBlocks}${extraPackagesLine}${allowNewerBlock}${projectConfigPragmas}${extraProject}${allFlagBlocks}${allGhcOptionsBlocks}${allConfigureOptionsBlocks}${extraIncludeAndLibDirs}${depConstraints}'';
+    ${packagesLine}${sourceRepoBlocks}${extraPackagesLine}${allowNewerBlock}${projectConfigPragmas}${extraProject}${allFlagBlocks}${allGhcOptionsBlocks}${allConfigureOptionsBlocks}${allDocBlocks}${extraIncludeAndLibDirs}${depConstraints}'';
 
   # X-revised .cabal as a /nix/store path (or null if no override).
   # Carried on every `transitiveTarballs` entry so the slicing repo's
@@ -1590,6 +1620,70 @@ let
     inherit planNixJsonFile;
   };
 
+  # cabal-install records `documentation: True` (from cabal.project)
+  # by setting `elabBuildHaddocks = True` on the elaborated install
+  # plan and ALSO by adding `--ghc-option=-haddock` to the unit's
+  # `configure-args` (so GHC keeps haddock comments in `.hi` files).
+  # We use the `--ghc-option=-haddock` plan-json signal as evidence
+  # that documentation was enabled at project-eval time — it's the
+  # only haddock-related thing plan-nix surfaces in `configure-args`,
+  # since the booleans (`elabBuildHaddocks`, the haddock-html /
+  # haddock-hscolour / haddock-internal / ... family) live on the
+  # ElaboratedConfiguredPackage and don't show up as configure-args.
+  # When we see `-haddock` for a unit, we emit `documentation: True`
+  # for that package in the slice's cabal.project (see
+  # `documentationBlockFor` below) so the slice's elaboration sets
+  # the same haddock booleans plan-nix did and the UnitIds match.
+  docEnabled =
+    let uid   = package.identifier.unit-id or null;
+        entry = if uid == null then null else planJsonByPlanId.${uid} or null;
+        args  = if entry == null then [] else (entry.configure-args or []);
+    in lib.elem "--ghc-option=-haddock" args;
+
+  # Sibling slice that runs `cabal v2-haddock` and surfaces
+  # haddock html in cabal's native unit-dir layout
+  # (`$out/store/<ghc>/<unit-id>/share/doc/html/`).  Keeping
+  # the cabal-store layout means the doc slice can be `lndir`'d
+  # into `~/.cabal/store/` like any other slice.  Built only on
+  # attribute access; the dry-run check below catches the case
+  # where `documentation` propagation is incomplete.  Each unit
+  # in the doc slice's `$out/store` carries only that unit's
+  # own target's html; dep haddocks come from the corresponding
+  # deps' own `.doc` slices propagated via `depSlices` — but
+  # only for deps whose own plan-nix entry has documentation
+  # enabled.  Mixed projects (some packages with docs, others
+  # without) keep working because non-doc deps come in as plain
+  # slices.
+  docSlice = buildCabalStoreSlice {
+    name = "${pkgName}-${componentKindLabel}-${componentName}-${pkgVersion}-doc";
+    # Compose the main slice in plus, for each lib dep that
+    # has documentation enabled in plan-nix, that dep's `.doc`
+    # slice — so cabal v2-haddock finds the haddock-interfaces
+    # it needs for `--read-interface=` (cross-package
+    # hyperlinks) and doesn't try to rebuild the dep with
+    # `--enable-documentation`.  Deps without docs keep coming
+    # in as plain slices so mixed projects work.
+    depSlices = depSlices ++ [ slice ]
+                ++ map (d: d.doc) (lib.filter
+                     (d: (d.passthru.docEnabled or false))
+                     depSlices);
+    ghc = sliceGhc;
+    localRepo = slicingRepo;
+    preBuild = slicePreBuild;
+    target = targetSelector;
+    extraSublibSeeds = extraSublibSeeds;
+    inherit extraBuildInputs extraNativeBuildInputs;
+    doHaddock = true;
+    # The build-cabal-slice dry-run check fails when cabal plans
+    # to build anything other than `expectedPackage` — that's
+    # exactly the diagnostic we want for `.doc`: if dep doc
+    # slices' UnitIds don't match what cabal v2-haddock would
+    # compute (i.e. the project hasn't enabled documentation
+    # everywhere), the user gets a clear "package X needs
+    # rebuild" error instead of a silent slow build.
+    expectedPackage = pkgName;
+  };
+
   # Composed dep store for this component — slices it builds on top
   # of, *not* the slice itself.  Useful as a starting point for
   # downstream `cabal v2-build` invocations, or for inspection
@@ -1634,14 +1728,40 @@ let
     `docs/dev/profiling.md` for the rationale.
   '';
 
-  decorate = base: base // exePathAttrs // {
+  # `.doc` is the sibling haddock slice when the package's
+  # plan-nix entry already includes `--ghc-option=-haddock`;
+  # otherwise it throws with a migration recipe.  We don't
+  # synthesise `.haddockDir` — local-package UnitIds in
+  # plan-nix (`<pkg>-<ver>-inplace…`) don't equal cabal's
+  # mangled-hash form in the slice's `$out/store/`, so there's
+  # no eval-time-stable html path; callers should `find` it
+  # under `slice.doc`.
+  docAttrs = lib.optionalAttrs isLibrary {
+    doc = if docEnabled then docSlice else throw ''
+      v2 slices only expose `.doc` when haddock is part of the
+      build's UnitId-determining inputs.  Add to cabal.project
+      (or `cabalProjectLocal`):
+
+          package ${pkgName}
+            documentation: True
+
+      (or `package *` for project-wide).  See
+      `docs/dev/haddock.md` for the rationale.
+    '';
+    # Surfaced via passthru too so doc slices can branch in
+    # `depSlices` between a dep's `.doc` (when it has one) and
+    # the dep's regular slice (when it doesn't).
+    inherit docEnabled;
+  };
+
+  decorate = base: base // exePathAttrs // docAttrs // {
       inherit checkAgainstPlan;
       profiled = profiledThrow;
       passthru = base.passthru // {
         inherit checkAgainstPlan;
         isSlice = true;
         profiled = profiledThrow;
-      } // exePathAttrs;
+      } // exePathAttrs // docAttrs;
       meta = (base.meta or {}) // lib.optionalAttrs isExeLike {
         mainProgram = exeName;
       };

@@ -117,6 +117,19 @@ let outerGhc = ghc; in
                              # NOT a build-time dep of the slice
                              # itself — only the sibling
                              # `checkAgainstPlan` drv passes it.
+, doHaddock ? false          # if true, also run `cabal v2-haddock`
+                             # after the build and copy the resulting
+                             # html tree to `$out/share/doc/<pkg>/html`.
+                             # Used by `comp-v2-builder.nix`'s
+                             # sibling `docSlice` derivation to
+                             # generate haddock without forking the
+                             # main library slice's UnitId.  The
+                             # main `cabal v2-build` is still run so
+                             # the slice's `$out/store/...` is
+                             # populated and downstream consumers
+                             # (testers / IDE tools) can use the doc
+                             # slice as a drop-in for the lib slice
+                             # when they want both bytes and docs.
 }:
 
 let
@@ -657,6 +670,12 @@ stdenv.mkDerivation ({
       # comp-v2-builder for non-shim slices.
       echo "--- cabal v2-build ${target} ---"
       cabal $cabalGlobalArgs v2-build $cabalCmdArgs -v ${target} 2>&1 | tee $buildRoot/build.log
+      ${lib.optionalString doHaddock ''
+        echo "--- cabal v2-haddock ${target} ---"
+        cabal $cabalGlobalArgs v2-haddock $cabalCmdArgs \
+          --haddock-html --haddock-hyperlink-source --haddock-quickjump \
+          ${target} 2>&1 | tee -a $buildRoot/build.log
+      ''}
     ''}
   '';
 
@@ -839,6 +858,63 @@ stdenv.mkDerivation ({
     if [ -d $buildRoot/project/dist-newstyle ]; then
       cp -r $buildRoot/project/dist-newstyle $out/dist-newstyle
     fi
+
+    # `cabal v2-haddock` writes html into the haddocked unit's
+    # `$out/store/<ghc>/<unit-id>/share/doc/html/` — the same
+    # cabal-store layout the rest of the slice's `$out/store/`
+    # already uses, so the doc slice can be `lndir`'d into
+    # `~/.cabal/store/` without reshaping.  Cross-package
+    # hyperlinks in the generated html are *absolute*
+    # `file:///nix/store/<doc-slice>/store/<ghc>/<unit-id>/share/doc/html/...`
+    # urls (haddock embeds the build-time `--read-interface=` path),
+    # so they resolve back into the doc slice's own `$out/store/`
+    # tree on the same host.  We deliberately don't synthesise a
+    # stable `share/doc/html` symlink elsewhere — there is nothing
+    # to gain by hiding the unit-id.
+
+    ${lib.optionalString doHaddock ''
+      # cabal v2-haddock emits html into every unit it touches —
+      # the target plus every dep it haddock'd to satisfy
+      # `--read-interface`.  We only want the target's html in
+      # this slice's $out/store; deps' html lives in the deps'
+      # own `.doc` slices.  Identify the target unit by the
+      # conf's `name:` field — main libs use the plain pkg name,
+      # sublibs use the cabal-mangled `z-<pkg>-z-<sublib>` form
+      # — and strip `share/doc/` from every other unit dir.
+      targetSpec=${lib.escapeShellArg target}
+      tgt_pkg=$(printf '%s' "$targetSpec" | awk -F: '{print $3}')
+      tgt_cname=$(printf '%s' "$targetSpec" | awk -F: '{print $5}')
+      if [ "$tgt_cname" = "$tgt_pkg" ]; then
+        expected_name="$tgt_pkg"
+      else
+        expected_name="z-$tgt_pkg-z-$tgt_cname"
+      fi
+      target_uid=
+      for conf in $out/store/ghc-*/package.db/*.conf; do
+        [ -e "$conf" ] || continue
+        name_in_conf=$(awk '/^name:/ {print $2; exit}' "$conf")
+        if [ "$name_in_conf" = "$expected_name" ]; then
+          target_uid=$(awk '/^id:/ {print $2; exit}' "$conf")
+          break
+        fi
+      done
+      if [ -n "$target_uid" ]; then
+        for unit_dir in $out/store/ghc-*/*/; do
+          uid=$(basename "$unit_dir")
+          case "$uid" in
+            package.db|incoming|lib) continue ;;
+          esac
+          if [ "$uid" != "$target_uid" ] && [ -d "$unit_dir/share/doc" ]; then
+            chmod -R u+w "$unit_dir/share/doc" 2>/dev/null || true
+            rm -rf "$unit_dir/share/doc"
+          fi
+        done
+      else
+        echo "WARN: doc slice could not locate the target unit" \
+             "($expected_name) in the package db; not stripping" \
+             "non-target haddocks." >&2
+      fi
+    ''}
 
     # Emit the UnitIds this slice's build produced, one per line.
     # Useful for:
