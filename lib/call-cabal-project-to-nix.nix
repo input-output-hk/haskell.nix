@@ -360,7 +360,18 @@ let
           echo ',("Build platform","${platformString pkgs.stdenv.buildPlatform}")'
           echo ',("Host platform","${platformString pkgs.stdenv.hostPlatform}")'
           echo ',("Target platform","${platformString pkgs.stdenv.targetPlatform}")'
-          echo ',("Project Unit Id","ghc-${ghc.version}-inplace")'
+          ${
+            # GHC < 9.8 doesn't emit a `Project Unit Id` field in
+            # `ghc --info` and registers its boot packages without
+            # the `-inplace` suffix (`base-4.18.3.0` rather than
+            # `base-4.18.3.0-inplace`).  Skip the field and the
+            # suffix below for those versions so cabal computes
+            # UnitIds against the dummy that match what it would
+            # compute against the real GHC.
+            if pkgs.lib.versionAtLeast ghc.version "9.8"
+              then ''echo ',("Project Unit Id","ghc-${ghc.version}-inplace")' ''
+              else ""
+          }
           ${
             # Capability fields cabal-install reads to decide what
             # configure-args to record in plan.json's per-pkg
@@ -628,25 +639,31 @@ let
             fi
           done
           ${
-            # A handful of GHC's pre-existing packages have ids that
-            # are *just* `<name>-<version>` with no `-inplace` suffix
-            # in their installed package conf:
+            # GHC ≥ 9.8 registers its pre-existing packages with
+            # ids that carry an `-inplace` suffix
+            # (`base-4.19.2.0-inplace`).  Two boot packages are
+            # exceptions even there:
             #   - `rts`: GHC's runtime, registered as `id: rts-1.0.3`
             #   - `system-cxx-std-lib`: virtual placeholder for the
             #     host C++ stdlib, registered as
             #     `id: system-cxx-std-lib-1.0`
-            # Every other pre-existing package (base, ghc-prim,
-            # text, …) uses the `-inplace` convention.  Mirror those
-            # real ids in the dummy `ghc-pkg dump` — both as the
-            # package's own id and as the dep id used by other
-            # packages — so the unit-id cabal computes against the
-            # dummy matches what it computes against the real GHC.
+            # GHC < 9.8 registers everything with just
+            # `<name>-<version>`, no `-inplace` suffix at all.
+            # Mirror those real ids in the dummy `ghc-pkg dump` —
+            # both as the package's own id and as the dep id used
+            # by other packages — so the unit-id cabal computes
+            # against the dummy matches what it computes against
+            # the real GHC.
             ""
           }suffix() {
-            case "$1" in
-              rts|system-cxx-std-lib) echo "" ;;
-              *) echo "-inplace" ;;
-            esac
+            ${if pkgs.lib.versionAtLeast ghc.version "9.8" then ''
+              case "$1" in
+                rts|system-cxx-std-lib) echo "" ;;
+                *) echo "-inplace" ;;
+              esac
+            '' else ''
+              echo ""
+            ''}
           }
           for pkg in $PKGS; do
             varname="$(echo $pkg | tr "-" "_")"
