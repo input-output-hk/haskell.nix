@@ -154,7 +154,28 @@ in {
       '';
     };
   };
-  config = lib.mkIf config.useLocalGhcLib (
+  config = lib.mkMerge [
+    # Musl host: every executable should be statically linked.  v1
+    # achieves this in `builder/comp-builder.nix:384` by adding
+    # `--ghc-option=-optl=-static` to the per-component
+    # configureFlags at build time, which doesn't reach plan-to-nix
+    # — plan.json keeps `--disable-executable-static` and v1 just
+    # ignores the misalignment.  Under v2, the slice mirrors
+    # plan.json's configure-args exactly, so it links dynamically
+    # too and the c-ffi musl test fails its static-link assertion.
+    # Inject `executable-static: True` here so plan-to-nix records
+    # `--enable-executable-static` from the start; v2's slice picks
+    # it up via `comp-v2-builder.nix:projectConfigPragmas`, and v1
+    # is unaffected (the post-plan ghc-option still fires, harmless).
+    (lib.mkIf pkgs.stdenv.hostPlatform.isMusl {
+      cabalProjectLocal = lib.mkBefore ''
+        -- Auto-injected by haskell.nix: musl targets always link
+        -- executables statically.  See `modules/cabal-project.nix`
+        -- for the rationale.
+        executable-static: True
+      '';
+    })
+    (lib.mkIf config.useLocalGhcLib (
     let
       ghc = (config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name};
       ghcSrc = (pkgs.buildPackages.symlinkJoin {
@@ -215,5 +236,6 @@ in {
         ${builtins.unsafeDiscardStringContext "${ghcMinRepoUrl}/minimal"} = ghcSrc;
       };
     }
-  );
+    ))
+  ];
 }
