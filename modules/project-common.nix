@@ -112,5 +112,29 @@ with lib.types;
         builders; there is no per-component opt-in.
       '';
     };
+    useLocalGhcLib = mkOption {
+      type = bool;
+      default = false;
+      description = ''
+        Expose the GHC compiler tree (configured-src + generated, the
+        `compiler/` subdir thereof) to the planner as a regular
+        reinstallable package source.  Use this when the project
+        depends on / constrains the `ghc` package — e.g.
+        `ghc-lib-reinstallable`.
+
+        The project-level wiring differs by builder:
+          * Cabal projects (see `modules/cabal-project.nix`) inject a
+            `source-repository-package` block into `cabalProjectLocal`
+            so cabal hashes the wrapped repo's content into
+            `pkg-src-sha256`.  Both plan-to-nix and the v2 slice see
+            the same repo, so UnitIds align.
+          * Stack projects (see `modules/stack-project.nix`) re-add
+            the post-plan `packages.ghc.src` override that
+            `modules/configuration-nix.nix` used to apply
+            unconditionally — stack only supports the v1 builder for
+            now, so the post-plan override is harmless (v1 doesn't
+            enforce UnitId alignment).
+      '';
+    };
   };
 }

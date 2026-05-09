@@ -91,5 +91,30 @@ with types;
     # For stack projects we normally do not want to include the tool dependencies
     # of all the hsPkgs (all of stackage).
     shell.allToolDeps = mkDefault false;
+    # Stack projects only support the v1 (Setup.hs-based) builder for
+    # now — `comp-v2-builder.nix` consumes plan-json shapes that the
+    # stack-to-nix path doesn't produce.  Force v1 so users don't have
+    # to remember to set this themselves.  TODO revisit when v2 grows
+    # stack support.
+    builderVersion = mkForce 1;
+    # When `useLocalGhcLib = true` (project-common option), re-apply
+    # the `packages.ghc.src` post-plan override that
+    # `modules/configuration-nix.nix` used to do unconditionally.
+    # Under v1 this works because Setup.hs builders don't enforce
+    # UnitId alignment with plan-nix — the swapped src is what gets
+    # actually built.  Cabal projects use a different mechanism (see
+    # `modules/cabal-project.nix`) that injects a
+    # source-repository-package pre-plan so unit-ids stay aligned for
+    # the v2 builder; that approach doesn't fit stack-to-nix's input
+    # shape, hence the per-project-type wiring.
+    modules = mkIf config.useLocalGhcLib [
+      ({ config, lib, pkgs, ... }: {
+        packages.ghc.src = lib.mkForce ((pkgs.symlinkJoin {
+          name = config.ghc.package.name + "-full-src";
+          paths = [ config.ghc.package.configured-src config.ghc.package.generated ];
+        }) + "/compiler");
+        packages.ghc.package-description-override = lib.mkForce null;
+      })
+    ];
   };
 }

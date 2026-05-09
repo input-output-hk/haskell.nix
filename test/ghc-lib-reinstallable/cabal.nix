@@ -9,6 +9,10 @@ let
   project = haskell-nix.cabalProject {
     inherit compiler-nix-name evalPackages;
     src = testSrc "ghc-lib-reinstallable";
+    # Expose the local GHC compiler tree to the planner via a
+    # `source-repository-package` block.  See
+    # `modules/cabal-project.nix:useLocalGhcLib` for the rationale.
+    useLocalGhcLib = true;
     cabalProjectLocal = ''
       constraints: ghc ==${ghcVersion}
     '';

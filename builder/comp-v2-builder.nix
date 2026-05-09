@@ -1119,6 +1119,31 @@ let
   # allow-newer in the project, etc.).
   allowNewerBlock = "allow-newer: *:*\n";
 
+  # `allow-boot-library-installs: True` overrides cabal-install's
+  # hard-coded non-reinstallable list (`ghc`, `template-haskell`,
+  # `Cabal`, `base`, …).  Needed when this slice's plan reinstalls
+  # any of those packages — typically reached via
+  # `useLocalGhcLib = true`, which delivers `lib:ghc` as a
+  # source-repository-package.  Without the flag, cabal rejects the
+  # source instance with "constraint from non-reinstallable package
+  # requires installed instance".
+  #
+  # Gate on whether this slice's target or any of its non-pre-existing
+  # lib deps is on the boot-lib list.  `libConstraintPins` already
+  # filters out pre-existing pkgs (boot pkgs of an unmodified GHC
+  # never appear here).
+  bootLibPkgNames = [
+    "ghc" "template-haskell" "Cabal" "Cabal-syntax"
+    "ghc-prim" "ghc-bignum" "ghc-boot" "ghc-boot-th" "ghc-heap"
+    "base" "ghci" "ghc-internal" "rts"
+  ];
+  closureHasReinstalledBootLib =
+    lib.elem pkgName bootLibPkgNames
+    || lib.any (e: lib.elem e.name bootLibPkgNames) libConstraintPins;
+  allowBootLibBlock =
+    lib.optionalString closureHasReinstalledBootLib
+      "allow-boot-library-installs: True\n";
+
   # Project-level and per-package cabal.project pragmas extracted
   # from plan.json's `configure-args`.  Plan-to-nix runs
   # cabal-install with a specific set of `--enable-X`/`--disable-X`
@@ -1312,7 +1337,7 @@ let
   cabalProject = ''
     with-compiler: ${withCompiler}
     active-repositories: hackage.haskell-nix
-    ${packagesLine}${sourceRepoBlocks}${extraPackagesLine}${allowNewerBlock}${projectConfigPragmas}${extraProject}${allFlagBlocks}${allGhcOptionsBlocks}${allConfigureOptionsBlocks}${allDocBlocks}${extraIncludeAndLibDirs}${depConstraints}'';
+    ${packagesLine}${sourceRepoBlocks}${extraPackagesLine}${allowNewerBlock}${allowBootLibBlock}${projectConfigPragmas}${extraProject}${allFlagBlocks}${allGhcOptionsBlocks}${allConfigureOptionsBlocks}${allDocBlocks}${extraIncludeAndLibDirs}${depConstraints}'';
 
   # X-revised .cabal as a /nix/store path (or null if no override).
   # Carried on every `transitiveTarballs` entry so the slicing repo's

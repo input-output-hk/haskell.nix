@@ -9,6 +9,10 @@ let
   project = haskell-nix.stackProject {
     inherit stackYaml;
     src = testSrc "ghc-lib-reinstallable";
+    # Re-applies the post-plan `packages.ghc.src` override (only
+    # under v1, which stack uses).  See
+    # `modules/project-common.nix:useLocalGhcLib`.
+    useLocalGhcLib = true;
     modules = [{
       # Configure packages for os-string
       packages.directory.components.library.configureFlags = ["-f os-string"];
