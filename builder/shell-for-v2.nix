@@ -476,6 +476,12 @@ let
   # as the slices) and the unprefixed name (so cabal v2-build's
   # "near compiler" lookup finds plain `ghc-pkg`).
   targetPrefix = ghc.targetPrefix or "";
+  # Two-pass: see `build-cabal-slice.nix`'s `ghcShim` for the
+  # rationale.  GHC 9.14.1's cross GHCs ship both `<prefix>foo`
+  # AND `foo` in their bin/ (e.g. `deriveConstants`); the previous
+  # single-pass loop crashed when iteration hit the prefixed name
+  # first and synthesised an alias before the real unprefixed
+  # iteration ran.
   ghcShim = pkgs.pkgsBuildBuild.runCommand "${ghc.name}-shim" {
     preferLocalBuild = true;
   } ''
@@ -483,13 +489,14 @@ let
     for f in ${ghc}/bin/*; do
       base=$(basename "$f")
       ln -s "$f" "$out/bin/$base"
-      case "$base" in
-        ${targetPrefix}*)
-          unprefixed=''${base#${targetPrefix}}
-          [ -e "$out/bin/$unprefixed" ] || ln -s "$f" "$out/bin/$unprefixed"
-          ;;
-      esac
     done
+    ${lib.optionalString (targetPrefix != "") ''
+      for f in ${ghc}/bin/${targetPrefix}*; do
+        base=$(basename "$f")
+        unprefixed=''${base#${targetPrefix}}
+        [ -e "$out/bin/$unprefixed" ] || ln -s "$f" "$out/bin/$unprefixed"
+      done
+    ''}
   '';
   crossCabalWrapper = lib.optional (targetPrefix != "")
     (pkgs.pkgsBuildBuild.writeShellScriptBin "${targetPrefix}cabal" ''

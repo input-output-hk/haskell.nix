@@ -172,6 +172,15 @@ let
   # directory.  Cross GHCs ship only `<prefix>ghc-pkg`, so we build a
   # tiny symlink farm that exposes unprefixed names alongside the
   # prefixed ones and point `--with-compiler=` at it.
+  # Two-pass: link every source file under its own name first, then
+  # synthesise unprefixed aliases ONLY for prefixed names that have
+  # no real unprefixed sibling in the source bin/.  GHC 9.14.1's
+  # android cross ships both `<prefix>deriveConstants` and a real
+  # `deriveConstants` (for build-host use); the previous single-pass
+  # loop hit the prefixed name first (alphabetical glob), created an
+  # alias `$out/bin/deriveConstants -> <prefix>deriveConstants`, then
+  # crashed on the real `deriveConstants`'s raw `ln -s` with "File
+  # exists".
   ghcShim = pkgsBuildBuild.runCommand "${ghc.name}-shim" {
     preferLocalBuild = true;
   } ''
@@ -179,13 +188,14 @@ let
     for f in ${ghc}/bin/*; do
       base=$(basename "$f")
       ln -s "$f" "$out/bin/$base"
-      case "$base" in
-        ${targetPrefix}*)
-          unprefixed=''${base#${targetPrefix}}
-          [ -e "$out/bin/$unprefixed" ] || ln -s "$f" "$out/bin/$unprefixed"
-          ;;
-      esac
     done
+    ${lib.optionalString (targetPrefix != "") ''
+      for f in ${ghc}/bin/${targetPrefix}*; do
+        base=$(basename "$f")
+        unprefixed=''${base#${targetPrefix}}
+        [ -e "$out/bin/$unprefixed" ] || ln -s "$f" "$out/bin/$unprefixed"
+      done
+    ''}
   '';
   crossWithFlags = lib.optionalString (targetPrefix != "") (
     " --with-compiler=${ghcShim}/bin/${ghcBin}"
