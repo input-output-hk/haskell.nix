@@ -499,20 +499,34 @@ let
   # Concretely: typed-protocols transitively reaches `hsc2hs` via a
   # lib dep's `exe-depends`; before this, hsc2hs got rebuilt inside
   # every typed-protocols / consumer slice.
-  # `{ name; slice }` pairs for every transitive build-tool exe in
-  # this slice's `allDepClosure`.  Used for both:
-  #   * Composing the tool into the starting store / PATH
-  #     (`transitiveBuildToolSlices` below — slice values only).
-  #   * Emitting `--with-<exe>=<slice>/bin/<exe>` for cabal on cross
-  #     (`withProgFlags` below — name + slice).
+  # `{ name; pkgName; targetSlice; buildSlice }` records for every
+  # transitive build-tool exe reached in `allDepClosure`.  Two slices
+  # per tool serve different roles on cross:
   #
-  # Build-tool exes (`hsc2hs`, `alex`, `happy`, …) run on the BUILD
-  # platform during the slice's compile step, not on the host
-  # (cross) target.  Look them up via `hsPkgs.pkgsBuildBuild` —
-  # same as `lib/load-cabal-plan.nix:lookupExeDependency` and
-  # `homeDepExeSlices` below — otherwise under cross we'd compose
-  # in the cross-target exe (e.g. `hsc2hs-armv7a-unknown-linux-androideabi`)
-  # which the build host's cabal can't execute.
+  #   * `targetSlice` — the v2 slice built FOR THIS PROJECT'S target
+  #     (cross) hsPkgs.  Its plan-nix-computed unit-id matches what
+  #     this slice's cabal v2-build will compute for the tool
+  #     (same dummy-ghc / real-ghc parity verified by
+  #     `tests.dummy-ghc-info`).  Composed into the starting
+  #     cabal-store so cabal recognises the tool as already
+  #     installed and skips re-building.  The slice's binary
+  #     targets the cross platform — it isn't directly runnable on
+  #     the build host — but cabal only needs the unit-id-keyed dir
+  #     to be present in the store; actual invocation goes through
+  #     `--with-PROG=PATH` below.
+  #
+  #   * `buildSlice` — the v2 slice built for the build-build
+  #     platform (`hsPkgs.pkgsBuildBuild`).  Its binary is runnable
+  #     on the build host.  Used for `--with-PROG=PATH` so cabal
+  #     invokes a working binary when processing `.hsc` / `.x` /
+  #     `.y` files in the slice.
+  #
+  # On NATIVE the two are the same slice (pkgsBuildBuild == hsPkgs).
+  # The original concern about composing a cross-target exe was
+  # that the build host's cabal can't EXECUTE it; with
+  # `--with-PROG=<buildSlice>/bin/<exe>` cabal never tries to
+  # execute the composed cross binary — it just notes its
+  # existence at the expected unit-id path.
   transitiveBuildToolEntries =
     let raw = lib.concatMap (e:
       let p   = e.entry;
@@ -522,29 +536,48 @@ let
           isExe = lib.hasPrefix cnPrefix cn;
           exeName = builtins.substring (builtins.stringLength cnPrefix)
                       (builtins.stringLength cn - builtins.stringLength cnPrefix) cn;
-          dPkg = hsPkgs.pkgsBuildBuild.${pn} or null;
-          exesMap = if dPkg != null && dPkg ? components && dPkg.components ? exes
-                    then dPkg.components.exes else {};
-          slice = exesMap.${exeName} or null;
-      in if pn != "" && pn != pkgName && isExe && slice != null
-         then [ { name = exeName; inherit slice; } ]
+          targetPkg = hsPkgs.${pn} or null;
+          targetExes = if targetPkg != null && targetPkg ? components
+                         && targetPkg.components ? exes
+                       then targetPkg.components.exes else {};
+          targetSlice = targetExes.${exeName} or null;
+          buildPkg = hsPkgs.pkgsBuildBuild.${pn} or null;
+          buildExes = if buildPkg != null && buildPkg ? components
+                        && buildPkg.components ? exes
+                      then buildPkg.components.exes else {};
+          buildSlice = buildExes.${exeName} or null;
+      in if pn != "" && pn != pkgName && isExe
+            && targetSlice != null && buildSlice != null
+         then [ { name = exeName; pkgName = pn; inherit targetSlice buildSlice; } ]
          else []
     ) allDepClosure;
     in haskellLib.uniqueWithName raw;
-  transitiveBuildToolSlices = map (e: e.slice) transitiveBuildToolEntries;
 
-  # Cross-only: tell cabal to use the build-build slice's exe
-  # directly for every transitive `build-tool-depends`.  Keeps
-  # the tool's source out of the slicing repo while still
-  # satisfying cabal's solver (it sees `--with-<exe>=PATH` and
-  # skips planning the tool from source).  On native we omit
-  # these flags so they don't fork the unit-id (every entry in
-  # `--with-PROG=` lands in `pkgHashProgramArgs`).
+  # Slices composed into the starting cabal-store.  Cross-target
+  # slices on cross (so cabal recognises the matching unit-id);
+  # build-build slices on native (which is the same drv).
+  transitiveBuildToolSlices = map (e: e.targetSlice) transitiveBuildToolEntries;
+
+  # Cross-only: point cabal at the build-build binary for each
+  # transitive build-tool — the composed `targetSlice` is the
+  # cross-target binary which can't run on the build host.  Both
+  # the slice's cabal v2-build and the v2 shell's cabal use these
+  # flags so the runtime invocation path is consistent.
   withProgFlags =
     lib.optionalString isCross
       (lib.concatMapStrings
-        (e: " --with-${e.name}=${e.slice}/bin/${e.name}")
+        (e: " --with-${e.name}=${e.buildSlice}/bin/${e.name}")
         transitiveBuildToolEntries);
+
+  # Package names whose presence in the slice's plan / captured-unit
+  # set is expected on cross.  Normally cabal recognises each
+  # transitive build-tool's `targetSlice` (matching unit-id) and
+  # neither plans nor builds it; this list is the safety net for
+  # cases where a uid mismatch slips through (cabal would then
+  # plan + build the tool, the unit would be captured here, and
+  # we want to accept that rather than fail).  Empty on native.
+  allowedBuildToolPackages =
+    if isCross then lib.unique (map (e: e.pkgName) transitiveBuildToolEntries) else [];
 
   # Look up the v2 slice for a home-dep (sibling-component
   # gathered via plan.json).  Prefer the library, fall back to a
@@ -566,15 +599,16 @@ let
         anySublib = lib.findFirst (v: v != null) null
           (lib.attrValues sublibsMap);
         # Exe-only fallback (build-tool packages like hsc2hs / alex /
-        # happy) must look up via `hsPkgs.pkgsBuildBuild` — same as
-        # `lib/load-cabal-plan.nix:lookupExeDependency` and
-        # `homeDepExeSlices` below — so we get a build-platform exe
-        # the slice's cabal v2-build can actually run.  Looking up
-        # in cross `hsPkgs` returns a cross-target exe slice that
-        # forks UnitIds with the slice's plan.
-        bbPkg = hsPkgs.pkgsBuildBuild.${nv.name} or null;
-        exesMap = if bbPkg != null && (bbPkg ? components) && (bbPkg.components ? exes)
-                  then bbPkg.components.exes else {};
+        # happy): look up the slice on the CROSS hsPkgs so the
+        # composed unit-id matches what this slice's cabal computes
+        # for the tool (cross dummy-ghc parity, see
+        # `transitiveBuildToolEntries`).  The slice's cross-target
+        # binary isn't runnable on the build host, but cabal only
+        # needs the unit-id-keyed dir to be present in the
+        # cabal-store; `withProgFlags` provides the build-build
+        # binary cabal actually invokes.
+        exesMap = if dPkg != null && (dPkg ? components) && (dPkg.components ? exes)
+                  then dPkg.components.exes else {};
         anyExe = lib.findFirst (v: v != null) null
           (lib.attrValues exesMap);
     in if depLib != null then depLib
@@ -1477,7 +1511,8 @@ let
     # like `lib:testlib` are still pruned and their deps don't leak
     # into the install plan.
     extraSublibSeeds = extraSublibSeeds;
-    inherit extraBuildInputs extraNativeBuildInputs withProgFlags;
+    inherit extraBuildInputs extraNativeBuildInputs withProgFlags
+            allowedBuildToolPackages;
     # Things that flow into downstream slices' build envs through
     # stdenv's propagation chain.  Library deps don't appear here
     # because in v2 they're the dep slices themselves, already in
@@ -1502,19 +1537,11 @@ let
           (haskellLib.uniqueWithName libs));
     # The slice's `cabal v2-build` should only ever build the
     # target package (any number of components — lib + sublibs +
-    # exe, etc.).  Any other package appearing in cabal's plan
-    # means a dep we composed into the starting store ended up
-    # rebuilt.
-    #
-    # Skipped on cross: cabal's solver always plans every
-    # transitive `build-tool-depends:` package (hsc2hs / alex /
-    # happy / …) even when `--with-PROG=PATH` is set, so the
-    # dry-run plan necessarily lists more than `pkgName`.  The
-    # post-install captured-unit-ids count==1 check in
-    # `build-cabal-slice.nix` is what catches the case where
-    # cabal actually built (rather than short-circuited) a
-    # build-tool — the right granularity for cross.
-    expectedPackage = if isCross then null else pkgName;
+    # exe, etc.) plus, on cross, the transitive build-tools that
+    # cabal's solver always plans for `build-tool-depends:` goals.
+    # Any OTHER package appearing in cabal's plan means a lib dep
+    # we composed into the starting store ended up rebuilt.
+    expectedPackage = pkgName;
     # The slice must produce its own component's plan-id.
     # `package.identifier.unit-id` is set by
     # `modules/install-plan/planned.nix` to the plan-id of the
@@ -1718,7 +1745,8 @@ let
     preBuild = slicePreBuild;
     target = targetSelector;
     extraSublibSeeds = extraSublibSeeds;
-    inherit extraBuildInputs extraNativeBuildInputs withProgFlags;
+    inherit extraBuildInputs extraNativeBuildInputs withProgFlags
+            allowedBuildToolPackages;
     dryRunOnly = true;
     inherit planNixJsonFile;
   };
@@ -1775,7 +1803,8 @@ let
     preBuild = slicePreBuild;
     target = targetSelector;
     extraSublibSeeds = extraSublibSeeds;
-    inherit extraBuildInputs extraNativeBuildInputs withProgFlags;
+    inherit extraBuildInputs extraNativeBuildInputs withProgFlags
+            allowedBuildToolPackages;
     doHaddock = true;
     # The build-cabal-slice dry-run check fails when cabal plans
     # to build anything other than `expectedPackage` — that's
@@ -1783,9 +1812,8 @@ let
     # slices' UnitIds don't match what cabal v2-haddock would
     # compute (i.e. the project hasn't enabled documentation
     # everywhere), the user gets a clear "package X needs
-    # rebuild" error instead of a silent slow build.  Cross
-    # skips it for the same reason as the main `baseSlice`.
-    expectedPackage = if isCross then null else pkgName;
+    # rebuild" error instead of a silent slow build.
+    expectedPackage = pkgName;
   };
 
   # Composed dep store for this component — slices it builds on top

@@ -134,10 +134,24 @@ let outerGhc = ghc; in
                              # appended to the `cabal v2-build` command.
                              # Used by `comp-v2-builder.nix` on cross
                              # to point cabal at the build-platform
-                             # exe of each `homeBuildToolIds` entry
-                             # — keeps the tool's source out of the
-                             # slicing repo while still letting cabal
-                             # satisfy `build-tool-depends:`.
+                             # exe of each transitive build-tool;
+                             # makes the build-tool's cabal-built
+                             # unit-id stable across slices in the
+                             # same project (every slice passes the
+                             # same flags so the uid hash matches).
+, allowedBuildToolPackages ? []
+                             # Package names whose appearance in
+                             # cabal's plan / captured-unit set is
+                             # accepted in addition to
+                             # `expectedPackage`.  Used on cross:
+                             # cabal's solver always plans every
+                             # transitive `build-tool-depends:` and
+                             # may also build it, so the slice
+                             # legitimately captures those units
+                             # alongside the target.  Any captured
+                             # pkg-name outside `expectedPackage ∪
+                             # allowedBuildToolPackages` is still a
+                             # fail.
 }:
 
 let
@@ -543,9 +557,17 @@ stdenv.mkDerivation ({
       #   ` - foo-1.2.3 (lib) (requires build)`
       # — and split each `<pkg>-<ver>` token at the rightmost `-`
       # whose right-hand side starts with a digit.  Filter out
-      # `expectedPackage` directly; whatever remains is a rebuild.
+      # `expectedPackage` and any package in `allowedBuildToolPackages`
+      # (transitive `build-tool-depends:` goals on cross, which the
+      # solver always plans); whatever remains is a rebuild.
       expected_pkg=${lib.escapeShellArg expectedPackage}
-      extras=$(awk -v expected="$expected_pkg" '
+      allowed_build_tools=${lib.escapeShellArg
+        (lib.concatStringsSep " " allowedBuildToolPackages)}
+      extras=$(awk -v expected="$expected_pkg" -v allowed="$allowed_build_tools" '
+        BEGIN {
+          n = split(allowed, a, " ")
+          for (i = 1; i <= n; i++) allowed_set[a[i]] = 1
+        }
         /^In order, the following / { capturing=1; next }
         capturing && /^$/ { capturing=0; next }
         capturing && /^ - / {
@@ -557,7 +579,7 @@ stdenv.mkDerivation ({
             name = parts[1]
             for (j = 2; j < i; j++) name = name "-" parts[j]
           }
-          if (name != expected) print name
+          if (name != expected && !(name in allowed_set)) print name
         }
       ' plan.log | sort -u)
 
@@ -1049,22 +1071,70 @@ stdenv.mkDerivation ({
 
     ${if expectedUnitId == null then ''
       # No specific unit-id to match against (source-repo / local
-      # packages, cross builds where the cross plan's unit-id
-      # legitimately diverges from what real cross-cabal computes,
+      # packages, cross builds where the cross plan's network uid
+      # legitimately diverges from what real cross-cabal computes
+      # due to `--with-PROG` flags entering pkgHashProgramArgs,
       # custom-build packages whose plan-nix entry spans multiple
-      # cabal-side units, etc.).  Still verify exactly ONE unit was
-      # captured — anything else means cabal built more than this
-      # slice's component (e.g. accidentally rebuilt the package's
-      # library alongside the exe instead of reusing the
-      # pre-installed lib slice) and downstream consumers would
-      # see ambiguous content in this slice's $out.
+      # cabal-side units, etc.).  Verify:
+      #   * exactly ONE captured unit has pkg-name == expectedPackage
+      #     (the slice's target — missing it means cabal built
+      #     something other than what we asked for);
+      #   * any OTHER captured units have a pkg-name in
+      #     `allowedBuildToolPackages` (transitive build-tools on
+      #     cross — normally none, since cabal recognises the
+      #     composed cross `targetSlice` by matching uid, but if a
+      #     uid mismatch slips through we accept the captured tool
+      #     unit rather than fail outright; downstream slices reuse
+      #     it through `composeStore`).
+      expected_pkg=${lib.escapeShellArg expectedPackage}
+      allowed_build_tools=${lib.escapeShellArg
+        (lib.concatStringsSep " " allowedBuildToolPackages)}
       actual_uids=$(sort -u $buildRoot/captured-unit-ids)
-      actual_count=$(printf '%s\n' "$actual_uids" | grep -c . || true)
-      if [ "$actual_count" != "1" ]; then
+
+      # Parse pkg-name from each unit-id: split at the rightmost
+      # dash whose right-hand side starts with a digit (mirrors
+      # the dry-run extras parser above).
+      uid_to_pkg() {
+        awk '{
+          n = split($1, parts, "-")
+          for (i = n; i > 0; i--) if (parts[i] ~ /^[0-9]/) break
+          if (i <= 1) { name = $1 }
+          else {
+            name = parts[1]
+            for (j = 2; j < i; j++) name = name "-" parts[j]
+          }
+          print name "\t" $1
+        }'
+      }
+
+      pairs=$(printf '%s\n' "$actual_uids" | uid_to_pkg)
+      target_count=$(printf '%s\n' "$pairs" | awk -v e="$expected_pkg" '$1 == e' | wc -l)
+      unexpected=$(printf '%s\n' "$pairs" \
+        | awk -v expected="$expected_pkg" -v allowed="$allowed_build_tools" '
+            BEGIN {
+              n = split(allowed, a, " ")
+              for (i = 1; i <= n; i++) allowed_set[a[i]] = 1
+            }
+            $1 != expected && !($1 in allowed_set) { print $2 }
+          ')
+
+      if [ "$target_count" != "1" ]; then
         echo "" >&2
-        echo "ERROR: slice captured $actual_count unit-ids; expected exactly 1." >&2
+        echo "ERROR: slice captured $target_count units for the target package '$expected_pkg'; expected exactly 1." >&2
         echo "" >&2
         echo "  Captured unit-ids:" >&2
+        printf '%s\n' "$actual_uids" | sed 's/^/    /' >&2
+        exit 1
+      fi
+      if [ -n "$unexpected" ]; then
+        echo "" >&2
+        echo "ERROR: slice captured units for packages other than '$expected_pkg'" >&2
+        echo "       and the allowed transitive build-tools:" >&2
+        echo "" >&2
+        echo "  Unexpected unit-ids:" >&2
+        printf '%s\n' "$unexpected" | sed 's/^/    /' >&2
+        echo "" >&2
+        echo "  All captured unit-ids:" >&2
         printf '%s\n' "$actual_uids" | sed 's/^/    /' >&2
         exit 1
       fi
