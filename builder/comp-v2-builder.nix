@@ -29,7 +29,8 @@
                          # cabal.project `constraints:` block.
 , planJsonByPlanId ? {}  # `planJson` indexed by `id` — pre-built once
                          # at the project level, shared across slices.
-, homeDependIds ? []  # [{ name; version; }] — sibling-component deps from plan-json
+, homeDependIds    ? []  # [{ name; version; }] — sibling-component LIB deps from plan-json
+, homeBuildToolIds ? []  # [{ name; version; }] — sibling-component EXE deps from plan-json
 , prePatch ? null, postPatch ? null, ... }@allArgs:
 
 let
@@ -857,12 +858,12 @@ let
   # ends up planning.
   #
   # Look the exe up via `hsPkgs.pkgsBuildBuild` rather than the
-  # host `hsPkgs` — `homeDependIds` includes `exe-depends` from
-  # plan-json (the build-tool-depends entries), and those must be
-  # satisfied with the build-platform exe.  Without this we'd pull
-  # in the cross-compiled exe (e.g. `alex.exe`) which can't run on
-  # the build platform; v1's `lookupExeDependency` already uses
-  # `pkgsBuildBuild` for the same reason.
+  # host `hsPkgs` — `homeBuildToolIds` is the sibling-component
+  # `exe-depends` set from plan-json (the build-tool-depends
+  # entries).  Without this we'd pull in the cross-compiled exe
+  # (e.g. `alex.exe`) which can't run on the build platform; v1's
+  # `lookupExeDependency` already uses `pkgsBuildBuild` for the
+  # same reason.
   homeDepExeSlices =
     let
       exesOf = nv:
@@ -870,7 +871,7 @@ let
         in if p != null && (p ? components) && (p.components ? exes)
            then lib.filter (v: v != null) (lib.attrValues p.components.exes)
            else [];
-    in lib.concatMap exesOf homeDependIds;
+    in lib.concatMap exesOf homeBuildToolIds;
 
   extraNativeBuildInputs = haskellLib.uniqueWithName (lib.filter
     (t: t != null)

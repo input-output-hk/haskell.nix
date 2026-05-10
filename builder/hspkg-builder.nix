@@ -73,12 +73,30 @@ let
           # here caused infinite recursion through haskell.nix's
           # internal cross-refs.
           #
-          # For every install-plan entry with the same pkg-name +
-          # pkg-version as this instance, take its `depends` and
-          # `exe-depends` (each is a list of plan ids).  Resolve
-          # each id back to its canonical pkg-name + pkg-version
-          # via the same plan-json.  Drop same-pkg self-refs.
-          homeDependIds =
+          # Sibling-component `depends` and `exe-depends` from
+          # plan-json — split because the slice handles them
+          # differently:
+          #   * `homeDependIds` (`depends` only) feeds
+          #     `externalDepIds` and `depTransitiveTarballsOf` —
+          #     these tarballs land in the slicing repo's index so
+          #     the slice's solver can plan the lib closure.
+          #   * `homeBuildToolIds` (`exe-depends` only) feeds
+          #     `homeDepExeSlices` — the build-tool's exe is added
+          #     to PATH but its source is NOT added to the slicing
+          #     repo (the slice provides the tool as a pre-built
+          #     exe; if the source were in the index, cabal's
+          #     solver would still plan it from source for
+          #     `build-tool-depends: foo:foo`-style deps and
+          #     fork the tool's unit-id).
+          #
+          # plan-json's layout varies by build-type:
+          #   * Simple pkgs get one entry per component, each
+          #     with top-level `depends` / `exe-depends`.
+          #   * Custom pkgs get a single entry with a
+          #     `components` sub-object (keys like `lib`,
+          #     `exe:name`, `setup`), each of which has its own
+          #     `depends` / `exe-depends`.
+          homeIds =
             let
               plan     = config.plan-json.install-plan;
               byId     = config.plan-json-by-id;
@@ -86,26 +104,16 @@ let
                 (p: (p.pkg-name or null) == package.identifier.name
                     && (p.pkg-version or null) == package.identifier.version)
                 plan;
-              # Gather every `depends` AND `exe-depends` entry
-              # from sibling plan entries.  plan-json's layout
-              # varies by build-type:
-              #   * Simple pkgs get one entry per component, each
-              #     with top-level `depends` / `exe-depends`.
-              #   * Custom pkgs get a single entry with a
-              #     `components` sub-object (keys like `lib`,
-              #     `exe:name`, `setup`), each of which has its own
-              #     `depends` / `exe-depends`.
-              # We include `exe-depends` too because cabal's
-              # re-solver inside each slice needs build-tool
-              # packages (hsc2hs, alex, happy, ...) to be resolvable
-              # the same way plan-nix's solver resolved them.
-              depsFromEntry = p:
+              libDepsOf = p:
                 (p.depends or [])
-                ++ (p.exe-depends or [])
-                ++ lib.concatMap
-                     (c: (c.depends or []) ++ (c.exe-depends or []))
+                ++ lib.concatMap (c: c.depends or [])
                      (lib.attrValues (p.components or {}));
-              depIds   = lib.unique (lib.concatMap depsFromEntry sibs);
+              exeDepsOf = p:
+                (p.exe-depends or [])
+                ++ lib.concatMap (c: c.exe-depends or [])
+                     (lib.attrValues (p.components or {}));
+              libIds   = lib.unique (lib.concatMap libDepsOf sibs);
+              exeIds   = lib.unique (lib.concatMap exeDepsOf sibs);
               idToNV = id:
                 let q = byId.${id} or null;
                 in if q == null
@@ -123,7 +131,12 @@ let
                 nv == null
                 || nv.name == package.identifier.name
                 || lib.elem nv.name preExistingNames;
-            in lib.filter (nv: !(isExcluded nv)) (map idToNV depIds);
+              filterIds = ids: lib.filter (nv: !(isExcluded nv)) (map idToNV ids);
+            in {
+              homeDependIds    = filterIds libIds;
+              homeBuildToolIds = filterIds exeIds;
+            };
+          inherit (homeIds) homeDependIds homeBuildToolIds;
           pkgSet = config.packages;
           packageIdsByName = config.package-ids-by-name;
           # Raw plan.json `install-plan` array — comp-v2-builder
