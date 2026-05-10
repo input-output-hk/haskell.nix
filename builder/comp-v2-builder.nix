@@ -40,15 +40,15 @@ let
 
   # Cross-compile detection — drives:
   #   * whether home-build-tool source goes in the slicing repo
-  #     (no on cross — see `depTransitives`).
-  #   * whether cabal.project emits explicit `--with-PROG=PATH`
-  #     locations for home-build-tool exes (yes on cross — see
-  #     `programLocationsBlock`).
+  #     (no on cross — see `depTransitives` and `externalDepIds`).
+  #   * whether the slice's cabal v2-build gets explicit
+  #     `--with-PROG=PATH` flags for transitive build-tool exes
+  #     (yes on cross — see `withProgFlags`).
   #   * whether the slice runs the unit-id mismatch check
   #     (no on cross — `expectedUnitId` returns null; cross plan
   #     unit-ids legitimately diverge from what cabal computes
   #     against the real cross GHC).
-  isCross = pkgs.stdenv.hostPlatform.config != pkgs.stdenv.buildPlatform.config;
+  isCross = (ghc.targetPrefix or "") != "";
 
   # Plan-nix entry for this slice's own unit (looked up via the
   # unit-id `modules/install-plan/planned.nix` recorded on the
@@ -932,7 +932,6 @@ let
   isMainLib  = ctype == "lib" && cname == pkgName;
   isSublib   = ctype == "lib" && cname != pkgName;
   isLibrary   = isMainLib || isSublib;
-  isCross     = (ghc.targetPrefix or "") != "";
   # Native exe slices ship the binary inside the cabal-store unit
   # dir under `$out/store/.../<unit>/bin/`.  Cross exe slices target
   # `<exe>.exe` (or platform equivalent) which can't run on the
