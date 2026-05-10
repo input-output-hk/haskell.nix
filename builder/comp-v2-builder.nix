@@ -394,18 +394,27 @@ let
   # entry has a top-level `.name`, so `uniqueWithName` partitions
   # by name and only falls back to a per-bucket scan for collisions.
   #
-  # On NATIVE, also include sibling `exe-depends` (build-tools):
-  # their plan-nix unit-ids match what the slice's cabal computes,
-  # so cabal recognises the pre-installed tool in the cabal-store
-  # and doesn't re-build.  On CROSS we deliberately drop them so
-  # the tool's source stays out of the slicing repo (cabal would
-  # otherwise plan it from source — unit-ids would diverge — and
-  # we instead steer cabal off the goal entirely via explicit
-  # `--with-PROG=PATH` locations, see `programLocationsBlock`).
+  # Sibling `exe-depends` (build-tools) are included on both native
+  # and cross: cabal's solver requires the build-tool package (and
+  # its lib closure) to be in the slicing repo's index just to
+  # resolve `build-tool-depends: <pkg>:<exe>` as a plan goal —
+  # `--with-PROG=PATH` only kicks in at build time, after the
+  # solver has succeeded.  Leaving them out fails the solver with
+  # `unknown package: <pkg>:<exe>:exe.<exe> (dependency of …)`.
+  #
+  # On NATIVE the plan-nix unit-ids match what the slice's cabal
+  # computes, so cabal recognises the pre-installed tool in the
+  # cabal-store and doesn't re-build.  On CROSS the unit-ids
+  # diverge (cross GHC info ≠ build-platform GHC info), so cabal
+  # would otherwise plan a from-source rebuild; `withProgFlags`
+  # below adds `--with-<exe>=<bb-slice>/bin/<exe>` per transitive
+  # build-tool so cabal short-circuits the build.  The post-install
+  # "exactly one captured unit-id" check then verifies cabal really
+  # did skip the tool's build.
   externalDepIds = haskellLib.uniqueWithName
     (map (d: { name = d.identifier.name; version = d.identifier.version; }) externalDeps
      ++ lib.filter (nv: nv.name != pkgName)
-          (homeDependIds ++ lib.optionals (!isCross) homeBuildToolIds));
+          (homeDependIds ++ homeBuildToolIds));
 
   # An entry in `component.depends` is either a dep package record
   # (has `.components`, e.g. `hsPkgs.provider`) or a v2 slice
@@ -689,17 +698,15 @@ let
     # `:pkg:foo:lib:bar`-style cabal target, so the package has to
     # be reachable through the file:// repo's `00-index.tar.gz`.
     ++ [ { name = pkgName; version = pkgVersion; tarball = pkgTarball; cabalFile = thisCabalFile; } ]
-    # Build-tool tarballs on NATIVE builds only.  On native the
-    # build-tool's bb slice and the cross slice are the same — its
-    # unit-id matches what cabal's solver in this slice would
-    # compute, so cabal recognises the pre-installed slice and
-    # doesn't re-build the tool.  On CROSS the unit-ids diverge
-    # (cross GHC info ≠ build-platform GHC info); we steer cabal
-    # off the goal entirely via explicit `--with-PROG=PATH`
-    # locations below, and keeping the tool's source out of the
-    # index prevents cabal from picking it as a solver candidate.
-    ++ lib.optionals (!isCross)
-         (lib.concatMap (s: s.passthru.transitiveTarballs or []) buildToolSlices);
+    # Include each direct build-tool's source tarball (plus its
+    # lib deps) too — cabal's solver in the slice always needs the
+    # build-tool package (and its full lib closure) in the index to
+    # resolve `build-tool-depends:` goals, even when the unit is
+    # already in the starting cabal-store or pinned via
+    # `--with-PROG=PATH`.  On native cabal then plans + reuses the
+    # pre-installed slice; on cross `withProgFlags` short-circuits
+    # the build.
+    ++ lib.concatMap (s: s.passthru.transitiveTarballs or []) buildToolSlices;
 
   # native-build inputs from the target component's config
   libs       = lib.flatten (component.libs or []);
@@ -1498,7 +1505,16 @@ let
     # exe, etc.).  Any other package appearing in cabal's plan
     # means a dep we composed into the starting store ended up
     # rebuilt.
-    expectedPackage = pkgName;
+    #
+    # Skipped on cross: cabal's solver always plans every
+    # transitive `build-tool-depends:` package (hsc2hs / alex /
+    # happy / …) even when `--with-PROG=PATH` is set, so the
+    # dry-run plan necessarily lists more than `pkgName`.  The
+    # post-install captured-unit-ids count==1 check in
+    # `build-cabal-slice.nix` is what catches the case where
+    # cabal actually built (rather than short-circuited) a
+    # build-tool — the right granularity for cross.
+    expectedPackage = if isCross then null else pkgName;
     # The slice must produce its own component's plan-id.
     # `package.identifier.unit-id` is set by
     # `modules/install-plan/planned.nix` to the plan-id of the
@@ -1767,8 +1783,9 @@ let
     # slices' UnitIds don't match what cabal v2-haddock would
     # compute (i.e. the project hasn't enabled documentation
     # everywhere), the user gets a clear "package X needs
-    # rebuild" error instead of a silent slow build.
-    expectedPackage = pkgName;
+    # rebuild" error instead of a silent slow build.  Cross
+    # skips it for the same reason as the main `baseSlice`.
+    expectedPackage = if isCross then null else pkgName;
   };
 
   # Composed dep store for this component — slices it builds on top
