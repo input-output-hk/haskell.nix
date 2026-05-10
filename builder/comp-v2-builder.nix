@@ -665,13 +665,19 @@ let
     # repo: cabal pulls it in via `extra-packages:` and the slice's
     # `:pkg:foo:lib:bar`-style cabal target, so the package has to
     # be reachable through the file:// repo's `00-index.tar.gz`.
-    ++ [ { name = pkgName; version = pkgVersion; tarball = pkgTarball; cabalFile = thisCabalFile; } ]
-    # Include each build-tool's source tarball (plus its lib deps)
-    # too — cabal's solver needs to plan the tool package even when
-    # the tool's unit is already installed in the starting store,
-    # because `build-tool-depends: alex:alex` still resolves against
-    # the package index.
-    ++ lib.concatMap (s: s.passthru.transitiveTarballs or []) buildToolSlices;
+    ++ [ { name = pkgName; version = pkgVersion; tarball = pkgTarball; cabalFile = thisCabalFile; } ];
+    # Build-tool source tarballs are intentionally NOT added: their
+    # exes are already on PATH via `extraNativeBuildInputs` (see the
+    # `buildToolSlices` filter and `homeDepExeSlices`).  Adding the
+    # tarballs would let cabal's solver in the slice see the tool's
+    # source in the index AND treat it as a goal candidate for
+    # `build-tool-depends: hsc2hs:hsc2hs` style deps — even though
+    # the slice already provides the tool as a pre-built exe.  cabal
+    # would then plan a from-source rebuild and fork the tool's
+    # unit-id (cross GHC info ≠ build-platform GHC info), failing
+    # the slice's expected-package check.  cabal falls back to the
+    # PATH-based legacy build-tool resolution when the package
+    # isn't in the index.
 
   # native-build inputs from the target component's config
   libs       = lib.flatten (component.libs or []);
