@@ -429,11 +429,20 @@ let
               echo ',("Stage","1")'
             ''
             else if pkgs.stdenv.targetPlatform.isAndroid
+                 || pkgs.stdenv.targetPlatform.isStatic
             then ''
-              # Android: stage-1 cross GHC, builds .a libs only (no
-              # `_dyn` RTS ways), no shared-library support reported.
+              # Android cross / pkgsStatic: GHC built without dynamic
+              # support — RTS ways have no `_dyn` family,
+              # `GHC Dynamic: NO`, and no `Support shared libraries`
+              # field at all (cabal interprets absence as no-shared).
+              # Falling through to the "otherwise" branch makes
+              # plan-to-nix record `--enable-shared`, which the
+              # slice's real ghc silently flips to `--disable-shared`,
+              # forking the UnitId on `pkgHashSharedLib`.
               # Reference: `aarch64-unknown-linux-android-ghc --info`
-              # on real haskell.nix android cross 9.14.1.
+              # for android (Stage 1) and the pkgsStatic
+              # `x86_64-unknown-linux-musl-ghc --info` for static
+              # (Stage 2).
               echo ',("Support dynamic-too","YES")'
               echo ',("Support reexported-modules","YES")'
               echo ',("Support thinning and renaming package flags","YES")'
@@ -444,7 +453,7 @@ let
               echo ',("target RTS linker only supports shared libraries","NO")'
               echo ',("GHC Dynamic","NO")'
               echo ',("RTS ways","v thr thr_debug thr_debug_p thr_p debug debug_p p")'
-              echo ',("Stage","1")'
+              echo ',("Stage","${if pkgs.stdenv.targetPlatform.isAndroid then "1" else "2"}")'
             ''
             else ''
               echo ',("Support dynamic-too","YES")'
