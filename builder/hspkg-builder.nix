@@ -61,81 +61,81 @@ let
                   ;
           inherit (config) prebuilt-depends;
         };
+        # Compute the set of (pkg-name, pkg-version) pairs that
+        # cabal's solver needs to plan for when we target this
+        # pkg via the shim's `build-depends`.  We stay inside
+        # plan-json (pure JSON data) to avoid forcing module
+        # options that might reach back into our own construction
+        # — iterating `config.packages.<id>.allComponent` from
+        # here caused infinite recursion through haskell.nix's
+        # internal cross-refs.
+        #
+        # Sibling-component `depends` and `exe-depends` from
+        # plan-json — split because the slice handles them
+        # differently:
+        #   * `homeDependIds` (`depends` only) feeds
+        #     `externalDepIds` and `depTransitiveTarballsOf` —
+        #     these tarballs land in the slicing repo's index so
+        #     the slice's solver can plan the lib closure.
+        #   * `homeBuildToolIds` (`exe-depends` only) feeds
+        #     `homeDepExeSlices` — the build-tool's exe is added
+        #     to PATH but its source is NOT added to the slicing
+        #     repo (the slice provides the tool as a pre-built
+        #     exe; if the source were in the index, cabal's
+        #     solver would still plan it from source for
+        #     `build-tool-depends: foo:foo`-style deps and
+        #     fork the tool's unit-id).
+        #
+        # plan-json's layout varies by build-type:
+        #   * Simple pkgs get one entry per component, each
+        #     with top-level `depends` / `exe-depends`.
+        #   * Custom pkgs get a single entry with a
+        #     `components` sub-object (keys like `lib`,
+        #     `exe:name`, `setup`), each of which has its own
+        #     `depends` / `exe-depends`.
+        homeIds =
+          let
+            plan     = config.plan-json.install-plan;
+            byId     = config.plan-json-by-id;
+            sibs     = lib.filter
+              (p: (p.pkg-name or null) == package.identifier.name
+                  && (p.pkg-version or null) == package.identifier.version)
+              plan;
+            libDepsOf = p:
+              (p.depends or [])
+              ++ lib.concatMap (c: c.depends or [])
+                   (lib.attrValues (p.components or {}));
+            exeDepsOf = p:
+              (p.exe-depends or [])
+              ++ lib.concatMap (c: c.exe-depends or [])
+                   (lib.attrValues (p.components or {}));
+            libIds   = lib.unique (lib.concatMap libDepsOf sibs);
+            exeIds   = lib.unique (lib.concatMap exeDepsOf sibs);
+            idToNV = id:
+              let q = byId.${id} or null;
+              in if q == null
+                 then null
+                 else { name = q.pkg-name; version = q.pkg-version; };
+            # Boot packages (base, ghc-prim, rts, ...) don't have
+            # slicable haskell.nix builds — they come with GHC and
+            # are already registered in the starting package db.
+            # `pre-existing` in plan-json flags these; skip them.
+            preExisting = lib.filter
+              (p: (p.type or null) == "pre-existing")
+              plan;
+            preExistingNames = map (p: p.pkg-name) preExisting;
+            isExcluded = nv:
+              nv == null
+              || nv.name == package.identifier.name
+              || lib.elem nv.name preExistingNames;
+            filterIds = ids: lib.filter (nv: !(isExcluded nv)) (map idToNV ids);
+          in {
+            homeDependIds    = filterIds libIds;
+            homeBuildToolIds = filterIds exeIds;
+          };
         v2 = comp-v2-builder {
           inherit componentId component package name src flags patches cabalFile cabal-generator;
           inherit (pkg) prePatch postPatch;
-          # Compute the set of (pkg-name, pkg-version) pairs that
-          # cabal's solver needs to plan for when we target this
-          # pkg via the shim's `build-depends`.  We stay inside
-          # plan-json (pure JSON data) to avoid forcing module
-          # options that might reach back into our own construction
-          # — iterating `config.packages.<id>.allComponent` from
-          # here caused infinite recursion through haskell.nix's
-          # internal cross-refs.
-          #
-          # Sibling-component `depends` and `exe-depends` from
-          # plan-json — split because the slice handles them
-          # differently:
-          #   * `homeDependIds` (`depends` only) feeds
-          #     `externalDepIds` and `depTransitiveTarballsOf` —
-          #     these tarballs land in the slicing repo's index so
-          #     the slice's solver can plan the lib closure.
-          #   * `homeBuildToolIds` (`exe-depends` only) feeds
-          #     `homeDepExeSlices` — the build-tool's exe is added
-          #     to PATH but its source is NOT added to the slicing
-          #     repo (the slice provides the tool as a pre-built
-          #     exe; if the source were in the index, cabal's
-          #     solver would still plan it from source for
-          #     `build-tool-depends: foo:foo`-style deps and
-          #     fork the tool's unit-id).
-          #
-          # plan-json's layout varies by build-type:
-          #   * Simple pkgs get one entry per component, each
-          #     with top-level `depends` / `exe-depends`.
-          #   * Custom pkgs get a single entry with a
-          #     `components` sub-object (keys like `lib`,
-          #     `exe:name`, `setup`), each of which has its own
-          #     `depends` / `exe-depends`.
-          homeIds =
-            let
-              plan     = config.plan-json.install-plan;
-              byId     = config.plan-json-by-id;
-              sibs     = lib.filter
-                (p: (p.pkg-name or null) == package.identifier.name
-                    && (p.pkg-version or null) == package.identifier.version)
-                plan;
-              libDepsOf = p:
-                (p.depends or [])
-                ++ lib.concatMap (c: c.depends or [])
-                     (lib.attrValues (p.components or {}));
-              exeDepsOf = p:
-                (p.exe-depends or [])
-                ++ lib.concatMap (c: c.exe-depends or [])
-                     (lib.attrValues (p.components or {}));
-              libIds   = lib.unique (lib.concatMap libDepsOf sibs);
-              exeIds   = lib.unique (lib.concatMap exeDepsOf sibs);
-              idToNV = id:
-                let q = byId.${id} or null;
-                in if q == null
-                   then null
-                   else { name = q.pkg-name; version = q.pkg-version; };
-              # Boot packages (base, ghc-prim, rts, ...) don't have
-              # slicable haskell.nix builds — they come with GHC and
-              # are already registered in the starting package db.
-              # `pre-existing` in plan-json flags these; skip them.
-              preExisting = lib.filter
-                (p: (p.type or null) == "pre-existing")
-                plan;
-              preExistingNames = map (p: p.pkg-name) preExisting;
-              isExcluded = nv:
-                nv == null
-                || nv.name == package.identifier.name
-                || lib.elem nv.name preExistingNames;
-              filterIds = ids: lib.filter (nv: !(isExcluded nv)) (map idToNV ids);
-            in {
-              homeDependIds    = filterIds libIds;
-              homeBuildToolIds = filterIds exeIds;
-            };
           inherit (homeIds) homeDependIds homeBuildToolIds;
           pkgSet = config.packages;
           packageIdsByName = config.package-ids-by-name;
