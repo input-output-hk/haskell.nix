@@ -130,6 +130,14 @@ let outerGhc = ghc; in
                              # (testers / IDE tools) can use the doc
                              # slice as a drop-in for the lib slice
                              # when they want both bytes and docs.
+, withProgFlags ? ""         # extra `--with-PROG=PATH` flags
+                             # appended to the `cabal v2-build` command.
+                             # Used by `comp-v2-builder.nix` on cross
+                             # to point cabal at the build-platform
+                             # exe of each `homeBuildToolIds` entry
+                             # — keeps the tool's source out of the
+                             # slicing repo while still letting cabal
+                             # satisfy `build-tool-depends:`.
 }:
 
 let
@@ -499,7 +507,7 @@ stdenv.mkDerivation ({
     # them and falls back to "near compiler" lookup, which fails for
     # cross GHCs that ship only prefixed binaries).
     cabalGlobalArgs="--store-dir=$storeDir"
-    cabalCmdArgs="${crossWithFlags}"
+    cabalCmdArgs="${crossWithFlags}${withProgFlags}"
     # Match v1's `-j` behaviour: cap GHC's per-module parallelism at
     # 4 even when nix gives us more cores.  Going much wider tends to
     # thrash memory on big modules (cardano-ledger templates,
@@ -1039,7 +1047,28 @@ stdenv.mkDerivation ({
       ''}
     fi
 
-    ${lib.optionalString (expectedUnitId != null) ''
+    ${if expectedUnitId == null then ''
+      # No specific unit-id to match against (source-repo / local
+      # packages, cross builds where the cross plan's unit-id
+      # legitimately diverges from what real cross-cabal computes,
+      # custom-build packages whose plan-nix entry spans multiple
+      # cabal-side units, etc.).  Still verify exactly ONE unit was
+      # captured — anything else means cabal built more than this
+      # slice's component (e.g. accidentally rebuilt the package's
+      # library alongside the exe instead of reusing the
+      # pre-installed lib slice) and downstream consumers would
+      # see ambiguous content in this slice's $out.
+      actual_uids=$(sort -u $buildRoot/captured-unit-ids)
+      actual_count=$(printf '%s\n' "$actual_uids" | grep -c . || true)
+      if [ "$actual_count" != "1" ]; then
+        echo "" >&2
+        echo "ERROR: slice captured $actual_count unit-ids; expected exactly 1." >&2
+        echo "" >&2
+        echo "  Captured unit-ids:" >&2
+        printf '%s\n' "$actual_uids" | sed 's/^/    /' >&2
+        exit 1
+      fi
+    '' else ''
       # The slice must produce exactly one unit-id: the plan-id
       # plan-nix recorded for this component.  Any divergence is a
       # fail:

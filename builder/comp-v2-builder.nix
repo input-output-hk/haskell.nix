@@ -38,6 +38,18 @@ let
   pkgVersion = package.identifier.version;
   ghcPkgVersion = ghc.version;
 
+  # Cross-compile detection — drives:
+  #   * whether home-build-tool source goes in the slicing repo
+  #     (no on cross — see `depTransitives`).
+  #   * whether cabal.project emits explicit `--with-PROG=PATH`
+  #     locations for home-build-tool exes (yes on cross — see
+  #     `programLocationsBlock`).
+  #   * whether the slice runs the unit-id mismatch check
+  #     (no on cross — `expectedUnitId` returns null; cross plan
+  #     unit-ids legitimately diverge from what cabal computes
+  #     against the real cross GHC).
+  isCross = pkgs.stdenv.hostPlatform.config != pkgs.stdenv.buildPlatform.config;
+
   # Plan-nix entry for this slice's own unit (looked up via the
   # unit-id `modules/install-plan/planned.nix` recorded on the
   # `package.identifier`).  We use it to detect source-repo packages
@@ -381,9 +393,19 @@ let
   # package-pins — current-component deps + sibling deps.  Each
   # entry has a top-level `.name`, so `uniqueWithName` partitions
   # by name and only falls back to a per-bucket scan for collisions.
+  #
+  # On NATIVE, also include sibling `exe-depends` (build-tools):
+  # their plan-nix unit-ids match what the slice's cabal computes,
+  # so cabal recognises the pre-installed tool in the cabal-store
+  # and doesn't re-build.  On CROSS we deliberately drop them so
+  # the tool's source stays out of the slicing repo (cabal would
+  # otherwise plan it from source — unit-ids would diverge — and
+  # we instead steer cabal off the goal entirely via explicit
+  # `--with-PROG=PATH` locations, see `programLocationsBlock`).
   externalDepIds = haskellLib.uniqueWithName
     (map (d: { name = d.identifier.name; version = d.identifier.version; }) externalDeps
-     ++ lib.filter (nv: nv.name != pkgName) homeDependIds);
+     ++ lib.filter (nv: nv.name != pkgName)
+          (homeDependIds ++ lib.optionals (!isCross) homeBuildToolIds));
 
   # An entry in `component.depends` is either a dep package record
   # (has `.components`, e.g. `hsPkgs.provider`) or a v2 slice
@@ -468,34 +490,52 @@ let
   # Concretely: typed-protocols transitively reaches `hsc2hs` via a
   # lib dep's `exe-depends`; before this, hsc2hs got rebuilt inside
   # every typed-protocols / consumer slice.
-  transitiveBuildToolSlices =
-    let
-      slicesByUnitId = lib.concatMap (e:
-        let p   = e.entry;
-            pn  = p.pkg-name or "";
-            cn  = p.component-name or "";
-            cnPrefix = "exe:";
-            isExe = lib.hasPrefix cnPrefix cn;
-            exeName = builtins.substring (builtins.stringLength cnPrefix)
-                        (builtins.stringLength cn - builtins.stringLength cnPrefix) cn;
-            # Build-tool exes (`hsc2hs`, `alex`, `happy`, …) run on
-            # the BUILD platform during the slice's compile step,
-            # not on the host (cross) target.  Look them up via
-            # `hsPkgs.pkgsBuildBuild` — same as
-            # `lib/load-cabal-plan.nix:lookupExeDependency` and
-            # `homeDepExeSlices` below — otherwise under cross
-            # we'd compose in the cross-target exe (e.g.
-            # `hsc2hs-armv7a-unknown-linux-androideabi`) which
-            # the build host's cabal can't execute.
-            dPkg = hsPkgs.pkgsBuildBuild.${pn} or null;
-            exesMap = if dPkg != null && dPkg ? components && dPkg.components ? exes
-                      then dPkg.components.exes else {};
-            slice = exesMap.${exeName} or null;
-        in if pn != "" && pn != pkgName && isExe && slice != null
-           then [ slice ]
-           else []
-      ) allDepClosure;
-    in slicesByUnitId;
+  # `{ name; slice }` pairs for every transitive build-tool exe in
+  # this slice's `allDepClosure`.  Used for both:
+  #   * Composing the tool into the starting store / PATH
+  #     (`transitiveBuildToolSlices` below — slice values only).
+  #   * Emitting `--with-<exe>=<slice>/bin/<exe>` for cabal on cross
+  #     (`withProgFlags` below — name + slice).
+  #
+  # Build-tool exes (`hsc2hs`, `alex`, `happy`, …) run on the BUILD
+  # platform during the slice's compile step, not on the host
+  # (cross) target.  Look them up via `hsPkgs.pkgsBuildBuild` —
+  # same as `lib/load-cabal-plan.nix:lookupExeDependency` and
+  # `homeDepExeSlices` below — otherwise under cross we'd compose
+  # in the cross-target exe (e.g. `hsc2hs-armv7a-unknown-linux-androideabi`)
+  # which the build host's cabal can't execute.
+  transitiveBuildToolEntries =
+    let raw = lib.concatMap (e:
+      let p   = e.entry;
+          pn  = p.pkg-name or "";
+          cn  = p.component-name or "";
+          cnPrefix = "exe:";
+          isExe = lib.hasPrefix cnPrefix cn;
+          exeName = builtins.substring (builtins.stringLength cnPrefix)
+                      (builtins.stringLength cn - builtins.stringLength cnPrefix) cn;
+          dPkg = hsPkgs.pkgsBuildBuild.${pn} or null;
+          exesMap = if dPkg != null && dPkg ? components && dPkg.components ? exes
+                    then dPkg.components.exes else {};
+          slice = exesMap.${exeName} or null;
+      in if pn != "" && pn != pkgName && isExe && slice != null
+         then [ { name = exeName; inherit slice; } ]
+         else []
+    ) allDepClosure;
+    in haskellLib.uniqueWithName raw;
+  transitiveBuildToolSlices = map (e: e.slice) transitiveBuildToolEntries;
+
+  # Cross-only: tell cabal to use the build-build slice's exe
+  # directly for every transitive `build-tool-depends`.  Keeps
+  # the tool's source out of the slicing repo while still
+  # satisfying cabal's solver (it sees `--with-<exe>=PATH` and
+  # skips planning the tool from source).  On native we omit
+  # these flags so they don't fork the unit-id (every entry in
+  # `--with-PROG=` lands in `pkgHashProgramArgs`).
+  withProgFlags =
+    lib.optionalString isCross
+      (lib.concatMapStrings
+        (e: " --with-${e.name}=${e.slice}/bin/${e.name}")
+        transitiveBuildToolEntries);
 
   # Look up the v2 slice for a home-dep (sibling-component
   # gathered via plan.json).  Prefer the library, fall back to a
@@ -579,39 +619,21 @@ let
   # Pre-existing entries are skipped entirely (no version pin either)
   # — GHC's bundled package db already fixes them, and pinning them
   # tends to push cabal off legacy-tool PATH fallbacks for hsc2hs /
-  # alex / happy / etc.  Sourced from `allDepClosure`: includes both
-  # lib-deps (cross plan) and the lib closures of `exe-depends`
-  # (resolved against the bb plan via `resolveExeId`) so cabal in
-  # the slice pins every package the slicing repo carries to the
-  # version its providing slice was built against.  Without this,
-  # the slice's solver freely picks different versions for a
-  # build-tool's lib closure (e.g. `process` reachable through
-  # hsc2hs) and the build-tool's installed unit-id no longer matches
-  # the in-store slice — triggering a from-source rebuild.
+  # alex / happy / etc.  Sourced from `libDepClosure` (lib deps
+  # only); exe-deps are left unconstrained so build-tools can resolve
+  # against their own slice's solve.
   libConstraintPins =
     let
       grouped = lib.foldl' (acc: e:
         let p = e.entry;
             n = p.pkg-name or "";
             v = p.pkg-version or "";
-            # Skip the exe entry of a build-tool package — pinning
-            # it would land it in `extra-packages:` (see
-            # `extraPackagesEntries`), making cabal's solver in
-            # the slice plan the build-tool from source instead
-            # of using the pre-installed exe slice on PATH.  The
-            # exe's lib closure (process, directory, …) DOES get
-            # pinned: those entries are reached via the bb-plan
-            # walk (`resolveExeId` → `libDepsOf` in bb) and have
-            # `component-name = "lib"` (or `lib:<sublib>`), not
-            # `exe:…`.
-            isExeEntry = lib.hasPrefix "exe:" (p.component-name or "");
         in if n == "" || n == pkgName
               || acc ? ${n}
               || (p.type or null) == "pre-existing"
-              || isExeEntry
            then acc
            else acc // { ${n} = v; }
-      ) {} allDepClosure;
+      ) {} libDepClosure;
     in lib.sort (a: b: a.name < b.name)
         (lib.mapAttrsToList (n: v: { name = n; version = v; }) grouped);
 
@@ -666,19 +688,18 @@ let
     # repo: cabal pulls it in via `extra-packages:` and the slice's
     # `:pkg:foo:lib:bar`-style cabal target, so the package has to
     # be reachable through the file:// repo's `00-index.tar.gz`.
-    ++ [ { name = pkgName; version = pkgVersion; tarball = pkgTarball; cabalFile = thisCabalFile; } ];
-    # Build-tool source tarballs are intentionally NOT added: their
-    # exes are already on PATH via `extraNativeBuildInputs` (see the
-    # `buildToolSlices` filter and `homeDepExeSlices`).  Adding the
-    # tarballs would let cabal's solver in the slice see the tool's
-    # source in the index AND treat it as a goal candidate for
-    # `build-tool-depends: hsc2hs:hsc2hs` style deps — even though
-    # the slice already provides the tool as a pre-built exe.  cabal
-    # would then plan a from-source rebuild and fork the tool's
-    # unit-id (cross GHC info ≠ build-platform GHC info), failing
-    # the slice's expected-package check.  cabal falls back to the
-    # PATH-based legacy build-tool resolution when the package
-    # isn't in the index.
+    ++ [ { name = pkgName; version = pkgVersion; tarball = pkgTarball; cabalFile = thisCabalFile; } ]
+    # Build-tool tarballs on NATIVE builds only.  On native the
+    # build-tool's bb slice and the cross slice are the same — its
+    # unit-id matches what cabal's solver in this slice would
+    # compute, so cabal recognises the pre-installed slice and
+    # doesn't re-build the tool.  On CROSS the unit-ids diverge
+    # (cross GHC info ≠ build-platform GHC info); we steer cabal
+    # off the goal entirely via explicit `--with-PROG=PATH`
+    # locations below, and keeping the tool's source out of the
+    # index prevents cabal from picking it as a solver candidate.
+    ++ lib.optionals (!isCross)
+         (lib.concatMap (s: s.passthru.transitiveTarballs or []) buildToolSlices);
 
   # native-build inputs from the target component's config
   libs       = lib.flatten (component.libs or []);
@@ -981,86 +1002,40 @@ let
         myUnit = if uid == null then null else planJsonByPlanId.${uid} or null;
     in if isLibrary && myUnit != null then [ myUnit ] else allUnits;
 
-  # Build-build project's plan indexes — used to resolve `exe-depends`
-  # ids (build-tools: hsc2hs / alex / happy / ...) into bb-plan units.
-  # On native builds `pkgsBuildBuild == hsPkgs`, so these are the same
-  # as the cross-side indexes and the bb-aware lookup below degenerates
-  # to the trivial direct-id-hit case.
-  bbPlanJsonByPlanId   = hsPkgs.pkgsBuildBuild.plan-json-by-id    or {};
-  bbPackageIdsByName   = hsPkgs.pkgsBuildBuild.package-ids-by-name or {};
-
-  # Closure nodes carry which plan they belong to: "cross" (the
-  # current project's plan-json) or "bb" (the build-build project's
-  # plan-json).  Once a walk crosses into "bb" via an `exe-depends`
-  # edge, all downstream `depends` and `exe-depends` are resolved
-  # against the bb plan-json — build-tool exes' lib closures live
-  # in the build-build plan and would not even be present (or would
-  # have wrong ids) in the cross plan.
-  #
-  # Plan-source dispatch.
-  planJsonByPlanIdFor = plan:
-    if plan == "bb" then bbPlanJsonByPlanId else planJsonByPlanId;
-
-  # Resolve a `depends` (lib) id using the parent node's plan.
-  resolveLibId = parentPlan: id:
-    let q = (planJsonByPlanIdFor parentPlan).${id} or null;
-    in if q == null then []
-       else [ { key = "${parentPlan}:${id}"; plan = parentPlan; entry = q; } ];
-
-  # Resolve an `exe-depends` id by switching into the bb plan.
-  # Tries direct id lookup first (hits only on native, where bb ==
-  # cross); otherwise resolves the id → pkg-name via the parent's
-  # plan, then enumerates every bb-plan entry with that pkg-name.
-  resolveExeId = parentPlan: id:
-    let bbDirect = bbPlanJsonByPlanId.${id} or null;
-    in if bbDirect != null
-       then [ { key = "bb:${id}"; plan = "bb"; entry = bbDirect; } ]
-       else
-         let
-           src     = (planJsonByPlanIdFor parentPlan).${id} or null;
-           pkgName = if src == null then null else (src.pkg-name or null);
-           bbIds   = if pkgName == null then []
-                     else (bbPackageIdsByName.${pkgName} or []);
-         in lib.concatMap (bbId:
-              let q = bbPlanJsonByPlanId.${bbId} or null;
-              in if q == null then []
-                 else [ { key = "bb:${bbId}"; plan = "bb"; entry = q; } ]
-            ) bbIds;
-
   # `depends` only — for the cabal.project `constraints:` block
   # below, where lib-dep closure entries get version-pinned to the
-  # exact unit plan-nix recorded.  Used in a closure that does NOT
-  # follow exe-depends, so it never crosses planes; both the seed
-  # and walk stay in the seed's plan (always "cross" today).
-  libDepsOf = node:
-    let p = node.entry;
-        ids = (p.depends or [])
-           ++ lib.concatMap (c: c.depends or [])
-                (lib.attrValues (p.components or {}));
-    in lib.concatMap (resolveLibId node.plan) ids;
+  # exact unit plan-nix recorded.  exe-depends are deliberately
+  # skipped: exes (alex / happy / hsc2hs / ...) routinely pick
+  # different versions of their lib deps than the libs in the
+  # slice, and pinning them in this slice's constraints would
+  # wrongly cap the exe's own solve.
+  libDepsOf = p:
+    (p.depends or [])
+    ++ lib.concatMap (c: c.depends or [])
+         (lib.attrValues (p.components or {}));
 
   # `depends` + `exe-depends` — for the slicing repo's tarball set
   # and the slice's dep-slice composition.  cabal needs every
   # build-tool package (and the tool's lib closure) reachable in
-  # the index AND composed into the starting store.  exe-depends
-  # always cross over to the bb plan (build-tools run on the build
-  # platform); lib-depends stay on the parent node's plane.
-  allDepsOf = node:
-    let p = node.entry;
-        libIds = (p.depends or [])
-              ++ lib.concatMap (c: c.depends or [])
-                   (lib.attrValues (p.components or {}));
-        exeIds = (p.exe-depends or [])
-              ++ lib.concatMap (c: c.exe-depends or [])
-                   (lib.attrValues (p.components or {}));
-    in lib.concatMap (resolveLibId node.plan) libIds
-    ++ lib.concatMap (resolveExeId node.plan) exeIds;
+  # the index AND composed into the starting store.
+  allDepsOf = p:
+    (p.depends or [])
+    ++ (p.exe-depends or [])
+    ++ lib.concatMap (c: (c.depends or []) ++ (c.exe-depends or []))
+         (lib.attrValues (p.components or {}));
 
   mkClosureFrom = seedUnits: depFn: builtins.genericClosure {
-    startSet = lib.concatMap
-      (p: depFn { plan = "cross"; entry = p; key = "cross:${p.id}"; })
-      seedUnits;
-    operator = depFn;
+    startSet = lib.concatMap (p:
+      lib.concatMap (id:
+        let q = planJsonByPlanId.${id} or null;
+        in if q == null then [] else [ { key = id; entry = q; } ]
+      ) (depFn p)
+    ) seedUnits;
+    operator = e:
+      lib.concatMap (id:
+        let q = planJsonByPlanId.${id} or null;
+        in if q == null then [] else [ { key = id; entry = q; } ]
+      ) (depFn e.entry);
   };
   mkClosure = mkClosureFrom ourPlanUnits;
   libDepClosure = mkClosure libDepsOf;
@@ -1387,15 +1362,7 @@ let
         let p  = e.entry;
             pn = p.pkg-name or "";
             isSR = (p.pkg-src or {}).type or null == "source-repo";
-            # Closure entries reached via an `exe-depends` edge live
-            # in the build-build plan; look their `src` up in the
-            # build-build hsPkgs.  In practice the source path is
-            # the same as cross's (cabal-project inputMap doesn't
-            # vary by platform), but going through the matching
-            # hsPkgs keeps the plumbing honest for any future
-            # divergence.
-            depHsPkgs = if e.plan == "bb" then hsPkgs.pkgsBuildBuild else hsPkgs;
-            depPkg = depHsPkgs.${pn} or null;
+            depPkg = hsPkgs.${pn} or null;
             depSrc = if depPkg != null then depPkg.src or null else null;
         in if pn != "" && pn != pkgName && isSR && depSrc != null
            then [{ name = pn; minRepo = wrapAsMinimalRepo pn depSrc; }]
@@ -1504,7 +1471,7 @@ let
     # like `lib:testlib` are still pruned and their deps don't leak
     # into the install plan.
     extraSublibSeeds = extraSublibSeeds;
-    inherit extraBuildInputs extraNativeBuildInputs;
+    inherit extraBuildInputs extraNativeBuildInputs withProgFlags;
     # Things that flow into downstream slices' build envs through
     # stdenv's propagation chain.  Library deps don't appear here
     # because in v2 they're the dep slices themselves, already in
@@ -1559,7 +1526,7 @@ let
           # equal the plan-nix `id`.  Plan-nix marks the shared entry
           # by leaving `component-name` unset / null.
           isCustomBuild = entry != null && (entry.component-name or null) == null;
-      in if style == "local" || isCustomBuild then null else uid;
+      in if isCross || style == "local" || isCustomBuild then null else uid;
     # Plan-json entry for this slice's expected unit-id, written to
     # disk so the unit-id-mismatch diagnostic can diff what plan-nix
     # said this component should look like against what cabal actually
@@ -1736,7 +1703,7 @@ let
     preBuild = slicePreBuild;
     target = targetSelector;
     extraSublibSeeds = extraSublibSeeds;
-    inherit extraBuildInputs extraNativeBuildInputs;
+    inherit extraBuildInputs extraNativeBuildInputs withProgFlags;
     dryRunOnly = true;
     inherit planNixJsonFile;
   };
@@ -1793,7 +1760,7 @@ let
     preBuild = slicePreBuild;
     target = targetSelector;
     extraSublibSeeds = extraSublibSeeds;
-    inherit extraBuildInputs extraNativeBuildInputs;
+    inherit extraBuildInputs extraNativeBuildInputs withProgFlags;
     doHaddock = true;
     # The build-cabal-slice dry-run check fails when cabal plans
     # to build anything other than `expectedPackage` — that's

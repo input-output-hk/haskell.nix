@@ -142,15 +142,6 @@ in
     { inherit (builder) shellFor makeConfigFiles ghcWithPackages ghcWithHoogle;
       buildPackages = buildModules.config.hsPkgs; # TODO perhaps remove this
       pkgsBuildBuild = buildModules.config.hsPkgs;
-      # Expose plan-json indexes here so consumers (the v2 builder)
-      # can reach this project's plan via `hsPkgs.<idx>` and the
-      # build-build project's plan via
-      # `hsPkgs.pkgsBuildBuild.<idx>` — used by `comp-v2-builder`'s
-      # `mkClosureFrom` to resolve `exe-depends` ids against
-      # pkgsBuildBuild's plan (build-tools like hsc2hs / alex /
-      # happy run on the build platform; their unit-ids and lib-dep
-      # closures live in the build-build plan, not the cross plan).
-      inherit (config) plan-json-by-id package-ids-by-name;
     } //
     lib.mapAttrs
       (name: pkg: if !(options.packages.${name}.isDefined or true) || pkg == null then null else builder.build-package config pkg)
