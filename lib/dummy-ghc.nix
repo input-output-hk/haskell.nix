@@ -74,8 +74,14 @@ in evalPackages.writeTextFile {
             else throw "Unknown target arch ${pkgs.stdenv.targetPlatform.config}"
         }")'
         echo ',("target platform string","${platformString pkgs.stdenv.targetPlatform}")'
+        # Real cross GHC reports `Host platform = buildPlatform`
+        # (where ghc itself runs), NOT the cross-target platform.
+        # `pkgs.stdenv.hostPlatform` for a cross-pkgs context IS the
+        # cross target — which would be wrong here.  Use buildPlatform
+        # for both Build and Host so dummy mirrors real GHC; the only
+        # cross-relevant field is then `Target platform`.
         echo ',("Build platform","${platformString pkgs.stdenv.buildPlatform}")'
-        echo ',("Host platform","${platformString pkgs.stdenv.hostPlatform}")'
+        echo ',("Host platform","${platformString pkgs.stdenv.buildPlatform}")'
         echo ',("Target platform","${platformString pkgs.stdenv.targetPlatform}")'
         # `cross compiling` is YES iff GHC's build platform differs
         # from its target platform.  Real GHC emits this on every
@@ -125,13 +131,18 @@ in evalPackages.writeTextFile {
           if pkgs.stdenv.targetPlatform.isGhcjs
              || pkgs.stdenv.targetPlatform.isWasm
           then ''
-            echo ',("Support dynamic-too","NO")'
-            echo ',("Support shared libraries","NO")'
+            # ghcjs / wasm: stage-1 cross GHC.  Real GHC reports
+            # `Support dynamic-too: YES`, no interpreter (`Have
+            # interpreter: NO`, `Use interpreter: NO`), omits
+            # `Support shared libraries` entirely.  Verified by
+            # `tests.dummy-ghc-info` against the live ghcjs cross
+            # GHC 9.14.1.
+            echo ',("Support dynamic-too","YES")'
             echo ',("Support reexported-modules","YES")'
             echo ',("Support thinning and renaming package flags","YES")'
             echo ',("Tables next to code","YES")'
-            echo ',("Have interpreter","YES")'
-            echo ',("Use interpreter","YES")'
+            echo ',("Have interpreter","NO")'
+            echo ',("Use interpreter","NO")'
             echo ',("Have native code generator","YES")'
             echo ',("target RTS linker only supports shared libraries","NO")'
             echo ',("GHC Dynamic","NO")'
