@@ -428,6 +428,24 @@ let
               echo ',("RTS ways","v thr thr_debug thr_debug_p thr_p debug debug_p p")'
               echo ',("Stage","1")'
             ''
+            else if pkgs.stdenv.targetPlatform.isAndroid
+            then ''
+              # Android: stage-1 cross GHC, builds .a libs only (no
+              # `_dyn` RTS ways), no shared-library support reported.
+              # Reference: `aarch64-unknown-linux-android-ghc --info`
+              # on real haskell.nix android cross 9.14.1.
+              echo ',("Support dynamic-too","YES")'
+              echo ',("Support reexported-modules","YES")'
+              echo ',("Support thinning and renaming package flags","YES")'
+              echo ',("Tables next to code","YES")'
+              echo ',("Have interpreter","YES")'
+              echo ',("Use interpreter","YES")'
+              echo ',("Have native code generator","YES")'
+              echo ',("target RTS linker only supports shared libraries","NO")'
+              echo ',("GHC Dynamic","NO")'
+              echo ',("RTS ways","v thr thr_debug thr_debug_p thr_p debug debug_p p")'
+              echo ',("Stage","1")'
+            ''
             else ''
               echo ',("Support dynamic-too","YES")'
               echo ',("Support shared libraries","YES")'
