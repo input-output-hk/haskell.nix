@@ -477,7 +477,16 @@ let
             isExe = lib.hasPrefix cnPrefix cn;
             exeName = builtins.substring (builtins.stringLength cnPrefix)
                         (builtins.stringLength cn - builtins.stringLength cnPrefix) cn;
-            dPkg = hsPkgs.${pn} or null;
+            # Build-tool exes (`hsc2hs`, `alex`, `happy`, …) run on
+            # the BUILD platform during the slice's compile step,
+            # not on the host (cross) target.  Look them up via
+            # `hsPkgs.pkgsBuildBuild` — same as
+            # `lib/load-cabal-plan.nix:lookupExeDependency` and
+            # `homeDepExeSlices` below — otherwise under cross
+            # we'd compose in the cross-target exe (e.g.
+            # `hsc2hs-armv7a-unknown-linux-androideabi`) which
+            # the build host's cabal can't execute.
+            dPkg = hsPkgs.pkgsBuildBuild.${pn} or null;
             exesMap = if dPkg != null && dPkg ? components && dPkg.components ? exes
                       then dPkg.components.exes else {};
             slice = exesMap.${exeName} or null;
@@ -506,8 +515,16 @@ let
                      then dPkg.components.sublibs else {};
         anySublib = lib.findFirst (v: v != null) null
           (lib.attrValues sublibsMap);
-        exesMap = if dPkg != null && (dPkg ? components) && (dPkg.components ? exes)
-                  then dPkg.components.exes else {};
+        # Exe-only fallback (build-tool packages like hsc2hs / alex /
+        # happy) must look up via `hsPkgs.pkgsBuildBuild` — same as
+        # `lib/load-cabal-plan.nix:lookupExeDependency` and
+        # `homeDepExeSlices` below — so we get a build-platform exe
+        # the slice's cabal v2-build can actually run.  Looking up
+        # in cross `hsPkgs` returns a cross-target exe slice that
+        # forks UnitIds with the slice's plan.
+        bbPkg = hsPkgs.pkgsBuildBuild.${nv.name} or null;
+        exesMap = if bbPkg != null && (bbPkg ? components) && (bbPkg.components ? exes)
+                  then bbPkg.components.exes else {};
         anyExe = lib.findFirst (v: v != null) null
           (lib.attrValues exesMap);
     in if depLib != null then depLib
@@ -561,9 +578,15 @@ let
   # Pre-existing entries are skipped entirely (no version pin either)
   # — GHC's bundled package db already fixes them, and pinning them
   # tends to push cabal off legacy-tool PATH fallbacks for hsc2hs /
-  # alex / happy / etc.  Sourced from `libDepClosure` (lib deps
-  # only); exe-deps are left unconstrained so build-tools can resolve
-  # against their own slice's solve.
+  # alex / happy / etc.  Sourced from `allDepClosure`: includes both
+  # lib-deps (cross plan) and the lib closures of `exe-depends`
+  # (resolved against the bb plan via `resolveExeId`) so cabal in
+  # the slice pins every package the slicing repo carries to the
+  # version its providing slice was built against.  Without this,
+  # the slice's solver freely picks different versions for a
+  # build-tool's lib closure (e.g. `process` reachable through
+  # hsc2hs) and the build-tool's installed unit-id no longer matches
+  # the in-store slice — triggering a from-source rebuild.
   libConstraintPins =
     let
       grouped = lib.foldl' (acc: e:
@@ -939,40 +962,86 @@ let
         myUnit = if uid == null then null else planJsonByPlanId.${uid} or null;
     in if isLibrary && myUnit != null then [ myUnit ] else allUnits;
 
+  # Build-build project's plan indexes — used to resolve `exe-depends`
+  # ids (build-tools: hsc2hs / alex / happy / ...) into bb-plan units.
+  # On native builds `pkgsBuildBuild == hsPkgs`, so these are the same
+  # as the cross-side indexes and the bb-aware lookup below degenerates
+  # to the trivial direct-id-hit case.
+  bbPlanJsonByPlanId   = hsPkgs.pkgsBuildBuild.plan-json-by-id    or {};
+  bbPackageIdsByName   = hsPkgs.pkgsBuildBuild.package-ids-by-name or {};
+
+  # Closure nodes carry which plan they belong to: "cross" (the
+  # current project's plan-json) or "bb" (the build-build project's
+  # plan-json).  Once a walk crosses into "bb" via an `exe-depends`
+  # edge, all downstream `depends` and `exe-depends` are resolved
+  # against the bb plan-json — build-tool exes' lib closures live
+  # in the build-build plan and would not even be present (or would
+  # have wrong ids) in the cross plan.
+  #
+  # Plan-source dispatch.
+  planJsonByPlanIdFor = plan:
+    if plan == "bb" then bbPlanJsonByPlanId else planJsonByPlanId;
+
+  # Resolve a `depends` (lib) id using the parent node's plan.
+  resolveLibId = parentPlan: id:
+    let q = (planJsonByPlanIdFor parentPlan).${id} or null;
+    in if q == null then []
+       else [ { key = "${parentPlan}:${id}"; plan = parentPlan; entry = q; } ];
+
+  # Resolve an `exe-depends` id by switching into the bb plan.
+  # Tries direct id lookup first (hits only on native, where bb ==
+  # cross); otherwise resolves the id → pkg-name via the parent's
+  # plan, then enumerates every bb-plan entry with that pkg-name.
+  resolveExeId = parentPlan: id:
+    let bbDirect = bbPlanJsonByPlanId.${id} or null;
+    in if bbDirect != null
+       then [ { key = "bb:${id}"; plan = "bb"; entry = bbDirect; } ]
+       else
+         let
+           src     = (planJsonByPlanIdFor parentPlan).${id} or null;
+           pkgName = if src == null then null else (src.pkg-name or null);
+           bbIds   = if pkgName == null then []
+                     else (bbPackageIdsByName.${pkgName} or []);
+         in lib.concatMap (bbId:
+              let q = bbPlanJsonByPlanId.${bbId} or null;
+              in if q == null then []
+                 else [ { key = "bb:${bbId}"; plan = "bb"; entry = q; } ]
+            ) bbIds;
+
   # `depends` only — for the cabal.project `constraints:` block
   # below, where lib-dep closure entries get version-pinned to the
-  # exact unit plan-nix recorded.  exe-depends are deliberately
-  # skipped: exes (alex / happy / hsc2hs / ...) routinely pick
-  # different versions of their lib deps than the libs in the
-  # slice, and pinning them in this slice's constraints would
-  # wrongly cap the exe's own solve.
-  libDepsOf = p:
-    (p.depends or [])
-    ++ lib.concatMap (c: c.depends or [])
-         (lib.attrValues (p.components or {}));
+  # exact unit plan-nix recorded.  Used in a closure that does NOT
+  # follow exe-depends, so it never crosses planes; both the seed
+  # and walk stay in the seed's plan (always "cross" today).
+  libDepsOf = node:
+    let p = node.entry;
+        ids = (p.depends or [])
+           ++ lib.concatMap (c: c.depends or [])
+                (lib.attrValues (p.components or {}));
+    in lib.concatMap (resolveLibId node.plan) ids;
 
   # `depends` + `exe-depends` — for the slicing repo's tarball set
   # and the slice's dep-slice composition.  cabal needs every
   # build-tool package (and the tool's lib closure) reachable in
-  # the index AND composed into the starting store.
-  allDepsOf = p:
-    (p.depends or [])
-    ++ (p.exe-depends or [])
-    ++ lib.concatMap (c: (c.depends or []) ++ (c.exe-depends or []))
-         (lib.attrValues (p.components or {}));
+  # the index AND composed into the starting store.  exe-depends
+  # always cross over to the bb plan (build-tools run on the build
+  # platform); lib-depends stay on the parent node's plane.
+  allDepsOf = node:
+    let p = node.entry;
+        libIds = (p.depends or [])
+              ++ lib.concatMap (c: c.depends or [])
+                   (lib.attrValues (p.components or {}));
+        exeIds = (p.exe-depends or [])
+              ++ lib.concatMap (c: c.exe-depends or [])
+                   (lib.attrValues (p.components or {}));
+    in lib.concatMap (resolveLibId node.plan) libIds
+    ++ lib.concatMap (resolveExeId node.plan) exeIds;
 
   mkClosureFrom = seedUnits: depFn: builtins.genericClosure {
-    startSet = lib.concatMap (p:
-      lib.concatMap (id:
-        let q = planJsonByPlanId.${id} or null;
-        in if q == null then [] else [ { key = id; entry = q; } ]
-      ) (depFn p)
-    ) seedUnits;
-    operator = e:
-      lib.concatMap (id:
-        let q = planJsonByPlanId.${id} or null;
-        in if q == null then [] else [ { key = id; entry = q; } ]
-      ) (depFn e.entry);
+    startSet = lib.concatMap
+      (p: depFn { plan = "cross"; entry = p; key = "cross:${p.id}"; })
+      seedUnits;
+    operator = depFn;
   };
   mkClosure = mkClosureFrom ourPlanUnits;
   libDepClosure = mkClosure libDepsOf;
@@ -1299,7 +1368,15 @@ let
         let p  = e.entry;
             pn = p.pkg-name or "";
             isSR = (p.pkg-src or {}).type or null == "source-repo";
-            depPkg = hsPkgs.${pn} or null;
+            # Closure entries reached via an `exe-depends` edge live
+            # in the build-build plan; look their `src` up in the
+            # build-build hsPkgs.  In practice the source path is
+            # the same as cross's (cabal-project inputMap doesn't
+            # vary by platform), but going through the matching
+            # hsPkgs keeps the plumbing honest for any future
+            # divergence.
+            depHsPkgs = if e.plan == "bb" then hsPkgs.pkgsBuildBuild else hsPkgs;
+            depPkg = depHsPkgs.${pn} or null;
             depSrc = if depPkg != null then depPkg.src or null else null;
         in if pn != "" && pn != pkgName && isSR && depSrc != null
            then [{ name = pn; minRepo = wrapAsMinimalRepo pn depSrc; }]
