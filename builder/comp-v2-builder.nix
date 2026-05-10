@@ -593,9 +593,21 @@ let
         let p = e.entry;
             n = p.pkg-name or "";
             v = p.pkg-version or "";
+            # Skip the exe entry of a build-tool package — pinning
+            # it would land it in `extra-packages:` (see
+            # `extraPackagesEntries`), making cabal's solver in
+            # the slice plan the build-tool from source instead
+            # of using the pre-installed exe slice on PATH.  The
+            # exe's lib closure (process, directory, …) DOES get
+            # pinned: those entries are reached via the bb-plan
+            # walk (`resolveExeId` → `libDepsOf` in bb) and have
+            # `component-name = "lib"` (or `lib:<sublib>`), not
+            # `exe:…`.
+            isExeEntry = lib.hasPrefix "exe:" (p.component-name or "");
         in if n == "" || n == pkgName
               || acc ? ${n}
               || (p.type or null) == "pre-existing"
+              || isExeEntry
            then acc
            else acc // { ${n} = v; }
       ) {} allDepClosure;
