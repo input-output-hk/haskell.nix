@@ -561,7 +561,16 @@ let
   ghcDirName = "ghc-${ghc.version}-inplace";
   composedPkgDb = "${composedStore}/${ghcDirName}/package.db";
   globalPkgDb = "${ghc}/lib/ghc-${ghc.version}/lib/package.conf.d";
-  packageEnv = pkgs.runCommand "${ghc.name}-v2-shell-env-file"
+  # Use `pkgsBuildBuild.runCommand` (build-build stdenv) rather
+  # than `pkgs.runCommand` (cross stdenv).  `packageEnv` and
+  # `wrappedGhc` end up in the shell's `nativeBuildInputs`; if
+  # they're constructed against the cross-host stdenv, mkShell's
+  # nativeBuildInputs splicing eventually evaluates the cross
+  # stdenv's `cc.isClang` (via setup-hook chains) and throws "no C
+  # compiler provided for this platform" on platforms like ghcjs.
+  # The shell is a build-platform tool — its helpers belong on the
+  # build platform too.
+  packageEnv = pkgs.pkgsBuildBuild.runCommand "${ghc.name}-v2-shell-env-file"
     { preferLocalBuild = true; } ''
       mkdir -p $out
       {
@@ -579,8 +588,8 @@ let
         done
       } > $out/env
     '';
-  wrappedGhc = pkgs.runCommand "${ghc.name}-v2-shell-env"
-    { nativeBuildInputs = [ pkgs.buildPackages.makeWrapper ];
+  wrappedGhc = pkgs.pkgsBuildBuild.runCommand "${ghc.name}-v2-shell-env"
+    { nativeBuildInputs = [ pkgs.pkgsBuildBuild.makeWrapper ];
       preferLocalBuild = true;
       passthru = {
         inherit (ghc) version meta;
@@ -644,11 +653,19 @@ mkShell {
     shellSyncHook + "\n"
     + inputsFromShellHook
     + shellHook;
-  # Expose the composed dep store directly as `.store` (the same
-  # shape as a v2 component's `.store`) so callers can build it
-  # standalone with `nix-build -A <project>.shell.store`.
-  store = composedStore;
+  # Expose the composed dep store via passthru (and not as a
+  # top-level attr) — recent nixpkgs's `mkDerivation` folds
+  # unknown top-level attrs into `env` and type-checks each value,
+  # which under cross targets like ghcjs forces evaluation of
+  # the host stdenv's `bashInteractive` while checking
+  # `isDerivation`, hitting `stdenv.cc.isClang` against a stdenv
+  # with no cc and throwing "no C compiler provided for this
+  # platform".
   passthru = {
+    # Mirror the `.store` attr a v2 component exposes so callers can
+    # build the composed dep store standalone with
+    # `nix-build -A <project>.shell.store`.
+    store = composedStore;
     inherit composedStore depSlices cabalStoreSync crossCabalWrapper;
     ghc = shellGhc;
   };

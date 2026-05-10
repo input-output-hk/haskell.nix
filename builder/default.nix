@@ -172,12 +172,23 @@ let
   # `builderVersion` selects, so the shell has to match.  See
   # `builder/shell-for-v2.nix` for the v2 semantics; v2 is the only
   # shell that supports public sublibs (`library <n>`).
+  #
+  # `mkShell = pkgs.buildPackages.mkShell` so the shell derivation
+  # lives on the *build* platform regardless of the host (cross)
+  # platform.  Without this, cross targets like ghcjs route through
+  # `pkgs.mkShell` → host-stdenv `bashInteractive` →
+  # `stdenv.cc.isClang`, which throws "no C compiler provided for
+  # this platform" because the ghcjs cross-stdenv has no cc.  The
+  # user-facing shell is meant to be opened on the build host
+  # anyway, so build-platform mkShell is the right choice for both
+  # cross and native (where buildPackages == pkgs).
   shellForV1 = haskellLib.weakCallPackage pkgs ./shell-for.nix {
     inherit hsPkgs ghcForComponent makeConfigFiles hoogleLocal haskellLib pkgsBuildBuild evalPackages compiler ghc;
-    inherit (buildPackages) glibcLocales llvmPackages;
+    inherit (buildPackages) mkShell glibcLocales llvmPackages;
   };
   shellForV2 = haskellLib.weakCallPackage pkgs ./shell-for-v2.nix {
     inherit hsPkgs haskellLib ghc compiler composeStore;
+    inherit (buildPackages) mkShell;
     haskell-nix = pkgs.haskell-nix;
   };
   shellFor = if builderVersion == 2 then shellForV2 else shellForV1;
