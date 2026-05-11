@@ -1133,24 +1133,38 @@ stdenv.mkDerivation ({
         (lib.concatStringsSep " " allowedBuildToolPackages)}
       actual_uids=$(sort -u $buildRoot/captured-unit-ids)
 
-      # Parse pkg-name from each unit-id.  Unit-ids look like
-      #   <pkg>-<ver>-[<component-tag>-<comp-name>-]<hash>
-      # where `<hash>` is the package's content-addressed hex
-      # suffix and `<ver>` is the version.  Find the rightmost part
-      # that matches a version pattern (digits + dots only — the
-      # hash may also be all-hex but won't match this strict
-      # pattern); everything before that is the pkg-name.
+      # Map each captured unit-id to its package name.  Prefer the
+      # `.conf` file (lib units) for the authoritative `name:`
+      # field — cabal's OS-prefix patch shortens unit-id prefixes
+      # (e.g. `bytrdr-1.0.4-...` for `byteorder`), so parsing the
+      # uid alone misclassifies them.  Fall back to uid parsing
+      # for bin-only units (exe / test / bench — no .conf).
       uid_to_pkg() {
-        awk '{
-          n = split($1, parts, "-")
-          for (i = n; i > 0; i--) if (parts[i] ~ /^[0-9]+(\.[0-9]+)*$/) break
-          if (i <= 1) { name = $1 }
-          else {
-            name = parts[1]
-            for (j = 2; j < i; j++) name = name "-" parts[j]
-          }
-          print name "\t" $1
-        }'
+        while IFS= read -r uid; do
+          conf="$ghcDir/package.db/$uid.conf"
+          if [ -f "$conf" ]; then
+            name=$(awk '/^name:/ {print $2; exit}' "$conf")
+            if [ -n "$name" ]; then
+              echo "$name	$uid"
+              continue
+            fi
+          fi
+          # Bin-only / no .conf: parse uid (works for unprefixed
+          # exe uids; OS-prefixed short names may misclassify here
+          # but bin-only units are normally build-tools whose
+          # pkg-name appears in `allowedBuildToolPackages` and we
+          # accept the parsed form too).
+          echo "$uid" | awk '{
+            n = split($1, parts, "-")
+            for (i = n; i > 0; i--) if (parts[i] ~ /^[0-9]+(\.[0-9]+)*$/) break
+            if (i <= 1) { name = $1 }
+            else {
+              name = parts[1]
+              for (j = 2; j < i; j++) name = name "-" parts[j]
+            }
+            print name "\t" $1
+          }'
+        done
       }
 
       pairs=$(printf '%s\n' "$actual_uids" | uid_to_pkg)
