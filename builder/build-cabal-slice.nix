@@ -152,6 +152,25 @@ let outerGhc = ghc; in
                              # pkg-name outside `expectedPackage ∪
                              # allowedBuildToolPackages` is still a
                              # fail.
+, confLibraryDirs ? []       # Extra paths to append to each
+                             # captured unit's `.conf` library-dirs
+                             # fields, AFTER cabal's `Setup register`
+                             # has run.  Used to point downstream
+                             # consumers' GHC runtime linker (the
+                             # one that loads packages for TH eval
+                             # under `-fexternal-interpreter`) at
+                             # the `extra-libraries:` entries' real
+                             # foreign-lib locations (openssl/libsodium/
+                             # ...).  Post-register injection is the
+                             # only place we can do this without
+                             # forking the slice's unit-id from
+                             # plan-nix — passing `--extra-lib-dirs`
+                             # at configure time would land in
+                             # `pkgHashExtraLibDirs` and diverge.
+                             # Downstream consumers' unit-ids aren't
+                             # affected either: their config hash
+                             # records each dep's unit-id, not the
+                             # dep's `.conf` content.
 }:
 
 let
@@ -889,6 +908,29 @@ stdenv.mkDerivation ({
           [ -e "$conf" ] || continue
           [ -L "$conf" ] && continue
           sed -i "s|$storePrefix|\''${pkgroot}|g" $conf
+          ${lib.optionalString (confLibraryDirs != []) ''
+            # Append the slice's foreign-lib paths (from
+            # `component.libs` — openssl, libsodium, ...) to the
+            # .conf's `library-dirs:` / `library-dirs-static:` /
+            # `dynamic-library-dirs:` fields.  GHC's runtime linker
+            # uses these to dlopen each `extra-libraries:` entry
+            # (e.g. `extra-libraries: ssl crypto` → `libssl.so`),
+            # which would otherwise fail with `cannot open shared
+            # object file` under `-fexternal-interpreter` because
+            # neither cabal nor `ghc-iserv` carries the dirs in
+            # its RPATH.  v1 baked these into the .conf via
+            # `make-config-files.nix:flagsAndConfig "extra-lib-dirs"`;
+            # in v2 we post-process after `cabal v2-build` registers
+            # the unit so the unit-id stays equal to plan-nix's
+            # (passing `--extra-lib-dirs` to `Setup configure`
+            # would land in `pkgHashExtraLibDirs` and fork the
+            # hash from plan-nix).
+            for field in library-dirs library-dirs-static dynamic-library-dirs; do
+              ${lib.concatMapStrings (p: ''
+                sed -i "/^$field:/a\\    ${p}" $conf
+              '') confLibraryDirs}
+            done
+          ''}
         done
         ${ghcPkgBin} --package-db=$ghcDir/package.db recache
       fi

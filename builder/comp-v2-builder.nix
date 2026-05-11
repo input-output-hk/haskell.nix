@@ -746,6 +746,23 @@ let
   libs       = lib.flatten (component.libs or []);
   frameworks = component.frameworks or [];
   pkgconfig  = map pkgs.lib.getDev (builtins.concatLists (component.pkgconfig or []));
+
+  # Paths post-injected into this lib slice's registered `.conf` so
+  # GHC's runtime linker can dlopen each `extra-libraries:` entry
+  # under TH eval / `-fexternal-interpreter`.  Mirrors v1's
+  # `make-config-files.nix:flagsAndConfig "extra-lib-dirs"` — same
+  # set (component.libs' `lib/` outputs), but injected post-register
+  # instead of pre-configure to keep the slice's unit-id equal to
+  # plan-nix's (configure-time `--extra-lib-dirs` lands in
+  # `pkgHashExtraLibDirs` and would diverge).  See
+  # `build-cabal-slice.nix:confLibraryDirs` for the rewrite.
+  confLibraryDirs =
+    map (p: "${lib.getLib p}/lib") libs
+    ++ lib.optionals stdenv.hostPlatform.isWindows
+         # Windows ships DLLs / import libs under `bin/` rather
+         # than `lib/`.  Mirrors v1's runtime `[ -d $bin ]` check
+         # in `make-config-files.nix:81-90`.
+         (map (p: "${lib.getBin p}/bin") libs);
   buildTools = component.build-tools or [];
   resolvedBuildTools = lib.concatMap (p:
     let resolved = if builtins.isFunction p
@@ -1512,7 +1529,7 @@ let
     # into the install plan.
     extraSublibSeeds = extraSublibSeeds;
     inherit extraBuildInputs extraNativeBuildInputs withProgFlags
-            allowedBuildToolPackages;
+            allowedBuildToolPackages confLibraryDirs;
     # Things that flow into downstream slices' build envs through
     # stdenv's propagation chain.  Library deps don't appear here
     # because in v2 they're the dep slices themselves, already in
@@ -1746,7 +1763,7 @@ let
     target = targetSelector;
     extraSublibSeeds = extraSublibSeeds;
     inherit extraBuildInputs extraNativeBuildInputs withProgFlags
-            allowedBuildToolPackages;
+            allowedBuildToolPackages confLibraryDirs;
     dryRunOnly = true;
     inherit planNixJsonFile;
   };
@@ -1804,7 +1821,7 @@ let
     target = targetSelector;
     extraSublibSeeds = extraSublibSeeds;
     inherit extraBuildInputs extraNativeBuildInputs withProgFlags
-            allowedBuildToolPackages;
+            allowedBuildToolPackages confLibraryDirs;
     doHaddock = true;
     # The build-cabal-slice dry-run check fails when cabal plans
     # to build anything other than `expectedPackage` — that's
