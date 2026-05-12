@@ -1134,16 +1134,24 @@ stdenv.mkDerivation ({
       actual_uids=$(sort -u $buildRoot/captured-unit-ids)
 
       # Map each captured unit-id to its package name.  Prefer the
-      # `.conf` file (lib units) for the authoritative `name:`
-      # field — cabal's OS-prefix patch shortens unit-id prefixes
-      # (e.g. `bytrdr-1.0.4-...` for `byteorder`), so parsing the
-      # uid alone misclassifies them.  Fall back to uid parsing
+      # `.conf` file (lib units) for the authoritative pkg name —
+      # cabal's OS-prefix patch shortens unit-id prefixes (e.g.
+      # `bytrdr-1.0.4-...` for `byteorder`), so parsing the uid
+      # alone misclassifies them.  For sublibs cabal records:
+      #   name:         z-<pkg>-z-<sublib>
+      #   package-name: <pkg>
+      #   lib-name:     <sublib>
+      # — prefer `package-name:` so a sublib slice matches the real
+      # package, not the z-encoded one.  Fall back to uid parsing
       # for bin-only units (exe / test / bench — no .conf).
       uid_to_pkg() {
         while IFS= read -r uid; do
           conf="$ghcDir/package.db/$uid.conf"
           if [ -f "$conf" ]; then
-            name=$(awk '/^name:/ {print $2; exit}' "$conf")
+            name=$(awk '/^package-name:/ {print $2; exit}' "$conf")
+            if [ -z "$name" ]; then
+              name=$(awk '/^name:/ {print $2; exit}' "$conf")
+            fi
             if [ -n "$name" ]; then
               echo "$name	$uid"
               continue
