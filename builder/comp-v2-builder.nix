@@ -1878,21 +1878,36 @@ let
   '';
 
   # Same shape as `.profiled` above — v1's `.dwarf` was an overlay
-  # rebuild with `enableDWARF = true`, which would diverge from
-  # plan-nix's UnitId in v2.  cabal.project's `debug-info:` field
-  # is the right way to bake DWARF into the slice; the slice's
-  # own `.exePath` then refers to the DWARF-enabled binary
-  # (no separate overlay needed).
+  # rebuild with `enableDWARF = true` that also swapped to the GHC
+  # `.dwarf` variant (RTS / `ghc-internal` compiled with -g).  In
+  # v2 the overlay would diverge from plan-nix's UnitId, so the
+  # two side-effects are expressed separately at project level:
+  #   * `debug-info:` in cabal.project → DWARF in the user's code.
+  #   * `compilerSelection` swap to `c.dwarf` → DWARF in the RTS.
   dwarfThrow = throw ''
     v2 slices do not provide `.dwarf`.  Enable DWARF debug info
-    by adding to cabal.project (or `cabalProjectLocal`):
+    at project level:
 
-        package ${pkgName}
-          debug-info: 2
+      1. cabal.project (or `cabalProjectLocal`), for DWARF in
+         the package's own modules:
 
-    (or `package *` for project-wide).  The regular slice then
-    contains DWARF and `<slice>.exePath` gives the debug-info
-    exe directly.
+             package ${pkgName}
+               debug-info: 2
+
+         (or `package *` for project-wide).
+
+      2. `compilerSelection`, for DWARF in the GHC RTS and
+         `ghc-internal` / `base`:
+
+             project = cabalProject' {
+               ...
+               compilerSelection = p:
+                 lib.mapAttrs (_: c: c.dwarf) p.haskell-nix.compiler;
+             };
+
+    The regular slice then contains DWARF and `<slice>.exePath`
+    gives the debug-info exe directly.  See
+    `docs/dev/debug-info.md` for the rationale.
   '';
 
   # `.doc` is the sibling haddock slice when the package's
