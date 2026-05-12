@@ -1141,7 +1141,7 @@ final: prev: {
                   + pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isAndroid ''
                     package iserv-proxy
                       executable-static: True
-                      ghc-options: -optl-static -optl-ldl -debug${
+                      ghc-options: -optl-static -optl-ldl${
                         pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isAarch32 " -optl-no-pie"
                       }
                   '';
