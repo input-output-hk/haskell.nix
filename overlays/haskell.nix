@@ -1140,16 +1140,7 @@ final: prev: {
                   # configure-args.
                   + pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isAndroid ''
                     package iserv-proxy
-                      executable-static: True
-                      executable-dynamic: False
-                      shared: False
-                      static: True
-                      -- `-v` (ghc verbosity) makes ghc print the full
-                      -- linker invocation it runs; we want to compare
-                      -- the v2 link line with v1's to diagnose why the
-                      -- v2-built iserv-proxy-interpreter segfaults
-                      -- under qemu-aarch64 while v1's does not.
-                      ghc-options: -v -optl-static -optl-ldl${
+                      ghc-options: -debug -optl-static -optl-ldl${
                         pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isAarch32 " -optl-no-pie"
                       }
                   '';
