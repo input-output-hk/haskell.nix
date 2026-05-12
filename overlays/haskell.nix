@@ -1110,6 +1110,27 @@ final: prev: {
                     if os(mingw32)
                       package iserv-proxy
                         ghc-options: -debug -optl-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000
+                  ''
+                  # Android host: the cross-compiled
+                  # iserv-proxy-interpreter must be statically
+                  # linked because qemu-user-mode can't satisfy
+                  # Android's dynamic loader (`/system/bin/linker64`
+                  # / `/system/bin/linker`) on the build host.
+                  # `-optl-static` makes the resulting binary
+                  # self-contained; `-optl-ldl` pulls in libdl that
+                  # the GHC RTS references even with a static link.
+                  # The `if os(android)` guard keeps these out of
+                  # the build-platform iserv-proxy.  v1 expressed
+                  # the same via `setupBuildFlags` in
+                  # `overlays/haskell.nix`'s `.override` block; v2
+                  # ignores `setupBuildFlags`, so we route the
+                  # flags through cabal.project so plan-nix
+                  # records them in the slice's UnitId-relevant
+                  # configure-args.
+                  + final.lib.optionalString final.stdenv.hostPlatform.isAndroid ''
+                    if os(android)
+                      package iserv-proxy
+                        ghc-options: -optl-static -optl-ldl${final.lib.optionalString final.stdenv.hostPlatform.isAarch32 " -optl-no-pie"}
                   '';
               })).hsPkgs.iserv-proxy.components.exes;
             in rec {
