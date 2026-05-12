@@ -40,7 +40,7 @@ let
       "-pgmi" "${qemuIservWrapper}/bin/iserv-wrapper"
       "-L${gmp}/lib"
          # Required to work-around https://gitlab.haskell.org/ghc/ghc/issues/15275
-    ] ++ lib.optionals hostPlatform.isAarch64 ["-fPIC"]
+    ] ++ lib.optionals hostPlatform.isAarch64 [ "-fPIC" "-optc-fPIC" ]
       # The GHC RTS references dlopen/dlclose/dlsym/dlerror even with
       # -dynamic-system-linker disabled. Link -ldl for android.
       ++ lib.optionals hostPlatform.isAndroid ["-optl-ldl"];

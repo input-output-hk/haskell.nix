@@ -1140,13 +1140,8 @@ final: prev: {
                   # configure-args.
                   + pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isAndroid ''
                     package iserv-proxy
-                      shared: False
-                      static: True
-                      executable-dynamic: False
                       executable-static: True
-                      ghc-options: -debug${
-                        pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isAarch64 " -optc-fPIC"
-                      }${
+                      ghc-options: -optl-static -optl-ldl -debug${
                         pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isAarch32 " -optl-no-pie"
                       }
                   '';
