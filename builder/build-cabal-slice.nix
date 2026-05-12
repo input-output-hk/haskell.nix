@@ -1144,6 +1144,7 @@ stdenv.mkDerivation ({
       # — prefer `package-name:` so a sublib slice matches the real
       # package, not the z-encoded one.  Fall back to uid parsing
       # for bin-only units (exe / test / bench — no .conf).
+      planJson="$buildRoot/project/dist-newstyle/cache/plan.json"
       uid_to_pkg() {
         while IFS= read -r uid; do
           conf="$ghcDir/package.db/$uid.conf"
@@ -1157,11 +1158,21 @@ stdenv.mkDerivation ({
               continue
             fi
           fi
-          # Bin-only / no .conf: parse uid (works for unprefixed
-          # exe uids; OS-prefixed short names may misclassify here
-          # but bin-only units are normally build-tools whose
-          # pkg-name appears in `allowedBuildToolPackages` and we
-          # accept the parsed form too).
+          # Bin-only (exe / test / bench) units have no `.conf` —
+          # look the uid up in cabal's own `plan.json` instead.
+          # Falling back to parsing the uid string would misclassify
+          # OS-prefix-shortened names (e.g. `bckpck-...` for
+          # `backpack`).
+          if [ -f "$planJson" ]; then
+            name=$(jq -r --arg id "$uid" '.["install-plan"][] | select(.id == $id) | .["pkg-name"]' "$planJson" 2>/dev/null | head -n1)
+            if [ -n "$name" ] && [ "$name" != "null" ]; then
+              echo "$name	$uid"
+              continue
+            fi
+          fi
+          # Last resort: parse uid (works for unprefixed exe uids
+          # — typically build-tools whose pkg-name appears in
+          # `allowedBuildToolPackages`).
           echo "$uid" | awk '{
             n = split($1, parts, "-")
             for (i = n; i > 0; i--) if (parts[i] ~ /^[0-9]+(\.[0-9]+)*$/) break
@@ -1176,7 +1187,21 @@ stdenv.mkDerivation ({
       }
 
       pairs=$(printf '%s\n' "$actual_uids" | uid_to_pkg)
-      target_count=$(printf '%s\n' "$pairs" | awk -v e="$expected_pkg" '$1 == e' | wc -l)
+      # `+`-suffixed unit-ids are cabal backpack instantiations of
+      # an indefinite library — byproducts cabal emits inline when
+      # something downstream needs the instantiated form (e.g. the
+      # exe slice materialises the instantiated `consumer` because
+      # the indefinite consumer's slice has no compiled artifacts
+      # to compose in).  v1 builds each instantiation as its own
+      # derivation (lib/default.nix:369's
+      # `components.library.override { inherit instantiations; }`);
+      # v2 doesn't yet have a slice-per-instantiation, so these
+      # ride along inside the consuming slice's $out.  Exclude
+      # them from the target-unit count so the check sees the
+      # slice's own target only.
+      target_count=$(printf '%s\n' "$pairs" \
+        | awk -v e="$expected_pkg" '$1 == e && $2 !~ /\+/' \
+        | wc -l)
       unexpected=$(printf '%s\n' "$pairs" \
         | awk -v expected="$expected_pkg" -v allowed="$allowed_build_tools" '
             BEGIN {
@@ -1186,9 +1211,17 @@ stdenv.mkDerivation ({
             $1 != expected && !($1 in allowed_set) { print $2 }
           ')
 
-      if [ "$target_count" != "1" ]; then
+      # `target_count > 1` indicates cabal split the target into
+      # multiple installed units within a single slice — that's
+      # the breakage we want to catch.  `target_count == 0` is OK:
+      # cabal silently produces no `.conf` for indefinite backpack
+      # libraries (the slice's target is a sublib with unfilled
+      # `signatures:` — no compiled artifacts to install until
+      # something instantiates it), so an empty $out is the
+      # correct outcome for that case.
+      if [ "$target_count" -gt 1 ]; then
         echo "" >&2
-        echo "ERROR: slice captured $target_count units for the target package '$expected_pkg'; expected exactly 1." >&2
+        echo "ERROR: slice captured $target_count non-instantiated units for the target package '$expected_pkg'; expected 0 or 1." >&2
         echo "" >&2
         echo "  Captured unit-ids:" >&2
         printf '%s\n' "$actual_uids" | sed 's/^/    /' >&2
