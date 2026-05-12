@@ -1119,19 +1119,28 @@ final: prev: {
                   # `-optl-static` makes the resulting binary
                   # self-contained; `-optl-ldl` pulls in libdl that
                   # the GHC RTS references even with a static link.
-                  # The `isAndroid` Nix guard already restricts this
-                  # to the android branch (the build-platform
-                  # iserv-proxy uses a different `exes` instantiation
-                  # under `pkgsBuildBuild`).  v1 expressed the same
-                  # via `setupBuildFlags` in
+                  #
+                  # Guard on the INNER `pkgs.stdenv.hostPlatform` —
+                  # the same cabalProjectLocal is reused by both the
+                  # build-platform iserv-proxy (`exes
+                  # final.pkgsBuildBuild`, linux x86_64) and the
+                  # host-platform iserv-proxy-interpreter (`exes
+                  # final`, android).  If we keyed off the outer
+                  # `final.stdenv.hostPlatform`, the build-platform
+                  # iserv-proxy would also pick up `-optl-static`
+                  # and the link would fail with a `-fPIC` /
+                  # `crtbeginT.o` error trying to statically link
+                  # a shared library.
+                  #
+                  # v1 expressed the same via `setupBuildFlags` in
                   # `overlays/haskell.nix`'s `.override` block; v2
                   # ignores `setupBuildFlags`, so we route the
                   # flags through cabal.project so plan-nix records
                   # them in the slice's UnitId-relevant
                   # configure-args.
-                  + final.lib.optionalString final.stdenv.hostPlatform.isAndroid ''
+                  + pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isAndroid ''
                     package iserv-proxy
-                      ghc-options: -optl-static -optl-ldl${final.lib.optionalString final.stdenv.hostPlatform.isAarch32 " -optl-no-pie"}
+                      ghc-options: -optl-static -optl-ldl${pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isAarch32 " -optl-no-pie"}
                   '';
               })).hsPkgs.iserv-proxy.components.exes;
             in rec {
