@@ -1143,7 +1143,8 @@ final: prev: {
                       shared: False
                       static: True
                       executable-dynamic: False
-                      ghc-options: -optl-static -optl-ldl -debug${
+                      executable-static: True
+                      ghc-options: -debug${
                         pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isAarch64 " -optc-fPIC"
                       }${
                         pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isAarch32 " -optl-no-pie"
