@@ -7,7 +7,17 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-simple-debug";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    # v2 bakes DWARF in at slice build time when cabal.project
+    # records `debug-info:`.  The slice's own `.exePath` then
+    # refers to the debug-info exe — there's no separate `.dwarf`
+    # overlay (which would diverge from plan-nix's UnitId).
+    # v1 ignores this and produces DWARF via the `.dwarf`
+    # passthru rebuild; both setups end up with the same DWARF
+    # binary for the test.
+    cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
+      package *
+        debug-info: 2
+    '';
   };
 
   packages = project.hsPkgs;
@@ -25,7 +35,7 @@ in lib.recurseIntoAttrs {
     name = "cabal-simple-debug-test";
 
     buildCommand = ''
-      exe="${(packages.cabal-simple.components.exes.cabal-simple.dwarf).exePath}"
+      exe="${packages.cabal-simple.components.exes.cabal-simple.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2

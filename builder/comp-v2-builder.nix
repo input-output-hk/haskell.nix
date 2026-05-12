@@ -1877,6 +1877,24 @@ let
     `docs/dev/profiling.md` for the rationale.
   '';
 
+  # Same shape as `.profiled` above — v1's `.dwarf` was an overlay
+  # rebuild with `enableDWARF = true`, which would diverge from
+  # plan-nix's UnitId in v2.  cabal.project's `debug-info:` field
+  # is the right way to bake DWARF into the slice; the slice's
+  # own `.exePath` then refers to the DWARF-enabled binary
+  # (no separate overlay needed).
+  dwarfThrow = throw ''
+    v2 slices do not provide `.dwarf`.  Enable DWARF debug info
+    by adding to cabal.project (or `cabalProjectLocal`):
+
+        package ${pkgName}
+          debug-info: 2
+
+    (or `package *` for project-wide).  The regular slice then
+    contains DWARF and `<slice>.exePath` gives the debug-info
+    exe directly.
+  '';
+
   # `.doc` is the sibling haddock slice when the package's
   # plan-nix entry already includes `--ghc-option=-haddock`;
   # otherwise it throws with a migration recipe.  We don't
@@ -1906,10 +1924,12 @@ let
   decorate = base: base // exePathAttrs // docAttrs // {
       inherit checkAgainstPlan;
       profiled = profiledThrow;
+      dwarf = dwarfThrow;
       passthru = base.passthru // {
         inherit checkAgainstPlan;
         isSlice = true;
         profiled = profiledThrow;
+        dwarf = dwarfThrow;
       } // exePathAttrs // docAttrs;
       meta = (base.meta or {}) // lib.optionalAttrs isExeLike {
         mainProgram = exeName;
