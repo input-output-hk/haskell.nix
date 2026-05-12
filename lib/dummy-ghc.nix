@@ -10,7 +10,25 @@
 # nix-store paths and a small set of known-OK fields).
 { pkgs, evalPackages, ghc }:
 let
-  platformString = p: with p.parsed; "${cpu.name}-${vendor.name}-${kernel.name}";
+  # Real GHC normalises a few fields in its platform strings
+  # (`Target platform`, `target platform string`) away from the
+  # nixpkgs `parsed.*` values:
+  #
+  #   * 32-bit x86 cpu reported as `i386`, not `i686`
+  #     (musl32 / aarch32-style 32-bit cross).
+  #   * Windows targets reported as `<cpu>-unknown-mingw32`, not
+  #     nixpkgs' `<cpu>-w64-windows` (ucrt64 / mingwW64 cross).
+  #
+  # Mirror those normalisations here so the dummy and real `--info`
+  # outputs match — verified by `tests.dummy-ghc-info` on
+  # musl32 (i686) and ucrt64 (x86_64-w64-mingw32).
+  platformString = p: with p.parsed;
+    let
+      cpuName = if cpu.name == "i686" then "i386" else cpu.name;
+      vendorName = if p.isWindows then "unknown" else vendor.name;
+      kernelName = if p.isWindows then "mingw32" else kernel.name;
+    in
+      "${cpuName}-${vendorName}-${kernelName}";
 in evalPackages.writeTextFile {
   name = "dummy-" + ghc.name;
   executable = true;
@@ -87,8 +105,15 @@ in evalPackages.writeTextFile {
         # from its target platform.  Real GHC emits this on every
         # `--info`; cabal-install reads it to drive cross-toolchain
         # detection.
+        #
+        # GHC keys "cross" off cpu + kernel, NOT the full triple — a
+        # libc switch (e.g. pkgsCross.musl64: gnu → musl on x86_64-
+        # linux) reports `cross compiling: NO` because the cpu and
+        # kernel both match the build host.  Comparing full
+        # `.config` strings would wrongly mark these as cross.
         echo ',("cross compiling","${
-          if pkgs.stdenv.buildPlatform.config != pkgs.stdenv.targetPlatform.config
+          if pkgs.stdenv.buildPlatform.parsed.cpu.name != pkgs.stdenv.targetPlatform.parsed.cpu.name
+          || pkgs.stdenv.buildPlatform.parsed.kernel.name != pkgs.stdenv.targetPlatform.parsed.kernel.name
             then "YES" else "NO"}")'
         ${
           # GHC < 9.8 doesn't emit a `Project Unit Id` field in
@@ -165,8 +190,11 @@ in evalPackages.writeTextFile {
           ''
           else if pkgs.stdenv.targetPlatform.isAndroid
                || pkgs.stdenv.targetPlatform.isStatic
+               || (pkgs.stdenv.buildPlatform.parsed.cpu.name != pkgs.stdenv.targetPlatform.parsed.cpu.name
+                   && pkgs.stdenv.targetPlatform.isLinux)
           then ''
-            # Android cross / pkgsStatic: GHC built without dynamic
+            # Cross-built linux GHC (android / aarch64-multiplatform
+            # / etc.) or pkgsStatic: GHC built without dynamic
             # support — RTS ways have no `_dyn` family,
             # `GHC Dynamic: NO`, and no `Support shared libraries`
             # field at all (cabal interprets absence as no-shared).
@@ -174,10 +202,17 @@ in evalPackages.writeTextFile {
             # plan-to-nix record `--enable-shared`, which the
             # slice's real ghc silently flips to `--disable-shared`,
             # forking the UnitId on `pkgHashSharedLib`.
-            # Reference: `aarch64-unknown-linux-android-ghc --info`
-            # for android (Stage 1) and the pkgsStatic
-            # `x86_64-unknown-linux-musl-ghc --info` for static
-            # (Stage 2).
+            #
+            # Stage = 1 whenever the cpu architecture differs
+            # between build and target (real cross-compiler, only
+            # bootstrapped one stage); Stage = 2 for same-arch
+            # variants like pkgsStatic on x86_64-musl from
+            # x86_64-gnu (the GHC is fully bootstrapped because
+            # the cpu matches the build host).
+            #
+            # Reference: `aarch64-unknown-linux-android-ghc --info`,
+            # `aarch64-unknown-linux-gnu-ghc --info`, and the
+            # pkgsStatic `x86_64-unknown-linux-musl-ghc --info`.
             echo ',("Support dynamic-too","YES")'
             echo ',("Support reexported-modules","YES")'
             echo ',("Support thinning and renaming package flags","YES")'
@@ -188,7 +223,7 @@ in evalPackages.writeTextFile {
             echo ',("target RTS linker only supports shared libraries","NO")'
             echo ',("GHC Dynamic","NO")'
             echo ',("RTS ways","v thr thr_debug thr_debug_p thr_p debug debug_p p")'
-            echo ',("Stage","${if pkgs.stdenv.targetPlatform.isAndroid then "1" else "2"}")'
+            echo ',("Stage","${if pkgs.stdenv.buildPlatform.parsed.cpu.name != pkgs.stdenv.targetPlatform.parsed.cpu.name then "1" else "2"}")'
           ''
           else ''
             # Native (Linux / Darwin / etc.).  Real GHC 9.14.1 omits
@@ -206,7 +241,22 @@ in evalPackages.writeTextFile {
             echo ',("Have native code generator","YES")'
             echo ',("target RTS linker only supports shared libraries","NO")'
             echo ',("GHC Dynamic","YES")'
-            echo ',("RTS ways","v thr thr_debug thr_debug_p thr_debug_p_dyn thr_debug_dyn thr_p thr_p_dyn thr_dyn debug debug_p debug_p_dyn debug_dyn p p_dyn dyn")'
+            # GHC 9.6.x ships a smaller, differently-ordered set of
+            # RTS ways than 9.8+ — no `_p_dyn` variants at all.  The
+            # exact string is what `ghc --info` prints, so we have to
+            # match the per-version ordering verbatim.  Additionally,
+            # the 9.6.x ghcs built for libc-cross (e.g. musl64)
+            # report the conventional 12-way set while the stock
+            # nixpkgs 9.6.7 reports a 10-way variant with a different
+            # ordering — these are two different bootstraps of the
+            # same compiler version.  Verified by
+            # `tests.dummy-ghc-info` on each variant.
+            ${if pkgs.lib.versionAtLeast ghc.version "9.8"
+              then ''echo ',("RTS ways","v thr thr_debug thr_debug_p thr_debug_p_dyn thr_debug_dyn thr_p thr_p_dyn thr_dyn debug debug_p debug_p_dyn debug_dyn p p_dyn dyn")' ''
+              else if pkgs.stdenv.targetPlatform.isMusl
+              then ''echo ',("RTS ways","v thr thr_debug thr_debug_p thr_debug_dyn thr_p thr_dyn debug debug_p debug_dyn p dyn")' ''
+              else ''echo ',("RTS ways","debug thr thr_debug thr_p dyn debug_dyn thr_dyn thr_debug_dyn thr_debug_p debug_p")' ''
+            }
             echo ',("Stage","2")'
           ''
         }
