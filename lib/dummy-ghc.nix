@@ -241,19 +241,25 @@ in evalPackages.writeTextFile {
             echo ',("Have native code generator","YES")'
             echo ',("target RTS linker only supports shared libraries","NO")'
             echo ',("GHC Dynamic","YES")'
-            # GHC 9.6.x ships a smaller, differently-ordered set of
-            # RTS ways than 9.8+ — no `_p_dyn` variants at all.  The
-            # exact string is what `ghc --info` prints, so we have to
-            # match the per-version ordering verbatim.  Additionally,
-            # the 9.6.x ghcs built for libc-cross (e.g. musl64)
-            # report the conventional 12-way set while the stock
-            # nixpkgs 9.6.7 reports a 10-way variant with a different
-            # ordering — these are two different bootstraps of the
-            # same compiler version.  Verified by
-            # `tests.dummy-ghc-info` on each variant.
-            ${if pkgs.lib.versionAtLeast ghc.version "9.8"
+            # Real `ghc --info` RTS-ways strings (verified per-version
+            # against the actual cross / native GHCs):
+            #
+            #   * 9.6 / 9.8 (nixpkgs bootstrap native, non-musl):
+            #     10-way, weird ordering, no `v`/`p` and no
+            #     `_p_dyn` variants.
+            #   * 9.10 native, OR any pre-9.12 build that targets
+            #     musl (haskell.nix's musl64 ghc): 12-way, includes
+            #     `v` and `p` but no `_p_dyn` variants.
+            #   * 9.12 / 9.14: full 16-way including `_p_dyn`.
+            #
+            # The string is compared byte-for-byte, so the order
+            # must match verbatim.  Cross GHCs with a different cpu
+            # take a different branch above (8-way set without any
+            # `_dyn`); this rule is only for native-cpu targets.
+            ${if pkgs.lib.versionAtLeast ghc.version "9.12"
               then ''echo ',("RTS ways","v thr thr_debug thr_debug_p thr_debug_p_dyn thr_debug_dyn thr_p thr_p_dyn thr_dyn debug debug_p debug_p_dyn debug_dyn p p_dyn dyn")' ''
-              else if pkgs.stdenv.targetPlatform.isMusl
+              else if pkgs.lib.versionAtLeast ghc.version "9.10"
+                   || pkgs.stdenv.targetPlatform.isMusl
               then ''echo ',("RTS ways","v thr thr_debug thr_debug_p thr_debug_dyn thr_p thr_dyn debug debug_p debug_dyn p dyn")' ''
               else ''echo ',("RTS ways","debug thr thr_debug thr_p dyn debug_dyn thr_dyn thr_debug_dyn thr_debug_p debug_p")' ''
             }

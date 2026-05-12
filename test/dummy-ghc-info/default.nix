@@ -54,7 +54,7 @@ let
     "LLVM target" "LLVM llc command" "LLVM opt command"
     "LLVM llvm-as command" "LLVM llvm-as flags"
     "LLVM clang command"
-    "ld command" "ld flags"
+    "ld command" "ld flags" "ld supports response files"
     "dllwrap command" "touch command"
     "Use inplace MinGW toolchain"
     "LibDir" "Global Package DB"
