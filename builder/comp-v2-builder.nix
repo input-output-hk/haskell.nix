@@ -1521,11 +1521,17 @@ let
   '';
 
   baseSlice = buildCabalStoreSlice {
-    # Match v1's `comp-builder.nix:268`-style
-    # `<pkg>-<ctype>-<cname>-<version>` so callers (tests, store
-    # paths) can move from builderVersion 1 → 2 without seeing
-    # different derivation names for the same component.
-    name = "${pkgName}-${componentKindLabel}-${componentName}-${pkgVersion}";
+    # Match v1's `comp-builder.nix:528-530`-style
+    # `pname = <pkg>-<ctype>-<cname>; version = <version>` so the
+    # cross-aware nixpkgs naming convention puts the host platform's
+    # config BETWEEN `pname` and `version` (matching v1's
+    # `<pkg>-<ctype>-<cname>-<crossSuffix>-<version>` store paths).
+    # Setting `name` directly would have appended the cross suffix
+    # at the end instead, giving `<pkg>-<ctype>-<cname>-<version>-<crossSuffix>`
+    # which doesn't match downstream consumers (e.g. the
+    # `tests.coverage.run` path expectations).
+    pname = "${pkgName}-${componentKindLabel}-${componentName}";
+    version = pkgVersion;
     inherit depSlices;
     ghc = sliceGhc;
     localRepo = slicingRepo;
@@ -1816,7 +1822,12 @@ let
   # without) keep working because non-doc deps come in as plain
   # slices.
   docSlice = buildCabalStoreSlice {
-    name = "${pkgName}-${componentKindLabel}-${componentName}-${pkgVersion}-doc";
+    # See the comment on `baseSlice` for why we use pname + version
+    # instead of `name` directly.  Doc slice goes after `version` so
+    # the cross suffix lands BETWEEN pname and version, before the
+    # `-doc` distinguisher.
+    pname = "${pkgName}-${componentKindLabel}-${componentName}";
+    version = "${pkgVersion}-doc";
     # Compose the main slice in plus, for each lib dep that
     # has documentation enabled in plan-nix, that dep's `.doc`
     # slice — so cabal v2-haddock finds the haddock-interfaces

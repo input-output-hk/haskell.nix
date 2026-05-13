@@ -34,7 +34,18 @@
 
 let outerGhc = ghc; in
 
-{ name
+{ pname                       # `<pkg>-<ctype>-<cname>` (or
+                              # with a `-doc` suffix for haddock
+                              # slices).  Combined with `version`
+                              # to give the derivation name; on
+                              # cross, stdenv inserts the host
+                              # platform's config between them so
+                              # the resulting drv name matches v1's
+                              # `<pkg>-<ctype>-<cname>-<crossSuffix>-<version>`
+                              # convention.
+, version                     # The package's `pkgVersion`, used
+                              # directly as the derivation `version`
+                              # attribute.
 , depSlices ? []
 , localRepo ? null           # derivation with <pkg>-<ver>.tar.gz files
 , preBuild                   # stage sources, write cabal.project, cd into project dir
@@ -267,7 +278,7 @@ let
 in
 
 stdenv.mkDerivation ({
-  inherit name;
+  inherit pname version;
   # GHC / hsc2hs / cabal write/read source files; without a UTF-8
   # locale they fall back to the C encoding and crash on non-ASCII
   # input (e.g. `commitBuffer: invalid argument (cannot encode
