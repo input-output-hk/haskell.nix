@@ -131,7 +131,12 @@ let outerGhc = ghc; in
                              # slice as a drop-in for the lib slice
                              # when they want both bytes and docs.
 , withProgFlags ? ""         # extra `--with-PROG=PATH` flags
-                             # appended to the `cabal v2-build` command.
+                             # appended to the `cabal v2-build`
+                             # command (wrapped in
+                             # `--configure-option=` so cabal threads
+                             # them through to per-package Setup
+                             # configure — `cabal v2-build` itself
+                             # rejects arbitrary `--with-PROG`).
                              # Used by `comp-v2-builder.nix` on cross
                              # to point cabal at the build-platform
                              # exe of each transitive build-tool;

@@ -42,8 +42,8 @@ let
   #   * whether home-build-tool source goes in the slicing repo
   #     (no on cross — see `depTransitives` and `externalDepIds`).
   #   * whether the slice's cabal v2-build gets explicit
-  #     `--with-PROG=PATH` flags for transitive build-tool exes
-  #     (yes on cross — see `withProgFlags`).
+  #     `--configure-option=--with-PROG=PATH` flags for transitive
+  #     build-tool exes (yes on cross — see `withProgFlags`).
   #   * whether the slice runs the unit-id mismatch check
   #     (no on cross — `expectedUnitId` returns null; cross plan
   #     unit-ids legitimately diverge from what cabal computes
@@ -407,10 +407,10 @@ let
   # cabal-store and doesn't re-build.  On CROSS the unit-ids
   # diverge (cross GHC info ≠ build-platform GHC info), so cabal
   # would otherwise plan a from-source rebuild; `withProgFlags`
-  # below adds `--with-<exe>=<bb-slice>/bin/<exe>` per transitive
-  # build-tool so cabal short-circuits the build.  The post-install
-  # "exactly one captured unit-id" check then verifies cabal really
-  # did skip the tool's build.
+  # below adds `--configure-option=--with-<exe>=<bb-slice>/bin/<exe>`
+  # per transitive build-tool so cabal short-circuits the build.
+  # The post-install "exactly one captured unit-id" check then
+  # verifies cabal really did skip the tool's build.
   externalDepIds = haskellLib.uniqueWithName
     (map (d: { name = d.identifier.name; version = d.identifier.version; }) externalDeps
      ++ lib.filter (nv: nv.name != pkgName)
@@ -513,7 +513,7 @@ let
   #     targets the cross platform — it isn't directly runnable on
   #     the build host — but cabal only needs the unit-id-keyed dir
   #     to be present in the store; actual invocation goes through
-  #     `--with-PROG=PATH` below.
+  #     `--with-PROG=PATH` via `withProgFlags` below.
   #
   #   * `buildSlice` — the v2 slice built for the build-build
   #     platform (`hsPkgs.pkgsBuildBuild`).  Its binary is runnable
@@ -522,11 +522,6 @@ let
   #     `.y` files in the slice.
   #
   # On NATIVE the two are the same slice (pkgsBuildBuild == hsPkgs).
-  # The original concern about composing a cross-target exe was
-  # that the build host's cabal can't EXECUTE it; with
-  # `--with-PROG=<buildSlice>/bin/<exe>` cabal never tries to
-  # execute the composed cross binary — it just notes its
-  # existence at the expected unit-id path.
   transitiveBuildToolEntries =
     let raw = lib.concatMap (e:
       let p   = e.entry;
@@ -558,15 +553,32 @@ let
   # build-build slices on native (which is the same drv).
   transitiveBuildToolSlices = map (e: e.targetSlice) transitiveBuildToolEntries;
 
-  # Cross-only: point cabal at the build-build binary for each
-  # transitive build-tool — the composed `targetSlice` is the
-  # cross-target binary which can't run on the build host.  Both
-  # the slice's cabal v2-build and the v2 shell's cabal use these
-  # flags so the runtime invocation path is consistent.
+  # Cross-only: `--with-PROG=PATH` flags appended to `cabal v2-build`
+  # for each transitive build-tool, pointing cabal at the build-build
+  # binary (the composed `targetSlice` is the cross-target which
+  # can't run on the build host).  Both the slice's cabal v2-build
+  # and the v2 shell's cabal use these flags so the runtime
+  # invocation path is consistent.
+  #
+  # `cabal v2-build` itself only accepts `--with-PROG=PATH` for a
+  # fixed set of GHC-toolchain programs (`--with-ghc`,
+  # `--with-ghc-pkg`, `--with-gcc`, ...); arbitrary
+  # `--with-<build-tool-exe>=PATH` is rejected with
+  # `unrecognized 'v2-build' option`.  Wrap each such flag in
+  # `--configure-option=` so cabal threads it through to
+  # per-package `Setup configure`, which DOES accept arbitrary
+  # `--with-PROG=PATH` for any program declared as a build-tool.
+  #
+  # We don't emit these as a `package *  configure-options:` block
+  # in cabal.project — that would enter EVERY package's
+  # `pkgHashConfigureOptions`, forking UnitIds for packages that
+  # don't declare the build-tool against what their own slices
+  # computed.  Keeping the flag at the cabal-CLI level lets
+  # cabal apply it only where the program is actually invoked.
   withProgFlags =
     lib.optionalString isCross
       (lib.concatMapStrings
-        (e: " --with-${e.name}=${e.buildSlice}/bin/${e.name}")
+        (e: " --configure-option=--with-${e.name}=${e.buildSlice}/bin/${e.name}")
         transitiveBuildToolEntries);
 
   # Package names whose presence in the slice's plan / captured-unit
@@ -739,7 +751,8 @@ let
     # already in the starting cabal-store or pinned via
     # `--with-PROG=PATH`.  On native cabal then plans + reuses the
     # pre-installed slice; on cross `withProgFlags` short-circuits
-    # the build.
+    # the build by passing `--configure-option=--with-<exe>=PATH`
+    # for each transitive build-tool.
     ++ lib.concatMap (s: s.passthru.transitiveTarballs or []) buildToolSlices;
 
   # native-build inputs from the target component's config
