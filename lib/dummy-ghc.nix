@@ -155,23 +155,28 @@ in evalPackages.writeTextFile {
           #   * native Linux/Darwin: dynamic everything, Stage 2.
           if pkgs.stdenv.targetPlatform.isGhcjs
              || pkgs.stdenv.targetPlatform.isWasm
-          then ''
-            # ghcjs / wasm: stage-1 cross GHC.  Real GHC reports
-            # `Support dynamic-too: YES`, no interpreter (`Have
-            # interpreter: NO`, `Use interpreter: NO`), omits
-            # `Support shared libraries` entirely.  Verified by
-            # `tests.dummy-ghc-info` against the live ghcjs cross
-            # GHC 9.14.1.
+          then
+            # wasm (wasi32 / wasm32) gained an interpreter and
+            # dynamic-RTS-ways support in GHC 9.12+.  Real GHC for
+            # 9.12+ wasm reports:
+            #   `Tables next to code: NO`
+            #   `Have interpreter: YES`, `Use interpreter: YES`
+            #   `RTS ways: v debug debug_dyn dyn`
+            # while earlier wasm builds and all ghcjs builds keep
+            # the legacy stage-1-without-interpreter values.
+            let newWasm = pkgs.stdenv.targetPlatform.isWasm
+                       && pkgs.lib.versionAtLeast ghc.version "9.12";
+            in ''
             echo ',("Support dynamic-too","YES")'
             echo ',("Support reexported-modules","YES")'
             echo ',("Support thinning and renaming package flags","YES")'
-            echo ',("Tables next to code","YES")'
-            echo ',("Have interpreter","NO")'
-            echo ',("Use interpreter","NO")'
+            echo ',("Tables next to code","${if newWasm then "NO" else "YES"}")'
+            echo ',("Have interpreter","${if newWasm then "YES" else "NO"}")'
+            echo ',("Use interpreter","${if newWasm then "YES" else "NO"}")'
             echo ',("Have native code generator","YES")'
             echo ',("target RTS linker only supports shared libraries","NO")'
             echo ',("GHC Dynamic","NO")'
-            echo ',("RTS ways","v debug")'
+            echo ',("RTS ways","${if newWasm then "v debug debug_dyn dyn" else "v debug"}")'
             echo ',("Stage","1")'
           ''
           else if pkgs.stdenv.targetPlatform.isWindows

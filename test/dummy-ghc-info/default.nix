@@ -130,6 +130,7 @@ in stdenv.mkDerivation {
     dummy=$(mktemp)
     real_filtered=$(mktemp)
     dummy_filtered=$(mktemp)
+    diff_out=$(mktemp)
 
     echo "real ghc:  ${realGhc}/bin/${ghcCmd}" >&2
     echo "dummy ghc: ${dummyGhc}/bin/${ghcCmd}" >&2
@@ -142,10 +143,10 @@ in stdenv.mkDerivation {
     pretty "$real"  | sh ${filterScript} > "$real_filtered"
     pretty "$dummy" | sh ${filterScript} > "$dummy_filtered"
 
-    if ! diff -u "$dummy_filtered" "$real_filtered" > /tmp/dummy-vs-real.diff; then
+    if ! diff -u "$dummy_filtered" "$real_filtered" > "$diff_out"; then
       echo "" >&2
       echo "===== dummy-ghc --info diverges from real ghc --info =====" >&2
-      cat /tmp/dummy-vs-real.diff >&2
+      cat "$diff_out" >&2
       echo "" >&2
       echo "Fix \`lib/dummy-ghc.nix\` until the diff is empty (or" >&2
       echo "extend \`ignoredFields\` here if the diverging field is" >&2
