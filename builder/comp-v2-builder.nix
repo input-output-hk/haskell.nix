@@ -560,14 +560,36 @@ let
   # and the v2 shell's cabal use these flags so the runtime
   # invocation path is consistent.
   #
-  # `cabal v2-build` itself only accepts `--with-PROG=PATH` for a
-  # fixed set of GHC-toolchain programs (`--with-ghc`,
-  # `--with-ghc-pkg`, `--with-gcc`, ...); arbitrary
-  # `--with-<build-tool-exe>=PATH` is rejected with
-  # `unrecognized 'v2-build' option`.  Wrap each such flag in
-  # `--configure-option=` so cabal threads it through to
-  # per-package `Setup configure`, which DOES accept arbitrary
-  # `--with-PROG=PATH` for any program declared as a build-tool.
+  # `cabal v2-build` accepts `--with-PROG=PATH` for any program
+  # registered in its built-in `ProgramDb` (cabal source:
+  # `Distribution.Simple.Program.Builtin.builtinPrograms`).  For
+  # programs not in that list cabal's `userSpecifyPath` silently
+  # ignores the flag (`Map.update` over `unconfiguredProgs` is a
+  # no-op when the program isn't known), so we have to wrap those
+  # in `--configure-option=` and let per-package `Setup configure`
+  # apply them after `build-tool-depends` registration extends the
+  # package-local `ProgramDb`.
+  #
+  # Split the build-tool entries on this distinction so each flag
+  # reaches cabal in the form cabal actually honours:
+  #
+  #   * built-in (alex / happy / c2hs / hsc2hs / cpphs / ...):
+  #     emit `--with-NAME=PATH` directly to `cabal v2-build`.
+  #     Wrapping these in `--configure-option=` would make cabal
+  #     forward them to Setup configure, where they reach Setup's
+  #     ProgramDb correctly — but cabal v2-build's own program
+  #     resolution (used for the per-slice tool invocations like
+  #     "Running alex…") wouldn't see the override and would fall
+  #     back to the cross-target binary in the bundled cabal-store.
+  #     Concretely: language-c's alex preprocess step would run
+  #     the cross-target alex (Exec format error on x86_64).
+  #   * non-built-in (arbitrary `pkga-exe`-style entries):
+  #     cabal v2-build rejects these CLI flags as
+  #     `unrecognized 'v2-build' option` — wrap them in
+  #     `--configure-option=` so cabal threads them through to
+  #     per-package Setup configure, which DOES accept arbitrary
+  #     `--with-PROG=PATH` once the package declares the program
+  #     in `build-tool-depends`.
   #
   # We don't emit these as a `package *  configure-options:` block
   # in cabal.project — that would enter EVERY package's
@@ -575,11 +597,20 @@ let
   # don't declare the build-tool against what their own slices
   # computed.  Keeping the flag at the cabal-CLI level lets
   # cabal apply it only where the program is actually invoked.
+  cabalBuiltinPrograms = [
+    "ghc" "runghc" "ghc-pkg" "ghcjs" "ghcjs-pkg" "jhc" "uhc"
+    "hpc" "hscolour" "doctest" "haddock" "happy" "alex"
+    "hsc2hs" "c2hs" "cpphs" "gcc" "gpp" "ar" "strip" "ld"
+    "tar" "cpp" "pkg-config"
+  ];
   withProgFlags =
     lib.optionalString isCross
-      (lib.concatMapStrings
-        (e: " --configure-option=--with-${e.name}=${e.buildSlice}/bin/${e.name}")
-        transitiveBuildToolEntries);
+      (lib.concatMapStrings (e:
+        let withFlag = "--with-${e.name}=${e.buildSlice}/bin/${e.name}";
+        in if lib.elem e.name cabalBuiltinPrograms
+           then " ${withFlag}"
+           else " --configure-option=${withFlag}"
+      ) transitiveBuildToolEntries);
 
   # Package names whose presence in the slice's plan / captured-unit
   # set is expected on cross.  Normally cabal recognises each
