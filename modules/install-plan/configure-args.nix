@@ -5,7 +5,16 @@
 #
 # --ghc-option / --ghcjs-option  →  ghcOptions  (dedicated option)
 # --configure-option=            →  configureOptions (cabal-project round-trip)
-# other --*-option=              →  configureFlags  (passed through)
+# --<prog>-option=               →  configureFlags  (passed through, v1)
+#                                 + programOptions (per-program list keyed by
+#                                   PROG, emitted back as a `<prog>-options:`
+#                                   line in v2's slice cabal.project so cabal
+#                                   threads it to the program's ProgramDb).
+#                                   `configure-options:` is only honoured for
+#                                   `build-type: Configure` packages, so v2
+#                                   can't round-trip the v1 `--<prog>-option=`
+#                                   form via `--configure-option=` wrapping —
+#                                   we use the native field instead.
 {config, lib, ...}: {
   packages = lib.listToAttrs (lib.concatMap (p:
     let
@@ -31,20 +40,9 @@
         in lib.optional (m != null && (config.builderVersion == 1 || opt != "-hide-all-packages")) opt
       ) args;
 
-      # Extract --configure-option=VALUE entries into the dedicated
-      # configureOptions option.  These come from cabal.project's
-      # `configure-options:` stanza and the v2 builder emits them
-      # back into its own cabal.project so UnitIds stay consistent
-      # between a slice build and downstream consumers.
-      configureOptions = lib.concatMap (arg:
-        let m = builtins.match "--configure-option=(.*)" arg;
-        in lib.optional (m != null) (builtins.elemAt m 0)
-      ) args;
-
       # Extract other --PROG-option=VALUE entries (gcc, ld, hsc2hs,
-      # alex, happy, c2hs, cpphs, ghc-pkg, …) and pass them through
-      # as configureFlags.  `--ghc-option` and `--configure-option`
-      # are handled above.
+      # alex, happy, c2hs, cpphs, ghc-pkg, …) that aren't already
+      # handled by `--ghc-option` / `--configure-option`.
       otherFlags = builtins.filter (arg:
         let
           isProgOption = builtins.match "--[a-z][a-z0-9-]*-option=.*" arg != null;
@@ -52,6 +50,26 @@
           isCfgOption = builtins.match "--configure-option=.*" arg != null;
         in isProgOption && !isGhcOption && !isCfgOption
       ) args;
+
+      # Extract --configure-option=VALUE entries into the dedicated
+      # configureOptions option.  These come from cabal.project's
+      # `configure-options:` stanza and the v2 builder emits them
+      # back into its own cabal.project so UnitIds stay consistent
+      # between a slice build and downstream consumers.  Per-program
+      # `--<prog>-option=` entries from `otherFlags` (e.g. derived
+      # from `c2hs-options:`, `hsc2hs-options:`, ...) are appended
+      # verbatim so v2 round-trips them through cabal.project too —
+      # cabal-install threads the field value through to Setup
+      # configure, which DOES recognise `--<prog>-option=` for any
+      # program in its ProgramDb.  Without this a project saying
+      # `package libsodium  c2hs-options: --cppopts=...` would reach
+      # v1 (via configureFlags) but be silently dropped on v2.
+      configureOptions =
+        lib.concatMap (arg:
+          let m = builtins.match "--configure-option=(.*)" arg;
+          in lib.optional (m != null) (builtins.elemAt m 0)
+        ) args
+        ++ otherFlags;
 
       # Translate `--enable-X` toggles cabal-install records into
       # plan.json's `configure-args` back into the haskell.nix module
@@ -69,10 +87,28 @@
         // lib.optionalAttrs (hasFlag "library-profiling") { enableLibraryProfiling = true; }
         // lib.optionalAttrs (hasFlag "coverage")        { doCoverage             = true; };
 
+      # Group `--<prog>-option=VAL` entries by PROG so the v2 builder
+      # can emit `<prog>-options:` lines per program in the slice's
+      # cabal.project — `configure-options:` isn't honoured for
+      # `build-type: Simple` packages, but `<prog>-options:` is.
+      progOptionPairs = lib.concatMap (arg:
+        let m = builtins.match "--([a-z][a-z0-9-]*)-option=(.*)" arg;
+        in lib.optional (m != null) {
+          prog = builtins.elemAt m 0;
+          option = builtins.elemAt m 1;
+        }
+      ) otherFlags;
+      progNames = lib.unique (map (e: e.prog) progOptionPairs);
+      programOptions = lib.listToAttrs (map (prog: {
+        name = prog;
+        value = map (e: e.option) (lib.filter (e: e.prog == prog) progOptionPairs);
+      }) progNames);
+
       value =
         lib.optionalAttrs (ghcOptions != []) { inherit ghcOptions; }
         // lib.optionalAttrs (configureOptions != []) { inherit configureOptions; }
         // lib.optionalAttrs (otherFlags != []) { configureFlags = otherFlags; }
+        // lib.optionalAttrs (programOptions != {}) { inherit programOptions; }
         // profilingFlags;
     in lib.optional (value != {}) {
       name = p.id;

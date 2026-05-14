@@ -111,6 +111,27 @@
       default = [ ];
     };
 
+    programOptions = lib.mkOption {
+      description = ''
+        Per-program option arguments that correspond to cabal.project's
+        `<prog>-options:` stanzas (e.g. `c2hs-options:`,
+        `hsc2hs-options:`).  Populated automatically from
+        `--<prog>-option=X` entries in plan.json's configure-args
+        (see `modules/install-plan/configure-args.nix`) and can also
+        be set directly via `modules`.
+
+        v2 emits each (prog, options) pair as a `package <pkg>` block
+        with a `<prog>-options:` line so cabal-install threads the
+        values through to the program's ProgramDb at build time —
+        `configure-options:` would be silently dropped here because
+        it only applies to `build-type: Configure` packages.  v1
+        reads `configureFlags` directly (which retains the
+        `--<prog>-option=...` form) and ignores this option.
+      '';
+      type = lib.types.attrsOf (haskellLib.types.listOfFilteringNulls lib.types.str);
+      default = { };
+    };
+
     contentAddressed = lib.mkOption {
       type = lib.types.bool;
       default = false;

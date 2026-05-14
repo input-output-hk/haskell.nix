@@ -7,7 +7,9 @@ let
   project = project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "exe-dlls";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    cabalProjectLocal = builtins.readFile ../cabal.project.local
+      + lib.optionalString stdenv.hostPlatform.isAndroid
+          (builtins.readFile ../cabal.project.android);
     modules = import ../modules.nix;
   };
 
@@ -19,7 +21,10 @@ let
   projectProfiled = project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "exe-dlls";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
+    cabalProjectLocal = builtins.readFile ../cabal.project.local
+      + lib.optionalString stdenv.hostPlatform.isAndroid
+          (builtins.readFile ../cabal.project.android)
+      + ''
       package *
         library-profiling: True
       package exe-dlls

@@ -17,7 +17,9 @@ let
     cabalProjectLocal = lib.optionalString stdenv.hostPlatform.isStatic ''
       package th-dlls
         flags: -libsodium -openssl
-    '' + lib.optionalString profiled ''
+    '' + lib.optionalString stdenv.hostPlatform.isAndroid
+          (builtins.readFile ../cabal.project.android)
+      + lib.optionalString profiled ''
       package *
         library-profiling: True
     '';

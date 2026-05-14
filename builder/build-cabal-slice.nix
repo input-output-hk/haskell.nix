@@ -46,6 +46,12 @@ let outerGhc = ghc; in
 , version                     # The package's `pkgVersion`, used
                               # directly as the derivation `version`
                               # attribute.
+, hardeningDisable ? []       # Per-slice stdenv `hardeningDisable`
+                              # list — strips the named hardening
+                              # flags from `NIX_HARDENING_ENABLE`.
+                              # Forwarded from the slice's
+                              # `component.hardeningDisable` module
+                              # option by `comp-v2-builder.nix`.
 , depSlices ? []
 , localRepo ? null           # derivation with <pkg>-<ver>.tar.gz files
 , preBuild                   # stage sources, write cabal.project, cd into project dir
@@ -278,7 +284,7 @@ let
 in
 
 stdenv.mkDerivation ({
-  inherit pname version;
+  inherit pname version hardeningDisable;
   # GHC / hsc2hs / cabal write/read source files; without a UTF-8
   # locale they fall back to the C encoding and crash on non-ASCII
   # input (e.g. `commitBuffer: invalid argument (cannot encode

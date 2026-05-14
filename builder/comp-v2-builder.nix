@@ -181,6 +181,25 @@ let
   ghcOptionsOf       = perPackageOptionOf "ghcOptions";
   configureOptionsOf = perPackageOptionOf "configureOptions";
 
+  # `programOptions` is `{ <prog> = [<args>...]; }`, not a list, so
+  # `perPackageOptionOf` (which compares list values for equality)
+  # doesn't apply.  Merge across all configs / components for a
+  # canonical package — duplicate options per program are deduped
+  # via `lib.unique`.
+  programOptionsOf = pname:
+    let
+      cfgs = cfgsForCanonical pname;
+      mapsFromPkg = map (cfg: cfg.programOptions or {}) cfgs;
+      mapsFromComp = lib.concatMap (cfg:
+        map (e: e.comp.programOptions or {}) (componentEntries cfg)
+      ) cfgs;
+      merged = lib.foldl' (acc: m:
+        lib.foldl' (acc: prog:
+          acc // { ${prog} = lib.unique ((acc.${prog} or []) ++ m.${prog}); }
+        ) acc (builtins.attrNames m)
+      ) {} (mapsFromPkg ++ mapsFromComp);
+    in merged;
+
   # Has plan-nix flagged this canonical package (any of its units)
   # as documentation-enabled?  Mirrors `docEnabled` above but for
   # arbitrary pkg-names rather than this slice's own unit.
@@ -220,6 +239,23 @@ let
     in if opts == [] then ""
        else "package ${pname}\n  configure-options: ${lib.concatStringsSep " " opts}\n";
 
+  # Per-package `<prog>-options:` lines.  cabal-install auto-generates
+  # one such field per program in its `ProgramDb` (see
+  # `Distribution.Simple.Program.Db.programDbOptions`), so any
+  # `<prog>-options:` the user wrote in cabal.project round-trips
+  # through plan-nix's `--<prog>-option=` form back into the slice's
+  # cabal.project here.  `build-type: Simple` packages only honour
+  # `<prog>-options:` (not `configure-options:`), so this is the
+  # form cabal-install actually threads to the program's argument
+  # list at build time.
+  programOptionsBlockFor = pname:
+    let progs = programOptionsOf pname;
+        lines = lib.concatStringsSep "\n" (map (prog:
+          "  ${prog}-options: ${lib.concatStringsSep " " progs.${prog}}"
+        ) (builtins.attrNames progs));
+    in if progs == {} then ""
+       else "package ${pname}\n${lines}\n";
+
   # Restrict `package <name>` blocks to packages this slice
   # actually deals with — the target package itself plus the
   # transitive deps already shipped via the slicing repo.
@@ -241,6 +277,7 @@ let
   allFlagBlocks             = lib.concatMapStrings flagBlockFor             sliceCanonicalNames;
   allGhcOptionsBlocks       = lib.concatMapStrings ghcOptionsBlockFor       sliceCanonicalNames;
   allConfigureOptionsBlocks = lib.concatMapStrings configureOptionsBlockFor sliceCanonicalNames;
+  allProgramOptionsBlocks   = lib.concatMapStrings programOptionsBlockFor   sliceCanonicalNames;
   allDocBlocks              = lib.concatMapStrings documentationBlockFor    sliceCanonicalNames;
 
   # Resolve version-conditional patches (a `patches` entry may be a
@@ -1501,7 +1538,7 @@ let
   cabalProject = ''
     with-compiler: ${withCompiler}
     active-repositories: hackage.haskell-nix
-    ${packagesLine}${sourceRepoBlocks}${extraPackagesLine}${allowNewerBlock}${allowBootLibBlock}${projectConfigPragmas}${extraProject}${allFlagBlocks}${allGhcOptionsBlocks}${allConfigureOptionsBlocks}${allDocBlocks}${extraIncludeAndLibDirs}${depConstraints}'';
+    ${packagesLine}${sourceRepoBlocks}${extraPackagesLine}${allowNewerBlock}${allowBootLibBlock}${projectConfigPragmas}${extraProject}${allFlagBlocks}${allGhcOptionsBlocks}${allConfigureOptionsBlocks}${allProgramOptionsBlocks}${allDocBlocks}${extraIncludeAndLibDirs}${depConstraints}'';
 
   # X-revised .cabal as a /nix/store path (or null if no override).
   # Carried on every `transitiveTarballs` entry so the slicing repo's
@@ -1580,6 +1617,14 @@ let
     extraSublibSeeds = extraSublibSeeds;
     inherit extraBuildInputs extraNativeBuildInputs withProgFlags
             allowedBuildToolPackages confLibraryDirs;
+    # Per-component stdenv hardeningDisable (set via haskell.nix
+    # `packages.<pkg>.components.<kind>.<name>.hardeningDisable =
+    # ["fortify"]`).  Drives `NIX_HARDENING_ENABLE` for the slice's
+    # build env so C-toolchain wrappers strip the listed hardening
+    # flags before invoking gcc/clang — e.g. dropping `fortify`
+    # prevents the Android NDK from pulling `bits/fortify/stdio.h`
+    # into c2hs preprocessing, which c2hs can't parse.
+    hardeningDisable = component.hardeningDisable or [];
     # Things that flow into downstream slices' build envs through
     # stdenv's propagation chain.  Library deps don't appear here
     # because in v2 they're the dep slices themselves, already in
@@ -1814,6 +1859,14 @@ let
     extraSublibSeeds = extraSublibSeeds;
     inherit extraBuildInputs extraNativeBuildInputs withProgFlags
             allowedBuildToolPackages confLibraryDirs;
+    # Per-component stdenv hardeningDisable (set via haskell.nix
+    # `packages.<pkg>.components.<kind>.<name>.hardeningDisable =
+    # ["fortify"]`).  Drives `NIX_HARDENING_ENABLE` for the slice's
+    # build env so C-toolchain wrappers strip the listed hardening
+    # flags before invoking gcc/clang — e.g. dropping `fortify`
+    # prevents the Android NDK from pulling `bits/fortify/stdio.h`
+    # into c2hs preprocessing, which c2hs can't parse.
+    hardeningDisable = component.hardeningDisable or [];
     dryRunOnly = true;
     inherit planNixJsonFile;
   };
@@ -1877,6 +1930,14 @@ let
     extraSublibSeeds = extraSublibSeeds;
     inherit extraBuildInputs extraNativeBuildInputs withProgFlags
             allowedBuildToolPackages confLibraryDirs;
+    # Per-component stdenv hardeningDisable (set via haskell.nix
+    # `packages.<pkg>.components.<kind>.<name>.hardeningDisable =
+    # ["fortify"]`).  Drives `NIX_HARDENING_ENABLE` for the slice's
+    # build env so C-toolchain wrappers strip the listed hardening
+    # flags before invoking gcc/clang — e.g. dropping `fortify`
+    # prevents the Android NDK from pulling `bits/fortify/stdio.h`
+    # into c2hs preprocessing, which c2hs can't parse.
+    hardeningDisable = component.hardeningDisable or [];
     doHaddock = true;
     # The build-cabal-slice dry-run check fails when cabal plans
     # to build anything other than `expectedPackage` — that's
