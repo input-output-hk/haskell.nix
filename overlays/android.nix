@@ -1,16 +1,13 @@
 final: prev: {
-  # Use android SDK version 26
   lib = prev.lib // {
     systems = prev.lib.systems // {
       examples = prev.lib.systems.examples // {
-        aarch64-android = prev.lib.systems.examples.aarch64-android // {
-          androidSdkVersion = "269";
-          androidNdkVersion = "27";
-        };
-        armv7a-android-prebuilt = prev.lib.systems.examples.armv7a-android-prebuilt // {
-          androidSdkVersion = "26";
-          androidNdkVersion = "27";
-        };
+        # TODO test if this is still needed
+        # Use android SDK version 26
+        # aarch64-android = prev.lib.systems.examples.aarch64-android // {
+        #  androidSdkVersion = "269";
+        #  androidNdkVersion = "27";
+        # };
       };
     };
   };
