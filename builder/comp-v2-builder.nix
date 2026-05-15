@@ -1193,11 +1193,35 @@ let
     planJson;
   pkgLibDepClosure = mkClosureFrom pkgPlanUnits libDepsOf;
 
+  # Custom-Build packages collapse every component (lib / sublib /
+  # exe / ...) into a single plan-nix entry — plan-nix leaves
+  # `component-name` unset to mark this.  cabal-install installs all
+  # of them under one shared unit-id directory
+  # (`<pkg>-<ver>-<hash>/lib/...` + `<pkg>-<ver>-<hash>/bin/...`) and
+  # writes a single `.conf` in package.db.  If we target a single
+  # component (`:pkg:<pkg>:lib:<lib>`), the slice's `cabal v2-build`
+  # builds only that component yet still installs the
+  # whole-package-shared `.conf`.  A downstream exe slice that
+  # composes that lib slice's `store/` via lndir then sees the
+  # `.conf` and concludes the unit is already installed — even
+  # though only the lib's files are there — and reports "Up to date"
+  # without ever building the exe.  Expand the target to the whole
+  # package on Custom-Build so every slice's `cabal v2-build` puts
+  # the full unit (lib + every exe) on disk; subsequent slices that
+  # lndir-compose this output get the bin/ they need.
+  isCustomBuild =
+    let uid = package.identifier.unit-id or null;
+        entry = if uid == null then null else planJsonByPlanId.${uid} or null;
+    in entry != null && (entry.component-name or null) == null;
+
   # `:pkg:` qualifier disambiguates remote-package targets — cabal
   # bug #8684 makes the bare form fail with "unambiguous but
   # matches the following targets" when the package isn't in
   # `packages:`.
-  targetSelector = ":pkg:${pkgName}:${targetPrefix}${cname}";
+  targetSelector =
+    if isCustomBuild
+    then ":pkg:${pkgName}"
+    else ":pkg:${pkgName}:${targetPrefix}${cname}";
 
   # Sublibs (of THIS package or of any dep package) we need to
   # tell our patched cabal-install to keep as reachability seeds.
@@ -1673,13 +1697,6 @@ let
       let uid = package.identifier.unit-id or null;
           entry = if uid == null then null else planJsonByPlanId.${uid} or null;
           style = if entry == null then null else entry.style or null;
-          # Custom-build packages share a single plan-nix entry across
-          # every component (lib + sublib + exe + ...).  The slice's
-          # cabal-install splits them back into per-component units
-          # with distinct UnitIds, so the slice's UnitId can never
-          # equal the plan-nix `id`.  Plan-nix marks the shared entry
-          # by leaving `component-name` unset / null.
-          isCustomBuild = entry != null && (entry.component-name or null) == null;
       in if isCross || style == "local" || isCustomBuild then null else uid;
     # Plan-json entry for this slice's expected unit-id, written to
     # disk so the unit-id-mismatch diagnostic can diff what plan-nix

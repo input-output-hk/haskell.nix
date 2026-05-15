@@ -1152,15 +1152,74 @@ stdenv.mkDerivation ({
     #
     # When the expected unit-id is known (from plan-nix), keep only
     # `<uid>/` and `package.db/<uid>.conf` and `rm -rf` the rest of
-    # the package-db / unit dirs.  Falls back to walking the tree
-    # with `find -type l -delete` when the unit-id isn't known
-    # (`source-repo` packages, `style: "local"` packages, or any
-    # other case where `expectedUnitId` was set to null in
-    # comp-v2-builder).
+    # the package-db / unit dirs.  Falls back to using the captured
+    # uids cabal actually installed when `expectedUnitId` is null
+    # (`source-repo` packages, `style: "local"` packages,
+    # Custom-Build packages — plan-nix's uid is a placeholder there
+    # and won't match what cabal computes from the slicing tarball).
     if [ -n "$ghcDir" ]; then
       ${if expectedUnitId == null then ''
-        find $ghcDir -type l -delete
-        find $ghcDir -mindepth 1 -type d -empty -delete
+        # No known uid to keep — use the captured uids cabal actually
+        # installed in this slice (recorded above into
+        # $buildRoot/captured-unit-ids).  Plan-nix records local
+        # packages as `style: local` with a placeholder
+        # `<pkg>-<ver>-inplace` uid, but the slice serves the same
+        # source via a tarball repo (`style: global`, `pkg-src:
+        # repo-tar`) and cabal computes a content-hashed real uid —
+        # so plan-nix's uid can never match what cabal installed.
+        mapfile -t captured_uids < $buildRoot/captured-unit-ids
+        if [ ''${#captured_uids[@]} -eq 0 ]; then
+          # Cabal short-circuited on "Up to date" (a dep slice's
+          # lndir composition supplied everything).  Don't wipe
+          # dep-slice content — `kindSpecificInstallPhase` needs to
+          # find `bin/<exeName>` somewhere in `$out/store` for exe /
+          # test / bench slices, and the only place it lives is the
+          # lndir-composed dep slice unit dir.  Just drop the
+          # symlinks that point at directories we KNOW we don't need
+          # (none right now — leaving the lndir tree intact).
+          :
+        else
+          # Move each captured unit's `<uid>/`, `package.db/<uid>.conf`,
+          # and `lib/libHS<uid>-*` aside, wipe $ghcDir, then restore
+          # them.  Same shape as the known-uid branch below, just
+          # plural.
+          side=$buildRoot/keep
+          mkdir -p $side/package.db $side/lib
+          shopt -s nullglob
+          for keep in "''${captured_uids[@]}"; do
+            [ -z "$keep" ] && continue
+            if [ -e "$ghcDir/$keep" ]; then
+              mv "$ghcDir/$keep" "$side/$keep"
+            fi
+            if [ -e "$ghcDir/package.db/$keep.conf" ]; then
+              mv "$ghcDir/package.db/$keep.conf" "$side/package.db/$keep.conf"
+            fi
+            for f in "$ghcDir/lib/libHS$keep"-*; do
+              mv "$f" "$side/lib/$(basename "$f")"
+            done
+          done
+          shopt -u nullglob
+          rm -rf "$ghcDir"
+          mkdir -p "$ghcDir/package.db"
+          shopt -s nullglob
+          for keep in "''${captured_uids[@]}"; do
+            [ -z "$keep" ] && continue
+            if [ -e "$side/$keep" ]; then
+              mv "$side/$keep" "$ghcDir/$keep"
+            fi
+            if [ -e "$side/package.db/$keep.conf" ]; then
+              mv "$side/package.db/$keep.conf" "$ghcDir/package.db/$keep.conf"
+            fi
+          done
+          kept_libs=("$side/lib/libHS"*)
+          if [ ''${#kept_libs[@]} -gt 0 ]; then
+            mkdir -p "$ghcDir/lib"
+            for f in "''${kept_libs[@]}"; do
+              mv "$f" "$ghcDir/lib/$(basename "$f")"
+            done
+          fi
+          shopt -u nullglob
+        fi
       '' else let uid = lib.escapeShellArg expectedUnitId; in ''
         keep=${uid}
         # Move the keepers aside, wipe $ghcDir, then restore them.
