@@ -24,6 +24,7 @@ let
         library-profiling: True
     '';
     modules = import ../modules.nix ++ [({pkgs, ...}: lib.optionalAttrs externalInterpreter {
+      package-keys = [ "HsOpenSSL" ];
       packages.th-dlls.ghcOptions = [ "-fexternal-interpreter" ];
       # Static openssl seems to fail to load in iserv for musl
       packages.HsOpenSSL.components.library.libs = lib.optional pkgs.stdenv.hostPlatform.isMusl (pkgs.openssl.override { static = false; });
