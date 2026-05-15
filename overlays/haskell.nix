@@ -1097,12 +1097,17 @@ final: prev: {
                   # load.  `-rtsopts=all` is kept so wrapper scripts /
                   # GHCRTS can still override at invocation.
                   # `--optimistic-linking` is only available in GHC's
-                  # RTS from 9.14 onwards.
+                  # RTS from 9.14 onwards; gated on the Nix side since
+                  # cabal.project doesn't allow `if` inside a `package`
+                  # stanza.
                   ''
                     package iserv-proxy
-                      ghc-options: -rtsopts=all
-                      if impl(ghc >=9.14)
-                        ghc-options: -with-rtsopts=--optimistic-linking
+                      ghc-options: -rtsopts=all${
+                        final.lib.optionalString (
+                          builtins.compareVersions
+                            final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.14" >= 0
+                        ) " -with-rtsopts=--optimistic-linking"
+                      }
                   ''
                   # aarch64 + GHC < 9.8: th-dlls test fails when
                   # iserv-proxy is built with the threaded RTS.
