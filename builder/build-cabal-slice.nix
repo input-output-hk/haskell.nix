@@ -244,22 +244,95 @@ let
   # alias `$out/bin/deriveConstants -> <prefix>deriveConstants`, then
   # crashed on the real `deriveConstants`'s raw `ln -s` with "File
   # exists".
+  # When cabal v2-build instantiates a backpack signature on ghcjs,
+  # GHC's JS backend may not emit a `.o` for the signature module
+  # (the signature is filled by an external implementation unit).
+  # Cabal then asks `emar` to archive both `Module.o` and `Consumer.o`,
+  # and `llvm-ar` aborts because `Module.o` is absent.  This wrapper
+  # filters out missing `.o` entries (both inline argv and in
+  # response files) before delegating to the real `emar`.  Pass-through
+  # when nothing is missing.
+  #
+  # Cabal's `--with-ar=` flag would have been the natural lever, but
+  # cabal v2-build's internal "Building library" step reads
+  # `ar command` from GHC's `settings` file rather than honouring
+  # `--with-ar=`.  So instead we materialise a writable settings file
+  # in the shim and `sed`-swap the `ar command` entry (matching the
+  # approach v1 takes in `comp-builder.nix`).
+  ghcjsArWrapper = pkgsBuildBuild.writeShellScript "ghcjs-ar-wrapper" ''
+    REAL_AR=${pkgsBuildBuild.emscripten}/bin/emar
+    args=()
+    for arg in "$@"; do
+      if [[ "$arg" == @* ]]; then
+        rspfile="''${arg#@}"
+        newrsp="''${rspfile}.filtered"
+        while IFS= read -r line || [ -n "$line" ]; do
+          if [[ "$line" == *.o ]] && [[ ! -e "$line" ]]; then
+            continue
+          fi
+          echo "$line"
+        done < "$rspfile" > "$newrsp"
+        args+=("@$newrsp")
+      elif [[ "$arg" == *.o ]] && [[ ! -e "$arg" ]]; then
+        continue
+      else
+        args+=("$arg")
+      fi
+    done
+    exec "$REAL_AR" "''${args[@]}"
+  '';
+
   ghcShim = pkgsBuildBuild.runCommand "${ghc.name}-shim" {
     preferLocalBuild = true;
-  } ''
-    mkdir -p $out/bin
-    for f in ${ghc}/bin/*; do
-      base=$(basename "$f")
-      ln -s "$f" "$out/bin/$base"
-    done
-    ${lib.optionalString (targetPrefix != "") ''
+    nativeBuildInputs = lib.optionals stdenv.hostPlatform.isGhcjs [
+      (pkgsBuildBuild.lndir or pkgsBuildBuild.xorg.lndir)
+      pkgsBuildBuild.makeWrapper
+    ];
+  } (
+    # bin/ — for ghcjs the `ghc` / `ghc-<v>` binaries become wrappers
+    # that pass `-B<patched libdir>`; everything else is a plain
+    # symlink to the original.
+    (if stdenv.hostPlatform.isGhcjs then ''
+      mkdir -p $out/bin
+      ghcLib=$(${ghc}/bin/${ghcBin} --print-libdir)
+      libRel=''${ghcLib#${ghc}/}
+      mkdir -p "$out/$libRel"
+      lndir -silent "$ghcLib" "$out/$libRel"
+      settingsFile="$out/$libRel/settings"
+      if [ -L "$settingsFile" ]; then
+        cp --remove-destination "$(readlink -f "$settingsFile")" "$settingsFile"
+      fi
+      sed -i 's|("ar command", "[^"]*")|("ar command", "${ghcjsArWrapper}")|' "$settingsFile"
+      for f in ${ghc}/bin/*; do
+        base=$(basename "$f")
+        case "$base" in
+          ${ghcBin}|${ghcBin}-${ghc.version})
+            makeWrapper "$f" "$out/bin/$base" --add-flags "-B$out/$libRel"
+            ;;
+          *)
+            ln -s "$f" "$out/bin/$base"
+            ;;
+        esac
+      done
+    '' else ''
+      mkdir -p $out/bin
+      for f in ${ghc}/bin/*; do
+        base=$(basename "$f")
+        ln -s "$f" "$out/bin/$base"
+      done
+    '')
+    # Make unprefixed aliases (`ghc -> javascript-unknown-ghcjs-ghc`,
+    # etc.) point at our own `$out/bin/<prefixed>` so the alias
+    # inherits the wrapper, rather than at the raw ghc binary.
+    + lib.optionalString (targetPrefix != "") ''
       for f in ${ghc}/bin/${targetPrefix}*; do
         base=$(basename "$f")
         unprefixed=''${base#${targetPrefix}}
-        [ -e "$out/bin/$unprefixed" ] || ln -s "$f" "$out/bin/$unprefixed"
+        [ -e "$out/bin/$unprefixed" ] || ln -s "$base" "$out/bin/$unprefixed"
       done
-    ''}
-  '';
+    ''
+  );
+
   crossWithFlags = lib.optionalString (targetPrefix != "") (
     " --with-compiler=${ghcShim}/bin/${ghcBin}"
     + " --with-pkg-config=${pkgConfigPrefix}pkg-config"
