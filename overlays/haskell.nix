@@ -1082,9 +1082,31 @@ final: prev: {
                 }];
 
                 cabalProjectLocal =
+                  # Bake `--optimistic-linking` into iserv-proxy /
+                  # iserv-proxy-interpreter at link time via
+                  # `-with-rtsopts`.  `GHC/Linker/Executable.hs` emits
+                  # this into the generated `main.c` as
+                  # `__conf.rts_opts`, which `setupRtsFlags` processes
+                  # with `RtsOptsAll` — so it bypasses the
+                  # `OPTION_UNSAFE` gate that `+RTS --optimistic-linking
+                  # -RTS` on the command line is subject to.  This
+                  # makes the runtime linker tolerate undefined
+                  # symbols when loading object files at TH-eval time;
+                  # splices that don't actually reference the missing
+                  # symbol then resolve fine instead of aborting the
+                  # load.  `-rtsopts=all` is kept so wrapper scripts /
+                  # GHCRTS can still override at invocation.
+                  # `--optimistic-linking` is only available in GHC's
+                  # RTS from 9.14 onwards.
+                  ''
+                    package iserv-proxy
+                      ghc-options: -rtsopts=all
+                      if impl(ghc >=9.14)
+                        ghc-options: -with-rtsopts=--optimistic-linking
+                  ''
                   # aarch64 + GHC < 9.8: th-dlls test fails when
                   # iserv-proxy is built with the threaded RTS.
-                  final.lib.optionalString (
+                  + final.lib.optionalString (
                        final.stdenv.hostPlatform.isAarch64
                     && builtins.compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8" < 0
                   ) ''
