@@ -80,7 +80,7 @@ let
   };
 
   buildCabalStoreSlice = import ./build-cabal-slice.nix {
-    inherit stdenv lib ghc pkgsBuildBuild buildPackages;
+    inherit stdenv lib ghc pkgsBuildBuild buildPackages haskellLib;
     cabal-install = v2CabalInstall;
   };
 
