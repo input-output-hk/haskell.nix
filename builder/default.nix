@@ -79,8 +79,17 @@ let
     }];
   };
 
+  # Shared helper that wraps a real ghc into a "shim" with cabal-
+  # near-compiler aliases, ghcjs settings patch, and native-musl
+  # iserv aliases.  Used by both `build-cabal-slice` and the v2
+  # shell so a user's shell ghc matches the slice's ghc as closely
+  # as the use case allows.
+  makeGhcShim = import ./ghc-shim.nix {
+    inherit stdenv lib pkgsBuildBuild haskellLib;
+  };
+
   buildCabalStoreSlice = import ./build-cabal-slice.nix {
-    inherit stdenv lib ghc pkgsBuildBuild buildPackages haskellLib;
+    inherit stdenv lib ghc pkgsBuildBuild buildPackages haskellLib makeGhcShim;
     cabal-install = v2CabalInstall;
   };
 
@@ -187,7 +196,7 @@ let
     inherit (buildPackages) mkShell glibcLocales llvmPackages;
   };
   shellForV2 = haskellLib.weakCallPackage pkgs ./shell-for-v2.nix {
-    inherit hsPkgs haskellLib ghc compiler composeStore;
+    inherit hsPkgs haskellLib ghc compiler composeStore makeGhcShim;
     inherit (buildPackages) mkShell;
     haskell-nix = pkgs.haskell-nix;
   };

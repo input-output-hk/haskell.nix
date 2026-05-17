@@ -30,7 +30,7 @@
 #   - No haddock, no test suites.
 #   - No per-component selection within a local package beyond whatever
 #     `target` resolves to.
-{ stdenv, lib, ghc, cabal-install, pkgsBuildBuild, buildPackages, haskellLib }@outerArgs:
+{ stdenv, lib, ghc, cabal-install, pkgsBuildBuild, buildPackages, haskellLib, makeGhcShim }@outerArgs:
 
 let outerGhc = ghc; in
 
@@ -282,106 +282,7 @@ let
     exec "$REAL_AR" "''${args[@]}"
   '';
 
-  # Native-musl cross-ghc ≥ 9.10 ships only the `<prefix>unlit` /
-  # `<prefix>ghc-iserv[-prof]` binaries in its `bin/` (no unprefixed
-  # alias).  ghc's literate / iserv lookup is relative to its own
-  # binary path (`<topdir>/bin/unlit`), so without an unprefixed
-  # alias under `<topdir>/bin/` it fails with `Literate
-  # pre-processor: could not execute …/bin/unlit`.  v1's
-  # `ghc-for-component-wrapper.nix` adds the aliases to a wrapped
-  # ghc tree and passes `-B<wrappedGhc>` so ghc looks there.
-  # Mirror that in v2's ghcShim: wrap the ghc binary, symlink the
-  # real lib/ tree (we don't need to patch settings for musl, just
-  # for ghcjs), and rely on the existing target-prefix-unprefix
-  # loop below to populate `$out/bin/unlit` etc.
-  nativeMuslNeedsAlias =
-    haskellLib.isNativeMusl
-    && builtins.compareVersions ghc.version "9.10" >= 0;
-  ghcShim = pkgsBuildBuild.runCommand "${ghc.name}-shim" {
-    preferLocalBuild = true;
-    nativeBuildInputs = lib.optionals (stdenv.hostPlatform.isGhcjs || nativeMuslNeedsAlias) [
-      (pkgsBuildBuild.lndir or pkgsBuildBuild.xorg.lndir)
-      pkgsBuildBuild.makeWrapper
-    ];
-  } (
-    # bin/ — for ghcjs the `ghc` / `ghc-<v>` binaries become wrappers
-    # that pass `-B<patched libdir>`; everything else is a plain
-    # symlink to the original.
-    (if stdenv.hostPlatform.isGhcjs then ''
-      mkdir -p $out/bin
-      ghcLib=$(${ghc}/bin/${ghcBin} --print-libdir)
-      libRel=''${ghcLib#${ghc}/}
-      mkdir -p "$out/$libRel"
-      lndir -silent "$ghcLib" "$out/$libRel"
-      settingsFile="$out/$libRel/settings"
-      if [ -L "$settingsFile" ]; then
-        cp --remove-destination "$(readlink -f "$settingsFile")" "$settingsFile"
-      fi
-      sed -i 's|("ar command", "[^"]*")|("ar command", "${ghcjsArWrapper}")|' "$settingsFile"
-      for f in ${ghc}/bin/*; do
-        base=$(basename "$f")
-        case "$base" in
-          ${ghcBin}|${ghcBin}-${ghc.version})
-            makeWrapper "$f" "$out/bin/$base" --add-flags "-B$out/$libRel"
-            ;;
-          *)
-            ln -s "$f" "$out/bin/$base"
-            ;;
-        esac
-      done
-    ''
-    # native-musl ghc ≥ 9.10: lndir real ghc's libdir into the
-    # shim so ghc's `<topdir>/bin/<tool>` lookup (literate
-    # pre-processor, iserv) finds our shim-local aliases rather
-    # than real ghc's bin/.  Use `--print-libdir` so the path
-    # tracks whatever cabal-relative layout this ghc uses (musl
-    # 9.10's libdir is just `<ghc>/lib`; later ghcs nest deeper).
-    else if nativeMuslNeedsAlias then ''
-      mkdir -p $out/bin
-      ghcLib=$(${ghc}/bin/${ghcBin} --print-libdir)
-      libRel=''${ghcLib#${ghc}/}
-      mkdir -p "$out/$libRel"
-      lndir -silent "$ghcLib" "$out/$libRel"
-      for f in ${ghc}/bin/*; do
-        base=$(basename "$f")
-        case "$base" in
-          ${ghcBin}|${ghcBin}-${ghc.version})
-            makeWrapper "$f" "$out/bin/$base" --add-flags "-B$out/$libRel"
-            ;;
-          *)
-            ln -s "$f" "$out/bin/$base"
-            ;;
-        esac
-      done
-      ${
-        # Literate pre-processor + iserv lookups.  Mirrors v1's
-        # `ghc-for-component-wrapper.nix` block but guards on
-        # existence so a ghc that lacks `<prefix>ghc-iserv-dyn`
-        # (etc.) just skips that one alias instead of dangling.
-        lib.concatMapStrings (a: ''
-          if [ -e "${ghc}/bin/${targetPrefix}${a}" ] && [ ! -e "$out/bin/${a}" ]; then
-            ln -s "${targetPrefix}${a}" "$out/bin/${a}"
-          fi
-        '') [ "unlit" "ghc-iserv" "ghc-iserv-dyn" "ghc-iserv-prof" ]
-      }
-    '' else ''
-      mkdir -p $out/bin
-      for f in ${ghc}/bin/*; do
-        base=$(basename "$f")
-        ln -s "$f" "$out/bin/$base"
-      done
-    '')
-    # Make unprefixed aliases (`ghc -> javascript-unknown-ghcjs-ghc`,
-    # etc.) point at our own `$out/bin/<prefixed>` so the alias
-    # inherits the wrapper, rather than at the raw ghc binary.
-    + lib.optionalString (targetPrefix != "") ''
-      for f in ${ghc}/bin/${targetPrefix}*; do
-        base=$(basename "$f")
-        unprefixed=''${base#${targetPrefix}}
-        [ -e "$out/bin/$unprefixed" ] || ln -s "$base" "$out/bin/$unprefixed"
-      done
-    ''
-  );
+  ghcShim = makeGhcShim { inherit ghc ghcjsArWrapper; };
 
   crossWithFlags = lib.optionalString (targetPrefix != "") (
     " --with-compiler=${ghcShim}/bin/${ghcBin}"

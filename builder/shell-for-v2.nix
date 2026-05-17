@@ -21,7 +21,7 @@
 # This keeps the user's store in a consistent state for their other
 # projects while still letting them iterate on this one.
 { lib, stdenv, pkgs, runCommand, mkShell, hsPkgs, haskellLib, ghc, haskell-nix
-, compiler, composeStore }:
+, compiler, composeStore, makeGhcShim }:
 
 { # Same shape as shellFor's `packages`: packages the user works on.
   # Their *dependencies* are composed into the shell's cabal store;
@@ -597,6 +597,17 @@ let
         done
       } > $out/env
     '';
+  # Shared base shim — same one a slice's `cabal v2-build` uses
+  # via `--with-compiler=`, so the shell's ghc behaves like the
+  # slice's ghc (cabal near-compiler aliases, ghcjs settings
+  # patch, native-musl iserv aliases).  No ghcjs ar wrapping is
+  # needed in the shell (no cabal v2-build link step here).
+  baseShim = makeGhcShim { inherit ghc; };
+
+  # `ghc-pkg` exposure mode: layer makeWrapper env vars on top of
+  # the shim so `ghc -e ...` / `ghc-pkg list` see the composed
+  # store.  Wrapping a wrapper is fine — the outer one exec's
+  # `baseShim/bin/...` which in turn exec's real ghc with `-B`.
   wrappedGhc = pkgs.pkgsBuildBuild.runCommand "${ghc.name}-v2-shell-env"
     { nativeBuildInputs = [ pkgs.pkgsBuildBuild.makeWrapper ];
       preferLocalBuild = true;
@@ -607,14 +618,20 @@ let
     } ''
       mkdir -p $out/bin
       prefix="${ghc.targetPrefix or ""}"
+      # Symlink every shim binary so PATH-driven invocations
+      # (alex, happy, hsc2hs, unlit, ...) still find them.
+      for f in ${baseShim}/bin/*; do
+        ln -s "$f" $out/bin/$(basename "$f")
+      done
       # ghc / ghci / runghc / runhaskell / haddock honour
       # GHC_ENVIRONMENT and will pick up our package-id list.
       for prg in ghc ghci ghc-${ghc.version} ghci-${ghc.version} \
                  runghc runhaskell \
                  haddock; do
-        if [ -x ${ghc}/bin/$prefix$prg ]; then
+        if [ -e ${baseShim}/bin/$prefix$prg ]; then
+          rm -f $out/bin/$prefix$prg
           makeWrapper \
-            ${ghc}/bin/$prefix$prg \
+            ${baseShim}/bin/$prefix$prg \
             $out/bin/$prefix$prg \
             --set GHC_ENVIRONMENT "${packageEnv}/env"
         fi
@@ -622,19 +639,23 @@ let
       # ghc-pkg doesn't read GHC_ENVIRONMENT; use GHC_PACKAGE_PATH
       # so `ghc-pkg list` etc. show the composed store's units.
       for prg in ghc-pkg ghc-pkg-${ghc.version}; do
-        if [ -x ${ghc}/bin/$prefix$prg ]; then
+        if [ -e ${baseShim}/bin/$prefix$prg ]; then
+          rm -f $out/bin/$prefix$prg
           makeWrapper \
-            ${ghc}/bin/$prefix$prg \
+            ${baseShim}/bin/$prefix$prg \
             $out/bin/$prefix$prg \
             --set GHC_PACKAGE_PATH "${composedPkgDb}:"
         fi
       done
     '';
 
-  # Pick exactly one path for surfacing the dep closure.  Either
-  # the plain ghc + cabal-store seeding via the sync hook, or the
-  # wrapped ghc that stacks the composed package.db directly.
-  shellGhc = if exposePackagesVia == "ghc-pkg" then wrappedGhc else ghc;
+  # Pick exactly one path for surfacing the dep closure.  In
+  # `cabal-store` mode the shell ghc IS the same shim a slice's
+  # `cabal v2-build` uses — same `-B<libdir>` flag, same cabal
+  # near-compiler aliases, same musl iserv aliases.  In `ghc-pkg`
+  # mode we layer env-var wrappers on top to make `ghc-pkg list`
+  # and `ghc -e ...` see the composed store directly.
+  shellGhc = if exposePackagesVia == "ghc-pkg" then wrappedGhc else baseShim;
   shellSyncTools = lib.optional (exposePackagesVia == "cabal-store") cabalStoreSync;
   shellSyncHook = lib.optionalString (exposePackagesVia == "cabal-store") v2ShellHook;
 
