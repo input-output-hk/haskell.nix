@@ -174,9 +174,13 @@ in evalPackages.writeTextFile {
             # `th-orphans` fail at compile time with
             # `dyld.findSystemLibrary(libHSth-…so): not found` plus
             # `wasm-ld: error: unable to find library -lHS…-ghc<v>`
-            # (the link command uses shared-lib naming).
+            # (the link command uses shared-lib naming).  GHC < 9.12
+            # omits the field entirely across every target we've
+            # surveyed (mingw, aarch64-multiplatform, musl64), so we
+            # gate the emission on the version too.
             let newWasm = pkgs.stdenv.targetPlatform.isWasm
-                       && pkgs.lib.versionAtLeast ghc.version "9.12";
+                       && builtins.compareVersions ghc.version "9.12" >= 0;
+                emitRtsLinkerShared = builtins.compareVersions ghc.version "9.12" >= 0;
             in ''
             echo ',("Support dynamic-too","YES")'
             echo ',("Support reexported-modules","YES")'
@@ -185,7 +189,9 @@ in evalPackages.writeTextFile {
             echo ',("Have interpreter","${if newWasm then "YES" else "NO"}")'
             echo ',("Use interpreter","${if newWasm then "YES" else "NO"}")'
             echo ',("Have native code generator","YES")'
-            echo ',("target RTS linker only supports shared libraries","${if newWasm then "YES" else "NO"}")'
+            ${if emitRtsLinkerShared
+              then ''echo ',("target RTS linker only supports shared libraries","${if newWasm then "YES" else "NO"}")' ''
+              else ""}
             echo ',("GHC Dynamic","NO")'
             echo ',("RTS ways","${if newWasm then "v debug debug_dyn dyn" else "v debug"}")'
             echo ',("Stage","1")'
@@ -199,7 +205,12 @@ in evalPackages.writeTextFile {
             echo ',("Have interpreter","YES")'
             echo ',("Use interpreter","YES")'
             echo ',("Have native code generator","YES")'
-            echo ',("target RTS linker only supports shared libraries","NO")'
+            # Cross-mingw real GHC < 9.12 omits this field entirely;
+            # GHC ≥ 9.12 emits "NO".  Match that or the dummy-ghc-info
+            # diff test trips.
+            ${if builtins.compareVersions ghc.version "9.12" >= 0
+              then ''echo ',("target RTS linker only supports shared libraries","NO")' ''
+              else ""}
             echo ',("GHC Dynamic","NO")'
             echo ',("RTS ways","v thr thr_debug thr_debug_p thr_p debug debug_p p")'
             echo ',("Stage","1")'
@@ -236,7 +247,11 @@ in evalPackages.writeTextFile {
             echo ',("Have interpreter","YES")'
             echo ',("Use interpreter","YES")'
             echo ',("Have native code generator","YES")'
-            echo ',("target RTS linker only supports shared libraries","NO")'
+            # Real cross GHC < 9.12 (android / aarch64-multiplatform /
+            # musl64 / etc.) omits this field; ≥ 9.12 emits "NO".
+            ${if builtins.compareVersions ghc.version "9.12" >= 0
+              then ''echo ',("target RTS linker only supports shared libraries","NO")' ''
+              else ""}
             echo ',("GHC Dynamic","NO")'
             echo ',("RTS ways","v thr thr_debug thr_debug_p thr_p debug debug_p p")'
             echo ',("Stage","${if pkgs.stdenv.buildPlatform.parsed.cpu.name != pkgs.stdenv.targetPlatform.parsed.cpu.name then "1" else "2"}")'
@@ -255,7 +270,10 @@ in evalPackages.writeTextFile {
             echo ',("Have interpreter","YES")'
             echo ',("Use interpreter","YES")'
             echo ',("Have native code generator","YES")'
-            echo ',("target RTS linker only supports shared libraries","NO")'
+            # Native real GHC < 9.12 omits this field; ≥ 9.12 emits "NO".
+            ${if builtins.compareVersions ghc.version "9.12" >= 0
+              then ''echo ',("target RTS linker only supports shared libraries","NO")' ''
+              else ""}
             echo ',("GHC Dynamic","YES")'
             # Real `ghc --info` RTS-ways strings (verified per-version
             # against the actual cross / native GHCs):
