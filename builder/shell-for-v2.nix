@@ -558,7 +558,16 @@ let
   # exposes not just the main library of each dep but also its
   # public sublibs (which GHC hides by default when you only stack
   # the package-db via `GHC_PACKAGE_PATH`).
-  ghcDirName = "ghc-${ghc.version}-inplace";
+  # cabal's per-compiler store dir is `ghc-<version>-<abi>` (or just
+  # `ghc-<version>` when abi is empty).  GHC ≥ 9.8 reports
+  # `Project Unit Id: ghc-<version>-inplace`, from which cabal infers
+  # `compiler-abi: inplace`; earlier GHCs omit the field, so cabal
+  # records an empty abi and the dir name has no `-inplace` suffix.
+  # Mirror that here, otherwise the composedStore lookup misses the
+  # actual dir (`/shell-store/ghc-9.6.7/package.db` exists but we'd
+  # look at `/shell-store/ghc-9.6.7-inplace/package.db`).
+  ghcDirName = "ghc-${ghc.version}"
+    + lib.optionalString (builtins.compareVersions ghc.version "9.8" >= 0) "-inplace";
   composedPkgDb = "${composedStore}/${ghcDirName}/package.db";
   globalPkgDb = "${ghc}/lib/ghc-${ghc.version}/lib/package.conf.d";
   # Use `pkgsBuildBuild.runCommand` (build-build stdenv) rather
