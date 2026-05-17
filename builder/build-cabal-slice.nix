@@ -397,6 +397,12 @@ stdenv.mkDerivation ({
                         # the diff between plan-nix and the slice's
                         # actual `dist-newstyle/cache/plan.json`.
                         pkgsBuildBuild.jq
+                        # `gawk` for the per-slice diagnostics (extras
+                        # filter, conf parsing) and for darwin stdenv's
+                        # own setup.sh which calls `awk` during fixup —
+                        # missing on darwin's default sandbox PATH so
+                        # we plumb it through nativeBuildInputs.
+                        pkgsBuildBuild.gawk
                         # cabal-install clones `source-repository-package`
                         # blocks via `git clone file://...`, which needs
                         # `git` on PATH (cabal raises [Cabal-6666] "The

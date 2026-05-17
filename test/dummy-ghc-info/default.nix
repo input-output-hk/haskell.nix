@@ -60,11 +60,6 @@ let
     "LibDir" "Global Package DB"
     # GHC 9.6 emits this empty field; 9.8+ dropped it.
     "GCC extra via C opts"
-    # 9.8+ emits this; 9.6 omits it.  Cabal doesn't drive UnitId
-    # hashing from it, and its absence/presence is purely a
-    # per-version cosmetic — comparing it would force one branch
-    # of dummy per GHC version with no semantic gain.
-    "target RTS linker only supports shared libraries"
     "Project name" "Project Git commit id"
     # Numeric breakdowns (cabal uses Project version directly).
     "Project version" "Project Version Int"

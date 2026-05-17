@@ -161,9 +161,20 @@ in evalPackages.writeTextFile {
             # 9.12+ wasm reports:
             #   `Tables next to code: NO`
             #   `Have interpreter: YES`, `Use interpreter: YES`
+            #   `target RTS linker only supports shared libraries: YES`
             #   `RTS ways: v debug debug_dyn dyn`
             # while earlier wasm builds and all ghcjs builds keep
             # the legacy stage-1-without-interpreter values.
+            #
+            # `target RTS linker only supports shared libraries` is
+            # load-bearing for wasm 9.12+: cabal reads it to decide
+            # `--enable-shared` is required.  Lying "NO" causes the
+            # plan to record `--disable-shared`, so the slice builds
+            # only `.a` files; then TH-evaluating modules like
+            # `th-orphans` fail at compile time with
+            # `dyld.findSystemLibrary(libHSth-…so): not found` plus
+            # `wasm-ld: error: unable to find library -lHS…-ghc<v>`
+            # (the link command uses shared-lib naming).
             let newWasm = pkgs.stdenv.targetPlatform.isWasm
                        && pkgs.lib.versionAtLeast ghc.version "9.12";
             in ''
@@ -174,7 +185,7 @@ in evalPackages.writeTextFile {
             echo ',("Have interpreter","${if newWasm then "YES" else "NO"}")'
             echo ',("Use interpreter","${if newWasm then "YES" else "NO"}")'
             echo ',("Have native code generator","YES")'
-            echo ',("target RTS linker only supports shared libraries","NO")'
+            echo ',("target RTS linker only supports shared libraries","${if newWasm then "YES" else "NO"}")'
             echo ',("GHC Dynamic","NO")'
             echo ',("RTS ways","${if newWasm then "v debug debug_dyn dyn" else "v debug"}")'
             echo ',("Stage","1")'

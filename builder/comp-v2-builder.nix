@@ -1416,13 +1416,30 @@ let
         "coverage" "relocatable"
         "profiling-detail" "library-profiling-detail"
       ];
+      # On wasm GHC 9.12+, the RTS linker only supports shared libraries
+      # (per `target RTS linker only supports shared libraries: YES`)
+      # and TH-eval `dyld` needs a `.so` for every transitively reachable
+      # lib.  cabal's plan-nix elaboration decides shared on/off from a
+      # different field (`Support shared libraries`, which real wasm GHC
+      # doesn't set), so plan-nix records `--disable-shared` and the
+      # downstream slice builds only `.a`s — then TH-evaluating modules
+      # (e.g. `th-orphans`) fail at compile time with
+      # `dyld.findSystemLibrary(libHS…-…so): not found` plus
+      # `wasm-ld: error: unable to find library -lHS…-ghc<v>` (the
+      # link line uses shared-lib naming).  v1 papered over this with
+      # the `enableShared || isWasm` clause in `comp-builder.nix:44`;
+      # v2 reads `configure-args` straight from plan-nix so we flip
+      # the pragma here to keep behaviour aligned with v1.
+      forceShared = stdenv.hostPlatform.isWasm
+                 && builtins.compareVersions ghc.version "9.12" >= 0;
       pragmaOf = arg:
         let
           en = builtins.match "--enable-([a-z0-9-]+)" arg;
           di = builtins.match "--disable-([a-z0-9-]+)" arg;
           kv = builtins.match "--([a-z0-9-]+)=(.+)" arg;
         in
-          if      en != null && isProjectField (builtins.head en) then "${builtins.head en}: True"
+          if forceShared && arg == "--disable-shared" then "shared: True"
+          else if en != null && isProjectField (builtins.head en) then "${builtins.head en}: True"
           else if di != null && isProjectField (builtins.head di) then "${builtins.head di}: False"
           else if kv != null && isProjectField (builtins.head kv) then "${builtins.head kv}: ${builtins.elemAt kv 1}"
           else null;
