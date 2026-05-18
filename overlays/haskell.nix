@@ -1059,7 +1059,14 @@ final: prev: {
 
         iserv-proxy-exes = __mapAttrs (compiler-nix-name: _ghc:
             let
-              exes = pkgs: (pkgs.haskell-nix.cabalProject' ({pkgs, ...}: {
+              # `profiled` controls whether the iserv-proxy project's
+              # cabal.project enables profiling for the iserv-proxy
+              # package.  v1's `.override { enableProfiling = true; }`
+              # is read by `comp-builder.nix:71`; v2's
+              # `comp-v2-builder` reads configure-args from plan-nix
+              # instead, so the toggle has to live in cabal.project
+              # to make it through plan-nix into the v2 slice.
+              exes = profiled: pkgs: (pkgs.haskell-nix.cabalProject' ({pkgs, ...}: {
                 name = "iserv-proxy";
                 inherit compiler-nix-name;
 
@@ -1170,12 +1177,25 @@ final: prev: {
                       ghc-options: -debug -optl-static -optl-ldl${
                         pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isAarch32 " -optl-no-pie"
                       }
+                  ''
+                  # Build the iserv-proxy executables with profiling
+                  # for the `-prof` variant.  GHC selects the iserv
+                  # to spawn at TH-eval time by appending `-prof` to
+                  # `-pgmi`, so we have to produce a prof-linked
+                  # binary that has the profiling RTS symbols (e.g.
+                  # `registerCcList`) the loaded `.p_o` modules
+                  # reference.
+                  + pkgs.lib.optionalString profiled ''
+                    package iserv-proxy
+                      profiling: True
                   '';
               })).hsPkgs.iserv-proxy.components.exes;
             in rec {
-              # We need the proxy for the build system and the interpreter for the target
-              inherit (exes final.pkgsBuildBuild) iserv-proxy;
-              iserv-proxy-interpreter = (exes final).iserv-proxy-interpreter.override
+              # We need the proxy for the build system and the interpreter for the target.
+              # `iserv-proxy` is invoked on the build platform — it doesn't
+              # need profiling, so use the non-profiled project.
+              inherit (exes false final.pkgsBuildBuild) iserv-proxy;
+              iserv-proxy-interpreter = (exes false final).iserv-proxy-interpreter.override
                 (final.lib.optionalAttrs final.stdenv.hostPlatform.isAndroid {
                   setupBuildFlags = ["--ghc-option=-optl-static" "--ghc-option=-optl-ldl"] ++ final.lib.optional final.stdenv.hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";
                   enableDebugRTS = true;
@@ -1183,9 +1203,20 @@ final: prev: {
                   setupBuildFlags = ["--ghc-option=-optl-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000" ];
                   enableDebugRTS = true;
                 });
-              iserv-proxy-interpreter-prof = iserv-proxy-interpreter.override {
-                enableProfiling = true;
-              };
+              # Profiled variant: rebuild the iserv-proxy project
+              # with `package iserv-proxy profiling: True` baked into
+              # cabal.project so v2's slice picks it up.  Keep the
+              # v1-style `enableProfiling = true` override too in
+              # case v1's comp-builder is ever in play here.
+              iserv-proxy-interpreter-prof = (exes true final).iserv-proxy-interpreter.override
+                ({ enableProfiling = true; }
+                 // final.lib.optionalAttrs final.stdenv.hostPlatform.isAndroid {
+                   setupBuildFlags = ["--ghc-option=-optl-static" "--ghc-option=-optl-ldl"] ++ final.lib.optional final.stdenv.hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";
+                   enableDebugRTS = true;
+                 } // final.lib.optionalAttrs final.stdenv.hostPlatform.isWindows {
+                   setupBuildFlags = ["--ghc-option=-optl-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000" ];
+                   enableDebugRTS = true;
+                 });
             }) final.haskell-nix.compiler;
 
           ghc-pre-existing = ghc: [
