@@ -12,27 +12,48 @@ let
     if stdenv.hostPlatform != stdenv.buildPlatform && !stdenv.hostPlatform.isMusl
       then buildPackages.buildPackages.gitReallyMinimal
       else gitReallyMinimal;
+  # Mock a project root that contains a `.git` directory at the top
+  # and the package source at `test/githash/`.  `tGitInfoCwd` from
+  # `githash` walks up from CWD at TH-eval time looking for `.git`.
+  projectRoot = evalPackages.runCommand "githash-test-src" {
+    nativeBuildInputs = [ evalPackages.gitReallyMinimal ];
+  } ''
+    mkdir -p $out/test/githash
+    cd $out
+    git init
+    cp -r ${src}/* test/githash
+    git add test/githash
+    git -c "user.name=unknown" -c "user.email=unknown" commit -m 'Initial Commit'
+  '';
+  # The v1 comp-builder cp'd the whole projectRoot (`.git` included)
+  # into the build env and `cd`d to the package subdir, so `tGitInfoCwd`
+  # walking up from `test/githash/` found the parent `.git`.  v2's
+  # slice tarballs only the package subdir, so the parent `.git` is
+  # lost.  Sidestep the divergence by synthesising a package-root drv
+  # that copies just `test/githash/` to its root AND a minimal `.git`
+  # at its root containing only what githash actually reads at
+  # TH-eval: HEAD (current ref), refs/ (ref → commit sha), and
+  # objects/ (the commit + tree + blobs).  Index/config/hooks/logs
+  # are not needed by the `rev-parse` / `log` / `rev-list` queries
+  # githash issues.
+  packageRoot = evalPackages.runCommand "githash-package-root" { } ''
+    mkdir -p $out/.git
+    cp -rL ${projectRoot}/test/githash/. $out/
+    cp -r ${projectRoot}/.git/HEAD    $out/.git/HEAD
+    cp -r ${projectRoot}/.git/refs    $out/.git/refs
+    cp -r ${projectRoot}/.git/objects $out/.git/objects
+  '';
   project = haskell-nix.cabalProject' {
-    inherit src;
+    # Disable the default haskell.nix source-cleaning pass so the
+    # `.git` directory inside `packageRoot` survives into the build
+    # env.  See `lib/clean-source-with.nix` — passing an attrset
+    # with `outPath` + `filterPath` tells haskell.nix the source is
+    # already filtered and to skip its own cleaner.
+    src = { outPath = packageRoot; filterPath = { path, ... }: path; };
     cabalProjectLocal = builtins.readFile ../cabal.project.local;
-    # Mock the .git dir to avoid rebuilding on every commit.
     modules = [{
-      packages.githash-test.src = mkForce
-        rec {
-          origSrc = evalPackages.runCommand "githash-test-src" { nativeBuildInputs = [ evalPackages.gitReallyMinimal ]; } ''
-            mkdir -p $out/test/githash
-            cd $out
-            git init
-            cp -r ${src}/* test/githash
-            git add test/githash
-            git -c "user.name=unknown" -c "user.email=unknown" commit -m 'Initial Commit'
-          '';
-          origSubDir = "/test/githash";
-          origSrcSubDir = origSrc + origSubDir;
-          outPath = origSrcSubDir;
-        };
-        packages.githash-test.components.exes.githash-test.build-tools = mkForce [ git ];
-      }];
+      packages.githash-test.components.exes.githash-test.build-tools = mkForce [ git ];
+    }];
     inherit compiler-nix-name evalPackages;
   };
 
