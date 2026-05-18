@@ -662,7 +662,18 @@ let
 in
 mkShell {
   nativeBuildInputs =
-       [ shellGhc ]
+       [ shellGhc
+         # Also include the raw `ghc` so its
+         # `depsTargetTargetPropagated` chain reaches the shell's
+         # build env — slices already get this via their own
+         # `nativeBuildInputs = [ ghc ... ]`; the shim alone (a
+         # `runCommand` drv) drops the propagation.  Concretely:
+         # wasm32-wasi-ghc propagates `libffi-wasm.out` so the wasm
+         # cc-wrapper adds `-L<libffi-wasm>/lib` to
+         # `NIX_LDFLAGS_FOR_TARGET`, letting `wasm-ld -lffi` resolve
+         # when `cabal v2-build` links a wasm exe inside the shell.
+         ghc
+       ]
     ++ shellSyncTools
     ++ crossCabalWrapper
     ++ toolDrvs
