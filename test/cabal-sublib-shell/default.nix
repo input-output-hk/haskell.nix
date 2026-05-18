@@ -75,6 +75,11 @@ in lib.recurseIntoAttrs {
       packages: .
       with-compiler: ghc-${project.pkg-set.config.compiler.version}
       active-repositories: local
+      ${lib.optionalString (stdenv.hostPlatform.isWasm
+            && builtins.compareVersions project.pkg-set.config.compiler.version "9.12" >= 0) ''
+      package *
+        shared: True
+      ''}
       EOF
       cat > "$HOME/.cabal/config" <<EOF
       repository local
