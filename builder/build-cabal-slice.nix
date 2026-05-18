@@ -786,6 +786,41 @@ stdenv.mkDerivation ({
         cabal $cabalGlobalArgs v2-haddock $cabalCmdArgs \
           --haddock-html --haddock-hyperlink-source --haddock-quickjump \
           ${target} 2>&1 | tee -a $buildRoot/build.log
+        # Cabal `v2-haddock` installs the main library's html into
+        # the unit-store `<unit>/share/doc/html/`, but for
+        # sublibraries it only emits the html under the per-package
+        # working dist dir at
+        # `dist-newstyle/tmp/src-*/<pkg>-<ver>/dist/doc/html/<pkg>/<sublib>/`
+        # — and then cabal wipes that tmp dir before the slice's
+        # `installPhase` runs.  Capture the html here (still in the
+        # buildPhase) and copy it into the sublib unit's
+        # `share/doc/html/` so the doc slice matches the main-lib
+        # layout for downstream consumers.
+        tgt_pkg=$(printf '%s' ${lib.escapeShellArg target} | awk -F: '{print $3}')
+        tgt_cname=$(printf '%s' ${lib.escapeShellArg target} | awk -F: '{print $5}')
+        if [ "$tgt_cname" != "$tgt_pkg" ]; then
+          sublib_html_src=$(find $buildRoot/project/dist-newstyle/tmp \
+                              -path "*/dist/doc/html/$tgt_pkg/$tgt_cname" \
+                              -type d -print -quit 2>/dev/null || true)
+          if [ -n "$sublib_html_src" ]; then
+            # The sublib's conf was just written by `cabal v2-build`'s
+            # register step before `v2-haddock` ran; find its uid by
+            # the cabal-mangled `z-<pkg>-z-<sublib>` name.
+            for conf in $out/store/ghc-*/package.db/*.conf; do
+              [ -e "$conf" ] || continue
+              if [ "$(awk '/^name:/ {print $2; exit}' "$conf")" \
+                   = "z-$tgt_pkg-z-$tgt_cname" ]; then
+                target_uid=$(awk '/^id:/ {print $2; exit}' "$conf")
+                ghc_dir=$(dirname "$(dirname "$conf")")
+                target_html_dir="$ghc_dir/$target_uid/share/doc/html"
+                mkdir -p "$target_html_dir"
+                chmod -R u+w "$target_html_dir"
+                cp -rL "$sublib_html_src"/. "$target_html_dir/"
+                break
+              fi
+            done
+          fi
+        fi
       ''}
     ''}
   '';
