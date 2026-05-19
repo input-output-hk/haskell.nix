@@ -647,10 +647,17 @@ let
         # visible — listed dbs alone aren't enough to expose them,
         # unlike plain `-package-db`.  Walk both the boot db
         # (base, directory, ghc-prim, ...) and the composed store
-        # and emit `package-id <id>` for every unit.
+        # and emit `package-id <id>` for every unit.  Cabal pretty-
+        # prints long `id:` values onto the next line indented;
+        # short boot ids fit on the same line — handle both.
         for conf in ${globalPkgDb}/*.conf ${composedPkgDb}/*.conf; do
           [ -e "$conf" ] || continue
-          awk '/^id:[[:space:]]/ { print "package-id " $2; exit }' "$conf"
+          awk '
+            /^id:/ {
+              if (NF >= 2) { print "package-id " $2; exit }
+              getline; print "package-id " $1; exit
+            }
+          ' "$conf"
         done
       } > $out/env
     '';
