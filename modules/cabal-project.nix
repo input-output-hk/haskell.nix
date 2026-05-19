@@ -163,16 +163,84 @@ in {
     # ignores the misalignment.  Under v2, the slice mirrors
     # plan.json's configure-args exactly, so it links dynamically
     # too and the c-ffi musl test fails its static-link assertion.
-    # Inject `executable-static: True` here so plan-to-nix records
-    # `--enable-executable-static` from the start; v2's slice picks
-    # it up via `comp-v2-builder.nix:projectConfigPragmas`, and v1
-    # is unaffected (the post-plan ghc-option still fires, harmless).
+    # Inject `executable-static: True` inside `package *` (cabal
+    # only propagates it per-component when inside that block) so
+    # plan-to-nix records `--enable-executable-static` for every
+    # unit; v2's slice picks it up via
+    # `comp-v2-builder.nix:projectConfigPragmas`, and v1 is
+    # unaffected.
     (lib.mkIf pkgs.stdenv.hostPlatform.isMusl {
       cabalProjectLocal = lib.mkBefore ''
-        -- Auto-injected by haskell.nix: musl targets always link
-        -- executables statically.  See `modules/cabal-project.nix`
-        -- for the rationale.
-        executable-static: True
+        package *
+          executable-static: True
+      '';
+    })
+    # x86_64-darwin host: enable `library-for-ghci` so cabal emits a
+    # merged `HS<unit>.o` per unit alongside the `.dylib`.  v1's
+    # `builder/comp-builder.nix:383` already sets
+    # `--enable-library-for-ghci` for !ghcjs !wasm !android (which
+    # on darwin is "always"), so v1 darwin builds get the merged
+    # `.o`.  v2 mirrors plan.json's `--disable-library-for-ghci`
+    # default, so the merged `.o` is missing.  Under TH-eval /
+    # `-fexternal-interpreter` ghc-iserv-dyn then loads each dep's
+    # `.dylib` via dyld; on x86_64-darwin running under Rosetta
+    # (Hydra builds x86_64-darwin on aarch64-darwin hardware) dyld
+    # misbehaves on certain dylibs (libtext, libdouble-conversion,
+    # libHsOpenSSL) and iserv terminates with SIGBUS (signal -10).
+    # `library-for-ghci: True` gives ghc-iserv the merged `.o` to
+    # load directly, bypassing dyld.  Scoped to x86_64 only —
+    # aarch64-darwin runs natively.
+    (lib.mkIf (pkgs.stdenv.hostPlatform.isDarwin
+            && pkgs.stdenv.hostPlatform.isx86_64) {
+      cabalProjectLocal = lib.mkBefore ''
+        package *
+          library-for-ghci: True
+      '';
+    })
+    # Android host: link every exe statically so qemu-user can run
+    # it on the build host.  A dynamic Android binary references
+    # `/system/bin/linker[64]` at runtime; qemu-arm fails with
+    # `Could not open '/system/bin/linker': No such file or
+    # directory` because the build host doesn't ship one.  v1's
+    # `lib/check.nix:68` papered over this by re-overriding the
+    # test exe with `setupBuildFlags = ["--ghc-option=-optl-static"]`;
+    # v2 ignores `setupBuildFlags` (slices are immutable), so route
+    # the same flags through cabal.project.  `-optl-static` makes
+    # the exe self-contained, `-optl-ldl` pulls in libdl that GHC's
+    # RTS still references even under static linking, and on
+    # aarch32 `-optl-no-pie` disables PIE so the static link
+    # doesn't trip `dynamic STT_GNU_IFUNC` relocation errors.
+    # Mirrors the iserv-proxy Android override in
+    # `overlays/haskell.nix:1175`.
+    (lib.mkIf pkgs.stdenv.hostPlatform.isAndroid {
+      cabalProjectLocal = lib.mkBefore ''
+        package *
+          ghc-options: -optl-static -optl-ldl${
+            lib.optionalString pkgs.stdenv.hostPlatform.isAarch32 " -optl-no-pie"
+          }
+      '';
+    })
+    # wasm 9.12+: real wasm-ghc reports `target RTS linker only
+    # supports shared libraries: YES` and no `Support shared
+    # libraries` field at all.  cabal interprets the absence of
+    # `Support shared libraries` as "no shared support" and
+    # records `--disable-shared` in plan-nix, but TH-eval / dyld
+    # on wasm 9.12+ requires `.so` files for every transitively
+    # reachable lib (the RTS linker only loads shared libs).  v2's
+    # slice papers over this with the `forceShared` rewrite in
+    # `comp-v2-builder.nix:pragmaOf`; surfacing `shared: True` at
+    # the project level here puts the override in the
+    # `cabalProjectLocal` the shell writes out, so an interactive
+    # user (or a test sharing the slice's cabal.project) gets
+    # matching unit-ids without manually re-deriving the pragma.
+    (lib.mkIf (
+      let ghc = (config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name};
+      in pkgs.stdenv.hostPlatform.isWasm
+         && builtins.compareVersions ghc.version "9.12" >= 0
+    ) {
+      cabalProjectLocal = lib.mkBefore ''
+        package *
+          shared: True
       '';
     })
     (lib.mkIf config.useLocalGhcLib (

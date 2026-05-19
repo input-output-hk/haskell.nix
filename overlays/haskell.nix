@@ -699,7 +699,7 @@ final: prev: {
                         in if ghc.isHaskellNixCompiler or false then ghc.override { ghcEvalPackages = evalPackages; } else ghc;
                       compiler.nix-name = final.lib.mkForce config.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
-                      inherit (config) prebuilt-depends builderVersion;
+                      inherit (config) prebuilt-depends builderVersion cabalProjectLocal;
                     } ];
                   extra-hackages = config.extra-hackages or [] ++ callProjectResults.extra-hackages;
                 };

@@ -24,8 +24,17 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-sublib-shell";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local
-      + lib.optionalString (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64) ''
+    # Don't `readFile ../cabal.project.local` here — the only
+    # thing this test depends on from `test/cabal.project.local`
+    # would be the head.hackage repository definition, which the
+    # test's sandboxed `cabal v2-build` then tries to bootstrap
+    # over https.  The unpatched cabal in the shell isn't built
+    # with TLS support, so the bootstrap fails with
+    # `user error (https not supported)`.  The provider /
+    # consumer packages this test uses don't need anything from
+    # `test/cabal.project.local`.
+    cabalProjectLocal =
+      lib.optionalString (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64) ''
         constraints: text -simdutf, text source
       '';
     shell.tools.cabal = {};
@@ -71,18 +80,18 @@ in lib.recurseIntoAttrs {
          "$repoDir/provider-0.1.0.0.tar.gz"
 
       cd consumer
+      # On native this writes `cabal.project.local`, which cabal
+      # picks up automatically.  On cross it writes
+      # `cabal.project.<targetPrefix>local`; the explicit `import:`
+      # below pulls it in (cabal doesn't auto-discover the
+      # prefixed name).  Skipped when the project has no
+      # `cabalProjectLocal` content.
+      haskell-nix-cabal-project-local-sync || true
       cat > cabal.project <<EOF
       packages: .
       active-repositories: local
-      ${lib.optionalString (stdenv.hostPlatform.isWasm
-            && builtins.compareVersions project.pkg-set.config.compiler.version "9.12" >= 0) ''
-      package *
-        shared: True
-      ''}
-      ${lib.optionalString stdenv.hostPlatform.isMusl ''
-      package *
-        shared: True
-        executable-static: True
+      ${lib.optionalString (project.pkg-set.config.ghc.package.targetPrefix or "" != "") ''
+      import: cabal.project.${project.pkg-set.config.ghc.package.targetPrefix}local
       ''}
       EOF
       cat > "$HOME/.cabal/config" <<EOF

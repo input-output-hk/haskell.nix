@@ -13,7 +13,7 @@
 #
 # tl;dr: the builder must not re-introduce any reference to the build plan.
 
-{ pkgs, buildPackages, pkgsBuildBuild, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, nonReinstallablePkgs, hsPkgs, compiler, builderVersion ? 1, crossTemplateHaskellSupport ? true }:
+{ pkgs, buildPackages, pkgsBuildBuild, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, nonReinstallablePkgs, hsPkgs, compiler, builderVersion ? 1, crossTemplateHaskellSupport ? true, cabalProjectLocal ? null }:
 
 let
   # Builds a single component of a package.
@@ -196,7 +196,7 @@ let
     inherit (buildPackages) mkShell glibcLocales llvmPackages;
   };
   shellForV2 = haskellLib.weakCallPackage pkgs ./shell-for-v2.nix {
-    inherit hsPkgs haskellLib ghc compiler composeStore makeGhcShim;
+    inherit hsPkgs haskellLib ghc compiler composeStore makeGhcShim cabalProjectLocal;
     inherit (buildPackages) mkShell;
     haskell-nix = pkgs.haskell-nix;
   };

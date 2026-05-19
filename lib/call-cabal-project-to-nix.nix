@@ -120,49 +120,6 @@ in let
   # See: https://github.com/input-output-hk/haskell.nix/pull/1588
   #      https://github.com/input-output-hk/haskell.nix/pull/1639
   #
-  # Platform-specific cabal.project pragmas auto-injected by
-  # haskell.nix.  Routed here (rather than through the
-  # `cabalProjectLocal` module option) so we avoid a `nullOr lines`
-  # merge conflict against the internal ghc-extra-projects /
-  # hadrian-plan setups that explicitly set
-  # `cabalProjectLocal = null` to skip IFD reads.
-  #
-  # * x86_64-darwin: `library-for-ghci: True` makes cabal emit a
-  #   merged `HS<unit>.o` per unit alongside the `.dylib`.  v1
-  #   already does this everywhere (see comp-builder.nix:383), but
-  #   v2 mirrors plan.json's `--disable-library-for-ghci` default.
-  #   Without the merged `.o`, TH-eval / `-fexternal-interpreter`
-  #   sends ghc-iserv-dyn through dyld, which misbehaves on
-  #   x86_64-darwin under Rosetta (Hydra builds x86_64-darwin on
-  #   aarch64-darwin hardware) and aborts with SIGBUS (signal -10).
-  #   Scoped to x86_64 only — aarch64-darwin runs natively.
-  #
-  # * Android: link every exe statically so qemu-user can run it on
-  #   the build host.  A dynamic Android binary references
-  #   `/system/bin/linker[64]` at runtime; qemu-arm fails with
-  #   `Could not open '/system/bin/linker': No such file or
-  #   directory` because the build host doesn't have one.  v1's
-  #   `lib/check.nix:68` papered over this by re-overriding the
-  #   test exe with `setupBuildFlags = ["--ghc-option=-optl-static"]`;
-  #   v2 ignores `setupBuildFlags` (slices are immutable), so route
-  #   the same flags through cabal.project.  `-optl-static` makes
-  #   the exe self-contained, `-optl-ldl` pulls in libdl that GHC's
-  #   RTS still references even under static linking, and on aarch32
-  #   `-optl-no-pie` disables PIE so the static link doesn't trip
-  #   `dynamic STT_GNU_IFUNC' relocation errors.  Mirrors the
-  #   iserv-proxy Android override in `overlays/haskell.nix:1175`.
-  platformCabalProjectPragmas =
-    pkgs.lib.optionalString
-      (pkgs.stdenv.targetPlatform.isDarwin && pkgs.stdenv.targetPlatform.isx86_64) ''
-        package *
-          library-for-ghci: True
-      ''
-    + pkgs.lib.optionalString
-      pkgs.stdenv.targetPlatform.isAndroid ''
-        package *
-          ghc-options: -optl-static -optl-ldl${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isAarch32 " -optl-no-pie"}
-      '';
-
   rawCabalProject = ''
     ${
       if cabalProject == null
@@ -173,14 +130,18 @@ in let
         else cabalProject
     }
     ${
-      pkgs.lib.optionalString (cabalProjectLocal != null) ''
+      # Treat empty string the same as null — internal projects
+      # (ghc-extra-projects, hadrian-plan) set
+      # `cabalProjectLocal = ""` instead of `null` to avoid a
+      # `nullOr lines` merge conflict against
+      # `modules/cabal-project.nix`'s platform-specific mkIfs.
+      # We don't want the empty case to emit the "Added from ..."
+      # comment header, so the existing hash is preserved.
+      pkgs.lib.optionalString (cabalProjectLocal != null && cabalProjectLocal != "") ''
         -- Added from `cabalProjectLocal` argument to the `cabalProject` function
         ${cabalProjectLocal}
       ''
     }
-  ''
-  + pkgs.lib.optionalString (platformCabalProjectPragmas != "") ''
-    ${platformCabalProjectPragmas}
   '';
 
   index-state-max =

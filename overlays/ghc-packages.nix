@@ -235,9 +235,16 @@ in rec {
       name = "ghc-extra-projects-${ghc-extra-projects-type proj.ghc}-${ghcName}";
       src = proj;
       inherit (proj) cabalProject;
-      # Avoid readDir and readFile IFD functions looking for these files
-      cabalProjectLocal = null;
-      cabalProjectFreeze = null;
+      # Avoid readDir and readFile IFD functions looking for these
+      # files.  Empty strings rather than `null` so the option's
+      # `nullOr lines` type lets `modules/cabal-project.nix`'s
+      # platform-specific `cabalProjectLocal` mkIfs merge — `nullOr`
+      # rejects merging null with a string.
+      # `lib/call-cabal-project-to-nix.nix`'s `optionalString`
+      # treats `""` the same as `null` for the rawCabalProject
+      # output, so existing hashes are preserved.
+      cabalProjectLocal = "";
+      cabalProjectFreeze = "";
       index-state = final.haskell-nix.internalHackageIndexState;
       # Where to look for materialization files
       materialized =

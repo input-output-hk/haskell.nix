@@ -361,8 +361,12 @@ let
           cd hadrian
         '';
       }];
-      cabalProjectLocal = null;
-      cabalProjectFreeze = null;
+      # Empty strings rather than `null` so the option's
+      # `nullOr lines` type lets `modules/cabal-project.nix`'s
+      # platform-specific mkIfs merge.  `call-cabal-project-to-nix.nix`
+      # treats `""` the same as `null` for rawCabalProject output.
+      cabalProjectLocal = "";
+      cabalProjectFreeze = "";
       src = haskell-nix.haskellLib.cleanSourceWith {
         src = {
           outPath = pkgsBuildBuild.srcOnly {

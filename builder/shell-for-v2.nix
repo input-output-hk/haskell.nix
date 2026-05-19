@@ -21,7 +21,7 @@
 # This keeps the user's store in a consistent state for their other
 # projects while still letting them iterate on this one.
 { lib, stdenv, pkgs, runCommand, mkShell, hsPkgs, haskellLib, ghc, haskell-nix
-, compiler, composeStore, makeGhcShim }:
+, compiler, composeStore, makeGhcShim, cabalProjectLocal ? null }:
 
 { # Same shape as shellFor's `packages`: packages the user works on.
   # Their *dependencies* are composed into the shell's cabal store;
@@ -466,6 +466,63 @@ let
     haskell-nix-cabal-store-sync || return 1
   '';
 
+  # Write the project's `cabalProjectLocal` (after all module
+  # mkIfs have merged) to a file on shell startup.  For native
+  # targets the file is `cabal.project.local`, which cabal picks
+  # up automatically.  For cross targets it's
+  # `cabal.project.<targetPrefix>local` (the cross `cabal` doesn't
+  # auto-discover that path; tests can pull it in with
+  # `import: cabal.project.<targetPrefix>local` from their own
+  # `cabal.project.local`).
+  #
+  # If the target file is missing, write it.  If it exists and
+  # differs, show the diff and print a command the user can run
+  # to force replacement.  Skipped entirely when the project has
+  # no `cabalProjectLocal` content.
+  cabalProjectLocalContent =
+    lib.optionalString (cabalProjectLocal != null && cabalProjectLocal != "") cabalProjectLocal;
+  cabalProjectLocalFile =
+    pkgs.pkgsBuildBuild.writeText "cabal.project.local" cabalProjectLocalContent;
+  cabalProjectLocalSync = pkgs.pkgsBuildBuild.writeShellScriptBin "haskell-nix-cabal-project-local-sync" ''
+    set -eu
+
+    force=0
+    case "''${1:-}" in
+      --force) force=1 ;;
+      "") ;;
+      *) echo "usage: haskell-nix-cabal-project-local-sync [--force]" >&2; exit 2 ;;
+    esac
+
+    target=cabal.project.${ghc.targetPrefix or ""}local
+    source=${cabalProjectLocalFile}
+
+    install_it () {
+      install -m u+rw,go+r "$source" "$target"
+    }
+
+    if [ ! -e "$target" ]; then
+      install_it
+      echo "Wrote $target (haskell.nix defaults)"
+    elif diff -q "$target" "$source" > /dev/null 2>&1; then
+      : # already in sync
+    elif [ "$force" = "1" ]; then
+      install_it
+      echo "Overwrote $target with haskell.nix defaults (--force)"
+    else
+      echo
+      echo "Existing $target differs from haskell.nix's defaults:"
+      echo
+      diff -u "$target" "$source" || true
+      echo
+      echo "To replace it with the haskell.nix defaults, run:"
+      echo "  haskell-nix-cabal-project-local-sync --force"
+      echo
+    fi
+  '';
+  cabalProjectLocalShellHook = lib.optionalString (cabalProjectLocalContent != "") ''
+    haskell-nix-cabal-project-local-sync || true
+  '';
+
   # For cross-compilation shells, expose a `${prefix}cabal` wrapper
   # that auto-passes the right `--with-compiler=` etc. so the user
   # can run plain `${prefix}cabal build` without remembering the
@@ -656,7 +713,8 @@ let
   # mode we layer env-var wrappers on top to make `ghc-pkg list`
   # and `ghc -e ...` see the composed store directly.
   shellGhc = if exposePackagesVia == "ghc-pkg" then wrappedGhc else baseShim;
-  shellSyncTools = lib.optional (exposePackagesVia == "cabal-store") cabalStoreSync;
+  shellSyncTools = lib.optional (exposePackagesVia == "cabal-store") cabalStoreSync
+    ++ lib.optional (cabalProjectLocalContent != "") cabalProjectLocalSync;
   shellSyncHook = lib.optionalString (exposePackagesVia == "cabal-store") v2ShellHook;
 
 in
@@ -691,7 +749,8 @@ mkShell {
     ++ inputsFromNativeBuildInputs;
   buildInputs = buildInputs ++ inputsFromBuildInputs;
   shellHook =
-    shellSyncHook + "\n"
+    cabalProjectLocalShellHook + "\n"
+    + shellSyncHook + "\n"
     + inputsFromShellHook
     + shellHook;
   # Expose the composed dep store via passthru (and not as a
@@ -707,7 +766,7 @@ mkShell {
     # build the composed dep store standalone with
     # `nix-build -A <project>.shell.store`.
     store = composedStore;
-    inherit composedStore depSlices cabalStoreSync crossCabalWrapper;
+    inherit composedStore depSlices cabalStoreSync cabalProjectLocalSync crossCabalWrapper;
     ghc = shellGhc;
   };
 }
