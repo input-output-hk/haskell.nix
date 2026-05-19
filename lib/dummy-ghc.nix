@@ -16,15 +16,21 @@ let
   #
   #   * 32-bit x86 cpu reported as `i386`, not `i686`
   #     (musl32 / aarch32-style 32-bit cross).
+  #   * 32-bit ARMv7 cpu reported as `armv7`, not `armv7a`
+  #     (armv7a-android-prebuilt / aarch32 cross).
   #   * Windows targets reported as `<cpu>-unknown-mingw32`, not
   #     nixpkgs' `<cpu>-w64-windows` (ucrt64 / mingwW64 cross).
   #
   # Mirror those normalisations here so the dummy and real `--info`
   # outputs match — verified by `tests.dummy-ghc-info` on
-  # musl32 (i686) and ucrt64 (x86_64-w64-mingw32).
+  # musl32 (i686), armv7a-android-prebuilt (armv7a), and ucrt64
+  # (x86_64-w64-mingw32).
   platformString = p: with p.parsed;
     let
-      cpuName = if cpu.name == "i686" then "i386" else cpu.name;
+      cpuName =
+        if cpu.name == "i686" then "i386"
+        else if cpu.name == "armv7a" then "armv7"
+        else cpu.name;
       vendorName = if p.isWindows then "unknown" else vendor.name;
       kernelName = if p.isWindows then "mingw32" else kernel.name;
     in
@@ -83,6 +89,16 @@ in evalPackages.writeTextFile {
               then "ArchRISCV64"
             else if pkgs.stdenv.targetPlatform.isAarch64
               then "ArchAArch64"
+            # Real GHC reports `ArchARM <ArmArch> [<ArmABI>...] <ArmFloat>`
+            # for 32-bit ARM targets, with the constructor arguments
+            # spelling out the ISA + ABI + float convention.  For
+            # armv7a (armv7a-android-prebuilt / armv7a-multiplatform)
+            # that's `ArchARM ARMv7 [VFPv3,NEON] SOFTFP`.  Generic
+            # ArchAArch32 (no parameters) is what real GHC emits for
+            # other aarch32 cpus we currently don't have a more
+            # specific override for.
+            else if pkgs.stdenv.targetPlatform.parsed.cpu.name == "armv7a"
+              then "ArchARM ARMv7 [VFPv3,NEON] SOFTFP"
             else if pkgs.stdenv.targetPlatform.isAarch32
               then "ArchAArch32"
             else if pkgs.stdenv.targetPlatform.isJavaScript
