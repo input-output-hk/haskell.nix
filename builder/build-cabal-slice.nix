@@ -1137,116 +1137,176 @@ stdenv.mkDerivation ({
     # `nix-support/transitive-deps` and lndir each entry's $out/store
     # back into their own composed cabal-store.  So all the
     # lndir-composed dep symlinks (and the dep-slice unit dirs they
-    # populated) are pure overhead in this slice's $out:
-    # fixupPhase walks every entry, NAR serialisation `lstat`s every
-    # entry, and Nix's reference scan follows them.  A deep dep graph
-    # leaves 10k+ symlinks in here.
+    # populated) are pure overhead in this slice's $out: fixupPhase
+    # walks every entry, NAR serialisation `lstat`s every entry, and
+    # Nix's reference scan follows them.  A deep dep graph leaves
+    # 10k+ symlinks in here.
     #
-    # When the expected unit-id is known (from plan-nix), keep only
-    # `<uid>/` and `package.db/<uid>.conf` and `rm -rf` the rest of
-    # the package-db / unit dirs.  Falls back to using the captured
-    # uids cabal actually installed when `expectedUnitId` is null
-    # (`source-repo` packages, `style: "local"` packages,
-    # Custom-Build packages — plan-nix's uid is a placeholder there
-    # and won't match what cabal computes from the slicing tarball).
+    # When ghc links a shared library it bakes the composed-store
+    # path into the `.so`'s DT_RUNPATH / Mach-O LC_RPATH (e.g.
+    # `<this-slice>/store/.../<dep-uid>/lib`) so iserv-dyn / dyld
+    # can resolve a dep's transitive `.so` deps at TH-eval time.
+    # Plain "wipe the dep dirs" would leave the rpath pointing at
+    # nothing — `shrink-rpath` (fixupPhase) drops the entry and
+    # downstream dyld load fails with `No such file or directory`.
+    # Rewrite our own ELF/Mach-O files' rpath entries to point at
+    # the dep slice's actual /nix/store path (resolved through the
+    # lndir symlink), then wipe the dep dirs.  shrink-rpath sees
+    # entries pointing at real, populated dirs and keeps them.
     if [ -n "$ghcDir" ]; then
+      # Identify the slice's own captured unit-ids — for the
+      # typical known-uid case this is `expectedUnitId`; for the
+      # unknown case (source-repo / local / Custom-Build packages)
+      # it's the set cabal actually installed.
       ${if expectedUnitId == null then ''
-        # No known uid to keep — use the captured uids cabal actually
-        # installed in this slice (recorded above into
-        # $buildRoot/captured-unit-ids).  Plan-nix records local
-        # packages as `style: local` with a placeholder
-        # `<pkg>-<ver>-inplace` uid, but the slice serves the same
-        # source via a tarball repo (`style: global`, `pkg-src:
-        # repo-tar`) and cabal computes a content-hashed real uid —
-        # so plan-nix's uid can never match what cabal installed.
-        mapfile -t captured_uids < $buildRoot/captured-unit-ids
-        if [ ''${#captured_uids[@]} -eq 0 ]; then
-          # Cabal short-circuited on "Up to date" (a dep slice's
-          # lndir composition supplied everything).  Don't wipe
-          # dep-slice content — `kindSpecificInstallPhase` needs to
-          # find `bin/<exeName>` somewhere in `$out/store` for exe /
-          # test / bench slices, and the only place it lives is the
-          # lndir-composed dep slice unit dir.  Just drop the
-          # symlinks that point at directories we KNOW we don't need
-          # (none right now — leaving the lndir tree intact).
-          :
-        else
-          # Move each captured unit's `<uid>/`, `package.db/<uid>.conf`,
-          # and `lib/libHS<uid>-*` aside, wipe $ghcDir, then restore
-          # them.  Same shape as the known-uid branch below, just
-          # plural.
-          side=$buildRoot/keep
-          mkdir -p $side/package.db $side/lib
-          shopt -s nullglob
-          for keep in "''${captured_uids[@]}"; do
-            [ -z "$keep" ] && continue
-            if [ -e "$ghcDir/$keep" ]; then
-              mv "$ghcDir/$keep" "$side/$keep"
-            fi
-            if [ -e "$ghcDir/package.db/$keep.conf" ]; then
-              mv "$ghcDir/package.db/$keep.conf" "$side/package.db/$keep.conf"
-            fi
-            for f in "$ghcDir/lib/libHS$keep"-*; do
-              mv "$f" "$side/lib/$(basename "$f")"
+        mapfile -t own_uids < $buildRoot/captured-unit-ids
+      '' else ''
+        own_uids=(${lib.escapeShellArg expectedUnitId})
+      ''}
+
+      # Rewrite RPATH entries that point into `$out/store/` (the
+      # lndir-composed dep tree we're about to delete).  For each
+      # such entry, resolve a symlinked file under it via
+      # `readlink -f` and take that file's `dirname` — that's the
+      # dep slice's own `/nix/store/<dep-slice>/store/.../<dep-uid>/lib`
+      # path.  Entries that don't point into `$out/store/` (system
+      # libs, $ORIGIN, ...) are left alone.
+      ${let
+        elfRewrite = ''
+          rewrite_rpath_elf() {
+            local f="$1"
+            local old new entry resolved child tgt
+            old=$(patchelf --print-rpath "$f" 2>/dev/null) || return 0
+            [ -n "$old" ] || return 0
+            new=""
+            local IFS=':'
+            for entry in $old; do
+              [ -n "$entry" ] || continue
+              if [[ "$entry" == "$out/store/"* ]]; then
+                resolved=""
+                local found=0
+                for child in "$entry"/*; do
+                  [ -L "$child" ] || continue
+                  tgt=$(readlink -f "$child" 2>/dev/null) || continue
+                  [ -n "$tgt" ] || continue
+                  resolved=$(dirname "$tgt"); found=1; break
+                done
+                if [ $found -eq 1 ]; then
+                  new="''${new:+$new:}$resolved"
+                fi
+              else
+                new="''${new:+$new:}$entry"
+              fi
             done
-          done
-          shopt -u nullglob
-          rm -rf "$ghcDir"
-          mkdir -p "$ghcDir/package.db"
-          shopt -s nullglob
-          for keep in "''${captured_uids[@]}"; do
-            [ -z "$keep" ] && continue
-            if [ -e "$side/$keep" ]; then
-              mv "$side/$keep" "$ghcDir/$keep"
+            if [ "$old" != "$new" ]; then
+              patchelf --set-rpath "$new" "$f" 2>/dev/null || true
             fi
-            if [ -e "$side/package.db/$keep.conf" ]; then
-              mv "$side/package.db/$keep.conf" "$ghcDir/package.db/$keep.conf"
-            fi
-          done
-          kept_libs=("$side/lib/libHS"*)
-          if [ ''${#kept_libs[@]} -gt 0 ]; then
-            mkdir -p "$ghcDir/lib"
-            for f in "''${kept_libs[@]}"; do
-              mv "$f" "$ghcDir/lib/$(basename "$f")"
-            done
-          fi
-          shopt -u nullglob
-        fi
-      '' else let uid = lib.escapeShellArg expectedUnitId; in ''
-        keep=${uid}
-        # Move the keepers aside, wipe $ghcDir, then restore them.
-        # Cheaper than walking the tree.  The keepers cabal put here
-        # for *this slice's unit* are:
-        #   * `$ghcDir/<uid>/`             — per-unit lib/share/etc.
-        #   * `$ghcDir/package.db/<uid>.conf` — pkg-db entry
-        #   * `$ghcDir/lib/libHS<uid>-*.{dylib,so,a}` — the shared
-        #     dylib cabal puts in the flat `$ghcDir/lib/` alongside
-        #     the per-unit dir (one per ghc-version suffix; rare
-        #     profiled variants too).  Without this, downstream
-        #     consumers can't find the dylib at link time.
+          }
+          rewrite_file_rpaths() { rewrite_rpath_elf "$1"; }
+        '';
+        machoRewrite = ''
+          rewrite_rpath_macho() {
+            local f="$1"
+            # otool -l prints LC_RPATH commands in groups of three
+            # lines; the `path <path> (offset N)` line carries the
+            # rpath value.  Capture all of them, then replace each
+            # one that points into $out/store via install_name_tool.
+            local rpaths
+            rpaths=$(otool -l "$f" 2>/dev/null \
+              | awk '
+                  /^Load command/ { in_rpath=0 }
+                  /cmd LC_RPATH/   { in_rpath=1; next }
+                  in_rpath && /path / { print $2 }
+                ')
+            [ -n "$rpaths" ] || return 0
+            local old new resolved child tgt
+            while IFS= read -r old; do
+              [ -n "$old" ] || continue
+              if [[ "$old" == "$out/store/"* ]]; then
+                resolved=""
+                local found=0
+                shopt -s nullglob
+                for child in "$old"/*; do
+                  [ -L "$child" ] || continue
+                  tgt=$(readlink -f "$child" 2>/dev/null) || continue
+                  [ -n "$tgt" ] || continue
+                  resolved=$(dirname "$tgt"); found=1; break
+                done
+                shopt -u nullglob
+                if [ $found -eq 1 ] && [ "$old" != "$resolved" ]; then
+                  chmod u+w "$f" 2>/dev/null || true
+                  install_name_tool -rpath "$old" "$resolved" "$f" \
+                    2>/dev/null || true
+                else
+                  chmod u+w "$f" 2>/dev/null || true
+                  install_name_tool -delete_rpath "$old" "$f" \
+                    2>/dev/null || true
+                fi
+              fi
+            done <<< "$rpaths"
+          }
+          rewrite_file_rpaths() { rewrite_rpath_macho "$1"; }
+        '';
+      in if stdenv.hostPlatform.isLinux then elfRewrite
+         else if stdenv.hostPlatform.isDarwin then machoRewrite
+         else ''
+           rewrite_file_rpaths() { :; }
+         ''}
+
+      for own_uid in "''${own_uids[@]}"; do
+        [ -n "$own_uid" ] || continue
+        unit_dir="$ghcDir/$own_uid"
+        [ -d "$unit_dir" ] || continue
+        while IFS= read -r -d "" f; do
+          rewrite_file_rpaths "$f"
+        done < <(find "$unit_dir" -type f -print0)
+      done
+      if [ -d "$ghcDir/lib" ]; then
+        while IFS= read -r -d "" f; do
+          rewrite_file_rpaths "$f"
+        done < <(find "$ghcDir/lib" -type f -print0)
+      fi
+
+      # Aggressive cleanup: move keepers aside, wipe $ghcDir, then
+      # restore them.  Cheaper than walking the tree.  Keepers per
+      # captured unit:
+      #   * `$ghcDir/<uid>/`             — per-unit lib/share/etc.
+      #   * `$ghcDir/package.db/<uid>.conf` — pkg-db entry
+      #   * `$ghcDir/lib/libHS<uid>-*.{dylib,so,a}` — the flat
+      #     shared lib cabal puts in `$ghcDir/lib/` alongside the
+      #     per-unit dir.  Without this, downstream consumers
+      #     can't find the dylib at link time.
+      if [ ''${#own_uids[@]} -gt 0 ] \
+         && ! { [ ''${#own_uids[@]} -eq 1 ] && [ -z "''${own_uids[0]}" ]; }; then
         side=$buildRoot/keep
-        mkdir -p $side/package.db $side/lib
-        if [ -e "$ghcDir/$keep" ]; then
-          mv "$ghcDir/$keep" "$side/$keep"
-        fi
-        if [ -e "$ghcDir/package.db/$keep.conf" ]; then
-          mv "$ghcDir/package.db/$keep.conf" "$side/package.db/$keep.conf"
-        fi
+        mkdir -p "$side/package.db" "$side/lib"
         shopt -s nullglob
-        for f in "$ghcDir/lib/libHS$keep"-*; do
-          mv "$f" "$side/lib/$(basename "$f")"
+        for keep in "''${own_uids[@]}"; do
+          [ -n "$keep" ] || continue
+          if [ -e "$ghcDir/$keep" ]; then
+            mv "$ghcDir/$keep" "$side/$keep"
+          fi
+          if [ -e "$ghcDir/package.db/$keep.conf" ]; then
+            mv "$ghcDir/package.db/$keep.conf" "$side/package.db/$keep.conf"
+          fi
+          for f in "$ghcDir/lib/libHS$keep"-*; do
+            mv "$f" "$side/lib/$(basename "$f")"
+          done
         done
         shopt -u nullglob
         rm -rf "$ghcDir"
         mkdir -p "$ghcDir/package.db"
-        if [ -e "$side/$keep" ]; then
-          mv "$side/$keep" "$ghcDir/$keep"
-        fi
-        if [ -e "$side/package.db/$keep.conf" ]; then
-          mv "$side/package.db/$keep.conf" "$ghcDir/package.db/$keep.conf"
-        fi
         shopt -s nullglob
-        kept_libs=("$side/lib/libHS$keep"-*)
+        for keep in "''${own_uids[@]}"; do
+          [ -n "$keep" ] || continue
+          if [ -e "$side/$keep" ]; then
+            mv "$side/$keep" "$ghcDir/$keep"
+          fi
+          if [ -e "$side/package.db/$keep.conf" ]; then
+            mv "$side/package.db/$keep.conf" "$ghcDir/package.db/$keep.conf"
+          fi
+        done
+        kept_libs=("$side/lib/libHS"*)
         if [ ''${#kept_libs[@]} -gt 0 ]; then
           mkdir -p "$ghcDir/lib"
           for f in "''${kept_libs[@]}"; do
@@ -1254,7 +1314,13 @@ stdenv.mkDerivation ({
           done
         fi
         shopt -u nullglob
-      ''}
+      fi
+      # When captured_uids is empty (cabal short-circuited "Up to
+      # date" — a dep slice's lndir composition supplied
+      # everything), leave $ghcDir alone.  `kindSpecificInstallPhase`
+      # needs to find `bin/<exeName>` somewhere in `$out/store` for
+      # exe / test / bench slices, and the only place it lives is
+      # the lndir-composed dep slice unit dir.
     fi
 
     ${if expectedUnitId == null then ''
