@@ -1211,13 +1211,16 @@ stdenv.mkDerivation ({
             # lines; the `path <path> (offset N)` line carries the
             # rpath value.  Capture all of them, then replace each
             # one that points into $out/store via install_name_tool.
+            # `|| return 0` skips non-Mach-O files (`.a` archives,
+            # script wrappers etc.) without killing installPhase
+            # under `set -e` + `pipefail`.
             local rpaths
             rpaths=$(otool -l "$f" 2>/dev/null \
               | awk '
                   /^Load command/ { in_rpath=0 }
                   /cmd LC_RPATH/   { in_rpath=1; next }
                   in_rpath && /path / { print $2 }
-                ')
+                ') || return 0
             [ -n "$rpaths" ] || return 0
             local old new resolved child tgt
             while IFS= read -r old; do
