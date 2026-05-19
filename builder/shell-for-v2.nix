@@ -519,7 +519,7 @@ let
       echo
     fi
   '';
-  cabalProjectLocalShellHook = lib.optionalString (cabalProjectLocalContent != "") ''
+  cabalProjectLocalShellHook = ''
     haskell-nix-cabal-project-local-sync || true
   '';
 
@@ -714,7 +714,7 @@ let
   # and `ghc -e ...` see the composed store directly.
   shellGhc = if exposePackagesVia == "ghc-pkg" then wrappedGhc else baseShim;
   shellSyncTools = lib.optional (exposePackagesVia == "cabal-store") cabalStoreSync
-    ++ lib.optional (cabalProjectLocalContent != "") cabalProjectLocalSync;
+    ++ [ cabalProjectLocalSync ];
   shellSyncHook = lib.optionalString (exposePackagesVia == "cabal-store") v2ShellHook;
 
 in
