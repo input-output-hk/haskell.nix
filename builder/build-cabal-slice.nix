@@ -318,6 +318,17 @@ stdenv.mkDerivation ({
   LC_ALL = "en_US.UTF-8";
 } // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
   LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive";
+} // lib.optionalAttrs stdenv.hostPlatform.isMusl {
+  # iserv-dyn dlopens our haskell `.so` deps at TH eval time; those
+  # transitively pull in `libstdc++.so` (via packages like
+  # `double-conversion`).  Musl's `libstdc++.so` has DT_RUNPATH
+  # pointing only at musl's libc dir, not at gcc's lib dir where
+  # `libgcc_s.so.1` lives — and musl's dyld only consults the
+  # immediate library's RUNPATH when resolving its deps, so the
+  # transitive `libgcc_s.so.1` lookup fails with `No such file or
+  # directory`.  Set LD_LIBRARY_PATH so the loader's fallback
+  # search picks it up.  Same as `comp-builder.nix`'s v1 fix.
+  LD_LIBRARY_PATH = "${buildPackages.gcc-unwrapped.lib}/${stdenv.hostPlatform.config}/lib";
 } // lib.optionalAttrs (extraSublibSeeds != []) {
   # Read by the patched `prune-unreachable-sublibs.patch` to add
   # extra reachability seeds when walking each package's sublib graph.
@@ -1172,10 +1183,27 @@ stdenv.mkDerivation ({
       # path.  Entries that don't point into `$out/store/` (system
       # libs, $ORIGIN, ...) are left alone.
       ${let
-        elfRewrite = ''
+        # On native-musl this derivation exports `LD_LIBRARY_PATH`
+        # (see the `mkDerivation` env-attrs above) so iserv-dyn — a
+        # musl binary — can resolve `libgcc_s.so.1` from
+        # `libstdc++.so` at TH-eval time.  That env leaks into every
+        # subprocess we spawn here, including patchelf — a glibc
+        # binary built against glibc's `libgcc_s.so.1`.  Letting
+        # patchelf dlopen the musl libgcc segfaults it (which also
+        # explains the `shrink-rpath` segfaults we'd see in
+        # fixupPhase).  Clear it before we touch any ELF; nothing in
+        # the rest of installPhase or fixupPhase needs the musl
+        # iserv search path.
+        muslUnset =
+          lib.optionalString stdenv.hostPlatform.isMusl
+            "unset LD_LIBRARY_PATH\n";
+        elfRewrite = muslUnset + ''
           rewrite_rpath_elf() {
             local f="$1"
             local old new entry resolved child tgt
+            # `|| return 0` skips statically-linked ELF binaries
+            # (e.g. musl `executable-static: True` exes — patchelf
+            # bails out with "cannot find section `.dynamic`").
             old=$(patchelf --print-rpath "$f" 2>/dev/null) || return 0
             [ -n "$old" ] || return 0
             new=""
@@ -1187,7 +1215,7 @@ stdenv.mkDerivation ({
                 local found=0
                 for child in "$entry"/*; do
                   [ -L "$child" ] || continue
-                  tgt=$(readlink -f "$child" 2>/dev/null) || continue
+                  tgt=$(readlink -f "$child")
                   [ -n "$tgt" ] || continue
                   resolved=$(dirname "$tgt"); found=1; break
                 done
@@ -1199,7 +1227,7 @@ stdenv.mkDerivation ({
               fi
             done
             if [ "$old" != "$new" ]; then
-              patchelf --set-rpath "$new" "$f" 2>/dev/null || true
+              patchelf --set-rpath "$new" "$f"
             fi
           }
           rewrite_file_rpaths() { rewrite_rpath_elf "$1"; }
@@ -1256,18 +1284,28 @@ stdenv.mkDerivation ({
            rewrite_file_rpaths() { :; }
          ''}
 
+      # Restrict the walk to files that may carry an rpath: shared
+      # libraries (`*.so*` on linux, `*.dylib*` on darwin) and any
+      # file in a `bin/` dir (executables).  Without this, patchelf /
+      # otool also get pointed at `.hi`, `.a`, `cabal-hash.txt` etc.
+      # and would need defensive error handling per file.
+      rpath_candidates=(
+        \( -name '*.so' -o -name '*.so.*'
+        -o -name '*.dylib' -o -name '*.dylib.*'
+        -o -path '*/bin/*' \)
+      )
       for own_uid in "''${own_uids[@]}"; do
         [ -n "$own_uid" ] || continue
         unit_dir="$ghcDir/$own_uid"
         [ -d "$unit_dir" ] || continue
         while IFS= read -r -d "" f; do
           rewrite_file_rpaths "$f"
-        done < <(find "$unit_dir" -type f -print0)
+        done < <(find "$unit_dir" -type f "''${rpath_candidates[@]}" -print0)
       done
       if [ -d "$ghcDir/lib" ]; then
         while IFS= read -r -d "" f; do
           rewrite_file_rpaths "$f"
-        done < <(find "$ghcDir/lib" -type f -print0)
+        done < <(find "$ghcDir/lib" -type f "''${rpath_candidates[@]}" -print0)
       fi
 
       # Aggressive cleanup: move keepers aside, wipe $ghcDir, then
