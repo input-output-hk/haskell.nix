@@ -30,7 +30,7 @@
 #   - No haddock, no test suites.
 #   - No per-component selection within a local package beyond whatever
 #     `target` resolves to.
-{ stdenv, lib, ghc, cabal-install, pkgsBuildBuild, buildPackages, haskellLib, makeGhcShim }@outerArgs:
+{ stdenv, lib, ghc, cabal-install, pkgs, pkgsBuildBuild, buildPackages, haskellLib, makeGhcShim }@outerArgs:
 
 let outerGhc = ghc; in
 
@@ -282,7 +282,23 @@ let
     exec "$REAL_AR" "''${args[@]}"
   '';
 
-  ghcShim = makeGhcShim { inherit ghc ghcjsArWrapper; };
+  ghcShim = makeGhcShim {
+    inherit ghc ghcjsArWrapper;
+    # iserv-dyn dlopens our haskell `.so` deps at TH eval time; on
+    # native-musl those transitively pull in `libstdc++.so` (e.g. via
+    # `double-conversion`).  Musl's `libstdc++.so` has DT_RUNPATH
+    # pointing only at musl's libc dir, not at the gcc lib dir where
+    # `libgcc_s.so.1` lives — and musl's dyld only consults the
+    # immediate library's RUNPATH, so the lookup fails.  Have the
+    # ghc shim prefix `LD_LIBRARY_PATH` with the musl-gcc libs dir
+    # for ghc and its children (iserv-dyn) only.  v1 sets the env
+    # globally (`comp-builder.nix:507`); doing it derivation-wide
+    # breaks glibc `git` for `source-repository-package` resolution.
+    extraLibraryPaths = lib.optional
+      (haskellLib.isNativeMusl
+       && builtins.compareVersions ghc.version "9.10" >= 0)
+      "${buildPackages.gcc-unwrapped.lib}/${stdenv.hostPlatform.config}/lib";
+  };
 
   crossWithFlags = lib.optionalString (targetPrefix != "") (
     " --with-compiler=${ghcShim}/bin/${ghcBin}"
@@ -318,17 +334,6 @@ stdenv.mkDerivation ({
   LC_ALL = "en_US.UTF-8";
 } // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
   LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive";
-} // lib.optionalAttrs stdenv.hostPlatform.isMusl {
-  # iserv-dyn dlopens our haskell `.so` deps at TH eval time; those
-  # transitively pull in `libstdc++.so` (via packages like
-  # `double-conversion`).  Musl's `libstdc++.so` has DT_RUNPATH
-  # pointing only at musl's libc dir, not at gcc's lib dir where
-  # `libgcc_s.so.1` lives — and musl's dyld only consults the
-  # immediate library's RUNPATH when resolving its deps, so the
-  # transitive `libgcc_s.so.1` lookup fails with `No such file or
-  # directory`.  Set LD_LIBRARY_PATH so the loader's fallback
-  # search picks it up.  Same as `comp-builder.nix`'s v1 fix.
-  LD_LIBRARY_PATH = "${buildPackages.gcc-unwrapped.lib}/${stdenv.hostPlatform.config}/lib";
 } // lib.optionalAttrs (extraSublibSeeds != []) {
   # Read by the patched `prune-unreachable-sublibs.patch` to add
   # extra reachability seeds when walking each package's sublib graph.
@@ -369,9 +374,22 @@ stdenv.mkDerivation ({
                         # blocks via `git clone file://...`, which needs
                         # `git` on PATH (cabal raises [Cabal-6666] "The
                         # program 'git' is required but it could not be
-                        # found." otherwise).  `gitMinimal` keeps the
-                        # closure small.
-                        pkgsBuildBuild.gitMinimal ]
+                        # found." otherwise).
+                        #
+                        # On native-musl pick the host (musl) git over
+                        # the build (glibc) one so it isn't tripped up
+                        # by `LD_LIBRARY_PATH=<musl-gcc-libs>` (set by
+                        # the ghc shim for iserv's libgcc lookup at
+                        # TH-eval time) when ghc/iserv invoke `git`
+                        # from a TH callback.  `test/githash` does the
+                        # same.  `pkgs.gitReallyMinimal` would be
+                        # auto-spliced back to the build platform by
+                        # `mkDerivation`'s `nativeBuildInputs`
+                        # handling, so reach through `pkgsHostHost`,
+                        # which exposes a leaf with no `__spliced`.
+                        (if haskellLib.isNativeMusl
+                         then pkgs.pkgsHostHost.gitReallyMinimal
+                         else pkgsBuildBuild.gitReallyMinimal) ]
     ++ lib.optional stdenv.hostPlatform.isGhcjs pkgsBuildBuild.nodejs
     ++ extraNativeBuildInputs;
   # `depSlices` go in `propagatedBuildInputs` so stdenv chains each
@@ -1183,21 +1201,7 @@ stdenv.mkDerivation ({
       # path.  Entries that don't point into `$out/store/` (system
       # libs, $ORIGIN, ...) are left alone.
       ${let
-        # On native-musl this derivation exports `LD_LIBRARY_PATH`
-        # (see the `mkDerivation` env-attrs above) so iserv-dyn — a
-        # musl binary — can resolve `libgcc_s.so.1` from
-        # `libstdc++.so` at TH-eval time.  That env leaks into every
-        # subprocess we spawn here, including patchelf — a glibc
-        # binary built against glibc's `libgcc_s.so.1`.  Letting
-        # patchelf dlopen the musl libgcc segfaults it (which also
-        # explains the `shrink-rpath` segfaults we'd see in
-        # fixupPhase).  Clear it before we touch any ELF; nothing in
-        # the rest of installPhase or fixupPhase needs the musl
-        # iserv search path.
-        muslUnset =
-          lib.optionalString stdenv.hostPlatform.isMusl
-            "unset LD_LIBRARY_PATH\n";
-        elfRewrite = muslUnset + ''
+        elfRewrite = ''
           rewrite_rpath_elf() {
             local f="$1"
             local old new entry resolved child tgt

@@ -30,6 +30,15 @@
   # and `-B` wrap — useful when the caller doesn't have an ar
   # wrapper handy).
   ghcjsArWrapper ? null
+, # extra paths to prefix into `LD_LIBRARY_PATH` when the wrapped
+  # ghc binaries run.  Used on native-musl to give iserv-dyn (which
+  # ghc spawns for TH eval) the musl-gcc libs dir — its transitive
+  # `libstdc++.so` → `libgcc_s.so.1` lookup would otherwise miss.
+  # Scoping the env to the ghc wrapper (rather than the whole
+  # derivation) keeps glibc subprocesses cabal spawns directly —
+  # notably `git` for `source-repository-package` — from loading
+  # musl libs and crashing.
+  extraLibraryPaths ? []
 }:
 
 let
@@ -87,7 +96,11 @@ pkgsBuildBuild.runCommand "${ghc.name}-shim" {
       base=$(basename "$f")
       case "$base" in
         ${ghcBin}|${ghcBin}-${ghc.version})
-          makeWrapper "$f" "$out/bin/$base" --add-flags "-B$out/$libRel"
+          makeWrapper "$f" "$out/bin/$base" --add-flags "-B$out/$libRel" ${
+            lib.concatMapStringsSep " "
+              (p: "--prefix LD_LIBRARY_PATH : ${p}")
+              extraLibraryPaths
+          }
           ;;
         *)
           ln -s "$f" "$out/bin/$base"

@@ -5,13 +5,17 @@ with lib;
 let
   src = testSrc "githash";
   git =
-    # Using the cross compiled version here, but currently git does not
-    # seem to cross compile (so this test is disabled for cross compilation in
-    # the test/default.nix file).
-    # Using buildPackages here is not right, but at least gets musl64 test to pass.
-    if stdenv.hostPlatform != stdenv.buildPlatform && !stdenv.hostPlatform.isMusl
-      then buildPackages.buildPackages.gitReallyMinimal
-      else gitReallyMinimal;
+    # On native-musl (build-arch == host-arch == musl) the host
+    # platform's git is just a musl-cross-compile that still runs on
+    # the build machine via musl ld.so — and we want a musl `git`
+    # there so it doesn't trip on the musl-gcc-libs `LD_LIBRARY_PATH`
+    # the slice's ghc shim sets for iserv-dyn (a glibc `git` would
+    # load the musl libc and segfault).  Everywhere else
+    # (true crosses, native-glibc) the build-platform's git is the
+    # only one that actually runs.
+    if haskellLib.isNativeMusl
+      then gitReallyMinimal
+      else buildPackages.buildPackages.gitReallyMinimal;
   # Mock a project root that contains a `.git` directory at the top
   # and the package source at `test/githash/`.  `tGitInfoCwd` from
   # `githash` walks up from CWD at TH-eval time looking for `.git`.
