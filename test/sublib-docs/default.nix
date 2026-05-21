@@ -46,16 +46,15 @@ in lib.recurseIntoAttrs {
     '') + ''
 
       printf "check that it looks like we have docs..." >& 2
-      # cabal v2-haddock writes docs into each unit's
-      # `share/doc/html/`; the unit-id is cabal-mangled-and-hashed,
-      # so we locate the html via `find` rather than a synthesised
-      # path.
+      # v1 writes haddock html into
+      # `share/doc/<pkg>/html/<Module>.html`; v2 uses each unit's
+      # `share/doc/html/<Module>.html` (the unit-id is hashed so we
+      # don't synthesise a path).  A non-anchored `find -name`
+      # accepts either layout.
       test -f "$(find ${packages.sublib-docs.components.library.doc} \
-                       -path '*/share/doc/html/Lib.html' \
-                       -print -quit)"
+                       -name 'Lib.html' -print -quit)"
       test -f "$(find ${packages.sublib-docs.components.sublibs.slib.doc} \
-                       -path '*/share/doc/html/*Slib.html' \
-                       -print -quit)"
+                       -name '*Slib.html' -print -quit)"
 
       touch $out
     '';
