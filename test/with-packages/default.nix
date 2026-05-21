@@ -35,8 +35,17 @@ let
   # `docs/dev/builder-v2.md`).  Use the project-level shell with
   # `exposePackagesVia = "ghc-pkg"` so the wrapped `ghc` /
   # `runghc` see the component's deps via `GHC_ENVIRONMENT`.
-  libraryShell    = (project false).shellFor { packages = ps: [ ps.test-with-packages ]; exposePackagesVia = "ghc-pkg"; };
-  decLibraryShell = (project true ).shellFor { packages = ps: [ ps.test-with-packages ]; exposePackagesVia = "ghc-pkg"; };
+  # `withHoogle = false` on static — hoogle's haddock chain
+  # haddock-builds deps like `OneTuple` whose TH eval needs a
+  # `.dyn_hi` (e.g. `Language.Haskell.TH.dyn_hi`) that the musl
+  # static ghc doesn't ship.  Same pattern as `test/cabal-simple`.
+  shellArgs = {
+    packages = ps: [ ps.test-with-packages ];
+    exposePackagesVia = "ghc-pkg";
+    withHoogle = !stdenv.hostPlatform.isStatic;
+  };
+  libraryShell    = (project false).shellFor shellArgs;
+  decLibraryShell = (project true ).shellFor shellArgs;
 
   pkgId = p: "${p.identifier.name}-${p.identifier.version}";
   showDepends = component: concatMapStringsSep " " pkgId (component.depends or []);
