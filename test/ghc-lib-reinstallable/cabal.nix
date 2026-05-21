@@ -33,6 +33,11 @@ in lib.recurseIntoAttrs {
       stdenv.hostPlatform.isAndroid
       || stdenv.hostPlatform.isGhcjs
       || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.is32bit)
+      # aarch64-multiplatform{,-musl}: cross from x86_64 to
+      # aarch64-linux currently breaks the local-ghc-lib slicing.
+      || (haskellLib.isCrossHost
+          && stdenv.hostPlatform.isLinux
+          && stdenv.hostPlatform.isAarch64)
       || stdenv.hostPlatform.isWasm
       || stdenv.hostPlatform.isWindows;
   };
