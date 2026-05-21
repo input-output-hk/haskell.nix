@@ -82,6 +82,22 @@ let outerGhc = ghc; in
                              # stdenv's propagation chain.
 , ghc ? outerGhc             # caller may override (e.g. swap in a wrapped
                              # ghc for cross-TH); defaults to the outer `ghc`.
+, buildToolBinOverlays ? []  # list of `{ name; buildSlice; }` entries.
+                             # After composing the starting cabal-store,
+                             # replace `<storeDir>/<ghc>/<exe-unit>/bin/<name>`
+                             # with the build-platform binary from
+                             # `${buildSlice}/bin/${name}`.  cabal v2-build
+                             # prepends each build-tool unit's `bin/` to
+                             # PATH before invoking ghc — if the composed
+                             # unit is the cross-target one (which it is
+                             # on cross, so cabal recognises its unit-id
+                             # from plan-nix), ghc's `-pgmF` preprocessor
+                             # lookup picks the host-arch binary and fails
+                             # at `posix_spawnp` with "Exec format error".
+                             # Overlaying the build-platform binary keeps
+                             # the cross-target unit-id (so cabal's solver
+                             # is happy) but lets the executable actually
+                             # run on the build machine.
 , expectedPackage ? null     # if non-null, the only package name
                              # cabal's dry-run plan is allowed to
                              # build.  Any other package means cabal
@@ -498,7 +514,22 @@ stdenv.mkDerivation ({
       done
     fi
 
-    # Snapshot existing unit filenames so we can identify new ones later.
+    ${lib.optionalString (buildToolBinOverlays != []) ''
+      # Overlay each cross-target build-tool's `bin/<name>` in the
+      # composed store with the build-platform binary.  See the
+      # `buildToolBinOverlays` arg's doc-string.
+      ${lib.concatMapStrings (e: ''
+        shopt -s nullglob
+        for binFile in $storeDir/ghc-*/*-e-${e.name}-*/bin/${e.name}; do
+          chmod u+w "$(dirname "$binFile")" 2>/dev/null || true
+          rm -f "$binFile"
+          cp -L ${e.buildSlice}/bin/${e.name} "$binFile"
+          chmod u+rx "$binFile" 2>/dev/null || true
+        done
+        shopt -u nullglob
+      '') buildToolBinOverlays}
+    ''
+    }# Snapshot existing unit filenames so we can identify new ones later.
     ghcDir=$(ls -d $storeDir/ghc-* 2>/dev/null | head -n1 || true)
     if [ -n "$ghcDir" ] && [ -d "$ghcDir/package.db" ]; then
       # No chmod needed — `package.db` is a real dir from lndir,

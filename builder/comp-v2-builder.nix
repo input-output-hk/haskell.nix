@@ -659,6 +659,17 @@ let
   allowedBuildToolPackages =
     if isCross then lib.unique (map (e: e.pkgName) transitiveBuildToolEntries) else [];
 
+  # Cross-only: entries fed to `build-cabal-slice.nix`'s
+  # `buildToolBinOverlays`.  After the slice composes its starting
+  # cabal-store from dep slices (including each tool's cross-target
+  # `targetSlice` — needed for cabal's unit-id-keyed lookup), this
+  # list tells the slice to overwrite the host-arch `<unit>/bin/<name>`
+  # entry with the build-platform binary from `${buildSlice}/bin/${name}`.
+  # See `build-cabal-slice.nix` for the rationale.  Empty on native.
+  buildToolBinOverlays =
+    lib.optionals isCross
+      (map (e: { inherit (e) name buildSlice; }) transitiveBuildToolEntries);
+
   # Look up the v2 slice for a home-dep (sibling-component
   # gathered via plan.json).  Prefer the library, fall back to a
   # sublib, then to any exe — mirrors `depTransitiveTarballsOf`
@@ -1657,7 +1668,8 @@ let
     # into the install plan.
     extraSublibSeeds = extraSublibSeeds;
     inherit extraBuildInputs extraNativeBuildInputs withProgFlags
-            allowedBuildToolPackages confLibraryDirs;
+            allowedBuildToolPackages confLibraryDirs
+            buildToolBinOverlays;
     # Per-component stdenv hardeningDisable (set via haskell.nix
     # `packages.<pkg>.components.<kind>.<name>.hardeningDisable =
     # ["fortify"]`).  Drives `NIX_HARDENING_ENABLE` for the slice's
@@ -1892,7 +1904,8 @@ let
     target = targetSelector;
     extraSublibSeeds = extraSublibSeeds;
     inherit extraBuildInputs extraNativeBuildInputs withProgFlags
-            allowedBuildToolPackages confLibraryDirs;
+            allowedBuildToolPackages confLibraryDirs
+            buildToolBinOverlays;
     # Per-component stdenv hardeningDisable (set via haskell.nix
     # `packages.<pkg>.components.<kind>.<name>.hardeningDisable =
     # ["fortify"]`).  Drives `NIX_HARDENING_ENABLE` for the slice's
@@ -1963,7 +1976,8 @@ let
     target = targetSelector;
     extraSublibSeeds = extraSublibSeeds;
     inherit extraBuildInputs extraNativeBuildInputs withProgFlags
-            allowedBuildToolPackages confLibraryDirs;
+            allowedBuildToolPackages confLibraryDirs
+            buildToolBinOverlays;
     # Per-component stdenv hardeningDisable (set via haskell.nix
     # `packages.<pkg>.components.<kind>.<name>.hardeningDisable =
     # ["fortify"]`).  Drives `NIX_HARDENING_ENABLE` for the slice's
