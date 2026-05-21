@@ -6,13 +6,29 @@ with lib;
 let
   # See `docs/dev/profiling.md` — v2 expects profiling toggles in
   # cabal.project so plan-nix records `--enable-library-profiling`.
+  test-clib = stdenv.mkDerivation {
+    name = "test-clib";
+    version = "1.0";
+    src = testSrc "th-dlls-minimal/test-clib";
+  };
   project = { externalInterpreter, profiled ? false }: project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "th-dlls-minimal";
+    # Spell test-clib's lib dirs out in `cabal.project` (not via
+    # `components.library.libs` alone): that way plan-nix evaluates
+    # cabal with the same `extra-lib-dirs:`, the unit-id it records
+    # for `test-lib` includes them, and the v2 slice's
+    # cabal-computed uid stays in sync.  Mingw ships import libs
+    # (`.dll.a`) under `bin/` rather than `lib/`, so list both.
     cabalProjectLocal = builtins.readFile ../cabal.project.local
       + lib.optionalString profiled ''
         package *
           library-profiling: True
+      ''
+      + lib.optionalString stdenv.hostPlatform.isWindows ''
+        package test-lib
+          extra-lib-dirs: ${test-clib}/lib
+          extra-lib-dirs: ${test-clib}/bin
       '';
     modules = [
      ({pkgs, ...}: {
@@ -20,13 +36,7 @@ let
         export ISERV_ARGS=-v
         export PROSY_ARGS=-v
       '';
-      packages.test-lib.components.library.libs = mkForce [
-        (pkgs.stdenv.mkDerivation {
-          name = "test-clib";
-          version = "1.0";
-          src = testSrc "th-dlls-minimal/test-clib";
-        })
-      ];
+      packages.test-lib.components.library.libs = mkForce [ test-clib ];
      })
      ({pkgs, ...}: lib.optionalAttrs externalInterpreter {
       packages.th-dlls-minimal.ghcOptions = [ "-fexternal-interpreter" ];

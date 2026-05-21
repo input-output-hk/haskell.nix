@@ -111,6 +111,30 @@
       default = [ ];
     };
 
+    extraLibDirs = lib.mkOption {
+      description = ''
+        Per-package `extra-lib-dirs:` paths.  Populated automatically
+        from `--extra-lib-dirs=X` entries in plan.json's configure-args
+        (see `modules/install-plan/configure-args.nix`); v2 round-trips
+        these back through the slice's cabal.project so the unit-id
+        cabal computes for the slice includes the same
+        `pkgHashExtraLibDirs` inputs as plan-nix.  v1 reads
+        `configureFlags` directly and ignores this option.
+      '';
+      type = haskellLib.types.listOfFilteringNulls lib.types.str;
+      default = [ ];
+    };
+
+    extraIncludeDirs = lib.mkOption {
+      description = ''
+        Per-package `extra-include-dirs:` paths.  Populated automatically
+        from `--extra-include-dirs=X` entries in plan.json's
+        configure-args.  See `extraLibDirs` for the rationale.
+      '';
+      type = haskellLib.types.listOfFilteringNulls lib.types.str;
+      default = [ ];
+    };
+
     programOptions = lib.mkOption {
       description = ''
         Per-program option arguments that correspond to cabal.project's

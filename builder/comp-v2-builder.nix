@@ -180,6 +180,8 @@ let
 
   ghcOptionsOf       = perPackageOptionOf "ghcOptions";
   configureOptionsOf = perPackageOptionOf "configureOptions";
+  extraLibDirsOf     = perPackageOptionOf "extraLibDirs";
+  extraIncludeDirsOf = perPackageOptionOf "extraIncludeDirs";
 
   # `programOptions` is `{ <prog> = [<args>...]; }`, not a list, so
   # `perPackageOptionOf` (which compares list values for equality)
@@ -239,6 +241,26 @@ let
     in if opts == [] then ""
        else "package ${pname}\n  configure-options: ${lib.concatStringsSep " " opts}\n";
 
+  # Per-package `extra-lib-dirs:` / `extra-include-dirs:` blocks.
+  # plan-nix picks these up from cabal.project (e.g. when the user
+  # adds `package <pkg>\n  extra-lib-dirs: <path>` to
+  # `cabalProjectLocal` to point cabal at a C library that lives
+  # outside the standard `lib/` layout — `mingw-w64` import libs
+  # in `bin/`, for instance).  cabal hashes the paths into
+  # `pkgHashExtraLibDirs` / `pkgHashExtraIncludeDirs`, so the slice
+  # must re-emit the same entries here or its unit-id diverges from
+  # plan-nix's and downstream consumers can't find the slice in the
+  # cabal-store.
+  extraLibDirsBlockFor = pname:
+    let
+      libs = extraLibDirsOf pname;
+      incs = extraIncludeDirsOf pname;
+      lines =
+        lib.concatMapStrings (p: "  extra-lib-dirs: ${p}\n")     libs
+        + lib.concatMapStrings (p: "  extra-include-dirs: ${p}\n") incs;
+    in if libs == [] && incs == [] then ""
+       else "package ${pname}\n${lines}";
+
   # Per-package `<prog>-options:` lines.  cabal-install auto-generates
   # one such field per program in its `ProgramDb` (see
   # `Distribution.Simple.Program.Db.programDbOptions`), so any
@@ -279,6 +301,7 @@ let
   allConfigureOptionsBlocks = lib.concatMapStrings configureOptionsBlockFor sliceCanonicalNames;
   allProgramOptionsBlocks   = lib.concatMapStrings programOptionsBlockFor   sliceCanonicalNames;
   allDocBlocks              = lib.concatMapStrings documentationBlockFor    sliceCanonicalNames;
+  allExtraLibDirsBlocks     = lib.concatMapStrings extraLibDirsBlockFor     sliceCanonicalNames;
 
   # Resolve version-conditional patches (a `patches` entry may be a
   # function `{ version }: drv-or-null`, same convention v1 uses).
@@ -1590,7 +1613,7 @@ let
   cabalProject = ''
     with-compiler: ${withCompiler}
     active-repositories: hackage.haskell-nix
-    ${packagesLine}${sourceRepoBlocks}${extraPackagesLine}${allowNewerBlock}${allowBootLibBlock}${projectConfigPragmas}${extraProject}${allFlagBlocks}${allGhcOptionsBlocks}${allConfigureOptionsBlocks}${allProgramOptionsBlocks}${allDocBlocks}${extraIncludeAndLibDirs}${depConstraints}'';
+    ${packagesLine}${sourceRepoBlocks}${extraPackagesLine}${allowNewerBlock}${allowBootLibBlock}${projectConfigPragmas}${extraProject}${allFlagBlocks}${allGhcOptionsBlocks}${allConfigureOptionsBlocks}${allProgramOptionsBlocks}${allDocBlocks}${allExtraLibDirsBlocks}${extraIncludeAndLibDirs}${depConstraints}'';
 
   # X-revised .cabal as a /nix/store path (or null if no override).
   # Carried on every `transitiveTarballs` entry so the slicing repo's

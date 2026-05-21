@@ -104,11 +104,26 @@
         value = map (e: e.option) (lib.filter (e: e.prog == prog) progOptionPairs);
       }) progNames);
 
+      # Extract `--extra-lib-dirs=PATH` and `--extra-include-dirs=PATH`
+      # entries.  These come from cabal.project's `package <pkg>`
+      # `extra-lib-dirs:` / `extra-include-dirs:` stanzas; v2 re-emits
+      # the same lines in the slice's cabal.project so the slice's
+      # cabal-computed unit-id includes the same `pkgHashExtraLibDirs`
+      # / `pkgHashExtraIncludeDirs` inputs plan-nix did.
+      extractValuedFlag = flagName: lib.concatMap (arg:
+        let m = builtins.match "--${flagName}=(.*)" arg;
+        in lib.optional (m != null) (builtins.elemAt m 0)
+      ) args;
+      extraLibDirs     = extractValuedFlag "extra-lib-dirs";
+      extraIncludeDirs = extractValuedFlag "extra-include-dirs";
+
       value =
         lib.optionalAttrs (ghcOptions != []) { inherit ghcOptions; }
         // lib.optionalAttrs (configureOptions != []) { inherit configureOptions; }
         // lib.optionalAttrs (otherFlags != []) { configureFlags = otherFlags; }
         // lib.optionalAttrs (programOptions != {}) { inherit programOptions; }
+        // lib.optionalAttrs (extraLibDirs != []) { inherit extraLibDirs; }
+        // lib.optionalAttrs (extraIncludeDirs != []) { inherit extraIncludeDirs; }
         // profilingFlags;
     in lib.optional (value != {}) {
       name = p.id;
