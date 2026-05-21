@@ -71,21 +71,21 @@
         ) args
         ++ otherFlags;
 
-      # Translate `--enable-X` toggles cabal-install records into
-      # plan.json's `configure-args` back into the haskell.nix module
-      # options.  v1's comp-builder reads `enableProfiling`,
-      # `enableLibraryProfiling`, and `doCoverage` straight off the
-      # component config, so picking them up here lets a project set
-      # `package <pkg>\n  profiling: True` in cabal.project and have
-      # v1 honour it without also needing module-level toggles.
-      # v2 reads these from plan.json directly via its
-      # `projectConfigPragmas`, so the picked-up values are merely
-      # consistent there.
-      hasFlag = name: lib.elem ("--enable-${name}") args;
-      profilingFlags =
-        lib.optionalAttrs (hasFlag "profiling")         { enableProfiling        = true; }
-        // lib.optionalAttrs (hasFlag "library-profiling") { enableLibraryProfiling = true; }
-        // lib.optionalAttrs (hasFlag "coverage")        { doCoverage             = true; };
+      # Translate `--enable-X` toggles cabal-install records in
+      # plan.json's `configure-args` back into haskell.nix module
+      # options.  v1's comp-builder reads these straight off each
+      # component config — picking them up here lets a project set
+      # e.g. `package <pkg>\n  profiling: True` /
+      # `debug-info: 2` in cabal.project and have v1 honour it
+      # without also needing module-level toggles.  v2 reads from
+      # plan.json directly via `projectConfigPragmas`, so the
+      # picked-up values are merely consistent there.
+      hasEnableFlag = name: lib.elem ("--enable-${name}") args;
+      enableFlags =
+        lib.optionalAttrs (hasEnableFlag "profiling")         { enableProfiling        = true; }
+        // lib.optionalAttrs (hasEnableFlag "library-profiling") { enableLibraryProfiling = true; }
+        // lib.optionalAttrs (hasEnableFlag "coverage")        { doCoverage             = true; }
+        // lib.optionalAttrs (hasEnableFlag "debug-info")      { enableDWARF            = true; };
 
       # Group `--<prog>-option=VAL` entries by PROG so the v2 builder
       # can emit `<prog>-options:` lines per program in the slice's
@@ -124,7 +124,7 @@
         // lib.optionalAttrs (programOptions != {}) { inherit programOptions; }
         // lib.optionalAttrs (extraLibDirs != []) { inherit extraLibDirs; }
         // lib.optionalAttrs (extraIncludeDirs != []) { inherit extraIncludeDirs; }
-        // profilingFlags;
+        // enableFlags;
     in lib.optional (value != {}) {
       name = p.id;
       inherit value;

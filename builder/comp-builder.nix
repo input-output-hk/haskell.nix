@@ -82,7 +82,7 @@
 
 # Debug
 , enableDebugRTS ? false
-, enableDWARF ? false
+, enableDWARF ? component.enableDWARF
 
 # This will only work with a custom TSan way enabled custom compiler
 , enableTSanRTS ? false
