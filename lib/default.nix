@@ -40,7 +40,11 @@ in {
   foldComponents = tys: f: z: conf:
     let
       comps = conf.components or { };
-      # ensure that comps.library exists and is not null.
+      # The comment below used to claim we ensure `comps.library` is
+      # not null, but the check only looked at presence — null
+      # libraries (common on exe-only pseudo-pkg entries) would still
+      # be added to the fold and crash downstream consumers that
+      # assume non-null (e.g. `allComponent`'s `c.buildable` filter).
       libComp = acc:
         if (comps.library or null) != null then f comps.library acc else acc;
       subComps = acc:
@@ -613,18 +617,31 @@ in {
 
   # Key used by `uniqueWithName` and `checkUnique` to partition lists.
   # Derivations carry a name+version-encoded `.name`
-  # (e.g. `ghc984-conduit-1.3.5.0`).  haskell.nix package values don't --
-  # they expose `.identifier.{name,version}` -- so we synthesize a key
-  # with a space separator rather than the derivation `"${name}-${version}"`
-  # shape, so a derivation key can never collide with a package key derived
-  # from the same words.  Items with neither share a bucket; correctness
-  # still holds via the inner `lib.unique`, just at a slower path.
+  # (e.g. `ghc984-conduit-1.3.5.0`).  haskell.nix package values
+  # don't -- they expose `.identifier.{name,version}` -- so we
+  # synthesize a key with a space separator rather than the
+  # derivation `"${name}-${version}"` shape, so a derivation key
+  # can never collide with a package key derived from the same
+  # words.  Items with neither share a bucket; correctness still
+  # holds via the inner `lib.unique`, just at a slower path.
+  #
+  # When an `identifier.unit-id` is present, it is appended to the
+  # key so two incarnations of `foo-1.2.3` with different inputs
+  # land in different buckets.  Items without a unit-id keep
+  # exactly the key they had before, so the lexicographic ordering
+  # `uniqueWithName` produces via `builtins.attrValues
+  # (groupBy ...)` is byte-stable.
   uniqueWithNameKey = x:
     if __typeOf x != "set" then "_notset"
-    else if x ? name then x.name
-    else if x ? identifier.name
-      then "${x.identifier.name} ${x.identifier.version or ""}"
-    else "_noname";
+    else let
+      suffix = lib.optionalString
+        (x ? identifier.unit-id && x.identifier.unit-id != null)
+        " ${x.identifier.unit-id}";
+    in
+      if x ? name then x.name + suffix
+      else if x ? identifier.name
+        then "${x.identifier.name} ${x.identifier.version or ""}${suffix}"
+      else "_noname";
 
   # Like `lib.unique`, but uses `uniqueWithNameKey` as a partition key so
   # `lib.unique` only has to scan within each bucket -- the common case
