@@ -40,7 +40,11 @@ in {
   foldComponents = tys: f: z: conf:
     let
       comps = conf.components or { };
-      # ensure that comps.library exists and is not null.
+      # The comment below used to claim we ensure `comps.library` is
+      # not null, but the check only looked at presence — null
+      # libraries (common on exe-only pseudo-pkg entries) would still
+      # be added to the fold and crash downstream consumers that
+      # assume non-null (e.g. `allComponent`'s `c.buildable` filter).
       libComp = acc:
         if (comps.library or null) != null then f comps.library acc else acc;
       subComps = acc:
@@ -612,18 +616,23 @@ in {
   lddForTests = "${pkgs.pkgsBuildBuild.glibc.bin}/bin/ldd";
 
   # Key used by `uniqueWithName` and `checkUnique` to partition lists.
-  # Derivations carry a name+version-encoded `.name`
-  # (e.g. `ghc984-conduit-1.3.5.0`).  haskell.nix package values don't --
-  # they expose `.identifier.{name,version}` -- so we synthesize a key
-  # with a space separator rather than the derivation `"${name}-${version}"`
-  # shape, so a derivation key can never collide with a package key derived
-  # from the same words.  Items with neither share a bucket; correctness
-  # still holds via the inner `lib.unique`, just at a slower path.
+  # Prefer `.identifier.unit-id` when present (haskell.nix package
+  # values for v2 slices set it from plan-nix's plan-id, so two
+  # incarnations of `foo-1.2.3` with different inputs land in
+  # different buckets).  Fall back to the name+version pair, then to
+  # the derivation `.name` (e.g. `ghc984-conduit-1.3.5.0`).  Items
+  # with none share a bucket; correctness still holds via the inner
+  # `lib.unique`, just at a slower path.  The `unit-id:` /
+  # `name+version:` / `name:` prefixes prevent cross-bucket collisions
+  # between values that happen to share a string under different
+  # encodings.
   uniqueWithNameKey = x:
     if __typeOf x != "set" then "_notset"
-    else if x ? name then x.name
+    else if x ? identifier.unit-id && x.identifier.unit-id != null
+      then "unit-id:${x.identifier.unit-id}"
     else if x ? identifier.name
-      then "${x.identifier.name} ${x.identifier.version or ""}"
+      then "id:${x.identifier.name} ${x.identifier.version or ""}"
+    else if x ? name then "name:${x.name}"
     else "_noname";
 
   # Like `lib.unique`, but uses `uniqueWithNameKey` as a partition key so

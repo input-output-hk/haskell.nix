@@ -1039,7 +1039,14 @@ final: prev: {
 
         iserv-proxy-exes = __mapAttrs (compiler-nix-name: _ghc:
             let
-              exes = pkgs: (pkgs.haskell-nix.cabalProject' ({pkgs, ...}: {
+              # `profiled` controls whether the iserv-proxy project's
+              # cabal.project enables profiling for the iserv-proxy
+              # package.  v1's `.override { enableProfiling = true; }`
+              # is read by `comp-builder.nix:71`; v2's
+              # `comp-v2-builder` reads configure-args from plan-nix
+              # instead, so the toggle has to live in cabal.project
+              # to make it through plan-nix into the v2 slice.
+              exes = profiled: pkgs: (pkgs.haskell-nix.cabalProject' ({pkgs, ...}: {
                 name = "iserv-proxy";
                 inherit compiler-nix-name;
 
@@ -1053,23 +1060,115 @@ final: prev: {
                     setupBuildFlags = final.lib.mkForce [];
                   };
                 }];
-              } // final.lib.optionalAttrs (
-                     final.stdenv.hostPlatform.isAarch64
-                  && builtins.compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8" < 0) {
-                # The th-dlls test fails for aarch64 cross GHC 9.6.7 when the threaded rts is used
-                cabalProjectLocal = ''
-                  package iserv-proxy
-                    flags: -threaded
-                '';
-              } // final.lib.optionalAttrs (__compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.10" > 0) {
-                  cabalProjectLocal = ''
+
+                cabalProjectLocal =
+                  # Bake `--optimistic-linking` into iserv-proxy /
+                  # iserv-proxy-interpreter at link time via
+                  # `-with-rtsopts`.  `GHC/Linker/Executable.hs` emits
+                  # this into the generated `main.c` as
+                  # `__conf.rts_opts`, which `setupRtsFlags` processes
+                  # with `RtsOptsAll` — so it bypasses the
+                  # `OPTION_UNSAFE` gate that `+RTS --optimistic-linking
+                  # -RTS` on the command line is subject to.  This
+                  # makes the runtime linker tolerate undefined
+                  # symbols when loading object files at TH-eval time;
+                  # splices that don't actually reference the missing
+                  # symbol then resolve fine instead of aborting the
+                  # load.  `-rtsopts=all` is kept so wrapper scripts /
+                  # GHCRTS can still override at invocation.
+                  # `--optimistic-linking` is only available in GHC's
+                  # RTS from 9.14 onwards; gated on the Nix side since
+                  # cabal.project doesn't allow `if` inside a `package`
+                  # stanza.
+                  ''
+                    package iserv-proxy
+                      ghc-options: -rtsopts=all${
+                        final.lib.optionalString (
+                          builtins.compareVersions
+                            final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.14" >= 0
+                        ) " -with-rtsopts=--optimistic-linking"
+                      }
+                  ''
+                  # aarch64 + GHC < 9.8: th-dlls test fails when
+                  # iserv-proxy is built with the threaded RTS.
+                  + final.lib.optionalString (
+                       final.stdenv.hostPlatform.isAarch64
+                    && builtins.compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8" < 0
+                  ) ''
+                    package iserv-proxy
+                      flags: -threaded
+                  ''
+                  # GHC > 9.10: bound relaxation for base / bytestring
+                  # shipped with newer compilers.
+                  + final.lib.optionalString (
+                      __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.10" > 0
+                  ) ''
                     allow-newer: *:base, *:bytestring
+                  ''
+                  # Windows host: iserv-proxy-interpreter.exe needs
+                  # these linker flags to avoid a "32 bit pseudo
+                  # relocation … out of range" error when wine
+                  # launches it, plus `-debug` for clearer runtime
+                  # diagnostics.  The `if os(mingw32)` guard keeps
+                  # them from leaking into the build-platform
+                  # iserv-proxy build (the same cabalProjectLocal
+                  # is shared by both).
+                  + final.lib.optionalString final.stdenv.hostPlatform.isWindows ''
+                    if os(mingw32)
+                      package iserv-proxy
+                        ghc-options: -debug -optl-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000
+                  ''
+                  # Android host: the cross-compiled
+                  # iserv-proxy-interpreter must be statically
+                  # linked because qemu-user-mode can't satisfy
+                  # Android's dynamic loader (`/system/bin/linker64`
+                  # / `/system/bin/linker`) on the build host.
+                  # `-optl-static` makes the resulting binary
+                  # self-contained; `-optl-ldl` pulls in libdl that
+                  # the GHC RTS references even with a static link.
+                  #
+                  # Guard on the INNER `pkgs.stdenv.hostPlatform` —
+                  # the same cabalProjectLocal is reused by both the
+                  # build-platform iserv-proxy (`exes
+                  # final.pkgsBuildBuild`, linux x86_64) and the
+                  # host-platform iserv-proxy-interpreter (`exes
+                  # final`, android).  If we keyed off the outer
+                  # `final.stdenv.hostPlatform`, the build-platform
+                  # iserv-proxy would also pick up `-optl-static`
+                  # and the link would fail with a `-fPIC` /
+                  # `crtbeginT.o` error trying to statically link
+                  # a shared library.
+                  #
+                  # v1 expressed the same via `setupBuildFlags` in
+                  # `overlays/haskell.nix`'s `.override` block; v2
+                  # ignores `setupBuildFlags`, so we route the
+                  # flags through cabal.project so plan-nix records
+                  # them in the slice's UnitId-relevant
+                  # configure-args.
+                  + pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isAndroid ''
+                    package iserv-proxy
+                      ghc-options: -debug -optl-static -optl-ldl${
+                        pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isAarch32 " -optl-no-pie"
+                      }
+                  ''
+                  # Build the iserv-proxy executables with profiling
+                  # for the `-prof` variant.  GHC selects the iserv
+                  # to spawn at TH-eval time by appending `-prof` to
+                  # `-pgmi`, so we have to produce a prof-linked
+                  # binary that has the profiling RTS symbols (e.g.
+                  # `registerCcList`) the loaded `.p_o` modules
+                  # reference.
+                  + pkgs.lib.optionalString profiled ''
+                    package iserv-proxy
+                      profiling: True
                   '';
-                })).hsPkgs.iserv-proxy.components.exes;
+              })).hsPkgs.iserv-proxy.components.exes;
             in rec {
-              # We need the proxy for the build system and the interpreter for the target
-              inherit (exes final.pkgsBuildBuild) iserv-proxy;
-              iserv-proxy-interpreter = (exes final).iserv-proxy-interpreter.override
+              # We need the proxy for the build system and the interpreter for the target.
+              # `iserv-proxy` is invoked on the build platform — it doesn't
+              # need profiling, so use the non-profiled project.
+              inherit (exes false final.pkgsBuildBuild) iserv-proxy;
+              iserv-proxy-interpreter = (exes false final).iserv-proxy-interpreter.override
                 (final.lib.optionalAttrs final.stdenv.hostPlatform.isAndroid {
                   setupBuildFlags = ["--ghc-option=-optl-static" "--ghc-option=-optl-ldl"] ++ final.lib.optional final.stdenv.hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";
                   enableDebugRTS = true;
@@ -1077,9 +1176,20 @@ final: prev: {
                   setupBuildFlags = ["--ghc-option=-optl-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000" ];
                   enableDebugRTS = true;
                 });
-              iserv-proxy-interpreter-prof = iserv-proxy-interpreter.override {
-                enableProfiling = true;
-              };
+              # Profiled variant: rebuild the iserv-proxy project
+              # with `package iserv-proxy profiling: True` baked into
+              # cabal.project so v2's slice picks it up.  Keep the
+              # v1-style `enableProfiling = true` override too in
+              # case v1's comp-builder is ever in play here.
+              iserv-proxy-interpreter-prof = (exes true final).iserv-proxy-interpreter.override
+                ({ enableProfiling = true; }
+                 // final.lib.optionalAttrs final.stdenv.hostPlatform.isAndroid {
+                   setupBuildFlags = ["--ghc-option=-optl-static" "--ghc-option=-optl-ldl"] ++ final.lib.optional final.stdenv.hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";
+                   enableDebugRTS = true;
+                 } // final.lib.optionalAttrs final.stdenv.hostPlatform.isWindows {
+                   setupBuildFlags = ["--ghc-option=-optl-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000" ];
+                   enableDebugRTS = true;
+                 });
             }) final.haskell-nix.compiler;
 
           ghc-pre-existing = ghc: [

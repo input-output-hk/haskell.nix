@@ -91,5 +91,17 @@ with types;
     # For stack projects we normally do not want to include the tool dependencies
     # of all the hsPkgs (all of stackage).
     shell.allToolDeps = mkDefault false;
+    # When `useLocalGhcLib = true` (project-common option), re-apply
+    # the `packages.ghc.src` post-plan override that
+    # `modules/configuration-nix.nix` used to do unconditionally.
+    modules = mkIf config.useLocalGhcLib [
+      ({ config, lib, pkgs, ... }: {
+        packages.ghc.src = lib.mkForce ((pkgs.symlinkJoin {
+          name = config.ghc.package.name + "-full-src";
+          paths = [ config.ghc.package.configured-src config.ghc.package.generated ];
+        }) + "/compiler");
+        packages.ghc.package-description-override = lib.mkForce null;
+      })
+    ];
   };
 }

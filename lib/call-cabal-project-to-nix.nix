@@ -130,7 +130,14 @@ in let
         else cabalProject
     }
     ${
-      pkgs.lib.optionalString (cabalProjectLocal != null) ''
+      # Treat empty string the same as null — internal projects
+      # (ghc-extra-projects, hadrian-plan) set
+      # `cabalProjectLocal = ""` instead of `null` to avoid a
+      # `nullOr lines` merge conflict against
+      # `modules/cabal-project.nix`'s platform-specific mkIfs.
+      # We don't want the empty case to emit the "Added from ..."
+      # comment header, so the existing hash is preserved.
+      pkgs.lib.optionalString (cabalProjectLocal != null && cabalProjectLocal != "") ''
         -- Added from `cabalProjectLocal` argument to the `cabalProject` function
         ${cabalProjectLocal}
       ''
@@ -293,158 +300,11 @@ let
 
   platformString = p: with p.parsed; "${cpu.name}-${vendor.name}-${kernel.name}";
 
-  # Dummy `ghc` that uses the captured output
-  dummy-ghc = evalPackages.writeTextFile {
-    name = "dummy-" + ghc.name;
-    executable = true;
-    destination = "/bin/${ghc.targetPrefix}ghc";
-    # New versions of cabal pass `-package-env=-`, but dummy-ghc can safely ignore it.
-    text = ''
-      #!${evalPackages.runtimeShell}
-      if [[ "$1" == "-package-env=-" ]]; then
-        shift
-      fi
-      case "$*" in
-        --version*)
-          echo "The Glorious Glasgow Haskell Compilation System, version ${ghc.version}"
-          ;;
-        --numeric-version*)
-          echo "${ghc.version}"
-          ;;
-      ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
-        --numeric-ghc-version*)
-          echo "${ghc.version}"
-          ;;
-        --numeric-ghcjs-version*)
-          echo "${ghc.version}"
-          ;;
-      ''}
-        --supported-languages*)
-          cat ${import ./supported-languages.nix { inherit pkgs evalPackages ghc; }}
-          ;;
-        --print-global-package-db*)
-          echo "$out/dumby-db"
-          ;;
-        --info*)
-          echo '[("target os", "${
-              if pkgs.stdenv.targetPlatform.isLinux
-                then "OSLinux"
-              else if pkgs.stdenv.targetPlatform.isDarwin
-                then "OSDarwin"
-              else if pkgs.stdenv.targetPlatform.isWindows
-                then "OSMinGW32"
-              else if pkgs.stdenv.targetPlatform.isGhcjs
-                then "OSGhcjs"
-              else if pkgs.stdenv.targetPlatform.isWasi
-                then "OSWasi"
-              else throw "Unknown target os ${pkgs.stdenv.targetPlatform.config}"
-            }")'
-          echo ',("target arch","${
-              if pkgs.stdenv.targetPlatform.isx86_64
-                then "ArchX86_64"
-              else if pkgs.stdenv.targetPlatform.isx86
-                then "ArchX86"
-              else if pkgs.stdenv.targetPlatform.isRiscV64
-                then "ArchRISCV64"
-              else if pkgs.stdenv.targetPlatform.isAarch64
-                then "ArchAArch64"
-              else if pkgs.stdenv.targetPlatform.isAarch32
-                then "ArchAArch32"
-              else if pkgs.stdenv.targetPlatform.isJavaScript
-                then "ArchJavaScript"
-              else if pkgs.stdenv.targetPlatform.isWasm
-                then "ArchWasm32"
-              else throw "Unknown target arch ${pkgs.stdenv.targetPlatform.config}"
-          }")'
-          echo ',("target platform string","${platformString pkgs.stdenv.targetPlatform}")'
-          echo ',("Build platform","${platformString pkgs.stdenv.buildPlatform}")'
-          echo ',("Host platform","${platformString pkgs.stdenv.hostPlatform}")'
-          echo ',("Target platform","${platformString pkgs.stdenv.targetPlatform}")'
-          echo ',("Project Unit Id","ghc-${ghc.version}-inplace")'
-          ${
-            # Capability fields cabal-install reads to decide what
-            # configure-args to record in plan.json's per-pkg
-            # `configure-args` entries.  Without these, cabal assumes
-            # the compiler can't build shared libs / dynamic-too,
-            # so it records `--disable-shared` /
-            # `--disable-library-for-ghci` — which feeds into the
-            # package's UnitId hash.  Mirror real GHC's capabilities
-            # so plan-to-nix's recorded ids match what cabal would
-            # compute against the actual compiler.
-            #
-            # The values are conditioned on the *target* platform
-            # because cabal reads `ghc --info` to decide things like
-            # `--enable-shared` vs `--disable-shared`, and those
-            # decisions feed into the package's UnitId hash.
-            #
-            # Reference outputs (verified by running `ghc --info` on
-            # the actual cross GHC derivation in /nix/store):
-            #
-            #   * x86_64-w64-mingw32 (Windows mingw): no
-            #     `Support shared libraries` field at all,
-            #     `Support dynamic-too: NO`, `GHC Dynamic: NO`,
-            #     RTS ways without any `_dyn` ways, Stage 1.
-            #   * ghcjs / wasm: built stage-1 with only `v debug` ways
-            #     and no dynamic linking.
-            #   * native Linux/Darwin: dynamic everything, Stage 2.
-            if pkgs.stdenv.targetPlatform.isGhcjs
-               || pkgs.stdenv.targetPlatform.isWasm
-            then ''
-              echo ',("Support dynamic-too","NO")'
-              echo ',("Support shared libraries","NO")'
-              echo ',("Support reexported-modules","YES")'
-              echo ',("Support thinning and renaming package flags","YES")'
-              echo ',("Tables next to code","YES")'
-              echo ',("Have interpreter","YES")'
-              echo ',("Use interpreter","YES")'
-              echo ',("Have native code generator","YES")'
-              echo ',("target RTS linker only supports shared libraries","NO")'
-              echo ',("GHC Dynamic","NO")'
-              echo ',("RTS ways","v debug")'
-              echo ',("Stage","1")'
-            ''
-            else if pkgs.stdenv.targetPlatform.isWindows
-            then ''
-              echo ',("Support dynamic-too","NO")'
-              echo ',("Support reexported-modules","YES")'
-              echo ',("Support thinning and renaming package flags","YES")'
-              echo ',("Tables next to code","YES")'
-              echo ',("Have interpreter","YES")'
-              echo ',("Use interpreter","YES")'
-              echo ',("Have native code generator","YES")'
-              echo ',("target RTS linker only supports shared libraries","NO")'
-              echo ',("GHC Dynamic","NO")'
-              echo ',("RTS ways","v thr thr_debug thr_debug_p thr_p debug debug_p p")'
-              echo ',("Stage","1")'
-            ''
-            else ''
-              echo ',("Support dynamic-too","YES")'
-              echo ',("Support shared libraries","YES")'
-              echo ',("Support reexported-modules","YES")'
-              echo ',("Support thinning and renaming package flags","YES")'
-              echo ',("Tables next to code","YES")'
-              echo ',("Have interpreter","YES")'
-              echo ',("Use interpreter","YES")'
-              echo ',("Have native code generator","YES")'
-              echo ',("target RTS linker only supports shared libraries","NO")'
-              echo ',("GHC Dynamic","YES")'
-              echo ',("RTS ways","v thr thr_debug thr_debug_p thr_debug_p_dyn thr_debug_dyn thr_p thr_p_dyn thr_dyn debug debug_p debug_p_dyn debug_dyn p p_dyn dyn")'
-              echo ',("Stage","2")'
-            ''
-          }
-          echo ']'
-          ;;
-        --print-libdir*)
-          echo $out/ghc/libdir
-          ;;
-        *)
-          echo "Unknown argument '$*'" >&2
-          exit 1
-          ;;
-        esac
-      exit 0
-    '';
-  };
+  # Dummy `ghc` script cabal-install runs against during plan-to-nix.
+  # See `lib/dummy-ghc.nix` for the implementation and rationale; the
+  # `--info` output is what cabal uses to elaborate per-unit settings
+  # that feed into UnitId computation.
+  dummy-ghc = import ./dummy-ghc.nix { inherit pkgs evalPackages ghc; };
 
   dummy-ghc-pkg-dump = evalPackages.runCommand "dummy-ghc-pkg-dump" {
       buildInputs = prebuilt-depends;
@@ -628,25 +488,31 @@ let
             fi
           done
           ${
-            # A handful of GHC's pre-existing packages have ids that
-            # are *just* `<name>-<version>` with no `-inplace` suffix
-            # in their installed package conf:
+            # GHC ≥ 9.8 registers its pre-existing packages with
+            # ids that carry an `-inplace` suffix
+            # (`base-4.19.2.0-inplace`).  Two boot packages are
+            # exceptions even there:
             #   - `rts`: GHC's runtime, registered as `id: rts-1.0.3`
             #   - `system-cxx-std-lib`: virtual placeholder for the
             #     host C++ stdlib, registered as
             #     `id: system-cxx-std-lib-1.0`
-            # Every other pre-existing package (base, ghc-prim,
-            # text, …) uses the `-inplace` convention.  Mirror those
-            # real ids in the dummy `ghc-pkg dump` — both as the
-            # package's own id and as the dep id used by other
-            # packages — so the unit-id cabal computes against the
-            # dummy matches what it computes against the real GHC.
+            # GHC < 9.8 registers everything with just
+            # `<name>-<version>`, no `-inplace` suffix at all.
+            # Mirror those real ids in the dummy `ghc-pkg dump` —
+            # both as the package's own id and as the dep id used
+            # by other packages — so the unit-id cabal computes
+            # against the dummy matches what it computes against
+            # the real GHC.
             ""
           }suffix() {
-            case "$1" in
-              rts|system-cxx-std-lib) echo "" ;;
-              *) echo "-inplace" ;;
-            esac
+            ${if pkgs.lib.versionAtLeast ghc.version "9.8" then ''
+              case "$1" in
+                rts|system-cxx-std-lib) echo "" ;;
+                *) echo "-inplace" ;;
+              esac
+            '' else ''
+              echo ""
+            ''}
           }
           for pkg in $PKGS; do
             varname="$(echo $pkg | tr "-" "_")"
@@ -718,6 +584,14 @@ let
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
+    # Pin the unit-id format that `make-install-plan`'s patched
+    # cabal uses to the *build* platform's OS.  Without this the
+    # format tracks the eval system (which on a Darwin host
+    # evaluating a Linux derivation gives the `VeryShort` form),
+    # and plan-nix unit-ids fork from what slice cabal v2-build
+    # computes on Linux.  See
+    # nix-tools/cabal-install-patches/installed-package-id-os-override.patch.
+    CABAL_INSTALLED_PACKAGE_ID_OS = pkgs.stdenv.buildPlatform.parsed.kernel.name;
     meta.platforms = pkgs.lib.platforms.all;
     preferLocalBuild = false;
     outputs = [

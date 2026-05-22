@@ -136,6 +136,7 @@ let
   + lib.optionalString (haskellLib.isNativeMusl && builtins.compareVersions ghc.version "9.9" >0) ''
      ln -s $wrappedGhc/bin/${targetPrefix}unlit $wrappedGhc/bin/unlit
      ln -s $wrappedGhc/bin/${ghcCommand}-iserv $wrappedGhc/bin/ghc-iserv
+     ln -s $wrappedGhc/bin/${ghcCommand}-iserv-dyn $wrappedGhc/bin/ghc-iserv-dyn
      ln -s $wrappedGhc/bin/${ghcCommand}-iserv-prof $wrappedGhc/bin/ghc-iserv-prof
   ''
   # These scripts break if symlinked (they check import.meta.filename against args)

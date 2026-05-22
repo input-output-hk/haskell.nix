@@ -154,4 +154,156 @@ in {
       '';
     };
   };
+  config = lib.mkMerge [
+    # Musl host: every executable should be statically linked.  v1
+    # achieves this in `builder/comp-builder.nix:384` by adding
+    # `--ghc-option=-optl=-static` to the per-component
+    # configureFlags at build time, which doesn't reach plan-to-nix
+    # — plan.json keeps `--disable-executable-static` and v1 just
+    # ignores the misalignment.  Under v2, the slice mirrors
+    # plan.json's configure-args exactly, so it links dynamically
+    # too and the c-ffi musl test fails its static-link assertion.
+    # Inject `executable-static: True` inside `package *` (cabal
+    # only propagates it per-component when inside that block) so
+    # plan-to-nix records `--enable-executable-static` for every
+    # unit; v2's slice picks it up via
+    # `comp-v2-builder.nix:projectConfigPragmas`, and v1 is
+    # unaffected.
+    (lib.mkIf pkgs.stdenv.hostPlatform.isMusl {
+      cabalProjectLocal = lib.mkBefore ''
+        package *
+          executable-static: True
+      '';
+    })
+    # x86_64-darwin host: enable `library-for-ghci` so cabal emits a
+    # merged `HS<unit>.o` per unit alongside the `.dylib`.  v1's
+    # `builder/comp-builder.nix:383` already sets
+    # `--enable-library-for-ghci` for !ghcjs !wasm !android (which
+    # on darwin is "always"), so v1 darwin builds get the merged
+    # `.o`.  v2 mirrors plan.json's `--disable-library-for-ghci`
+    # default, so the merged `.o` is missing.  Under TH-eval /
+    # `-fexternal-interpreter` ghc-iserv-dyn then loads each dep's
+    # `.dylib` via dyld; on x86_64-darwin running under Rosetta
+    # (Hydra builds x86_64-darwin on aarch64-darwin hardware) dyld
+    # misbehaves on certain dylibs (libtext, libdouble-conversion,
+    # libHsOpenSSL) and iserv terminates with SIGBUS (signal -10).
+    # `library-for-ghci: True` gives ghc-iserv the merged `.o` to
+    # load directly, bypassing dyld.  Scoped to x86_64 only —
+    # aarch64-darwin runs natively.
+    (lib.mkIf (pkgs.stdenv.hostPlatform.isDarwin
+            && pkgs.stdenv.hostPlatform.isx86_64) {
+      cabalProjectLocal = lib.mkBefore ''
+        package *
+          library-for-ghci: True
+      '';
+    })
+    # Android host: link every exe statically so qemu-user can run
+    # it on the build host.  A dynamic Android binary references
+    # `/system/bin/linker[64]` at runtime; qemu-arm fails with
+    # `Could not open '/system/bin/linker': No such file or
+    # directory` because the build host doesn't ship one.  v1's
+    # `lib/check.nix:68` papered over this by re-overriding the
+    # test exe with `setupBuildFlags = ["--ghc-option=-optl-static"]`;
+    # v2 ignores `setupBuildFlags` (slices are immutable), so route
+    # the same flags through cabal.project.  `-optl-static` makes
+    # the exe self-contained, `-optl-ldl` pulls in libdl that GHC's
+    # RTS still references even under static linking, and on
+    # aarch32 `-optl-no-pie` disables PIE so the static link
+    # doesn't trip `dynamic STT_GNU_IFUNC` relocation errors.
+    # Mirrors the iserv-proxy Android override in
+    # `overlays/haskell.nix:1175`.
+    (lib.mkIf pkgs.stdenv.hostPlatform.isAndroid {
+      cabalProjectLocal = lib.mkBefore ''
+        package *
+          ghc-options: -optl-static -optl-ldl${
+            lib.optionalString pkgs.stdenv.hostPlatform.isAarch32 " -optl-no-pie"
+          }
+      '';
+    })
+    # wasm 9.12+: real wasm-ghc reports `target RTS linker only
+    # supports shared libraries: YES` and no `Support shared
+    # libraries` field at all.  cabal interprets the absence of
+    # `Support shared libraries` as "no shared support" and
+    # records `--disable-shared` in plan-nix, but TH-eval / dyld
+    # on wasm 9.12+ requires `.so` files for every transitively
+    # reachable lib (the RTS linker only loads shared libs).  v2's
+    # slice papers over this with the `forceShared` rewrite in
+    # `comp-v2-builder.nix:pragmaOf`; surfacing `shared: True` at
+    # the project level here puts the override in the
+    # `cabalProjectLocal` the shell writes out, so an interactive
+    # user (or a test sharing the slice's cabal.project) gets
+    # matching unit-ids without manually re-deriving the pragma.
+    (lib.mkIf (
+      let ghc = (config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name};
+      in pkgs.stdenv.hostPlatform.isWasm
+         && builtins.compareVersions ghc.version "9.12" >= 0
+    ) {
+      cabalProjectLocal = lib.mkBefore ''
+        package *
+          shared: True
+      '';
+    })
+    (lib.mkIf config.useLocalGhcLib (
+    let
+      ghc = (config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name};
+      ghcSrc = (pkgs.buildPackages.symlinkJoin {
+        name = ghc.name + "-full-src";
+        paths = [ ghc.configured-src ghc.generated ];
+      }) + "/compiler";
+      ghcMinRepoUrl = "file://${ghcSrc}";
+    in {
+      # When `useLocalGhcLib = true`, expose the GHC compiler tree
+      # (configured + generated) as a `source-repository-package` in
+      # the project's cabal.project (via cabalProjectLocal), pointing
+      # at the `compiler/` subdir of `(configured-src + generated)`.
+      #
+      # `inputMap` short-circuits haskell.nix's source-repo fetch so
+      # we don't go through `builtins.fetchGit` (which fails in pure
+      # eval mode without a sha256).  haskell.nix then re-wraps
+      # `inputMap.<url>` in its own minimal git repo at
+      # `lib/call-cabal-project-to-nix.nix:209` and the slice's
+      # `comp-v2-builder.nix` does the same — both wrappers produce
+      # deterministic content (same rsync + git init + commit), so
+      # cabal's `pkg-src-sha256` matches between plan-nix and slice.
+      #
+      # Why source-repository-package and not `packages:`:
+      #   * `packages:` makes cabal treat the package as *inplace* —
+      #     v2-build registers `<pkg>-<ver>-inplace` in dist-newstyle
+      #     but doesn't copy anything to the cabal-store layout, so
+      #     the slice's `$out/store/<ghc>/<unit-id>/` ends up empty
+      #     and consumers can't find the unit.
+      #   * source-repository-package takes the regular reinstallable
+      #     path: cabal hashes the wrapped repo's content into
+      #     `pkg-src-sha256`, builds the package, and *installs* it
+      #     to the cabal store like any other reinstallable dep.
+      #
+      # `allow-boot-library-installs: True` is needed at project
+      # level too — plan-to-nix's cabal-install would otherwise
+      # reject ghc's source instance.  The slice picks it up via
+      # `comp-v2-builder.nix:allowBootLibBlock` independently.
+      cabalProjectLocal = lib.mkBefore ''
+        -- Added by `useLocalGhcLib = true`: expose the GHC compiler
+        -- tree (configured + generated) as a source-repository-package
+        -- so cabal treats `lib:ghc` like a regular reinstallable
+        -- package (installed to the cabal-store, not inplace).
+        source-repository-package
+          type: git
+          location: ${ghcMinRepoUrl}
+          subdir: .
+          tag: minimal
+        allow-boot-library-installs: True
+      '';
+      # Key by `<url>/<ref>` (the first lookup form in
+      # `lib/call-cabal-project-to-nix.nix:fetchPackageRepo`) so we
+      # short-circuit the `.rev` check that the bare-`<url>` form
+      # applies — the local source isn't a git derivation and has
+      # no `.rev` attribute.  Strip string context from the key
+      # because nix forbids attribute names that carry references
+      # to store paths.
+      inputMap = {
+        ${builtins.unsafeDiscardStringContext "${ghcMinRepoUrl}/minimal"} = ghcSrc;
+      };
+    }
+    ))
+  ];
 }
