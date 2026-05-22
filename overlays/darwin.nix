@@ -14,10 +14,14 @@ _final: prev:
               # https://github.com/NixOS/nixpkgs/pull/47676
               # https://github.com/NixOS/nixpkgs/issues/45042
               x509-system.components.library.preBuild = "substituteInPlace System/X509/MacOS.hs --replace security /usr/bin/security";
-            } // pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.isDarwin)
+            } // pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.isDarwin
+              && builtins.compareVersions config.compiler.version "9.4" < 0)
             {
-              # fix broken c++ library selection for GHC < 9.4
-              # for GHC >= 9.4 the system-cxx-std-lib pseudo-package does this.
+              # Fix broken C++ library selection on darwin for GHC < 9.4.
+              # For GHC >= 9.4 the `system-cxx-std-lib` pseudo-package
+              # handles c++abi linkage automatically.  Older GHCs don't
+              # have that pseudo-package, so patch double-conversion's
+              # cabal file to ask for c++abi explicitly.
               double-conversion.components.library.preConfigure = ''
                 substituteInPlace double-conversion.cabal --replace 'extra-libraries: c++' 'extra-libraries: c++ c++abi'
               '';
