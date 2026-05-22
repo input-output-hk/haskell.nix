@@ -30,9 +30,24 @@
         in isProgOption && !isGhcOption
       ) args;
 
+      # Translate `--enable-X` toggles cabal-install records in
+      # plan.json's `configure-args` back into haskell.nix module
+      # options.  comp-builder reads these straight off each
+      # component config — picking them up here lets a project set
+      # e.g. `package <pkg>\n  profiling: True` /
+      # `debug-info: 2` in cabal.project and have the builder
+      # honour it without also needing module-level toggles.
+      hasEnableFlag = name: lib.elem ("--enable-${name}") args;
+      enableFlags =
+        lib.optionalAttrs (hasEnableFlag "profiling")         { enableProfiling        = true; }
+        // lib.optionalAttrs (hasEnableFlag "library-profiling") { enableLibraryProfiling = true; }
+        // lib.optionalAttrs (hasEnableFlag "coverage")        { doCoverage             = true; }
+        // lib.optionalAttrs (hasEnableFlag "debug-info")      { enableDWARF            = true; };
+
       value =
         lib.optionalAttrs (ghcOptions != []) { inherit ghcOptions; }
-        // lib.optionalAttrs (otherFlags != []) { configureFlags = otherFlags; };
+        // lib.optionalAttrs (otherFlags != []) { configureFlags = otherFlags; }
+        // enableFlags;
     in lib.optional (value != {}) {
       name = p.id;
       inherit value;
