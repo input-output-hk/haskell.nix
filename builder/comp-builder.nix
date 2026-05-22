@@ -830,10 +830,16 @@ let
       ''))
       + (lib.optionalString doCoverage ''
         mkdir -p $out/share
+        # cabal/Setup tucks `extra-compilation-artifacts/hpc` under
+        # one of a few build-dir layouts.  The per-component tmp
+        # dir is `dist/build/<cname>/<cname>-tmp` regardless of
+        # platform — note no `<exeExt>`, so we don't use
+        # `${testExecutable}-tmp` (`<cname>.exe-tmp` on Windows is
+        # a path cabal never creates).
         if [ -d dist/build/extra-compilation-artifacts ]; then
           cp -r dist/build/extra-compilation-artifacts/hpc $out/share
-        elif [ -d ${testExecutable}-tmp/extra-compilation-artifacts ]; then
-          cp -r ${testExecutable}-tmp/extra-compilation-artifacts/hpc $out/share
+        elif [ -d dist/build/${componentId.cname}/${componentId.cname}-tmp/extra-compilation-artifacts ]; then
+          cp -r dist/build/${componentId.cname}/${componentId.cname}-tmp/extra-compilation-artifacts/hpc $out/share
         elif [ -d dist/build/${componentId.cname}/extra-compilation-artifacts ]; then
           cp -r dist/build/${componentId.cname}/extra-compilation-artifacts/hpc $out/share
         else
