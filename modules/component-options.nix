@@ -152,6 +152,20 @@
       default = false;
     };
 
+    enableDWARF = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Compile the component with DWARF debug info (`-g`).
+        Populated automatically from `--enable-debug-info` entries in
+        plan.json's configure-args (see
+        `modules/install-plan/configure-args.nix`) so a
+        `cabal.project` `debug-info:` stanza flows through without
+        per-component module overrides.  When true, comp-builder
+        swaps in the `.dwarf` GHC variant and passes `-g3` to ghc.
+      '';
+    };
+
     profilingDetail = lib.mkOption {
       type = lib.types.nullOr haskellLib.types.uniqueStr;
       default = "default";
