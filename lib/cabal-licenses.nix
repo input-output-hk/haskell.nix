@@ -17,5 +17,13 @@ in licenses // {
       # Not setting `free` here. The license may or may not be `free`.
       # See https://github.com/input-output-hk/haskell.nix/pull/1006
     };
+  # Some packages (e.g. data-sketches) use this non-standard SPDX identifier.
+  LicenseRef-Apache = {
+      spdxId = "Apache-2.0";
+      shortName = "Apache-2.0";
+      fullName = "Apache License 2.0";
+      url = "https://spdx.org/licenses/Apache-2.0.html";
+      free = true;
+    };
   NONE = null;
 }
