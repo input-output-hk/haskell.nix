@@ -100,5 +100,25 @@ with lib.types;
         If set, prevents nix-tools from attempting to load package.yaml even if it is present.
       '';
     };
+    useLocalGhcLib = mkOption {
+      type = bool;
+      default = false;
+      description = ''
+        Expose the GHC compiler tree (configured-src + generated, the
+        `compiler/` subdir thereof) to the planner as a regular
+        reinstallable package source.  Use this when the project
+        depends on / constrains the `ghc` package — e.g.
+        `ghc-lib-reinstallable`.
+
+        Cabal projects (see `modules/cabal-project.nix`) inject a
+        `source-repository-package` block into `cabalProjectLocal`
+        so cabal hashes the wrapped repo's content into
+        `pkg-src-sha256`.  Stack projects (see
+        `modules/stack-project.nix`) re-add the post-plan
+        `packages.ghc.src` override that
+        `modules/configuration-nix.nix` used to apply
+        unconditionally.
+      '';
+    };
   };
 }

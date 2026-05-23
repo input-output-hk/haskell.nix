@@ -68,11 +68,6 @@ in addPackageKeys {
       (config.hsPkgs.buildPackages.alex.components.exes.alex or (pkgs.haskell-nix.tool config.compiler.nix-name "alex" {}))
       (config.hsPkgs.buildPackages.happy.components.exes.happy or (pkgs.haskell-nix.tool config.compiler.nix-name "happy" {}))
     ]);
-  packages.ghc.src = lib.mkForce ((pkgs.symlinkJoin {
-     name = config.ghc.package.name + "-full-src";
-     paths = [ config.ghc.package.configured-src config.ghc.package.generated ]; }) + "/compiler");
-  packages.ghc.package-description-override = pkgs.lib.mkForce null;
-
   # Remove dependency on hsc2hs (hsc2hs should be in ghc derivation)
   packages.mintty.components.library.build-tools = lib.mkForce [];
 

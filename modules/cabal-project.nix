@@ -154,4 +154,62 @@ in {
       '';
     };
   };
+  config = lib.mkIf config.useLocalGhcLib (
+    let
+      ghc = (config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name};
+      ghcSrc = (pkgs.buildPackages.symlinkJoin {
+        name = ghc.name + "-full-src";
+        paths = [ ghc.configured-src ghc.generated ];
+      }) + "/compiler";
+      ghcMinRepoUrl = "file://${ghcSrc}";
+    in {
+      # When `useLocalGhcLib = true`, expose the GHC compiler tree
+      # (configured + generated) as a `source-repository-package` in
+      # the project's cabal.project (via cabalProjectLocal), pointing
+      # at the `compiler/` subdir of `(configured-src + generated)`.
+      #
+      # `inputMap` short-circuits haskell.nix's source-repo fetch so
+      # we don't go through `builtins.fetchGit` (which fails in pure
+      # eval mode without a sha256).  haskell.nix then re-wraps
+      # `inputMap.<url>` in its own minimal git repo at
+      # `lib/call-cabal-project-to-nix.nix` -- the wrapper produces
+      # deterministic content (same rsync + git init + commit), so
+      # cabal's `pkg-src-sha256` is stable across evaluations.
+      #
+      # Why source-repository-package and not `packages:`:
+      #   * `packages:` makes cabal treat the package as *inplace* --
+      #     v2-build registers `<pkg>-<ver>-inplace` in dist-newstyle
+      #     but doesn't copy anything to the cabal-store layout.
+      #   * source-repository-package takes the regular reinstallable
+      #     path: cabal hashes the wrapped repo's content into
+      #     `pkg-src-sha256`, builds the package, and installs it
+      #     like any other reinstallable dep.
+      #
+      # `allow-boot-library-installs: True` is needed at project
+      # level so plan-to-nix's cabal-install doesn't reject ghc's
+      # source instance.
+      cabalProjectLocal = lib.mkBefore ''
+        -- Added by `useLocalGhcLib = true`: expose the GHC compiler
+        -- tree (configured + generated) as a source-repository-package
+        -- so cabal treats `lib:ghc` like a regular reinstallable
+        -- package (installed to the cabal-store, not inplace).
+        source-repository-package
+          type: git
+          location: ${ghcMinRepoUrl}
+          subdir: .
+          tag: minimal
+        allow-boot-library-installs: True
+      '';
+      # Key by `<url>/<ref>` (the first lookup form in
+      # `lib/call-cabal-project-to-nix.nix:fetchPackageRepo`) so we
+      # short-circuit the `.rev` check that the bare-`<url>` form
+      # applies — the local source isn't a git derivation and has
+      # no `.rev` attribute.  Strip string context from the key
+      # because nix forbids attribute names that carry references
+      # to store paths.
+      inputMap = {
+        ${builtins.unsafeDiscardStringContext "${ghcMinRepoUrl}/minimal"} = ghcSrc;
+      };
+    }
+  );
 }
