@@ -58,13 +58,23 @@ in {
       type = nullOr lines;
       default = readIfExists config.evalSrc config.cabalProjectFileName;
     };
+    # `cabalProjectLocal` / `cabalProjectFreeze` no longer
+    # auto-load `cabal.project.local` / `cabal.project.freeze` from
+    # the project source.  Projects that want that behaviour set
+    # the option explicitly:
+    #
+    #   cabalProjectLocal = builtins.readFile ./cabal.project.local;
+    #
+    # Plain `lines` (not `nullOr lines`) so `lib.mkBefore` directives
+    # from platform-conditional defaults below merge cleanly with
+    # whatever the user passes.
     cabalProjectLocal = mkOption {
-      type = nullOr lines;
-      default = readIfExists config.evalSrc "${config.cabalProjectFileName}.local";
+      type = lines;
+      default = "";
     };
     cabalProjectFreeze = mkOption {
-      type = nullOr lines;
-      default = readIfExists config.evalSrc "${config.cabalProjectFileName}.freeze";
+      type = lines;
+      default = "";
     };
     ghc = mkOption {
       type = nullOr package;
@@ -154,7 +164,82 @@ in {
       '';
     };
   };
-  config = lib.mkIf config.useLocalGhcLib (
+  config = lib.mkMerge [
+    # Musl host: every executable should be statically linked.
+    # comp-builder achieves this at build time by adding
+    # `--ghc-option=-optl=-static` to the per-component
+    # configureFlags, which doesn't reach plan-to-nix — plan.json
+    # keeps `--disable-executable-static` and the misalignment is
+    # ignored.  Surface the toggle in cabal.project so plan-to-nix
+    # records `--enable-executable-static` for every unit; the
+    # actual build is unchanged.  Set inside `package *` because
+    # cabal only propagates `executable-static` per-component when
+    # the directive lives in that block.
+    (lib.mkIf pkgs.stdenv.hostPlatform.isMusl {
+      cabalProjectLocal = lib.mkBefore ''
+        package *
+          executable-static: True
+      '';
+    })
+    # x86_64-darwin host: enable `library-for-ghci` so cabal emits a
+    # merged `HS<unit>.o` per unit alongside the `.dylib`.
+    # comp-builder already passes `--enable-library-for-ghci` for
+    # !ghcjs / !wasm / !android (which on darwin is always),
+    # so this matches the on-disk artefacts to what plan-to-nix
+    # records.  Helps TH-eval via `ghc-iserv-dyn` find a merged
+    # `.o` to load directly, bypassing dyld dylib weirdness under
+    # Rosetta (Hydra builds x86_64-darwin on aarch64-darwin
+    # hardware).  Scoped to x86_64 — aarch64-darwin runs natively.
+    (lib.mkIf (pkgs.stdenv.hostPlatform.isDarwin
+            && pkgs.stdenv.hostPlatform.isx86_64) {
+      cabalProjectLocal = lib.mkBefore ''
+        package *
+          library-for-ghci: True
+      '';
+    })
+    # Android host: link every exe statically so qemu-user can run
+    # it on the build host.  A dynamic Android binary references
+    # `/system/bin/linker[64]` at runtime; qemu-arm fails with
+    # `Could not open '/system/bin/linker': No such file or
+    # directory` because the build host doesn't ship one.
+    # `lib/check.nix` papers over this by re-overriding the test
+    # exe with `setupBuildFlags = ["--ghc-option=-optl-static"]`;
+    # surfacing the same flags at the project level here keeps
+    # plan-to-nix's recorded configure-args matching the artefact.
+    # `-optl-static` makes the exe self-contained, `-optl-ldl`
+    # pulls in libdl that GHC's RTS still references even under
+    # static linking, and on aarch32 `-optl-no-pie` disables PIE
+    # so the static link doesn't trip `dynamic STT_GNU_IFUNC`
+    # relocation errors.
+    (lib.mkIf pkgs.stdenv.hostPlatform.isAndroid {
+      cabalProjectLocal = lib.mkBefore ''
+        package *
+          ghc-options: -optl-static -optl-ldl${
+            lib.optionalString pkgs.stdenv.hostPlatform.isAarch32 " -optl-no-pie"
+          }
+      '';
+    })
+    # wasm 9.12+: real wasm-ghc reports `target RTS linker only
+    # supports shared libraries: YES` and no `Support shared
+    # libraries` field at all.  cabal interprets the absence of
+    # `Support shared libraries` as "no shared support" and
+    # records `--disable-shared` in plan-nix, but TH-eval / dyld
+    # on wasm 9.12+ requires `.so` files for every transitively
+    # reachable lib (the RTS linker only loads shared libs).
+    # Forcing `shared: True` at the project level keeps plan-nix's
+    # recorded UnitIds matching what a downstream cabal v2-build
+    # against the real wasm GHC would compute.
+    (lib.mkIf (
+      let ghc = (config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name};
+      in pkgs.stdenv.hostPlatform.isWasm
+         && builtins.compareVersions ghc.version "9.12" >= 0
+    ) {
+      cabalProjectLocal = lib.mkBefore ''
+        package *
+          shared: True
+      '';
+    })
+    (lib.mkIf config.useLocalGhcLib (
     let
       ghc = (config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name};
       ghcSrc = (pkgs.buildPackages.symlinkJoin {
@@ -211,5 +296,6 @@ in {
         ${builtins.unsafeDiscardStringContext "${ghcMinRepoUrl}/minimal"} = ghcSrc;
       };
     }
-  );
+    ))
+  ];
 }

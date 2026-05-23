@@ -130,7 +130,7 @@ in let
         else cabalProject
     }
     ${
-      pkgs.lib.optionalString (cabalProjectLocal != null) ''
+      pkgs.lib.optionalString (cabalProjectLocal != null && cabalProjectLocal != "") ''
         -- Added from `cabalProjectLocal` argument to the `cabalProject` function
         ${cabalProjectLocal}
       ''
