@@ -3,6 +3,71 @@ that will impact users.
 
 ## May 23, 2026
 
+**Breaking change:** `cabalProjectLocal` and `cabalProjectFreeze`
+no longer auto-load `cabal.project.local` / `cabal.project.freeze`
+from the project source.  The option types are now `lines`
+(default `""`) instead of `nullOr lines` with a `readFile`-based
+default.
+
+Projects that relied on the implicit `readFile` behaviour should
+set the option explicitly:
+
+```nix
+haskell-nix.cabalProject {
+  src = ./.;
+  cabalProjectLocal = builtins.readFile ./cabal.project.local;
+  cabalProjectFreeze = builtins.readFile ./cabal.project.freeze;
+  # ...
+}
+```
+
+Reasons for the change:
+
+  * The implicit IFD-based default forced every project that
+    didn't want it (notably internal `hadrian` and
+    `ghc-extra-projects` builds) to set `cabalProjectLocal = null`
+    explicitly just to suppress the read.
+  * The `nullOr lines` type prevented haskell.nix from merging
+    project-level `cabalProjectLocal` content (`mkBefore` /
+    `mkAfter`) with explicit user values, which the new
+    platform-conditional defaults below rely on.
+
+Platform-conditional defaults are now injected into every cabal
+project's `cabalProjectLocal`:
+
+  * **musl host** — `package * \n executable-static: True`.
+    comp-builder already adds `--ghc-option=-optl=-static` at
+    build time; this surfaces the toggle in cabal.project so
+    plan-to-nix records `--enable-executable-static` for every
+    unit.  Observable build behaviour is unchanged.
+  * **x86_64-darwin host** — `package * \n library-for-ghci: True`.
+    Mirrors what comp-builder passes for `!ghcjs && !wasm && !android`,
+    so plan-nix's recorded UnitIds match the artefacts.
+  * **android host** — `package * \n ghc-options: -optl-static -optl-ldl`
+    (plus `-optl-no-pie` on aarch32).  Mirrors the
+    `setupBuildFlags` overrides previously applied only by
+    `lib/check.nix`'s test-exe re-wrap.
+  * **wasm GHC ≥ 9.12** — `package * \n shared: True`.  Wasm's RTS
+    linker only loads `.so` files; `--disable-shared` (the cabal
+    default) would force a `.a`-only install that TH-eval can't
+    load.
+
+These directives sit at `mkBefore` priority so a project's own
+`cabalProjectLocal` overrides them if needed.
+
+**Cache impact:** plan-nix hashes will change for affected
+platforms on the next CI run — a one-time rebuild wave.
+
+To opt out of a specific default, override it in your project's
+`cabalProjectLocal`:
+
+```nix
+cabalProjectLocal = ''
+  package *
+    executable-static: False
+'';
+```
+
 The post-plan `packages.ghc.src` override that
 `modules/configuration-nix.nix` used to apply unconditionally is
 now opt-in via the new project-level `useLocalGhcLib` option.

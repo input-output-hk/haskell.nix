@@ -235,9 +235,6 @@ in rec {
       name = "ghc-extra-projects-${ghc-extra-projects-type proj.ghc}-${ghcName}";
       src = proj;
       inherit (proj) cabalProject;
-      # Avoid readDir and readFile IFD functions looking for these files
-      cabalProjectLocal = null;
-      cabalProjectFreeze = null;
       index-state = final.haskell-nix.internalHackageIndexState;
       # Where to look for materialization files
       materialized =

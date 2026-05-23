@@ -358,8 +358,6 @@ let
           cd hadrian
         '';
       }];
-      cabalProjectLocal = null;
-      cabalProjectFreeze = null;
       src = haskell-nix.haskellLib.cleanSourceWith {
         src = {
           outPath = pkgsBuildBuild.srcOnly {
