@@ -1,6 +1,33 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## May 23, 2026
+
+The post-plan `packages.ghc.src` override that
+`modules/configuration-nix.nix` used to apply unconditionally is
+now opt-in via the new project-level `useLocalGhcLib` option.
+
+If your project depends on / constrains the `ghc` package (e.g.
+uses `ghc-lib-reinstallable` or pins `lib:ghc`), add
+`useLocalGhcLib = true` to your project arguments:
+
+```nix
+haskell-nix.cabalProject {
+  # ...
+  useLocalGhcLib = true;
+}
+```
+
+For cabal projects this injects a `source-repository-package`
+block into `cabalProjectLocal` that points at the configured GHC
+tree.  For stack projects it re-applies the previous
+`packages.ghc.src` post-plan override.
+
+Symptoms when the flag is needed but not set: the planner fails
+because it can't satisfy a `ghc ==<version>` constraint against
+the boot package set, or `lib:ghc` is rejected with
+`allow-boot-library-installs` errors.
+
 ## Mar 24, 2026
 
 GHC options set in `cabal.project` files (via `package` or
