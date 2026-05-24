@@ -39,6 +39,25 @@
         every `stackage` package).
       '';
     };
+    exposePackagesVia = lib.mkOption {
+      type = lib.types.enum [ "cabal-store" "ghc-pkg" ];
+      default = "cabal-store";
+      description = ''
+        How the v2 shell's pre-built library deps are made visible to
+        tools the user runs.  One of:
+          * "cabal-store" (default) — the composed store is copied
+            into `~/.cabal/store/<ghc>-inplace/` via a shellHook
+            (or the explicit `haskell-nix-cabal-store-sync` command).
+            `cabal v2-build` then reuses the units directly.  The
+            shell's `ghc` is left plain, so `runghc`/`ghci` will not
+            see the deps.
+          * "ghc-pkg" — the shell's `ghc` is wrapped with
+            GHC_ENVIRONMENT pointing at the composed store's
+            package.db, so `ghc`/`ghci`/`runghc`/`ghc-pkg` see every
+            dep directly.  No files are written outside the shell.
+        Only affects `shellFor` under `builderVersion = 2`.
+      '';
+    };
     tools = lib.mkOption {
       type = lib.types.attrsOf lib.types.unspecified;
       default = {};

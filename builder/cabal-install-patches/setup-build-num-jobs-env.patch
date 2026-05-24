@@ -1,0 +1,46 @@
+Pass `cabal v2-build --jobs` through to `Setup build -jN`.
+
+cabal-install 3.16's `setupHsBuildFlags` deliberately leaves
+`buildNumJobs = mempty` (with a "TODO: [nice to have]" comment), so
+each `Setup build` invocation runs `ghc --make` single-threaded —
+losing per-module compilation parallelism.  v1's haskell.nix builder
+side-stepped this by invoking `Setup build -jN` directly, but v2
+slices use `cabal v2-build` which doesn't expose that path.
+
+This patch reads `HASKELLNIX_BUILD_NUM_JOBS` at build time and feeds
+it into `buildNumJobs`, so a slice that exports the env var gets
+`-jN` on every `Setup build` cabal-install spawns.
+
+Build-phase flag (not configure), so it doesn't land in
+`pkgHashConfigureOptions` and UnitIds stay stable — plan-nix matching
+is preserved whether the env var is set or not.
+
+--- a/src/Distribution/Client/ProjectPlanning.hs
++++ b/src/Distribution/Client/ProjectPlanning.hs
+@@ -233,6 +233,8 @@
+ import Distribution.Solver.Types.ProjectConfigPath
+ import System.Directory (getCurrentDirectory)
+ import System.FilePath
++import qualified System.Environment as Env
++import qualified System.IO.Unsafe as Unsafe
+ import qualified Text.PrettyPrint as Disp
+
+ -- | Check that an 'ElaboratedConfiguredPackage' actually makes
+@@ -4228,7 +4230,16 @@
+     { buildCommonFlags = common
+     , buildProgramPaths = mempty -- unused, set at configure time
+     , buildProgramArgs = mempty -- unused, set at configure time
+-    , buildNumJobs = mempty -- TODO: [nice to have] sometimes want to use toFlag (Just numBuildJobs),
++    -- haskell.nix: read `HASKELLNIX_BUILD_NUM_JOBS` from the env so
++    -- slice builders can pass `-jN` through to `Setup build`.
++    -- Build-phase flag, so it doesn't affect `pkgHashConfigureOptions`
++    -- and the slice's UnitId stays stable.
++    , buildNumJobs = Unsafe.unsafePerformIO $ do
++        mv <- Env.lookupEnv "HASKELLNIX_BUILD_NUM_JOBS"
++        case mv of
++          Just s | [(n, "")] <- (reads s :: [(Int, String)]) ->
++            pure (Cabal.toFlag (Just n))
++          _ -> pure mempty
+     , buildUseSemaphore =
+         if elabSetupScriptCliVersion elab >= mkVersion [3, 11, 0, 0]
+           then -- Cabal 3.11 is the first version that supports parallelism semaphores

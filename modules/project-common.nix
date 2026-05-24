@@ -100,6 +100,18 @@ with lib.types;
         If set, prevents nix-tools from attempting to load package.yaml even if it is present.
       '';
     };
+    builderVersion = mkOption {
+      type = int;
+      default = 1;
+      description = ''
+        Selects which component builder is used for per-component derivations.
+          * `1` (default) — the Setup.hs-based builder (comp-builder.nix).
+          * `2` — the cabal v2-build-based slicing builder
+            (comp-v2-builder.nix).
+        This is project-wide.  Set it on the project module to switch
+        builders; there is no per-component opt-in.
+      '';
+    };
     useLocalGhcLib = mkOption {
       type = bool;
       default = false;
@@ -110,14 +122,18 @@ with lib.types;
         depends on / constrains the `ghc` package — e.g.
         `ghc-lib-reinstallable`.
 
-        Cabal projects (see `modules/cabal-project.nix`) inject a
-        `source-repository-package` block into `cabalProjectLocal`
-        so cabal hashes the wrapped repo's content into
-        `pkg-src-sha256`.  Stack projects (see
-        `modules/stack-project.nix`) re-add the post-plan
-        `packages.ghc.src` override that
-        `modules/configuration-nix.nix` used to apply
-        unconditionally.
+        The project-level wiring differs by builder:
+          * Cabal projects (see `modules/cabal-project.nix`) inject a
+            `source-repository-package` block into `cabalProjectLocal`
+            so cabal hashes the wrapped repo's content into
+            `pkg-src-sha256`.  Both plan-to-nix and the v2 slice see
+            the same repo, so UnitIds align.
+          * Stack projects (see `modules/stack-project.nix`) re-add
+            the post-plan `packages.ghc.src` override that
+            `modules/configuration-nix.nix` used to apply
+            unconditionally — stack only supports the v1 builder for
+            now, so the post-plan override is harmless (v1 doesn't
+            enforce UnitId alignment).
       '';
     };
   };

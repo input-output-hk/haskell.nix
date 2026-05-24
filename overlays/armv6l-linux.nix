@@ -14,7 +14,7 @@ in
         import ./linux-cross.nix {
           inherit (final.stdenv) hostPlatform buildPlatform;
           inherit (final) stdenv lib;
-          inherit (final.pkgsBuildBuild) writeShellScriptBin symlinkJoin;
+          inherit (final.pkgsBuildBuild) writeShellScriptBin symlinkJoin runCommand makeWrapper;
           inherit (final.haskell-nix) haskellLib;
           qemu = final.pkgsBuildBuild.qemu;
           inherit (final) gmp;

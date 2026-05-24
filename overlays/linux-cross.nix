@@ -1,7 +1,9 @@
 { stdenv
 , lib
 , haskellLib
+, runCommand
 , writeShellScriptBin
+, makeWrapper
 , qemu
 , qemuSuffix ? (haskellLib.qemuByHostPlatform hostPlatform)
 , iserv-proxy
@@ -52,4 +54,48 @@ let
   # Choose the appropriate test wrapper
   testWrapper = [ "${qemuTestWrapper}/bin/test-wrapper" ];
 
-in { inherit configureFlags ghcOptions testWrapper; }
+  # v2 builder ghc wrapper — counterpart to the one in
+  # `overlays/mingw_w64.nix`.  Cross targets need every GHC
+  # invocation to silently get `-fexternal-interpreter
+  # -pgmi <wrapper>` so the slice's `cabal v2-build` (which doesn't
+  # consume the v1-only `setupBuildFlags`) can still drive iserv
+  # via qemu.  Putting these flags into per-package `ghc-options:`
+  # in cabal.project would change cabal's UnitId hash and fork the
+  # same package's UnitId across slices that need to compose; the
+  # wrapper approach keeps `ghc --info` (and therefore the
+  # UnitId-relevant compiler identity) unchanged.
+  wrapGhc = ghc:
+    runCommand "${ghc.name}-with-iserv"
+      { nativeBuildInputs = [ makeWrapper ];
+        passthru = {
+          inherit (ghc) version meta;
+          targetPrefix = ghc.targetPrefix or "";
+        };
+      } ''
+        mkdir -p $out/bin
+        prefix="${ghc.targetPrefix or ""}"
+        # Wrap `ghc` and `ghci` with the iserv ghc-options.
+        for prog in ghc ghci ghc-${ghc.version} ghci-${ghc.version}; do
+          if [ -x ${ghc}/bin/$prefix$prog ]; then
+            makeWrapper \
+              ${ghc}/bin/$prefix$prog \
+              $out/bin/$prefix$prog \
+              --add-flags ${lib.escapeShellArg (lib.concatStringsSep " " ghcOptions)}
+          fi
+        done
+        # Symlink every other bin from the real ghc unchanged so
+        # cabal can find ghc-pkg, hsc2hs, runghc, runhaskell,
+        # haddock, etc. as it expects.
+        for f in ${ghc}/bin/$prefix*; do
+          base=$(basename "$f")
+          [ -e "$out/bin/$base" ] || ln -s "$f" "$out/bin/$base"
+        done
+        # Forward $ghc/lib/ and $ghc/share/ so `ghc --print-libdir`
+        # (which makeWrapper preserves via getExecutablePath) still
+        # finds the boot libs.
+        for d in lib share; do
+          [ -d ${ghc}/$d ] && ln -s ${ghc}/$d $out/$d
+        done
+      '';
+
+in { inherit configureFlags ghcOptions testWrapper wrapGhc; }
