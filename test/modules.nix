@@ -1,7 +1,5 @@
 [{
-  package-keys = ["HsOpenSSL" "libsodium" "double-conversion"];
-  # See https://github.com/haskell-cryptography/HsOpenSSL/issues/95
-  packages.HsOpenSSL.ghcOptions = ["-optc=-Wno-incompatible-pointer-types"];
+  package-keys = ["libsodium" "double-conversion"];
 }
 
 ({pkgs, lib, ...}: lib.mkIf pkgs.stdenv.hostPlatform.isAndroid {

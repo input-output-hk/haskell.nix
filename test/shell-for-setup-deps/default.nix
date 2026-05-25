@@ -10,6 +10,7 @@ let
   };
 
   env = project.shellFor {
+    exposePackagesVia = "ghc-pkg";
     tools.hoogle = { cabalProjectLocal = builtins.readFile ../cabal.project.local; };
     withHoogle = true;
   };

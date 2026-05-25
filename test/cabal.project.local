@@ -14,6 +14,10 @@ if impl(ghc > 9.13)
 -- This prevents hsc2hs from causing old versions of packages from being added to plan.json
 allow-newer: hsc2hs:*
 
+-- https://github.com/haskell-cryptography/HsOpenSSL/issues/95
+package HsOpenSSL
+  ghc-options: -optc=-Wno-incompatible-pointer-types
+
 repository head.hackage.ghc.haskell.org
   url: https://ghc.gitlab.haskell.org/head.hackage/
   secure: True
@@ -22,7 +26,7 @@ repository head.hackage.ghc.haskell.org
      f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
      26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
      7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
-  --sha256: sha256-wZQkeslT65jzNIvjkOpPQulcxgZMCin+qQOizOY0tyA=
+  --sha256: sha256-qlRXs3fa5tOG4Kv8KV4/JYRBjYMsdFoFGgnqS5/c/y8=
 
 repository ghcjs-overlay
   url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/ffb32dce467b9a4d27be759fdd2740a6edd09d0b
