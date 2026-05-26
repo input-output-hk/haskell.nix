@@ -311,8 +311,7 @@ let
     # globally (`comp-builder.nix:507`); doing it derivation-wide
     # breaks glibc `git` for `source-repository-package` resolution.
     extraLibraryPaths = lib.optional
-      (haskellLib.isNativeMusl
-       && builtins.compareVersions ghc.version "9.10" >= 0)
+      haskellLib.isNativeMusl
       "${buildPackages.gcc-unwrapped.lib}/${stdenv.hostPlatform.config}/lib";
   };
 

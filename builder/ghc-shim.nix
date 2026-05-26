@@ -44,10 +44,17 @@
 let
   targetPrefix = ghc.targetPrefix or "";
   ghcBin = "${targetPrefix}ghc";
-  nativeMuslNeedsAlias =
+  # Every native-musl GHC needs the LD_LIBRARY_PATH prefix shim
+  # (see `extraLibraryPaths` above for the iserv libgcc lookup).
+  # The unprefixed alias creation (unlit, ghc-iserv…) is a separate
+  # concern that only applies from 9.10 onwards — before that, ghc
+  # ships those tools at unprefixed paths already.
+  nativeMuslNeedsAliases =
     haskellLib.isNativeMusl
     && builtins.compareVersions ghc.version "9.10" >= 0;
-  needsLibShim = stdenv.hostPlatform.isGhcjs || nativeMuslNeedsAlias;
+  needsLibShim =
+    stdenv.hostPlatform.isGhcjs
+    || haskellLib.isNativeMusl;
 in
 
 pkgsBuildBuild.runCommand "${ghc.name}-shim" {
@@ -86,7 +93,7 @@ pkgsBuildBuild.runCommand "${ghc.name}-shim" {
       esac
     done
   ''
-  else if nativeMuslNeedsAlias then ''
+  else if haskellLib.isNativeMusl then ''
     mkdir -p $out/bin
     ghcLib=$(${ghc}/bin/${ghcBin} --print-libdir)
     libRel=''${ghcLib#${ghc}/}
@@ -107,16 +114,18 @@ pkgsBuildBuild.runCommand "${ghc.name}-shim" {
           ;;
       esac
     done
-    ${
-      # Literate pre-processor + iserv lookups.  Guarded on
-      # existence so a ghc that lacks `<prefix>ghc-iserv-dyn`
-      # (etc.) just skips that one alias instead of dangling.
+    ${lib.optionalString nativeMuslNeedsAliases (
+      # Literate pre-processor + iserv lookups.  GHC ≥ 9.10
+      # only — earlier versions ship those tools at unprefixed
+      # paths already.  Guarded on existence so a ghc that lacks
+      # `<prefix>ghc-iserv-dyn` (etc.) just skips that one alias
+      # instead of dangling.
       lib.concatMapStrings (a: ''
         if [ -e "${ghc}/bin/${targetPrefix}${a}" ] && [ ! -e "$out/bin/${a}" ]; then
           ln -s "${targetPrefix}${a}" "$out/bin/${a}"
         fi
       '') [ "unlit" "ghc-iserv" "ghc-iserv-dyn" "ghc-iserv-prof" ]
-    }
+    )}
   '' else ''
     mkdir -p $out/bin
     for f in ${ghc}/bin/*; do
