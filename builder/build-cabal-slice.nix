@@ -845,12 +845,7 @@ stdenv.mkDerivation ({
         echo "--- cabal v2-haddock ${target} ---"
         cabal $cabalGlobalArgs v2-haddock $cabalCmdArgs \
           --haddock-html --haddock-hyperlink-source --haddock-quickjump \
-          -v ${target} 2>&1 | tee -a $buildRoot/build.log
-        echo "--- dist-newstyle/tmp tree after v2-haddock ---"
-        find $buildRoot/project/dist-newstyle/tmp \
-             -path "*/dist/doc/*" -o -path "*/share/doc/*" 2>/dev/null | head -40 || true
-        echo "--- unit-store layout after v2-haddock ---"
-        find $out/store -type d 2>/dev/null | head -40 || true
+          ${target} 2>&1 | tee -a $buildRoot/build.log
         # Cabal `v2-haddock` installs the main library's html into
         # the unit-store `<unit>/share/doc/html/`, but for
         # sublibraries it only emits the html under the per-package
@@ -1123,9 +1118,21 @@ stdenv.mkDerivation ({
       else
         expected_name="z-$tgt_pkg-z-$tgt_cname"
       fi
+      # Only consider confs this slice wrote — dep-slice confs are
+      # lndir'd in as symlinks (see the `captured store unit` loop
+      # near line 1004 that uses the same check).  Without this,
+      # when a doc slice has both the base (non-doc) main-lib
+      # composed in via depSlices AND its own doc-variant of the
+      # same package, the first lexicographic match wins
+      # (`5836f819` from the base slice vs `bb5ba586` this slice's
+      # --cid).  Whichever it is, the loop's `break` may pick the
+      # base-slice's conf — then we'd strip docs from this slice's
+      # own --cid unit, which is exactly where cabal v2-haddock
+      # installed them.
       target_uid=
       for conf in $out/store/ghc-*/package.db/*.conf; do
         [ -e "$conf" ] || continue
+        [ -L "$conf" ] && continue
         name_in_conf=$(awk '/^name:/ {print $2; exit}' "$conf")
         if [ "$name_in_conf" = "$expected_name" ]; then
           target_uid=$(awk '/^id:/ {print $2; exit}' "$conf")
