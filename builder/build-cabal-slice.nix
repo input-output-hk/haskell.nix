@@ -845,7 +845,12 @@ stdenv.mkDerivation ({
         echo "--- cabal v2-haddock ${target} ---"
         cabal $cabalGlobalArgs v2-haddock $cabalCmdArgs \
           --haddock-html --haddock-hyperlink-source --haddock-quickjump \
-          ${target} 2>&1 | tee -a $buildRoot/build.log
+          -v ${target} 2>&1 | tee -a $buildRoot/build.log
+        echo "--- dist-newstyle/tmp tree after v2-haddock ---"
+        find $buildRoot/project/dist-newstyle/tmp \
+             -path "*/dist/doc/*" -o -path "*/share/doc/*" 2>/dev/null | head -40 || true
+        echo "--- unit-store layout after v2-haddock ---"
+        find $out/store -type d 2>/dev/null | head -40 || true
         # Cabal `v2-haddock` installs the main library's html into
         # the unit-store `<unit>/share/doc/html/`, but for
         # sublibraries it only emits the html under the per-package
