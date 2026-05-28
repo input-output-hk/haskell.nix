@@ -776,9 +776,28 @@ let
   # Pre-existing entries are skipped entirely (no version pin either)
   # — GHC's bundled package db already fixes them, and pinning them
   # tends to push cabal off legacy-tool PATH fallbacks for hsc2hs /
-  # alex / happy / etc.  Sourced from `libDepClosure` (lib deps
-  # only); exe-deps are left unconstrained so build-tools can resolve
-  # against their own slice's solve.
+  # alex / happy / etc.  Seeded from this slice's lib closure AND
+  # the lib closure of every transitive exe-dep (alex / happy /
+  # hsc2hs / ...): plan-nix solves the whole project as one plan,
+  # so the exe's lib deps use the same reinstall versions the lib
+  # slice's closure does.  Without the exe-seed extension cabal in
+  # the slice would freely pick GHC-bundled `-inplace` versions for
+  # the build-tool's deps when nothing in the lib slice's closure
+  # pulls those reinstalls in (e.g. zlib's lib depends only on base
+  # + bytestring, but its `build-tool-depends: hsc2hs` brings a full
+  # directory/filepath/process closure that plan-nix had reinstalled
+  # — hsc2hs's UnitId then diverges from the pre-built slice and
+  # cabal rebuilds it).  Within a single plan-nix every package has
+  # one version, so the first-wins grouping is stable across the
+  # combined closure.
+  exeUnitsInAllDeps =
+    lib.concatMap (e:
+      let p = e.entry;
+          cn = p.component-name or "";
+      in if lib.hasPrefix "exe:" cn then [ p ] else []
+    ) allDepClosure;
+  libConstraintClosure =
+    mkClosureFrom (ourPlanUnits ++ exeUnitsInAllDeps) libDepsOf;
   libConstraintPins =
     let
       grouped = lib.foldl' (acc: e:
@@ -790,7 +809,7 @@ let
               || (p.type or null) == "pre-existing"
            then acc
            else acc // { ${n} = v; }
-      ) {} libDepClosure;
+      ) {} libConstraintClosure;
     in lib.sort (a: b: a.name < b.name)
         (lib.mapAttrsToList (n: v: { name = n; version = v; }) grouped);
 
