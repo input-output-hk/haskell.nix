@@ -13,7 +13,9 @@ maintainer:          rodney.lorrimar@iohk.io
 category:            Testing
 
 custom-setup
-  setup-depends:       conduit
+  setup-depends:       base
+                     , directory
+                     , conduit
                      , conduit-extra
                      , Cabal
                      , ghc

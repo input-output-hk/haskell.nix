@@ -7,7 +7,20 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-simple-debug";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    # v2 bakes DWARF in at slice build time when cabal.project
+    # records `debug-info:`, and uses the `.dwarf` GHC variant
+    # (which compiles its own RTS / `ghc-internal` etc. with
+    # `-g`) so DWARF info covers BOTH the user's code and the
+    # runtime — matching what v1's `<slice>.dwarf` overlay
+    # used to do.  Routing the swap via `compilerSelection` keeps
+    # everything that derives from the compiler (plan-nix, slice
+    # GHC, dummy-ghc, ...) on the same DWARF variant; per-slice
+    # overrides via `.dwarf` would diverge from plan-nix's UnitId.
+    compilerSelection = p: lib.mapAttrs (_: c: c.dwarf) p.haskell-nix.compiler;
+    cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
+      package *
+        debug-info: 2
+    '';
   };
 
   packages = project.hsPkgs;
@@ -25,7 +38,7 @@ in lib.recurseIntoAttrs {
     name = "cabal-simple-debug-test";
 
     buildCommand = ''
-      exe="${(packages.cabal-simple.components.exes.cabal-simple.dwarf).exePath}"
+      exe="${packages.cabal-simple.components.exes.cabal-simple.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2

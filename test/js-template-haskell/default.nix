@@ -4,7 +4,7 @@
 with lib;
 
 let
-  project = project' {
+  project = profiled: project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "js-template-haskell";
     cabalProjectLocal = builtins.readFile ../cabal.project.local
@@ -13,19 +13,27 @@ let
         extra-packages: ghci
         constraints: ghcjs installed
       constraints: text -simdutf, text source
+    ''
+    # See `docs/dev/profiling.md` — v2 expects profiling toggles
+    # in cabal.project so plan-nix records `--enable-…-profiling`.
+    + lib.optionalString profiled ''
+      package *
+        library-profiling: True
     '';
-};
+  };
 
-  packages = project.hsPkgs;
+  packages       = (project false).hsPkgs;
+  packagesProf   = (project true ).hsPkgs;
 
 in lib.recurseIntoAttrs {
   ifdInputs = {
-    inherit (project) plan-nix;
+    inherit ((project false)) plan-nix;
+    plan-nix-profiled = (project true).plan-nix;
   };
 
   meta.disabled = builtins.elem compiler-nix-name ["ghc91320241204"]
     # Not sure why this is failing with a seg fault
-    || (builtins.elem compiler-nix-name ["ghc9102" "ghc9102llvm" "ghc9103" "ghc9103llvm"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
+    || (builtins.elem compiler-nix-name ["ghc9102" "ghc9102llvm" "ghc9103" "ghc9103llvm" "ghc9124" "ghc9124llvm" "ghc9141" "ghc9141llvm"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
     # unhandled ELF relocation(Rel) type 10
     || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_32)
 
@@ -42,6 +50,6 @@ in lib.recurseIntoAttrs {
           && stdenv.hostPlatform.isMusl
           && builtins.elem compiler-nix-name ["ghc9101" "ghc966"])
     )) {
-  build-profiled = packages.js-template-haskell.components.library.profiled;
-  check-profiled = packages.js-template-haskell.checks.test.profiled;
+  build-profiled = packagesProf.js-template-haskell.components.library;
+  check-profiled = packagesProf.js-template-haskell.checks.test;
 }

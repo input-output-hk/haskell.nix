@@ -13,6 +13,7 @@ let
   packages = project.hsPkgs;
 
   env = project.shellFor {
+    exposePackagesVia = "ghc-pkg";
     packages = ps: with ps; [ pkga pkgb ];
     tools = {
       cabal.cabalProjectLocal = builtins.readFile ../cabal.project.local;
@@ -23,6 +24,7 @@ let
   };
 
   envPkga = project.shellFor {
+    exposePackagesVia = "ghc-pkg";
     # Shell will provide the dependencies of pkga
     packages = ps: with ps; [ pkga ];
     # This adds cabal-install to the shell, which helps tests because
@@ -37,6 +39,7 @@ let
   };
 
   envDefault = project.shellFor {
+    exposePackagesVia = "ghc-pkg";
     # The default implementation of packages should use isLocal and the
     # result should be the same as:
     #   packages = ps: with ps; [ pkga pkgb ];

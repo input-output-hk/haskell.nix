@@ -4,7 +4,11 @@
 with lib;
 
 let
-  project = externalInterpreter: project' {
+  # See `docs/dev/profiling.md` — v2 expects profiling toggles to
+  # come from cabal.project so plan-nix records them.  Pass
+  # `profiled` here to instantiate a project whose plan-nix has
+  # `--enable-library-profiling`.
+  project = { externalInterpreter, profiled ? false }: project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "th-dlls";
     # TODO figure out why TH breaks with pkgsStatic for `libsodium` and `HsOpenSSL`
@@ -13,17 +17,25 @@ let
     cabalProjectLocal = lib.optionalString stdenv.hostPlatform.isStatic ''
       package th-dlls
         flags: -libsodium -openssl
+    '' + lib.optionalString stdenv.hostPlatform.isAndroid
+          (builtins.readFile ../cabal.project.android)
+      + lib.optionalString profiled ''
+      package *
+        library-profiling: True
     '';
     modules = import ../modules.nix ++ [({pkgs, ...}: lib.optionalAttrs externalInterpreter {
-      packages.th-dlls.components.library.ghcOptions = [ "-fexternal-interpreter" ];
+      package-keys = [ "HsOpenSSL" ];
+      packages.th-dlls.ghcOptions = [ "-fexternal-interpreter" ];
       # Static openssl seems to fail to load in iserv for musl
       packages.HsOpenSSL.components.library.libs = lib.optional pkgs.stdenv.hostPlatform.isMusl (pkgs.openssl.override { static = false; });
     })];
     shell.nativeBuildInputs = [ buildPackages.haskell-nix.nix-tools-unchecked.exes.cabal ];
   };
 
-  packages = (project false).hsPkgs;
-  packages-ei = (project true).hsPkgs;
+  packages           = (project { externalInterpreter = false;                  }).hsPkgs;
+  packages-ei        = (project { externalInterpreter = true;                   }).hsPkgs;
+  packages-prof      = (project { externalInterpreter = false; profiled = true; }).hsPkgs;
+  packages-ei-prof   = (project { externalInterpreter = true;  profiled = true; }).hsPkgs;
 
 in lib.recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm
@@ -34,7 +46,7 @@ in lib.recurseIntoAttrs {
     #   (#103:librdrand_la-randombytes_internal_random.o) for relocation 4 in section 1 of kind: 0
     || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl && !stdenv.buildPlatform.isAarch64)
     # Not sure why this is failing with a seg fault
-    || (builtins.elem compiler-nix-name ["ghc9102" "ghc9102llvm" "ghc9103" "ghc9103llvm"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
+    || (builtins.elem compiler-nix-name ["ghc9102" "ghc9102llvm" "ghc9103" "ghc9103llvm" "ghc9124" "ghc9124llvm" "ghc9141" "ghc9141llvm"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
     # unhandled ELF relocation(Rel) type 10
     || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_32)
 
@@ -49,7 +61,10 @@ in lib.recurseIntoAttrs {
     ;
 
   ifdInputs = {
-    inherit (project true) plan-nix;
+    plan-nix             = (project { externalInterpreter = false;                  }).plan-nix;
+    plan-nix-ei          = (project { externalInterpreter = true;                   }).plan-nix;
+    plan-nix-profiled    = (project { externalInterpreter = false; profiled = true; }).plan-nix;
+    plan-nix-profiled-ei = (project { externalInterpreter = true;  profiled = true; }).plan-nix;
   };
 
   build = packages.th-dlls.components.library;
@@ -67,6 +82,6 @@ in lib.recurseIntoAttrs {
 
   # Interestingly GHC 9.10.1 and HEAD are wotking while 9.8.4 and 9.12 seem break.
   # Perhaps there is a fix in GHC HEAD?
-  build-profiled = packages.th-dlls.components.library.profiled;
-  build-profiled-ei = packages-ei.th-dlls.components.library.profiled;
+  build-profiled    = packages-prof.th-dlls.components.library;
+  build-profiled-ei = packages-ei-prof.th-dlls.components.library;
 }

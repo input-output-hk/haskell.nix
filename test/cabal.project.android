@@ -1,0 +1,8 @@
+-- Android-only cabal.project overlay, included by tests that pull in
+-- `libsodium` (exe-dlls / exe-lib-dlls / th-dlls).  Without it,
+-- c2hs's C parser trips on the Clang nullability annotation
+-- `_Null_unspecified` that the Android NDK's `stdio.h` uses,
+-- failing with `Syntax error ! The symbol `__s' does not fit here.`
+-- Predefine the macro to nothing so c2hs's preprocessor strips it.
+package libsodium
+  c2hs-options: --cppopts=-D_Null_unspecified=

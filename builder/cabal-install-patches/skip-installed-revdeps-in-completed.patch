@@ -1,0 +1,51 @@
+Skip already-installed reverse deps in `InstallPlan.completed`.
+
+When cabal-install marks a package as completed, it looks at its
+reverse dependencies to find the ones that are now ready to build.
+The filter only considers whether the rev-dep's direct deps are all
+in the completed set — it doesn't check whether the rev-dep itself
+is already `Installed` or `PreExisting`.
+
+That's usually fine because an `Installed` package starts in the
+`completedSet` and isn't in `processingSet`, so the caller never
+actually processes it.  But the `completed` function still pulls it
+into `newlyReady` and hands it to `asReadyPackage`, which throws
+`internalError "completed" "not in configured state: Installed X"`.
+
+This matters for haskell.nix v2 slicing: the slicer pre-populates
+the cabal store with the v2 slices of a pkg's transitive deps, then
+invokes `cabal v2-build` on a shim that pulls the target pkg in.
+The re-solve finds the pre-installed units, marks them `Installed`,
+and may produce a plan where a `Configured` package (that cabal has
+to build inside the shim) has a `revDirectDep` of an already-
+`Installed` one.  At completion time, cabal explodes.
+
+Filtering `newlyReady` to `Configured{}` entries only keeps
+`asReadyPackage`'s precondition honest without changing the build
+semantics — the `Installed` entries were already in `completedSet`.
+
+--- a/src/Distribution/Client/InstallPlan.hs
++++ b/src/Distribution/Client/InstallPlan.hs
+@@ -727,10 +727,21 @@
+   where
+     completedSet' = Set.insert pkgid completedSet
+
+-    -- each direct reverse dep where all direct deps are completed
++    -- each direct reverse dep where all direct deps are completed.
++    --
++    -- Skip reverse deps that are already Installed / PreExisting —
++    -- those aren't in `processingSet`, never will be, and there's
++    -- nothing to "mark ready" for them.  When a plan composes
++    -- pre-installed units (e.g. haskell.nix v2 slicing pre-populates
++    -- the cabal store with sliced deps), the re-solve may produce a
++    -- mixed Installed+Configured plan where a Configured package
++    -- reverse-depends on an already-Installed one; the default
++    -- filter would pull the Installed pkg into `newlyReady` and then
++    -- blow up in `asReadyPackage`.
+     newlyReady =
+       [ dep
+       | dep <- revDirectDeps plan pkgid
++      , case dep of Configured{} -> True; _ -> False
+       , all
+           ((`Set.member` completedSet') . nodeKey)
+           (directDeps plan (nodeKey dep))
