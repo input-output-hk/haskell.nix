@@ -1919,7 +1919,8 @@ let
   planNixJsonFile = pkgs.buildPackages.writeText "plan-nix.json"
                       (builtins.toJSON planJson);
   checkAgainstPlan = buildCabalStoreSlice {
-    name = "check-${pkgName}-${componentKindLabel}-${componentName}-${pkgVersion}";
+    pname = "check-${pkgName}-${componentKindLabel}-${componentName}";
+    version = pkgVersion;
     inherit depSlices;
     ghc = sliceGhc;
     localRepo = slicingRepo;
