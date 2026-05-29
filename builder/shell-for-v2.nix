@@ -752,9 +752,43 @@ mkShell {
     # include unconditionally — most v2 shell users want git on
     # PATH anyway, and `gitMinimal` keeps the closure small.
     ++ [ pkgs.buildPackages.gitMinimal ]
+    # `pkg-config` on PATH unconditionally.  cabal's solver probes
+    # `pkg-config <name>` whenever a package declares
+    # `pkgconfig-depends:` (e.g. `zlib +pkg-config` in this project);
+    # if it's missing cabal silently flips `+pkg-config` to
+    # `-pkg-config`, and the resulting unit-id diverges from
+    # plan-nix's (which was solved with `cabalPkgConfigWrapper`
+    # available) — cabal then rebuilds the lib from source instead
+    # of reusing the slice in the cabal store.  v1's shell got
+    # pkg-config in through each slice's pkgconfig-depends closure
+    # via stdenv propagation; v2 slices flow through the cabal store
+    # rather than via `buildInputs`, so we add it directly.  Always
+    # on, even when no selected pkg has pkgconfig-depends — keeps
+    # the unit-id stable if the user adds a pkgconfig dep later, and
+    # matches v1's "always present" feel.  `cabalPkgConfigWrapper`
+    # is the real pkg-config plus a `--libs --static` failure shim
+    # (issue #1642), not the fake `allPkgConfigWrapper` used during
+    # plan-nix evaluation.
+    ++ [ pkgs.buildPackages.cabalPkgConfigWrapper ]
     ++ nativeBuildInputs
     ++ inputsFromNativeBuildInputs;
-  buildInputs = buildInputs ++ inputsFromBuildInputs;
+  buildInputs = buildInputs
+    # Surface every selected component's and dep slice's C-side deps
+    # (`component.libs`, `component.pkgconfig`, `component.frameworks`)
+    # in the shell.  Each v2 slice exposes these as
+    # `passthru.runtimeLibs` (`comp-v2-builder.nix`, the same set
+    # that lands in the slice's own `extraBuildInputs`).  Without
+    # this, the `pkg-config` we just added to nativeBuildInputs
+    # doesn't find any of the project's pkgconfig deps — e.g.
+    # `pkg-config --exists zlib` fails because no `zlib.pc` is on
+    # `PKG_CONFIG_PATH` — and cabal's solver flips `+pkg-config`
+    # off for the affected Haskell packages, diverging the unit-ids
+    # from plan-nix.  Mirrors v1's `systemInputs` line in
+    # `shell-for.nix:108`, which collects the same set via
+    # `c.buildInputs ++ c.propagatedBuildInputs` propagation.
+    ++ lib.concatMap (s: s.passthru.runtimeLibs or [])
+         (selectedAllComps ++ depSlices)
+    ++ inputsFromBuildInputs;
   shellHook =
     cabalProjectLocalShellHook + "\n"
     + shellSyncHook + "\n"
