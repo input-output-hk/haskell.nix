@@ -622,7 +622,12 @@ stdenv.mkDerivation ({
             [ -e "$t" ] && ln -sf "$t" "$v2repo/package/$(basename "$t")"
           done
           if [ -d "$f/repo-frag/index" ]; then
-            cp -rL --no-preserve=mode "$f"/repo-frag/index/. "$v2idx"/
+            # `-n` (no-clobber): a multi-sublib package (e.g. happy-lib's
+            # grammar/frontend/tabular) appears under several fragment
+            # paths that all carry the *same* `<pkg>/<ver>/<pkg>.cabal`;
+            # the .cabal is identical, so skip duplicates rather than
+            # re-copy onto the read-only file the first copy left.
+            cp -rL --no-preserve=mode -n "$f"/repo-frag/index/. "$v2idx"/
           fi
         fi
       }
@@ -680,6 +685,98 @@ stdenv.mkDerivation ({
     mkdir -p $buildRoot/project
     cd $buildRoot/project
     ${preBuild}
+
+    ${lib.optionalString (v2Fragment != null) ''
+      # --- STEP 2b: compose cabal.project closure sections -----------
+      # `preBuild` wrote the Nix-assembled cabal.project; keep it as a
+      # reference, then rebuild the closure-derived sections here from
+      # the per-package fragments (so the dep-graph walk is out of Nix).
+      # cabal hashes content not field order, so we emit local skeleton
+      # first then composed sections, and verify content-equivalence
+      # with an order-insensitive diff.
+      cp cabal.project cabal.project.nixref
+
+      # Self's fragment (its own $out isn't built yet) materialised from
+      # the passed values, so self participates in the block groups.
+      selfFrag=$(mktemp -d); mkdir -p $selfFrag/nix-support/v2-frag
+      printf '%s' ${lib.escapeShellArg v2Fragment.pkgName} > $selfFrag/nix-support/v2-frag/pkg-name
+      cp ${builtins.toFile "flags"             v2Fragment.flagsBlock}            $selfFrag/nix-support/v2-frag/flags
+      cp ${builtins.toFile "ghc-options"       v2Fragment.ghcOptionsBlock}       $selfFrag/nix-support/v2-frag/ghc-options
+      cp ${builtins.toFile "configure-options" v2Fragment.configureOptionsBlock} $selfFrag/nix-support/v2-frag/configure-options
+      cp ${builtins.toFile "program-options"   v2Fragment.programOptionsBlock}   $selfFrag/nix-support/v2-frag/program-options
+      cp ${builtins.toFile "doc"               v2Fragment.docBlock}              $selfFrag/nix-support/v2-frag/doc
+      cp ${builtins.toFile "extra-lib-dirs"    v2Fragment.extraLibDirsBlock}     $selfFrag/nix-support/v2-frag/extra-lib-dirs
+
+      # all-dep closure fragments (blocks scope): self + direct + transitive.
+      declare -A seenBlk; blkFrags=()
+      addBlk() { local f=$1; if [ -n "$f" ] && [ -d "$f/nix-support/v2-frag" ] && [ -z "''${seenBlk[$f]:-}" ]; then seenBlk[$f]=1; blkFrags+=("$f"); fi; }
+      addBlk "$selfFrag"
+      for dep in "''${pkgsHostTarget[@]}"; do
+        addBlk "$dep"
+        [ -f "$dep/nix-support/transitive-deps" ] && while IFS= read -r d; do addBlk "$d"; done < "$dep/nix-support/transitive-deps"
+      done
+
+      # lib-dep closure fragments (extra-packages + constraints scope).
+      declare -A seenLib; libFrags=()
+      addLib() { local f=$1; if [ -n "$f" ] && [ -d "$f/nix-support/v2-frag" ] && [ -z "''${seenLib[$f]:-}" ]; then seenLib[$f]=1; libFrags+=("$f"); fi; }
+      ${lib.concatMapStrings (s: ''
+        addLib ${s}
+        [ -f ${s}/nix-support/lib-dep-slices ] && while IFS= read -r d; do addLib "$d"; done < ${s}/nix-support/lib-dep-slices
+      '') v2Fragment.libDepSlices}
+      # Build tools contribute their *lib* closures (not the exe pkg),
+      # matching `exeUnitsInAllDeps` in `libConstraintPins`.
+      ${lib.concatMapStrings (s: ''
+        [ -f ${s}/nix-support/lib-dep-slices ] && while IFS= read -r d; do addLib "$d"; done < ${s}/nix-support/lib-dep-slices
+      '') v2Fragment.exeDepSlices}
+
+      # Emit "<pkg-name>\t<frag-dir>" name-sorted.
+      # Emit one "<pkg-name>\t<frag-dir>" line per *pkg-name*, name-sorted.
+      # `-k1,1 -u` dedups by pkg-name: a multi-sublib package contributes
+      # several fragments (one per sublib slice) that all share the same
+      # pkg-name and emit identical per-package content (block / constraint /
+      # extra-package), so we keep just one — matching how the Nix side
+      # dedups via `sliceCanonicalNames` / `libConstraintPins` (by name).
+      sortedByName() { local f; for f in "$@"; do printf '%s\t%s\n' "$(cat "$f"/nix-support/v2-frag/pkg-name)" "$f"; done | sort -t"$(printf '\t')" -k1,1 -u; }
+
+      {
+        # extra-packages: self entry first, then lib-dep pins (name-sorted).
+        epline=""; epsep=""
+        ${lib.optionalString (v2Fragment.selfExtraPackage != "")
+          ''epline=${lib.escapeShellArg v2Fragment.selfExtraPackage}; epsep=", "''}
+        while IFS=$'\t' read -r name f; do
+          [ -n "$name" ] || continue
+          c=$(cat "$f"/nix-support/v2-frag/constraint); epline="$epline$epsep''${c%%,*}"; epsep=", "
+        done < <(sortedByName "''${libFrags[@]}")
+        [ -n "$epline" ] && echo "extra-packages: $epline"
+
+        # allow-boot-library-installs when self or a lib-dep pin is a boot lib.
+        bootlibs=" ${lib.concatStringsSep " " v2Fragment.bootLibPkgNames} "; needBoot=0
+        case "$bootlibs" in *" ${v2Fragment.pkgName} "*) needBoot=1 ;; esac
+        while IFS=$'\t' read -r name f; do case "$bootlibs" in *" $name "*) needBoot=1 ;; esac; done < <(sortedByName "''${libFrags[@]}")
+        [ $needBoot -eq 1 ] && echo "allow-boot-library-installs: True"
+
+        # Six block groups, grouped by type, name-sorted across the closure.
+        for blk in flags ghc-options configure-options program-options doc extra-lib-dirs; do
+          while IFS=$'\t' read -r name f; do cat "$f/nix-support/v2-frag/$blk"; done < <(sortedByName "''${blkFrags[@]}")
+        done
+
+        # constraints: self `any.<pkg> source`, then lib-dep pins (name-sorted).
+        echo "constraints: any.${v2Fragment.pkgName} source"
+        while IFS=$'\t' read -r name f; do
+          [ -n "$name" ] || continue
+          echo "constraints: $(cat "$f"/nix-support/v2-frag/constraint)"
+        done < <(sortedByName "''${libFrags[@]}")
+      } > cabal.project.closure
+
+      # local skeleton (via file — no shell escaping) + composed sections.
+      cp ${builtins.toFile "local-cabal-project" v2Fragment.localCabalProject} cabal.project
+      cat cabal.project.closure >> cabal.project
+
+      echo "--- cabal.project content diff (nixref - vs v2composed +; empty = OK) ---"
+      diff <(grep -v '^[[:space:]]*$' cabal.project.nixref | sort) \
+           <(grep -v '^[[:space:]]*$' cabal.project        | sort) || true
+      echo "--- end diff ---"
+    ''}
 
     # --- Build -------------------------------------------------------
     if [ ! -f cabal.project ]; then
@@ -1283,8 +1380,15 @@ stdenv.mkDerivation ({
       printf '%s' ${lib.escapeShellArg v2Fragment.constraintLine} > $out/nix-support/v2-frag/constraint
       cp ${builtins.toFile "sublib-seeds" (lib.concatMapStrings (s: s + "\n") v2Fragment.sublibSeeds)} \
         $out/nix-support/v2-frag/sublib-seeds
-      # Flattened lib-dep closure pointer (constraints scope), built the
-      # same way as `transitive-deps` from the direct lib-dep slices.
+      # Flattened lib-dep closure pointer (the constraints scope).
+      # Seeds purely from this slice's DIRECT deps; transitivity is
+      # accumulated here at build time (like `transitive-deps`):
+      #   * each direct lib-dep slice — pinned (echoed) — plus its own
+      #     flattened pointer (its lib deps + its build tools' closures);
+      #   * each direct build-tool slice's pointer only (its lib closure
+      #     is pinned; the exe package itself is not).
+      # Following any dep's pointer therefore reaches every transitive
+      # build tool's lib closure without a Nix-side closure walk.
       {
         ${lib.concatMapStrings (s: ''
           echo ${s}
@@ -1292,7 +1396,12 @@ stdenv.mkDerivation ({
             cat ${s}/nix-support/lib-dep-slices
           fi
         '') v2Fragment.libDepSlices}
-        : # ensure the brace group is non-empty when there are no lib-deps
+        ${lib.concatMapStrings (s: ''
+          if [ -f ${s}/nix-support/lib-dep-slices ]; then
+            cat ${s}/nix-support/lib-dep-slices
+          fi
+        '') v2Fragment.exeDepSlices}
+        : # ensure the brace group is non-empty when there are no deps
       } | sort -u > $out/nix-support/lib-dep-slices
     ''}
 

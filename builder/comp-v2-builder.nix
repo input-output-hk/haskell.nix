@@ -1543,6 +1543,19 @@ let
     active-repositories: hackage.haskell-nix
     ${packagesLine}${sourceRepoBlocks}${extraPackagesLine}${allowNewerBlock}${allowBootLibBlock}${projectConfigPragmas}${extraProject}${allFlagBlocks}${allGhcOptionsBlocks}${allConfigureOptionsBlocks}${allProgramOptionsBlocks}${allDocBlocks}${allExtraLibDirsBlocks}${extraIncludeAndLibDirs}${depConstraints}'';
 
+  # STEP 2b: the *local / global* part of the cabal.project (everything
+  # that doesn't depend on the dependency closure).  build-cabal-slice
+  # writes this, then appends the closure-derived sections
+  # (source-repo blocks, extra-packages, allow-boot, the six per-package
+  # block groups, constraints) composed at build time from fragments.
+  # cabal hashes content (not field order), so local-then-closure order
+  # is content-equivalent to `cabalProject` above — verified by a sorted
+  # diff in the build.
+  localCabalProject = ''
+    with-compiler: ${withCompiler}
+    active-repositories: hackage.haskell-nix
+    ${packagesLine}${allowNewerBlock}${projectConfigPragmas}${extraProject}${extraIncludeAndLibDirs}'';
+
   # X-revised .cabal as a /nix/store path (or null if no override).
   # Carried on every `transitiveTarballs` entry so the slicing repo's
   # 00-index.tar.gz can stage the right .cabal per package without
@@ -1639,6 +1652,30 @@ let
     # closure walk (constraints scope).  The all-dep closure (repo +
     # blocks scope) already rides the existing `transitive-deps`.
     libDepSlices = directDepSlices;
+    # This component's *direct* build-tool (exe) slices.  Each build
+    # tool's *lib* closure must be pinned in constraints (matching
+    # `exeUnitsInAllDeps` in `libConstraintPins` — e.g. a tool that
+    # pulls a reinstalled `process`/`directory`).  We stay direct in
+    # Nix and rely on build-time transitivity: each slice's emitted
+    # `lib-dep-slices` folds in its own direct build tools' lib
+    # closures, so following a dep's pointer transitively reaches every
+    # build tool's lib closure without a Nix-side `allDepClosure` walk.
+    # (We follow these slices' `lib-dep-slices` — their lib closures —
+    # not the exe packages themselves, which aren't pinned.)
+    exeDepSlices = buildToolSlices;
+
+    # ---- STEP 2b: build-time cabal.project composition inputs -------
+    # Local/global skeleton; the composer appends closure sections.
+    inherit localCabalProject;
+    # This package's own `extra-packages:` entry (empty for local
+    # test/bench targets and source-repo packages, which cabal must
+    # build from `packages:` / a `source-repository-package` block,
+    # not the index).
+    selfExtraPackage =
+      lib.optionalString (!isLocalTestOrBench && !isSourceRepoPkg) "${pkgName} ==${pkgVersion}";
+    # `allow-boot-library-installs: True` is emitted when this package
+    # or any of its lib-dep-closure pins is a (reinstalled) boot lib.
+    inherit bootLibPkgNames;
   };
 
   baseSlice = buildCabalStoreSlice {
