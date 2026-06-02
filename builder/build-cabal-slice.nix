@@ -711,6 +711,8 @@ stdenv.mkDerivation ({
         $selfFrag/nix-support/v2-frag/sublib-seeds
       cp ${builtins.toFile "setup-constraints" (lib.concatMapStrings (s: s + "\n") v2Fragment.setupConstraints)} \
         $selfFrag/nix-support/v2-frag/setup-constraints
+      cp ${pkgs.writeText "source-repo-block" v2Fragment.sourceRepoBlock} \
+        $selfFrag/nix-support/v2-frag/source-repo-block
 
       # all-dep closure fragments (blocks scope): self + direct + transitive.
       declare -A seenBlk; blkFrags=()
@@ -750,15 +752,13 @@ stdenv.mkDerivation ({
           ''epline=${lib.escapeShellArg v2Fragment.selfExtraPackage}; epsep=", "''}
         while IFS=$'\t' read -r name f; do
           [ -n "$name" ] || continue
+          # Source-repo packages are declared via source-repository-package
+          # (below), not extra-packages — listing both makes the solver
+          # consider the tarball candidate and fork the UnitId.
+          [ -s "$f/nix-support/v2-frag/source-repo-block" ] && continue
           c=$(cat "$f"/nix-support/v2-frag/constraint); epline="$epline$epsep''${c%%,*}"; epsep=", "
         done < <(sortedByName "''${libFrags[@]}")
         [ -n "$epline" ] && echo "extra-packages: $epline"
-
-        # allow-boot-library-installs when self or a lib-dep pin is a boot lib.
-        bootlibs=" ${lib.concatStringsSep " " v2Fragment.bootLibPkgNames} "; needBoot=0
-        case "$bootlibs" in *" ${v2Fragment.pkgName} "*) needBoot=1 ;; esac
-        while IFS=$'\t' read -r name f; do case "$bootlibs" in *" $name "*) needBoot=1 ;; esac; done < <(sortedByName "''${libFrags[@]}")
-        [ $needBoot -eq 1 ] && echo "allow-boot-library-installs: True"
 
         # Six block groups, grouped by type, name-sorted across the closure.
         for blk in flags ghc-options configure-options program-options doc extra-lib-dirs; do
@@ -780,6 +780,12 @@ stdenv.mkDerivation ({
           [ -f "$f/nix-support/v2-frag/setup-constraints" ] && \
             sed 's/^/constraints: /' "$f/nix-support/v2-frag/setup-constraints" || true
         done
+
+        # source-repository-package blocks for source-repo packages in
+        # the closure (deduped by name) — e.g. lib:ghc via useLocalGhcLib.
+        while IFS=$'\t' read -r name f; do
+          [ -s "$f/nix-support/v2-frag/source-repo-block" ] && cat "$f/nix-support/v2-frag/source-repo-block" || true
+        done < <(sortedByName "''${blkFrags[@]}")
       } > cabal.project.closure
 
       # local skeleton (via file — no shell escaping) + composed sections.
@@ -1408,6 +1414,8 @@ stdenv.mkDerivation ({
         $out/nix-support/v2-frag/sublib-seeds
       cp ${builtins.toFile "setup-constraints" (lib.concatMapStrings (s: s + "\n") v2Fragment.setupConstraints)} \
         $out/nix-support/v2-frag/setup-constraints
+      cp ${pkgs.writeText "source-repo-block" v2Fragment.sourceRepoBlock} \
+        $out/nix-support/v2-frag/source-repo-block
       # Flattened lib-dep closure pointer (the constraints scope).
       # Seeds purely from this slice's DIRECT deps; transitivity is
       # accumulated here at build time (like `transitive-deps`):

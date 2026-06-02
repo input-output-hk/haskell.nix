@@ -87,6 +87,37 @@ let
   isSourceRepoPkg =
     thisPlanEntry != null
     && (thisPlanEntry.pkg-src or {}).type or null == "source-repo";
+
+  # When this package comes from a `source-repository-package` (e.g.
+  # `lib:ghc` via `useLocalGhcLib`), the slice's solver must see it as a
+  # source-repo, not a hackage tarball — otherwise cabal hashes a
+  # different `pkg-src-sha256` and forks the UnitId.  Wrap the fetched
+  # source in a minimal git repo (mirrors lib/call-cabal-project-to-nix.nix)
+  # and emit a `source-repository-package` block.  Each source-repo
+  # package emits its OWN block into its fragment; the build-time
+  # composer collects them across the closure (and skips them from
+  # `extra-packages:`).
+  minimalSourceRepo = pkgs.runCommand "v2-source-repo-${pkgName}-${pkgVersion}"
+    { nativeBuildInputs = [ pkgs.rsync pkgs.gitMinimal ];
+      preferLocalBuild = true;
+    }
+    ''
+      mkdir $out
+      rsync -a --prune-empty-dirs --chmod=u+w "${src}/" "$out/"
+      cd $out
+      git init -b minimal
+      git add --force .
+      GIT_COMMITTER_NAME='No One' GIT_COMMITTER_EMAIL= \
+        git commit -m "Minimal Repo For Haskell.Nix" --author 'No One <>'
+    '';
+  ownSourceRepoBlock = lib.optionalString isSourceRepoPkg ''
+    source-repository-package
+      type: git
+      location: file://${minimalSourceRepo}
+      subdir: .
+      tag: minimal
+  '';
+
   # Helpers mirroring add-v2.nix ----------------------------------
 
   # `pkgSet` is keyed by both canonical package names (`foo`) and
@@ -1098,27 +1129,28 @@ let
   # package/<pkg>-<ver>.tar.gz) is assembled at build time from the
   # per-package `repo-frag`s — see build-cabal-slice.nix.
 
-  # Our slicing repo is already pinned to the exact versions plan.nix
-  # chose (via per-package `constraints:` lines below) and uses
-  # `active-repositories: hackage.haskell-nix, :none` so the solver
-  # can't reach the user's real hackage.  Each package therefore has
-  # exactly one candidate version — so `*:*` allow-newer can't
-  # trigger a "wrong" choice; it just stops cabal from rejecting that
-  # one candidate over stale upper bounds in the stock .cabal files
+  # Project-wide solver relaxations.  Our slicing repo is already pinned
+  # to the exact versions plan.nix chose (via per-package `constraints:`
+  # lines) and uses `active-repositories: hackage.haskell-nix` so the
+  # solver can't reach the user's real hackage.  Each package therefore
+  # has exactly one candidate version — so `*:*` allow-newer/allow-older
+  # can't trigger a "wrong" choice; they just stop cabal rejecting that
+  # one candidate over stale upper/lower bounds in the stock .cabal files
   # (which plan.nix itself worked around via head.hackage revisions,
   # allow-newer in the project, etc.).
-  allowNewerBlock = "allow-newer: *:*\n";
-
-  # Boot/non-reinstallable package names.  The build-time cabal.project
-  # composer emits `allow-boot-library-installs: True` when this slice's
-  # package or any lib-dep-closure pin is on this list (needed when the
-  # plan reinstalls one of GHC's non-reinstallable packages).  Passed to
-  # the composer via `v2Fragment.bootLibPkgNames`.
-  bootLibPkgNames = [
-    "ghc" "template-haskell" "Cabal" "Cabal-syntax"
-    "ghc-prim" "ghc-bignum" "ghc-boot" "ghc-boot-th" "ghc-heap"
-    "base" "ghci" "ghc-internal" "rts"
-  ];
+  #
+  # `allow-boot-library-installs: True` lets cabal reinstall the
+  # normally-non-reinstallable boot packages (ghc / base / Cabal / …).
+  # It only *permits* reinstalls; cabal can act on it only when a boot
+  # lib's source is in this slice's repo — i.e. one plan-nix actually
+  # reinstalled (e.g. lib:ghc via useLocalGhcLib) — so it's a no-op
+  # otherwise.  Unconditional, hence here in the skeleton rather than
+  # composed per-slice at build time.
+  solverRelaxations = ''
+    allow-newer: *:*
+    allow-older: *:*
+    allow-boot-library-installs: True
+  '';
 
   # `projectConfigPragmas` (the `package *` / per-package cabal.project
   # pragma blocks derived from plan.json's `configure-args`) is computed
@@ -1163,13 +1195,13 @@ let
   # The *local / global* part of the cabal.project (everything that
   # doesn't depend on the dependency closure).  build-cabal-slice writes
   # this, then appends the closure-derived sections (source-repo blocks,
-  # extra-packages, allow-boot, the six per-package block groups,
-  # constraints) composed at build time from the per-package fragments —
-  # so the dependency-closure walk never runs in the Nix evaluator.
+  # extra-packages, the six per-package block groups, constraints)
+  # composed at build time from the per-package fragments — so the
+  # dependency-closure walk never runs in the Nix evaluator.
   localCabalProject = ''
     with-compiler: ${withCompiler}
     active-repositories: hackage.haskell-nix
-    ${packagesLine}${allowNewerBlock}${projectConfigPragmas}${extraProject}${extraIncludeAndLibDirs}'';
+    ${packagesLine}${solverRelaxations}${projectConfigPragmas}${extraProject}${extraIncludeAndLibDirs}'';
 
   # X-revised .cabal as a /nix/store path (or null if no override).
   # Staged into this package's repo fragment (build-cabal-slice) so the
@@ -1271,6 +1303,10 @@ let
     constraintLine = "${pkgName} ==${pkgVersion}, ${pkgName} source";
     sublibSeeds = ownSublibSeeds;
     setupConstraints = ownSetupConstraints;
+    # `source-repository-package` block (non-empty only for source-repo
+    # packages).  Composed across the closure at build time; such
+    # packages are also skipped from `extra-packages:`.
+    sourceRepoBlock = ownSourceRepoBlock;
     # When this slice's *target* is itself a sublib, it must be kept as
     # a reachability seed too (the `prune-unreachable-sublibs` patch
     # otherwise drops it).  Composed into HASKELLNIX_EXTRA_SUBLIB_SEEDS
@@ -1301,9 +1337,6 @@ let
     # not the index).
     selfExtraPackage =
       lib.optionalString (!isLocalTestOrBench && !isSourceRepoPkg) "${pkgName} ==${pkgVersion}";
-    # `allow-boot-library-installs: True` is emitted when this package
-    # or any of its lib-dep-closure pins is a (reinstalled) boot lib.
-    inherit bootLibPkgNames;
   };
 
   baseSlice = buildCabalStoreSlice {
