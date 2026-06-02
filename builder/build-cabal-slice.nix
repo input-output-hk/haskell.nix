@@ -601,7 +601,58 @@ stdenv.mkDerivation ({
     # an empty string rather than an `unbound variable` error).
     export pkgsHostTargetAsString="''${pkgsHostTarget[*]:-}"
 
-    ${lib.optionalString (localRepo != null) ''
+    ${if v2Fragment != null then ''
+      # --- Build-time slicing repo (STEP 2: composed from fragments) ---
+      # Assemble the per-slice hackage repo here instead of in Nix: this
+      # package's own source (passed directly — our own `repo-frag` isn't
+      # built yet) plus every dep's `repo-frag/` reached through the same
+      # `transitive-deps` closure walk used for the store above.  cabal
+      # hashes package *source* + `.cabal` descriptions (not the index
+      # bytes or repo path), so a content-equivalent repo keeps unit-ids
+      # identical to the old Nix-assembled `slicingRepo`.
+      v2repo=$buildRoot/local-repo
+      v2idx=$(mktemp -d)
+      mkdir -p $v2repo/package
+      declare -A seenRepoFrag
+      addRepoFrag() {
+        local f=$1
+        if [ -n "$f" ] && [ -d "$f/repo-frag" ] && [ -z "''${seenRepoFrag[$f]:-}" ]; then
+          seenRepoFrag[$f]=1
+          for t in "$f"/repo-frag/package/*; do
+            [ -e "$t" ] && ln -sf "$t" "$v2repo/package/$(basename "$t")"
+          done
+          if [ -d "$f/repo-frag/index" ]; then
+            cp -rL --no-preserve=mode "$f"/repo-frag/index/. "$v2idx"/
+          fi
+        fi
+      }
+      # This package's own source + .cabal (own fragment not built yet).
+      ln -s ${v2Fragment.tarball} $v2repo/package/${v2Fragment.pkgName}-${v2Fragment.pkgVersion}.tar.gz
+      mkdir -p $v2idx/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}
+      ${if v2Fragment.cabalFile != null
+        then "cp ${v2Fragment.cabalFile} $v2idx/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal"
+        else ''
+          tar -xOzf ${v2Fragment.tarball} \
+            ${v2Fragment.pkgName}-${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal \
+            > $v2idx/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal
+        ''}
+      # Dep closure repo-frags (direct + transitive — same walk as store).
+      for dep in "''${pkgsHostTarget[@]}"; do
+        addRepoFrag "$dep"
+        if [ -f "$dep/nix-support/transitive-deps" ]; then
+          while IFS= read -r tdep; do addRepoFrag "$tdep"; done < "$dep/nix-support/transitive-deps"
+        fi
+      done
+      # Hackage index tarball (sorted, fixed mtime — as the Nix repo did).
+      tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
+          -czf $v2repo/00-index.tar.gz -C $v2idx .
+      cat > $CABAL_DIR/config <<EOF
+      repository hackage.haskell-nix
+        url: file://$v2repo
+        secure: False
+      EOF
+      cabal update hackage.haskell-nix
+    '' else lib.optionalString (localRepo != null) ''
       # Hackage-style local repo: `00-index.tar.gz` + `package/<pkg>-<ver>.tar.gz`.
       # See comp-v2-builder.nix `slicingRepo` for why we use this layout
       # over `file+noindex://`.  `secure: False` skips TUF root-key checks
