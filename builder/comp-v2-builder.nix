@@ -29,6 +29,9 @@
                          # cabal.project `constraints:` block.
 , planJsonByPlanId ? {}  # `planJson` indexed by `id` — pre-built once
                          # at the project level, shared across slices.
+, planV2Globals ? {}     # { projectConfigPragmas; docEnabledNames; flagsByName; }
+                         # derived once from the plan (see
+                         # `builder/v2-project-globals.nix`), shared across slices.
 , homeDependIds    ? []  # [{ name; version; }] — sibling-component LIB deps from plan-json
 , homeBuildToolIds ? []  # [{ name; version; }] — sibling-component EXE deps from plan-json
 , prePatch ? null, postPatch ? null, ... }@allArgs:
@@ -37,6 +40,12 @@ let
   pkgName = package.identifier.name;
   pkgVersion = package.identifier.version;
   ghcPkgVersion = ghc.version;
+
+  # Project-global data computed once from the plan (see
+  # `builder/v2-project-globals.nix`), not per slice.
+  docEnabledNames      = planV2Globals.docEnabledNames or {};
+  planFlagsByName      = planV2Globals.flagsByName or {};
+  projectConfigPragmas = planV2Globals.projectConfigPragmas or "";
 
   # Resolve a dependency package record in `hsp` (`hsPkgs` or
   # `hsPkgs.pkgsBuildBuild`) by name, disambiguating by version.
@@ -138,19 +147,12 @@ let
   # reproducing the assignment cabal-install actually saw at plan
   # time.  Hackage / repo-tar / local packages keep the module-flag
   # behaviour (matches what they got at plan time too).
-  planFlagsFor = pname:
-    let unit = lib.findFirst
-                 (p: (p.pkg-name or null) == pname)
-                 null planJson;
-        srcType = if unit == null then null
-                  else (unit.pkg-src or {}).type or null;
-    in if unit != null && srcType == "source-repo"
-       then unit.flags or {}
-       else null;
+  # `planFlagsByName` (project-global) maps each source-repo package to
+  # its plan-json flags; non-source-repo packages are absent → `null`.
   flagBlockFor = pname:
     let
       moduleFlags = lib.foldl' (acc: cfg: acc // (cfg.flags or {})) {} (cfgsForCanonical pname);
-      planFlags = planFlagsFor pname;
+      planFlags = planFlagsByName.${pname} or null;
       flagAttrs = if planFlags != null then planFlags else moduleFlags;
       toToken = n: v: (if v then "+" else "-") + n;
       flagTokens = lib.mapAttrsToList toToken flagAttrs;
@@ -218,12 +220,9 @@ let
 
   # Has plan-nix flagged this canonical package (any of its units)
   # as documentation-enabled?  Mirrors `docEnabled` above but for
-  # arbitrary pkg-names rather than this slice's own unit.
-  pkgDocEnabled = pname:
-    lib.any
-      (e: (e.pkg-name or "") == pname
-          && lib.elem "--ghc-option=-haddock" (e.configure-args or []))
-      planJson;
+  # arbitrary pkg-names rather than this slice's own unit.  Looked up
+  # in the project-global `docEnabledNames` set (computed once).
+  pkgDocEnabled = pname: docEnabledNames ? ${pname};
 
   # `documentation: True` widens `pkgHashConfigInputs` (sets the
   # haddock-* booleans on ElaboratedConfiguredPackage) AND adds
@@ -1436,114 +1435,10 @@ let
     lib.optionalString closureHasReinstalledBootLib
       "allow-boot-library-installs: True\n";
 
-  # Project-level and per-package cabal.project pragmas extracted
-  # from plan.json's `configure-args`.  Plan-to-nix runs
-  # cabal-install with a specific set of `--enable-X`/`--disable-X`
-  # toggles (--disable-shared, --disable-static,
-  # --disable-library-profiling, --enable-optimization, ...) —
-  # these enter cabal's `pkgHashConfigInputs` and so the unit-id
-  # hash of every package the project plan recorded.  If the slice's
-  # `cabal v2-build` uses different defaults (e.g. cabal's default
-  # `--enable-shared` on darwin), the slice produces a different
-  # unit-id even when name + version + deps are identical.
-  #
-  # Mirroring the same toggles in the slice's cabal.project keeps
-  # `pkgHashConfigInputs` aligned with plan-nix.  Each plan entry's
-  # `configure-args` is per-unit; we group by pkg-name (taking the
-  # union of pragmas across units of the same package, since
-  # cabal.project only supports per-package granularity) and:
-  #
-  #   * Emit a `package *` block with the *baseline* — pragmas
-  #     present for every pkg-name.  Applies to transitive hackage
-  #     deps the slice's `cabal v2-build` resolves fresh, so their
-  #     UnitIds line up with plan-nix.
-  #
-  #   * Emit a `package <name>` block for every pkg-name whose
-  #     pragmas extend the baseline (e.g. `package cabal-simple`
-  #     getting `profiling: True` from
-  #     `packages.cabal-simple.enableProfiling = true`).
-  projectConfigPragmas =
-    let
-      configuredEntries = lib.filter (p: (p.type or "") == "configured") planJson;
-
-      # Whitelist of cabal.project field names that map 1:1 to
-      # `--enable-X` / `--disable-X` / `--X=value` Setup configure
-      # args.  Keeping this explicit means we don't silently round-trip
-      # something cabal.project rejects (e.g. `--cid=`, `--dependency=`,
-      # `--with-ghc=` are NOT in this set).
-      isProjectField = field: lib.elem field [
-        "shared" "static"
-        "library-vanilla" "library-profiling"
-        "executable-dynamic" "executable-static"
-        "profiling" "profiling-shared"
-        "optimization" "debug-info" "build-info"
-        "library-for-ghci"
-        "split-sections" "split-objs"
-        "executable-stripping" "library-stripping"
-        "coverage" "relocatable"
-        "profiling-detail" "library-profiling-detail"
-      ];
-      # On wasm GHC 9.12+, the RTS linker only supports shared libraries
-      # (per `target RTS linker only supports shared libraries: YES`)
-      # and TH-eval `dyld` needs a `.so` for every transitively reachable
-      # lib.  cabal's plan-nix elaboration decides shared on/off from a
-      # different field (`Support shared libraries`, which real wasm GHC
-      # doesn't set), so plan-nix records `--disable-shared` and the
-      # downstream slice builds only `.a`s — then TH-evaluating modules
-      # (e.g. `th-orphans`) fail at compile time with
-      # `dyld.findSystemLibrary(libHS…-…so): not found` plus
-      # `wasm-ld: error: unable to find library -lHS…-ghc<v>` (the
-      # link line uses shared-lib naming).  v1 papered over this with
-      # the `enableShared || isWasm` clause in `comp-builder.nix:44`;
-      # v2 reads `configure-args` straight from plan-nix so we flip
-      # the pragma here to keep behaviour aligned with v1.
-      forceShared = stdenv.hostPlatform.isWasm
-                 && builtins.compareVersions ghc.version "9.12" >= 0;
-      pragmaOf = arg:
-        let
-          en = builtins.match "--enable-([a-z0-9-]+)" arg;
-          di = builtins.match "--disable-([a-z0-9-]+)" arg;
-          kv = builtins.match "--([a-z0-9-]+)=(.+)" arg;
-        in
-          if forceShared && arg == "--disable-shared" then "shared: True"
-          else if en != null && isProjectField (builtins.head en) then "${builtins.head en}: True"
-          else if di != null && isProjectField (builtins.head di) then "${builtins.head di}: False"
-          else if kv != null && isProjectField (builtins.head kv) then "${builtins.head kv}: ${builtins.elemAt kv 1}"
-          else null;
-      pragmasOf = args: lib.unique (lib.filter (s: s != null) (map pragmaOf args));
-
-      # pkg-name → union of pragmas across every unit of that package.
-      pragmasByName = lib.foldl' (acc: e:
-        let
-          name = e.pkg-name or "";
-          ps = pragmasOf (e.configure-args or []);
-        in if name == "" then acc
-           else acc // { ${name} = lib.unique ((acc.${name} or []) ++ ps); }
-      ) {} configuredEntries;
-      allPkgNames = builtins.attrNames pragmasByName;
-
-      # Baseline: pragmas present in *every* pkg-name's union.
-      baseline =
-        if allPkgNames == [] then []
-        else
-          let firstPkg = builtins.head allPkgNames;
-          in lib.filter
-               (p: lib.all (n: lib.elem p pragmasByName.${n}) allPkgNames)
-               pragmasByName.${firstPkg};
-      baselineSet = lib.listToAttrs (map (p: { name = p; value = true; }) baseline);
-
-      baselineBlock =
-        if baseline == [] then ""
-        else "package *\n"
-           + lib.concatMapStrings (p: "  " + p + "\n") baseline;
-
-      perPkgBlocks = lib.concatMapStrings (name:
-        let delta = lib.filter (p: !(baselineSet ? ${p})) pragmasByName.${name};
-        in if delta == [] then ""
-           else "package ${name}\n"
-              + lib.concatMapStrings (p: "  " + p + "\n") delta
-      ) allPkgNames;
-    in baselineBlock + perPkgBlocks;
+  # `projectConfigPragmas` (the `package *` / per-package cabal.project
+  # pragma blocks derived from plan.json's `configure-args`) is computed
+  # once per project in `builder/v2-project-globals.nix` and bound near
+  # the top of this file, rather than recomputed per slice.
 
   # Cross GHCs only ship the unversioned bin (e.g.
   # `${ghc.targetPrefix}ghc`), not the `-X.Y.Z` suffixed one, so

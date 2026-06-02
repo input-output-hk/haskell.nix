@@ -149,6 +149,10 @@ let
           # and shared across all slices so the v2 builder doesn't
           # rebuild the same N-entry attrset per component.
           planJsonByPlanId = config.plan-json-by-id;
+          # Project-global pragma / doc / flag data, computed once from
+          # the plan (see `builder/v2-project-globals.nix`) and shared
+          # across every slice instead of recomputed per component.
+          planV2Globals = config.plan-json-v2-globals;
           # Whether this package references one of its own exes
           # via `exe-depends` (the resolved `build-tool-depends` /
           # `build-tools`) anywhere in its plan entries (lib, exe,
