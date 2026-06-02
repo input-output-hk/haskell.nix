@@ -709,6 +709,8 @@ stdenv.mkDerivation ({
       cp ${builtins.toFile "extra-lib-dirs"    v2Fragment.extraLibDirsBlock}     $selfFrag/nix-support/v2-frag/extra-lib-dirs
       cp ${builtins.toFile "sublib-seeds" (lib.concatMapStrings (s: s + "\n") v2Fragment.sublibSeeds)} \
         $selfFrag/nix-support/v2-frag/sublib-seeds
+      cp ${builtins.toFile "setup-constraints" (lib.concatMapStrings (s: s + "\n") v2Fragment.setupConstraints)} \
+        $selfFrag/nix-support/v2-frag/setup-constraints
 
       # all-dep closure fragments (blocks scope): self + direct + transitive.
       declare -A seenBlk; blkFrags=()
@@ -769,6 +771,15 @@ stdenv.mkDerivation ({
           [ -n "$name" ] || continue
           echo "constraints: $(cat "$f"/nix-support/v2-frag/constraint)"
         done < <(sortedByName "''${libFrags[@]}")
+
+        # Per-package custom-setup pins (`<pkg>:setup.<dep> ==<ver>`),
+        # collected across the all-dep closure so Custom-build packages'
+        # setups (notably their `Cabal`) resolve as plan-nix recorded —
+        # keeping their unit-ids reproducible (e.g. ghc-paths).
+        for f in "''${blkFrags[@]}"; do
+          [ -f "$f/nix-support/v2-frag/setup-constraints" ] && \
+            sed 's/^/constraints: /' "$f/nix-support/v2-frag/setup-constraints" || true
+        done
       } > cabal.project.closure
 
       # local skeleton (via file — no shell escaping) + composed sections.
@@ -1395,6 +1406,8 @@ stdenv.mkDerivation ({
       printf '%s' ${lib.escapeShellArg v2Fragment.constraintLine} > $out/nix-support/v2-frag/constraint
       cp ${builtins.toFile "sublib-seeds" (lib.concatMapStrings (s: s + "\n") v2Fragment.sublibSeeds)} \
         $out/nix-support/v2-frag/sublib-seeds
+      cp ${builtins.toFile "setup-constraints" (lib.concatMapStrings (s: s + "\n") v2Fragment.setupConstraints)} \
+        $out/nix-support/v2-frag/setup-constraints
       # Flattened lib-dep closure pointer (the constraints scope).
       # Seeds purely from this slice's DIRECT deps; transitivity is
       # accumulated here at build time (like `transitive-deps`):

@@ -1238,6 +1238,24 @@ let
          then [ "${pn}/${builtins.substring prefixLen (builtins.stringLength cn - prefixLen) cn}" ]
          else []
     ) (lib.concatMap (u: u.depends or []) thisPkgUnits);
+  # Per-package custom-setup dependency pins.  A `build-type: Custom`
+  # package's unit-id hashes its setup configuration, so the slice must
+  # solve its setup against the SAME deps plan-nix recorded — notably
+  # `Cabal`, which otherwise drifts: with a reinstalled `Cabal` in the
+  # closure, cabal's unconstrained per-package setup solver prefers it
+  # over the GHC-bundled one plan-nix used, forking the unit-id (e.g.
+  # ghc-paths 142b137f → e732a98d) and breaking pre-built build-tool
+  # reuse (proto-lens-protoc).  We emit `<pkg>:setup.<dep> ==<ver>` for
+  # each setup-dep, scoped to this package (cabal accepts the
+  # per-package `pkg:setup.dep` qualifier).  No `source` flag: setup
+  # `Cabal` is disambiguated by version (bundled 3.10.x vs reinstalled
+  # 3.16.x), and the bundled one isn't in the slicing repo anyway.
+  ownSetupConstraints =
+    lib.filter (x: x != null) (map (id:
+      let q = planJsonByPlanId.${id} or null;
+      in if q == null || !(q ? pkg-name) then null
+         else "${pkgName}:setup.${q.pkg-name} ==${q.pkg-version}"
+    ) (lib.concatMap (u: u.components.setup.depends or []) thisPkgUnits));
   v2Fragment = {
     inherit pkgName pkgVersion;
     tarball = pkgTarball;
@@ -1252,6 +1270,7 @@ let
     # so always `source`.  The composer prefixes `constraints: `.
     constraintLine = "${pkgName} ==${pkgVersion}, ${pkgName} source";
     sublibSeeds = ownSublibSeeds;
+    setupConstraints = ownSetupConstraints;
     # When this slice's *target* is itself a sublib, it must be kept as
     # a reachability seed too (the `prune-unreachable-sublibs` patch
     # otherwise drops it).  Composed into HASKELLNIX_EXTRA_SUBLIB_SEEDS
