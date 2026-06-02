@@ -1,4 +1,4 @@
-{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, runCommand, comp-builder, comp-v2-builder, setup-builder, builderVersion ? 1 }:
+{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, runCommand, comp-builder, comp-v2-builder, setup-builder, builderVersion ? 2 }:
 
 config:
 { flags

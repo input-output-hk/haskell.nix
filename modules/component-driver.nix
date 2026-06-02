@@ -15,7 +15,7 @@ in
   # Propagated from the project-level `builderVersion`.
   options.builderVersion = lib.mkOption {
     type = lib.types.int;
-    default = 1;
+    default = 2;
   };
   # Propagated from the project-level `crossTemplateHaskellSupport`.
   # When false, the v2 cabal-slice builder uses the unwrapped ghc
