@@ -772,6 +772,27 @@ stdenv.mkDerivation ({
           echo "constraints: $(cat "$f"/nix-support/v2-frag/constraint)"
         done < <(sortedByName "''${libFrags[@]}")
 
+        # Version-pin EVERY unit composed into the starting store (the
+        # whole `transitive-deps`/blocks closure), not just the lib-dep
+        # closure pinned above.  Test/bench components — and any
+        # component that reaches a dep only through its own package's
+        # library (`ownLibSlice`) or a sibling (`homeDependIds`) rather
+        # than `component.depends` — seed `blkFrags` but not `libFrags`,
+        # so those deps would otherwise be installed-but-unpinned.  With
+        # `allow-older` + `allow-boot-library-installs` the solver is
+        # then free to re-solve a reinstalled boot library (e.g. `text`)
+        # back to the GHC-bundled version, drifting every downstream
+        # UnitId.  A bare `==<ver>` pin closes that gap; `extra-packages`
+        # and the `source` qualifier stay scoped to `libFrags` so
+        # build-tool exes aren't forced to rebuild from source.
+        # (Pins for packages already covered by `libFrags` are harmless
+        # duplicates — cabal ANDs repeated `constraints:` lines.)
+        while IFS=$'\t' read -r name f; do
+          [ -n "$name" ] || continue
+          [ "$name" = ${lib.escapeShellArg v2Fragment.pkgName} ] && continue
+          c=$(cat "$f"/nix-support/v2-frag/constraint); echo "constraints: ''${c%%,*}"
+        done < <(sortedByName "''${blkFrags[@]}")
+
         # Per-package custom-setup pins (`<pkg>:setup.<dep> ==<ver>`),
         # collected across the all-dep closure so Custom-build packages'
         # setups (notably their `Cabal`) resolve as plan-nix recorded —
