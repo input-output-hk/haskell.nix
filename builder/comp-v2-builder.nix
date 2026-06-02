@@ -38,6 +38,20 @@ let
   pkgVersion = package.identifier.version;
   ghcPkgVersion = ghc.version;
 
+  # Resolve a dependency package record in `hsp` (`hsPkgs` or
+  # `hsPkgs.pkgsBuildBuild`) by name, disambiguating by version.
+  #
+  # When the cabal plan holds more than one version of a package — e.g.
+  # a GHC boot library like `text-2.0.2` alongside a cabal-reinstalled
+  # `text-2.1.4` — the bare `hsp.<name>` redirect is ambiguous and
+  # throws "Multiple versions for <name>".  The `<name>-<version>`
+  # redirect is unique, so prefer it whenever we know the version and
+  # fall back to the bare name only when we don't (or when there's no
+  # version-specific redirect, e.g. on `pkgsBuildBuild`).
+  lookupDepPkg = hsp: name: version:
+    let byNV = if version != null then hsp."${name}-${version}" or null else null;
+    in if byNV != null then byNV else hsp.${name} or null;
+
   # Cross-compile detection — drives:
   #   * whether home-build-tool source goes in the slicing repo
   #     (no on cross — see `depTransitives` and `externalDepIds`).
@@ -516,7 +530,7 @@ let
   # but still want the library's transitive dep tarballs in the
   # slicing repo, so the solver can plan the library's `build-depends`
   # when cabal pulls it in via `extra-packages:`.
-  ownLibPkg = hsPkgs.${pkgName} or null;
+  ownLibPkg = lookupDepPkg hsPkgs pkgName pkgVersion;
   ownLibV2 =
     if isLibrary || ownLibPkg == null
        || !(ownLibPkg ? components)
@@ -591,12 +605,12 @@ let
           isExe = lib.hasPrefix cnPrefix cn;
           exeName = builtins.substring (builtins.stringLength cnPrefix)
                       (builtins.stringLength cn - builtins.stringLength cnPrefix) cn;
-          targetPkg = hsPkgs.${pn} or null;
+          targetPkg = lookupDepPkg hsPkgs pn (p.pkg-version or null);
           targetExes = if targetPkg != null && targetPkg ? components
                          && targetPkg.components ? exes
                        then targetPkg.components.exes else {};
           targetSlice = targetExes.${exeName} or null;
-          buildPkg = hsPkgs.pkgsBuildBuild.${pn} or null;
+          buildPkg = lookupDepPkg hsPkgs.pkgsBuildBuild pn (p.pkg-version or null);
           buildExes = if buildPkg != null && buildPkg ? components
                         && buildPkg.components ? exes
                       then buildPkg.components.exes else {};
@@ -702,7 +716,7 @@ let
   # `cardano-wallet-ui:shelley` but has no main `library`.
   # Returns null when none is present (boot / pre-existing pkgs).
   homeDepSliceOf = nv:
-    let dPkg = hsPkgs.${nv.name} or null;
+    let dPkg = lookupDepPkg hsPkgs nv.name (nv.version or null);
         depLib = if dPkg != null
                     && (dPkg ? components)
                     && (dPkg.components ? library)
@@ -830,7 +844,7 @@ let
   # gives us a superset that satisfies our current slice's solver.
   depTransitiveTarballsOf = nv:
     let
-      dPkg = hsPkgs.${nv.name} or null;
+      dPkg = lookupDepPkg hsPkgs nv.name (nv.version or null);
       depLib = if dPkg != null
                   && (dPkg ? components)
                   && (dPkg.components ? library)
@@ -911,7 +925,7 @@ let
   # Resolve a home-dep {name;version} (sibling-component from
   # plan-json, includes setup-depends) to the same "pkg record"
   # shape that component.depends gives us.
-  homeDepPkgOf = nv: hsPkgs.${nv.name} or null;
+  homeDepPkgOf = nv: lookupDepPkg hsPkgs nv.name (nv.version or null);
   homeDepPkgs = lib.filter (p: p != null) (map homeDepPkgOf homeDependIds);
 
   # SysLibs of a component — the same shape we feed to
@@ -1080,7 +1094,7 @@ let
   homeDepExeSlices =
     let
       exesOf = nv:
-        let p = hsPkgs.pkgsBuildBuild.${nv.name} or null;
+        let p = lookupDepPkg hsPkgs.pkgsBuildBuild nv.name (nv.version or null);
         in if p != null && (p ? components) && (p.components ? exes)
            then lib.filter (v: v != null) (lib.attrValues p.components.exes)
            else [];
@@ -1594,7 +1608,7 @@ let
         let p  = e.entry;
             pn = p.pkg-name or "";
             isSR = (p.pkg-src or {}).type or null == "source-repo";
-            depPkg = hsPkgs.${pn} or null;
+            depPkg = lookupDepPkg hsPkgs pn (p.pkg-version or null);
             depSrc = if depPkg != null then depPkg.src or null else null;
         in if pn != "" && pn != pkgName && isSR && depSrc != null
            then [{ name = pn; minRepo = wrapAsMinimalRepo pn depSrc; }]
