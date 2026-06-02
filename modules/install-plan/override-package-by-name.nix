@@ -19,6 +19,16 @@
   # the linear scan a `lib.findFirst` over the list would do.
   plan-json-by-id = pkgs.lib.listToAttrs
     (map (p: { name = p.id; value = p; }) config.plan-json.install-plan);
+  # Project-global v2-builder data derived once from the plan (see
+  # `builder/v2-project-globals.nix`).  Lazy: only forced by the v2
+  # builder, so v1 / non-plan projects never pay for it.
+  plan-json-v2-globals = import ../../builder/v2-project-globals.nix {
+    inherit (pkgs) lib;
+  } {
+    planJson = config.plan-json.install-plan;
+    isWasm = pkgs.stdenv.hostPlatform.isWasm;
+    ghcVersion = config.compiler.version;
+  };
   packages = pkgs.lib.listToAttrs (map (p: {
       name = p.id;
       value = pkgs.lib.modules.mkAliasDefinitions (options.packages.${p.pkg-name});
