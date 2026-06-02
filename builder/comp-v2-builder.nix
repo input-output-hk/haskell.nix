@@ -1589,17 +1589,28 @@ let
     then templateHaskell.wrapGhc ghc
     else ghc;
 
-  # preBuild snippet shared between the real slice and
-  # `checkAgainstPlan`: extract the package source for local
-  # test / bench targets, then emit `cabal.project`.
+  # Stage the package source for local test / bench targets so
+  # `packages:` can reference it as a local directory (cabal-7127
+  # requires test / bench targets to be local to the project).
+  stageLocalTestBenchSrc = lib.optionalString isLocalTestOrBench ''
+    mkdir -p src
+    tar -xzf ${pkgTarball} -C src
+  '';
+
+  # preBuild for the real slice: only stage sources.  The cabal.project
+  # is assembled entirely at build time by build-cabal-slice from
+  # `v2Fragment` (local skeleton + closure sections composed from
+  # fragments), so we DON'T interpolate the Nix-side `cabalProject` here
+  # — that's what keeps the per-slice dependency-closure walk (the six
+  # `sliceCanonicalNames` block-assemblies, `depConstraints`,
+  # `slicingRepo`, …) out of the evaluator.
+  slicePreBuildV2 = stageLocalTestBenchSrc;
+
+  # preBuild that emits the full Nix-assembled cabal.project.  Still used
+  # by `checkAgainstPlan` / `docSlice`, which don't carry a `v2Fragment`
+  # (lazy: only forced when those are built, not on the main slice path).
   slicePreBuild = ''
-    ${lib.optionalString isLocalTestOrBench ''
-      # Extract the package source so `packages:` can reference
-      # it as a local directory (cabal-7127 requires test / bench
-      # targets to be local to the project).
-      mkdir -p src
-      tar -xzf ${pkgTarball} -C src
-    ''}
+    ${stageLocalTestBenchSrc}
     cat <<'EOF' > cabal.project
     ${cabalProject}EOF
   '';
@@ -1693,8 +1704,11 @@ let
     inherit depSlices;
     inherit v2Fragment;
     ghc = sliceGhc;
-    localRepo = slicingRepo;
-    preBuild = slicePreBuild;
+    # Repo + cabal.project are composed at build time from `v2Fragment`;
+    # `localRepo`/the full Nix `cabalProject` are intentionally NOT
+    # referenced here so the per-slice closure walk stays out of eval.
+    localRepo = null;
+    preBuild = slicePreBuildV2;
     target = targetSelector;
     # When this slice targets a sublib (e.g.
     # `:pkg:io-classes:lib:strict-stm`), tell our patched

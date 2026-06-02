@@ -687,14 +687,15 @@ stdenv.mkDerivation ({
     ${preBuild}
 
     ${lib.optionalString (v2Fragment != null) ''
-      # --- STEP 2b: compose cabal.project closure sections -----------
-      # `preBuild` wrote the Nix-assembled cabal.project; keep it as a
-      # reference, then rebuild the closure-derived sections here from
-      # the per-package fragments (so the dep-graph walk is out of Nix).
-      # cabal hashes content not field order, so we emit local skeleton
-      # first then composed sections, and verify content-equivalence
-      # with an order-insensitive diff.
-      cp cabal.project cabal.project.nixref
+      # --- Compose cabal.project from per-package fragments ----------
+      # The cabal.project is built entirely here, at build time: a local
+      # skeleton (`v2Fragment.localCabalProject`) plus the closure-derived
+      # sections (extra-packages / per-package block groups / allow-boot /
+      # constraints) composed from the per-package fragments — so the
+      # dependency-closure walk never happens in the Nix evaluator.
+      # cabal hashes content not field order, so local-then-closure is
+      # equivalent to the old Nix-assembled project (verified by an
+      # order-insensitive diff while this was being developed).
 
       # Self's fragment (its own $out isn't built yet) materialised from
       # the passed values, so self participates in the block groups.
@@ -769,13 +770,10 @@ stdenv.mkDerivation ({
       } > cabal.project.closure
 
       # local skeleton (via file — no shell escaping) + composed sections.
-      cp ${builtins.toFile "local-cabal-project" v2Fragment.localCabalProject} cabal.project
+      # Use a redirect (not `cp`, which would create cabal.project with
+      # the store file's read-only mode and break the `>>` append).
+      cat ${builtins.toFile "local-cabal-project" v2Fragment.localCabalProject} > cabal.project
       cat cabal.project.closure >> cabal.project
-
-      echo "--- cabal.project content diff (nixref - vs v2composed +; empty = OK) ---"
-      diff <(grep -v '^[[:space:]]*$' cabal.project.nixref | sort) \
-           <(grep -v '^[[:space:]]*$' cabal.project        | sort) || true
-      echo "--- end diff ---"
     ''}
 
     # --- Build -------------------------------------------------------
