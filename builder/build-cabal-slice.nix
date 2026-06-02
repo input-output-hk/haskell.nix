@@ -54,6 +54,14 @@ let outerGhc = ghc; in
                               # option by `comp-v2-builder.nix`.
 , depSlices ? []
 , localRepo ? null           # derivation with <pkg>-<ver>.tar.gz files
+, v2Fragment ? null          # per-package build-time-composition fragment
+                             # (see comp-v2-builder.nix `v2Fragment`).  When
+                             # set, the installPhase writes this package's own
+                             # repo entry + cabal.project blocks + constraint +
+                             # sublib seeds + lib-dep pointer into `$out`, so a
+                             # downstream slice can compose the closure at build
+                             # time without walking deps in Nix.  STEP 1:
+                             # emitted but not yet consumed.
 , preBuild                   # stage sources, write cabal.project, cd into project dir
 , target ? "all"
 , extraSublibSeeds ? []      # list of `{ pkg = ...; sublib = ...; }`
@@ -1188,6 +1196,54 @@ stdenv.mkDerivation ({
         fi
       done
     } | sort -u > $out/nix-support/transitive-deps
+
+    ${lib.optionalString (v2Fragment != null) ''
+      # --- v2 build-time-composition fragment (additive; STEP 1) -----
+      # This package's own contribution, for a downstream slice to
+      # compose the slicing repo + cabal.project at *build* time by
+      # following pointer files — no Nix-side dep-graph walk.
+      mkdir -p $out/repo-frag/package \
+               $out/repo-frag/index/${v2Fragment.pkgName}/${v2Fragment.pkgVersion} \
+               $out/nix-support/v2-frag
+      # Source tarball (symlink — keeps the fragment a tiny set of links).
+      ln -s ${v2Fragment.tarball} \
+        $out/repo-frag/package/${v2Fragment.pkgName}-${v2Fragment.pkgVersion}.tar.gz
+      # Index `.cabal`: the X-revised override when present, else the
+      # revision-0 .cabal extracted from the tarball (byte-identical, so
+      # cabal keeps `pkgHashPkgDescriptionHash` Nothing).
+      ${if v2Fragment.cabalFile != null
+        then "cp ${v2Fragment.cabalFile} $out/repo-frag/index/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal"
+        else ''
+          tar -xOzf ${v2Fragment.tarball} \
+            ${v2Fragment.pkgName}-${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal \
+            > $out/repo-frag/index/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal
+        ''}
+      # Per-package cabal.project blocks (emitted as separate files so a
+      # consumer can group by block-type across the closure, matching the
+      # current cabal.project byte-layout).  Written via `toFile` so the
+      # multi-line block text needs no shell escaping.
+      printf '%s' ${lib.escapeShellArg v2Fragment.pkgName}        > $out/nix-support/v2-frag/pkg-name
+      cp ${builtins.toFile "flags"             v2Fragment.flagsBlock}            $out/nix-support/v2-frag/flags
+      cp ${builtins.toFile "ghc-options"       v2Fragment.ghcOptionsBlock}       $out/nix-support/v2-frag/ghc-options
+      cp ${builtins.toFile "configure-options" v2Fragment.configureOptionsBlock} $out/nix-support/v2-frag/configure-options
+      cp ${builtins.toFile "program-options"   v2Fragment.programOptionsBlock}   $out/nix-support/v2-frag/program-options
+      cp ${builtins.toFile "doc"               v2Fragment.docBlock}              $out/nix-support/v2-frag/doc
+      cp ${builtins.toFile "extra-lib-dirs"    v2Fragment.extraLibDirsBlock}     $out/nix-support/v2-frag/extra-lib-dirs
+      printf '%s' ${lib.escapeShellArg v2Fragment.constraintLine} > $out/nix-support/v2-frag/constraint
+      cp ${builtins.toFile "sublib-seeds" (lib.concatMapStrings (s: s + "\n") v2Fragment.sublibSeeds)} \
+        $out/nix-support/v2-frag/sublib-seeds
+      # Flattened lib-dep closure pointer (constraints scope), built the
+      # same way as `transitive-deps` from the direct lib-dep slices.
+      {
+        ${lib.concatMapStrings (s: ''
+          echo ${s}
+          if [ -f ${s}/nix-support/lib-dep-slices ]; then
+            cat ${s}/nix-support/lib-dep-slices
+          fi
+        '') v2Fragment.libDepSlices}
+        : # ensure the brace group is non-empty when there are no lib-deps
+      } | sort -u > $out/nix-support/lib-dep-slices
+    ''}
 
     # Drop the package-db cache files from $out.  They're real files
     # `ghc-pkg recache` regenerated for this slice's specific composed

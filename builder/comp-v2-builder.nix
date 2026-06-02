@@ -1591,6 +1591,56 @@ let
     ${cabalProject}EOF
   '';
 
+  # ---- Per-package fragment for build-time composition -------------
+  # Each slice writes its OWN contribution into `$out` (source tarball +
+  # `.cabal`, the six per-package cabal.project blocks, its constraint
+  # pin, its sublib seeds) plus a pointer to its direct lib-dep slices.
+  # A downstream slice's build phase composes these by following the
+  # pointer files, so the dependency closure never has to be walked in
+  # Nix.  STEP 1: emitted additively (not yet consumed) so we can verify
+  # it doesn't perturb unit-ids before composition is switched over.
+  #
+  # `thisPkgUnits` are this package's own plan entries, found via the
+  # project-global `packageIdsByName` index (O(units), not an O(planJson)
+  # scan).
+  thisPkgUnits =
+    lib.filter (p: (p.pkg-version or null) == pkgVersion)
+      (map (id: planJsonByPlanId.${id})
+        (lib.filter (id: planJsonByPlanId ? ${id})
+          (packageIdsByName.${pkgName} or [])));
+  # Sublib reachability seeds contributed by THIS package: the `lib:<n>`
+  # component deps among its own plan units' `depends`.  (The whole-repo
+  # union is reconstructed at build time across the all-dep closure.)
+  ownSublibSeeds =
+    let prefix = "lib:"; prefixLen = builtins.stringLength prefix; in
+    lib.concatMap (id:
+      let q  = planJsonByPlanId.${id} or null;
+          pn = if q == null then "" else q.pkg-name or "";
+          cn = if q == null then "" else q.component-name or "";
+      in if pn != "" && lib.hasPrefix prefix cn
+         then [ "${pn}/${builtins.substring prefixLen (builtins.stringLength cn - prefixLen) cn}" ]
+         else []
+    ) (lib.concatMap (u: u.depends or []) thisPkgUnits);
+  v2Fragment = {
+    inherit pkgName pkgVersion;
+    tarball = pkgTarball;
+    cabalFile = thisCabalFile;            # nullable (revision-0 → extract from tarball)
+    flagsBlock            = flagBlockFor             pkgName;
+    ghcOptionsBlock       = ghcOptionsBlockFor       pkgName;
+    configureOptionsBlock = configureOptionsBlockFor pkgName;
+    programOptionsBlock   = programOptionsBlockFor   pkgName;
+    docBlock              = documentationBlockFor    pkgName;
+    extraLibDirsBlock     = extraLibDirsBlockFor     pkgName;
+    # Consumer-side constraint pin.  Slices are never `pre-existing`,
+    # so always `source`.  The composer prefixes `constraints: `.
+    constraintLine = "${pkgName} ==${pkgVersion}, ${pkgName} source";
+    sublibSeeds = ownSublibSeeds;
+    # Direct lib-dep slices — the seed for the build-time lib-dep
+    # closure walk (constraints scope).  The all-dep closure (repo +
+    # blocks scope) already rides the existing `transitive-deps`.
+    libDepSlices = directDepSlices;
+  };
+
   baseSlice = buildCabalStoreSlice {
     # Match v1's `comp-builder.nix:528-530`-style
     # `pname = <pkg>-<ctype>-<cname>; version = <version>` so the
@@ -1604,6 +1654,7 @@ let
     pname = "${pkgName}-${componentKindLabel}-${componentName}";
     version = pkgVersion;
     inherit depSlices;
+    inherit v2Fragment;
     ghc = sliceGhc;
     localRepo = slicingRepo;
     preBuild = slicePreBuild;
