@@ -707,6 +707,8 @@ stdenv.mkDerivation ({
       cp ${builtins.toFile "program-options"   v2Fragment.programOptionsBlock}   $selfFrag/nix-support/v2-frag/program-options
       cp ${builtins.toFile "doc"               v2Fragment.docBlock}              $selfFrag/nix-support/v2-frag/doc
       cp ${builtins.toFile "extra-lib-dirs"    v2Fragment.extraLibDirsBlock}     $selfFrag/nix-support/v2-frag/extra-lib-dirs
+      cp ${builtins.toFile "sublib-seeds" (lib.concatMapStrings (s: s + "\n") v2Fragment.sublibSeeds)} \
+        $selfFrag/nix-support/v2-frag/sublib-seeds
 
       # all-dep closure fragments (blocks scope): self + direct + transitive.
       declare -A seenBlk; blkFrags=()
@@ -774,6 +776,21 @@ stdenv.mkDerivation ({
       # the store file's read-only mode and break the `>>` append).
       cat ${builtins.toFile "local-cabal-project" v2Fragment.localCabalProject} > cabal.project
       cat cabal.project.closure >> cabal.project
+
+      # Sublib reachability seeds for the prune-unreachable-sublibs patch
+      # (HASKELLNIX_EXTRA_SUBLIB_SEEDS): this slice's own target sublib
+      # plus every `pkg/sublib` referenced across the all-dep closure
+      # (each fragment's `sublib-seeds`).  Composed here, not in Nix.
+      {
+        ${lib.optionalString (v2Fragment.selfTargetSublibSeed != "")
+          "echo ${lib.escapeShellArg v2Fragment.selfTargetSublibSeed}"}
+        for f in "''${blkFrags[@]}"; do
+          # `|| true`: a missing/empty sublib-seeds must not fail the
+          # loop (and, under `pipefail`, the whole pipe + `set -e`).
+          [ -f "$f/nix-support/v2-frag/sublib-seeds" ] && cat "$f/nix-support/v2-frag/sublib-seeds" || true
+        done
+      } | sort -u | sed '/^$/d' > sublib-seeds.txt
+      export HASKELLNIX_EXTRA_SUBLIB_SEEDS="$(paste -sd, sublib-seeds.txt)"
     ''}
 
     # --- Build -------------------------------------------------------
