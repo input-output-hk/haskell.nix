@@ -741,7 +741,19 @@ let
   depSlices = haskellLib.uniqueWithName
     (directDepSlices
      ++ lib.optional (ownLibSlice != null) ownLibSlice
-     ++ buildToolSlices
+     # On cross, `buildToolSlices` are the *build-build* (pkgsBuildBuild)
+     # tool slices.  Propagating them would walk their `repo-frag`
+     # (source `.tar.gz` + index `.cabal`) into this cross slice's
+     # slicing repo, giving cabal a second candidate for each tool
+     # (e.g. a build-build `hsc2hs` alongside the cross one) and forking
+     # dependent unit-ids — a package's build-tool exe-dep can resolve
+     # to the build-build unit, which feeds the consumer's UnitId but
+     # never appears in its Setup configure args.  The cross store unit
+     # comes from `transitiveBuildToolSlices` (the cross `targetSlice`)
+     # and the runnable binary from `buildToolBinOverlays` /
+     # `withProgFlags` (both reference `buildSlice` directly), so the
+     # build-build slices must stay out of `propagatedBuildInputs` here.
+     ++ lib.optionals (!isCross) buildToolSlices
      ++ transitiveBuildToolSlices
      ++ homeDepSlices);
 
