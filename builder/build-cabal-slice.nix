@@ -723,18 +723,19 @@ stdenv.mkDerivation ({
         [ -f "$dep/nix-support/transitive-deps" ] && while IFS= read -r d; do addBlk "$d"; done < "$dep/nix-support/transitive-deps"
       done
 
-      # lib-dep closure fragments (extra-packages + constraints scope).
+      # depends-closure fragments (extra-packages + constraints scope).
+      # Seeded purely from the library `depends` edges (`libDepSlices` =
+      # the complete `dependsSlices`), walked transitively via each dep's
+      # `lib-dep-slices` pointer.  `exe-depends` (build tools) are NOT
+      # folded in here: they provide source via the repo but get no
+      # constraints, so a build tool's own lib closure never lands in the
+      # constraints scope.
       declare -A seenLib; libFrags=()
       addLib() { local f=$1; if [ -n "$f" ] && [ -d "$f/nix-support/v2-frag" ] && [ -z "''${seenLib[$f]:-}" ]; then seenLib[$f]=1; libFrags+=("$f"); fi; }
       ${lib.concatMapStrings (s: ''
         addLib ${s}
         [ -f ${s}/nix-support/lib-dep-slices ] && while IFS= read -r d; do addLib "$d"; done < ${s}/nix-support/lib-dep-slices
       '') v2Fragment.libDepSlices}
-      # Build tools contribute their *lib* closures (not the exe pkg),
-      # matching `exeUnitsInAllDeps` in `libConstraintPins`.
-      ${lib.concatMapStrings (s: ''
-        [ -f ${s}/nix-support/lib-dep-slices ] && while IFS= read -r d; do addLib "$d"; done < ${s}/nix-support/lib-dep-slices
-      '') v2Fragment.exeDepSlices}
 
       # Emit "<pkg-name>\t<frag-dir>" name-sorted.
       # Emit one "<pkg-name>\t<frag-dir>" line per *pkg-name*, name-sorted.
@@ -752,6 +753,13 @@ stdenv.mkDerivation ({
           ''epline=${lib.escapeShellArg v2Fragment.selfExtraPackage}; epsep=", "''}
         while IFS=$'\t' read -r name f; do
           [ -n "$name" ] || continue
+          # Skip self: the local package is built from `packages:` (+
+          # `selfExtraPackage` / `any.<pkg> source`).  Its own library
+          # fragment can enter `libFrags` via `ownLibSlice` (kept in the
+          # walk only to reach the library's transitive dep constraints);
+          # also listing it as a repo `extra-packages` entry makes cabal's
+          # target matcher ambiguous (Cabal-7130).
+          [ "$name" = ${lib.escapeShellArg v2Fragment.pkgName} ] && continue
           # Source-repo packages are declared via source-repository-package
           # (below), not extra-packages — listing both makes the solver
           # consider the tarball candidate and fork the UnitId.
@@ -769,29 +777,12 @@ stdenv.mkDerivation ({
         echo "constraints: any.${v2Fragment.pkgName} source"
         while IFS=$'\t' read -r name f; do
           [ -n "$name" ] || continue
+          # Self is pinned via `any.<pkg> source` above (it's the local
+          # `packages:` target); don't re-pin it from its `ownLibSlice`
+          # fragment.
+          [ "$name" = ${lib.escapeShellArg v2Fragment.pkgName} ] && continue
           echo "constraints: $(cat "$f"/nix-support/v2-frag/constraint)"
         done < <(sortedByName "''${libFrags[@]}")
-
-        # Version-pin EVERY unit composed into the starting store (the
-        # whole `transitive-deps`/blocks closure), not just the lib-dep
-        # closure pinned above.  Test/bench components — and any
-        # component that reaches a dep only through its own package's
-        # library (`ownLibSlice`) or a sibling (`homeDependIds`) rather
-        # than `component.depends` — seed `blkFrags` but not `libFrags`,
-        # so those deps would otherwise be installed-but-unpinned.  With
-        # `allow-older` + `allow-boot-library-installs` the solver is
-        # then free to re-solve a reinstalled boot library (e.g. `text`)
-        # back to the GHC-bundled version, drifting every downstream
-        # UnitId.  A bare `==<ver>` pin closes that gap; `extra-packages`
-        # and the `source` qualifier stay scoped to `libFrags` so
-        # build-tool exes aren't forced to rebuild from source.
-        # (Pins for packages already covered by `libFrags` are harmless
-        # duplicates — cabal ANDs repeated `constraints:` lines.)
-        while IFS=$'\t' read -r name f; do
-          [ -n "$name" ] || continue
-          [ "$name" = ${lib.escapeShellArg v2Fragment.pkgName} ] && continue
-          c=$(cat "$f"/nix-support/v2-frag/constraint); echo "constraints: ''${c%%,*}"
-        done < <(sortedByName "''${blkFrags[@]}")
 
         # Per-package custom-setup pins (`<pkg>:setup.<dep> ==<ver>`),
         # collected across the all-dep closure so Custom-build packages'
@@ -1437,15 +1428,15 @@ stdenv.mkDerivation ({
         $out/nix-support/v2-frag/setup-constraints
       cp ${pkgs.writeText "source-repo-block" v2Fragment.sourceRepoBlock} \
         $out/nix-support/v2-frag/source-repo-block
-      # Flattened lib-dep closure pointer (the constraints scope).
-      # Seeds purely from this slice's DIRECT deps; transitivity is
-      # accumulated here at build time (like `transitive-deps`):
-      #   * each direct lib-dep slice — pinned (echoed) — plus its own
-      #     flattened pointer (its lib deps + its build tools' closures);
-      #   * each direct build-tool slice's pointer only (its lib closure
-      #     is pinned; the exe package itself is not).
-      # Following any dep's pointer therefore reaches every transitive
-      # build tool's lib closure without a Nix-side closure walk.
+      # Flattened depends-closure pointer (the constraints scope).
+      # Seeds purely from this slice's DIRECT library `depends`
+      # (`libDepSlices` = `dependsSlices`); transitivity is accumulated
+      # here at build time (like `transitive-deps`): each direct dep slice
+      # is pinned (echoed) and its own flattened pointer folded in, so
+      # following any dep's pointer reaches every transitive library dep.
+      # `exe-depends` (build tools) are deliberately NOT folded in — they
+      # contribute source via the repo but never enter the constraints
+      # scope.
       {
         ${lib.concatMapStrings (s: ''
           echo ${s}
@@ -1453,11 +1444,6 @@ stdenv.mkDerivation ({
             cat ${s}/nix-support/lib-dep-slices
           fi
         '') v2Fragment.libDepSlices}
-        ${lib.concatMapStrings (s: ''
-          if [ -f ${s}/nix-support/lib-dep-slices ]; then
-            cat ${s}/nix-support/lib-dep-slices
-          fi
-        '') v2Fragment.exeDepSlices}
         : # ensure the brace group is non-empty when there are no deps
       } | sort -u > $out/nix-support/lib-dep-slices
     ''}

@@ -732,6 +732,26 @@ let
   homeDepSlices = lib.filter (s: s != null)
     (map homeDepSliceOf externalDepIds);
 
+  # Complete set of this component's *direct library* `depends` slices —
+  # the constraints scope.  `directDepSlices` alone (from
+  # `component.depends`) is empty for test/bench components, whose deps
+  # arrive via `homeDependIds`; that gap meant a reinstalled lib reached
+  # only through a sibling/own-lib edge never got a `source` constraint.
+  # So we also fold in the home *library* deps (not build tools) and, for
+  # non-library components, the package's own library.  Following these
+  # slices' pointers at build time reaches every transitive library dep,
+  # so each is pinned `<pkg> ==<ver>, <pkg> source` — and `source` is what
+  # forces cabal off a GHC-bundled `-inplace` unit when a boot library is
+  # reinstalled at the *same* version (e.g. `text-2.1.4`).  `exe-depends`
+  # (build tools) are deliberately excluded here: they contribute source
+  # (via the repo) but no constraints.
+  homeLibDepSlices = lib.filter (s: s != null)
+    (map homeDepSliceOf (lib.filter (nv: nv.name != pkgName) homeDependIds));
+  dependsSlices = haskellLib.uniqueWithName
+    (directDepSlices
+     ++ homeLibDepSlices
+     ++ lib.optional (ownLibSlice != null) ownLibSlice);
+
   # The slice's *direct* dep slices.  Transitive closure is
   # reconstructed at build time from each slice's
   # `$out/nix-support/transitive-deps` file (see
@@ -1324,21 +1344,12 @@ let
     # otherwise drops it).  Composed into HASKELLNIX_EXTRA_SUBLIB_SEEDS
     # at build time alongside the closure's sublib seeds.
     selfTargetSublibSeed = lib.optionalString isSublib "${pkgName}/${cname}";
-    # Direct lib-dep slices — the seed for the build-time lib-dep
-    # closure walk (constraints scope).  The all-dep closure (repo +
-    # blocks scope) already rides the existing `transitive-deps`.
-    libDepSlices = directDepSlices;
-    # This component's *direct* build-tool (exe) slices.  Each build
-    # tool's *lib* closure must be pinned in constraints (matching
-    # `exeUnitsInAllDeps` in `libConstraintPins` — e.g. a tool that
-    # pulls a reinstalled `process`/`directory`).  We stay direct in
-    # Nix and rely on build-time transitivity: each slice's emitted
-    # `lib-dep-slices` folds in its own direct build tools' lib
-    # closures, so following a dep's pointer transitively reaches every
-    # build tool's lib closure without a Nix-side `allDepClosure` walk.
-    # (We follow these slices' `lib-dep-slices` — their lib closures —
-    # not the exe packages themselves, which aren't pinned.)
-    exeDepSlices = buildToolSlices;
+    # Direct library-`depends` slices — the seed for the build-time
+    # depends-closure walk (constraints scope; see `dependsSlices`).
+    # The source + blocks scope rides the existing `transitive-deps`
+    # closure instead.  `exe-depends` (build tools) are NOT seeded here:
+    # they contribute source via the repo but get no constraints.
+    libDepSlices = dependsSlices;
 
     # ---- STEP 2b: build-time cabal.project composition inputs -------
     # Local/global skeleton; the composer appends closure sections.
