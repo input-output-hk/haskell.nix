@@ -102,11 +102,11 @@ with lib.types;
     };
     builderVersion = mkOption {
       type = int;
-      default = 2;
+      default = 1;
       description = ''
         Selects which component builder is used for per-component derivations.
-          * `1` — the Setup.hs-based builder (comp-builder.nix).
-          * `2` (default) — the cabal v2-build-based slicing builder
+          * `1` (default) — the Setup.hs-based builder (comp-builder.nix).
+          * `2` — the cabal v2-build-based slicing builder
             (comp-v2-builder.nix).
         This is project-wide.  Set it on the project module to switch
         builders; there is no per-component opt-in.
