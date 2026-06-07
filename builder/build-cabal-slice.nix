@@ -54,6 +54,14 @@ let outerGhc = ghc; in
                               # option by `comp-v2-builder.nix`.
 , depSlices ? []
 , localRepo ? null           # derivation with <pkg>-<ver>.tar.gz files
+, v2Fragment ? null          # per-package build-time-composition fragment
+                             # (see comp-v2-builder.nix `v2Fragment`).  When
+                             # set, the installPhase writes this package's own
+                             # repo entry + cabal.project blocks + constraint +
+                             # sublib seeds + lib-dep pointer into `$out`, so a
+                             # downstream slice can compose the closure at build
+                             # time without walking deps in Nix.  STEP 1:
+                             # emitted but not yet consumed.
 , preBuild                   # stage sources, write cabal.project, cd into project dir
 , target ? "all"
 , extraSublibSeeds ? []      # list of `{ pkg = ...; sublib = ...; }`
@@ -593,7 +601,63 @@ stdenv.mkDerivation ({
     # an empty string rather than an `unbound variable` error).
     export pkgsHostTargetAsString="''${pkgsHostTarget[*]:-}"
 
-    ${lib.optionalString (localRepo != null) ''
+    ${if v2Fragment != null then ''
+      # --- Build-time slicing repo (STEP 2: composed from fragments) ---
+      # Assemble the per-slice hackage repo here instead of in Nix: this
+      # package's own source (passed directly — our own `repo-frag` isn't
+      # built yet) plus every dep's `repo-frag/` reached through the same
+      # `transitive-deps` closure walk used for the store above.  cabal
+      # hashes package *source* + `.cabal` descriptions (not the index
+      # bytes or repo path), so a content-equivalent repo keeps unit-ids
+      # identical to the old Nix-assembled `slicingRepo`.
+      v2repo=$buildRoot/local-repo
+      v2idx=$(mktemp -d)
+      mkdir -p $v2repo/package
+      declare -A seenRepoFrag
+      addRepoFrag() {
+        local f=$1
+        if [ -n "$f" ] && [ -d "$f/repo-frag" ] && [ -z "''${seenRepoFrag[$f]:-}" ]; then
+          seenRepoFrag[$f]=1
+          for t in "$f"/repo-frag/package/*; do
+            [ -e "$t" ] && ln -sf "$t" "$v2repo/package/$(basename "$t")"
+          done
+          if [ -d "$f/repo-frag/index" ]; then
+            # `-n` (no-clobber): a multi-sublib package (e.g. happy-lib's
+            # grammar/frontend/tabular) appears under several fragment
+            # paths that all carry the *same* `<pkg>/<ver>/<pkg>.cabal`;
+            # the .cabal is identical, so skip duplicates rather than
+            # re-copy onto the read-only file the first copy left.
+            cp -rL --no-preserve=mode -n "$f"/repo-frag/index/. "$v2idx"/
+          fi
+        fi
+      }
+      # This package's own source + .cabal (own fragment not built yet).
+      ln -s ${v2Fragment.tarball} $v2repo/package/${v2Fragment.pkgName}-${v2Fragment.pkgVersion}.tar.gz
+      mkdir -p $v2idx/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}
+      ${if v2Fragment.cabalFile != null
+        then "cp ${v2Fragment.cabalFile} $v2idx/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal"
+        else ''
+          tar -xOzf ${v2Fragment.tarball} \
+            ${v2Fragment.pkgName}-${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal \
+            > $v2idx/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal
+        ''}
+      # Dep closure repo-frags (direct + transitive — same walk as store).
+      for dep in "''${pkgsHostTarget[@]}"; do
+        addRepoFrag "$dep"
+        if [ -f "$dep/nix-support/transitive-deps" ]; then
+          while IFS= read -r tdep; do addRepoFrag "$tdep"; done < "$dep/nix-support/transitive-deps"
+        fi
+      done
+      # Hackage index tarball (sorted, fixed mtime — as the Nix repo did).
+      tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
+          -czf $v2repo/00-index.tar.gz -C $v2idx .
+      cat > $CABAL_DIR/config <<EOF
+      repository hackage.haskell-nix
+        url: file://$v2repo
+        secure: False
+      EOF
+      cabal update hackage.haskell-nix
+    '' else lib.optionalString (localRepo != null) ''
       # Hackage-style local repo: `00-index.tar.gz` + `package/<pkg>-<ver>.tar.gz`.
       # See comp-v2-builder.nix `slicingRepo` for why we use this layout
       # over `file+noindex://`.  `secure: False` skips TUF root-key checks
@@ -621,6 +685,142 @@ stdenv.mkDerivation ({
     mkdir -p $buildRoot/project
     cd $buildRoot/project
     ${preBuild}
+
+    ${lib.optionalString (v2Fragment != null) ''
+      # --- Compose cabal.project from per-package fragments ----------
+      # The cabal.project is built entirely here, at build time: a local
+      # skeleton (`v2Fragment.localCabalProject`) plus the closure-derived
+      # sections (extra-packages / per-package block groups / allow-boot /
+      # constraints) composed from the per-package fragments — so the
+      # dependency-closure walk never happens in the Nix evaluator.
+      # cabal hashes content not field order, so local-then-closure is
+      # equivalent to the old Nix-assembled project (verified by an
+      # order-insensitive diff while this was being developed).
+
+      # Self's fragment (its own $out isn't built yet) materialised from
+      # the passed values, so self participates in the block groups.
+      selfFrag=$(mktemp -d); mkdir -p $selfFrag/nix-support/v2-frag
+      printf '%s' ${lib.escapeShellArg v2Fragment.pkgName} > $selfFrag/nix-support/v2-frag/pkg-name
+      cp ${builtins.toFile "flags"             v2Fragment.flagsBlock}            $selfFrag/nix-support/v2-frag/flags
+      cp ${builtins.toFile "ghc-options"       v2Fragment.ghcOptionsBlock}       $selfFrag/nix-support/v2-frag/ghc-options
+      cp ${builtins.toFile "configure-options" v2Fragment.configureOptionsBlock} $selfFrag/nix-support/v2-frag/configure-options
+      cp ${builtins.toFile "program-options"   v2Fragment.programOptionsBlock}   $selfFrag/nix-support/v2-frag/program-options
+      cp ${builtins.toFile "doc"               v2Fragment.docBlock}              $selfFrag/nix-support/v2-frag/doc
+      cp ${builtins.toFile "extra-lib-dirs"    v2Fragment.extraLibDirsBlock}     $selfFrag/nix-support/v2-frag/extra-lib-dirs
+      cp ${builtins.toFile "sublib-seeds" (lib.concatMapStrings (s: s + "\n") v2Fragment.sublibSeeds)} \
+        $selfFrag/nix-support/v2-frag/sublib-seeds
+      cp ${builtins.toFile "setup-constraints" (lib.concatMapStrings (s: s + "\n") v2Fragment.setupConstraints)} \
+        $selfFrag/nix-support/v2-frag/setup-constraints
+      cp ${pkgs.writeText "source-repo-block" v2Fragment.sourceRepoBlock} \
+        $selfFrag/nix-support/v2-frag/source-repo-block
+
+      # all-dep closure fragments (blocks scope): self + direct + transitive.
+      declare -A seenBlk; blkFrags=()
+      addBlk() { local f=$1; if [ -n "$f" ] && [ -d "$f/nix-support/v2-frag" ] && [ -z "''${seenBlk[$f]:-}" ]; then seenBlk[$f]=1; blkFrags+=("$f"); fi; }
+      addBlk "$selfFrag"
+      for dep in "''${pkgsHostTarget[@]}"; do
+        addBlk "$dep"
+        [ -f "$dep/nix-support/transitive-deps" ] && while IFS= read -r d; do addBlk "$d"; done < "$dep/nix-support/transitive-deps"
+      done
+
+      # depends-closure fragments (extra-packages + constraints scope).
+      # Seeded purely from the library `depends` edges (`libDepSlices` =
+      # the complete `dependsSlices`), walked transitively via each dep's
+      # `lib-dep-slices` pointer.  `exe-depends` (build tools) are NOT
+      # folded in here: they provide source via the repo but get no
+      # constraints, so a build tool's own lib closure never lands in the
+      # constraints scope.
+      declare -A seenLib; libFrags=()
+      addLib() { local f=$1; if [ -n "$f" ] && [ -d "$f/nix-support/v2-frag" ] && [ -z "''${seenLib[$f]:-}" ]; then seenLib[$f]=1; libFrags+=("$f"); fi; }
+      ${lib.concatMapStrings (s: ''
+        addLib ${s}
+        [ -f ${s}/nix-support/lib-dep-slices ] && while IFS= read -r d; do addLib "$d"; done < ${s}/nix-support/lib-dep-slices
+      '') v2Fragment.libDepSlices}
+
+      # Emit "<pkg-name>\t<frag-dir>" name-sorted.
+      # Emit one "<pkg-name>\t<frag-dir>" line per *pkg-name*, name-sorted.
+      # `-k1,1 -u` dedups by pkg-name: a multi-sublib package contributes
+      # several fragments (one per sublib slice) that all share the same
+      # pkg-name and emit identical per-package content (block / constraint /
+      # extra-package), so we keep just one — matching how the Nix side
+      # dedups via `sliceCanonicalNames` / `libConstraintPins` (by name).
+      sortedByName() { local f; for f in "$@"; do printf '%s\t%s\n' "$(cat "$f"/nix-support/v2-frag/pkg-name)" "$f"; done | sort -t"$(printf '\t')" -k1,1 -u; }
+
+      {
+        # extra-packages: self entry first, then lib-dep pins (name-sorted).
+        epline=""; epsep=""
+        ${lib.optionalString (v2Fragment.selfExtraPackage != "")
+          ''epline=${lib.escapeShellArg v2Fragment.selfExtraPackage}; epsep=", "''}
+        while IFS=$'\t' read -r name f; do
+          [ -n "$name" ] || continue
+          # Skip self: the local package is built from `packages:` (+
+          # `selfExtraPackage` / `any.<pkg> source`).  Its own library
+          # fragment can enter `libFrags` via `ownLibSlice` (kept in the
+          # walk only to reach the library's transitive dep constraints);
+          # also listing it as a repo `extra-packages` entry makes cabal's
+          # target matcher ambiguous (Cabal-7130).
+          [ "$name" = ${lib.escapeShellArg v2Fragment.pkgName} ] && continue
+          # Source-repo packages are declared via source-repository-package
+          # (below), not extra-packages — listing both makes the solver
+          # consider the tarball candidate and fork the UnitId.
+          [ -s "$f/nix-support/v2-frag/source-repo-block" ] && continue
+          c=$(cat "$f"/nix-support/v2-frag/constraint); epline="$epline$epsep''${c%%,*}"; epsep=", "
+        done < <(sortedByName "''${libFrags[@]}")
+        [ -n "$epline" ] && echo "extra-packages: $epline"
+
+        # Six block groups, grouped by type, name-sorted across the closure.
+        for blk in flags ghc-options configure-options program-options doc extra-lib-dirs; do
+          while IFS=$'\t' read -r name f; do cat "$f/nix-support/v2-frag/$blk"; done < <(sortedByName "''${blkFrags[@]}")
+        done
+
+        # constraints: self `any.<pkg> source`, then lib-dep pins (name-sorted).
+        echo "constraints: any.${v2Fragment.pkgName} source"
+        while IFS=$'\t' read -r name f; do
+          [ -n "$name" ] || continue
+          # Self is pinned via `any.<pkg> source` above (it's the local
+          # `packages:` target); don't re-pin it from its `ownLibSlice`
+          # fragment.
+          [ "$name" = ${lib.escapeShellArg v2Fragment.pkgName} ] && continue
+          echo "constraints: $(cat "$f"/nix-support/v2-frag/constraint)"
+        done < <(sortedByName "''${libFrags[@]}")
+
+        # Per-package custom-setup pins (`<pkg>:setup.<dep> ==<ver>`),
+        # collected across the all-dep closure so Custom-build packages'
+        # setups (notably their `Cabal`) resolve as plan-nix recorded —
+        # keeping their unit-ids reproducible (e.g. ghc-paths).
+        for f in "''${blkFrags[@]}"; do
+          [ -f "$f/nix-support/v2-frag/setup-constraints" ] && \
+            sed 's/^/constraints: /' "$f/nix-support/v2-frag/setup-constraints" || true
+        done
+
+        # source-repository-package blocks for source-repo packages in
+        # the closure (deduped by name) — e.g. lib:ghc via useLocalGhcLib.
+        while IFS=$'\t' read -r name f; do
+          [ -s "$f/nix-support/v2-frag/source-repo-block" ] && cat "$f/nix-support/v2-frag/source-repo-block" || true
+        done < <(sortedByName "''${blkFrags[@]}")
+      } > cabal.project.closure
+
+      # local skeleton (via file — no shell escaping) + composed sections.
+      # Use a redirect (not `cp`, which would create cabal.project with
+      # the store file's read-only mode and break the `>>` append).
+      cat ${builtins.toFile "local-cabal-project" v2Fragment.localCabalProject} > cabal.project
+      cat cabal.project.closure >> cabal.project
+
+      # Sublib reachability seeds for the prune-unreachable-sublibs patch
+      # (HASKELLNIX_EXTRA_SUBLIB_SEEDS): this slice's own target sublib
+      # plus every `pkg/sublib` referenced across the all-dep closure
+      # (each fragment's `sublib-seeds`).  Composed here, not in Nix.
+      {
+        ${lib.optionalString (v2Fragment.selfTargetSublibSeed != "")
+          "echo ${lib.escapeShellArg v2Fragment.selfTargetSublibSeed}"}
+        for f in "''${blkFrags[@]}"; do
+          # `|| true`: a missing/empty sublib-seeds must not fail the
+          # loop (and, under `pipefail`, the whole pipe + `set -e`).
+          [ -f "$f/nix-support/v2-frag/sublib-seeds" ] && cat "$f/nix-support/v2-frag/sublib-seeds" || true
+        done
+      } | sort -u | sed '/^$/d' > sublib-seeds.txt
+      export HASKELLNIX_EXTRA_SUBLIB_SEEDS="$(paste -sd, sublib-seeds.txt)"
+    ''}
 
     # --- Build -------------------------------------------------------
     if [ ! -f cabal.project ]; then
@@ -1188,6 +1388,65 @@ stdenv.mkDerivation ({
         fi
       done
     } | sort -u > $out/nix-support/transitive-deps
+
+    ${lib.optionalString (v2Fragment != null) ''
+      # --- v2 build-time-composition fragment (additive; STEP 1) -----
+      # This package's own contribution, for a downstream slice to
+      # compose the slicing repo + cabal.project at *build* time by
+      # following pointer files — no Nix-side dep-graph walk.
+      mkdir -p $out/repo-frag/package \
+               $out/repo-frag/index/${v2Fragment.pkgName}/${v2Fragment.pkgVersion} \
+               $out/nix-support/v2-frag
+      # Source tarball (symlink — keeps the fragment a tiny set of links).
+      ln -s ${v2Fragment.tarball} \
+        $out/repo-frag/package/${v2Fragment.pkgName}-${v2Fragment.pkgVersion}.tar.gz
+      # Index `.cabal`: the X-revised override when present, else the
+      # revision-0 .cabal extracted from the tarball (byte-identical, so
+      # cabal keeps `pkgHashPkgDescriptionHash` Nothing).
+      ${if v2Fragment.cabalFile != null
+        then "cp ${v2Fragment.cabalFile} $out/repo-frag/index/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal"
+        else ''
+          tar -xOzf ${v2Fragment.tarball} \
+            ${v2Fragment.pkgName}-${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal \
+            > $out/repo-frag/index/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal
+        ''}
+      # Per-package cabal.project blocks (emitted as separate files so a
+      # consumer can group by block-type across the closure, matching the
+      # current cabal.project byte-layout).  Written via `toFile` so the
+      # multi-line block text needs no shell escaping.
+      printf '%s' ${lib.escapeShellArg v2Fragment.pkgName}        > $out/nix-support/v2-frag/pkg-name
+      cp ${builtins.toFile "flags"             v2Fragment.flagsBlock}            $out/nix-support/v2-frag/flags
+      cp ${builtins.toFile "ghc-options"       v2Fragment.ghcOptionsBlock}       $out/nix-support/v2-frag/ghc-options
+      cp ${builtins.toFile "configure-options" v2Fragment.configureOptionsBlock} $out/nix-support/v2-frag/configure-options
+      cp ${builtins.toFile "program-options"   v2Fragment.programOptionsBlock}   $out/nix-support/v2-frag/program-options
+      cp ${builtins.toFile "doc"               v2Fragment.docBlock}              $out/nix-support/v2-frag/doc
+      cp ${builtins.toFile "extra-lib-dirs"    v2Fragment.extraLibDirsBlock}     $out/nix-support/v2-frag/extra-lib-dirs
+      printf '%s' ${lib.escapeShellArg v2Fragment.constraintLine} > $out/nix-support/v2-frag/constraint
+      cp ${builtins.toFile "sublib-seeds" (lib.concatMapStrings (s: s + "\n") v2Fragment.sublibSeeds)} \
+        $out/nix-support/v2-frag/sublib-seeds
+      cp ${builtins.toFile "setup-constraints" (lib.concatMapStrings (s: s + "\n") v2Fragment.setupConstraints)} \
+        $out/nix-support/v2-frag/setup-constraints
+      cp ${pkgs.writeText "source-repo-block" v2Fragment.sourceRepoBlock} \
+        $out/nix-support/v2-frag/source-repo-block
+      # Flattened depends-closure pointer (the constraints scope).
+      # Seeds purely from this slice's DIRECT library `depends`
+      # (`libDepSlices` = `dependsSlices`); transitivity is accumulated
+      # here at build time (like `transitive-deps`): each direct dep slice
+      # is pinned (echoed) and its own flattened pointer folded in, so
+      # following any dep's pointer reaches every transitive library dep.
+      # `exe-depends` (build tools) are deliberately NOT folded in — they
+      # contribute source via the repo but never enter the constraints
+      # scope.
+      {
+        ${lib.concatMapStrings (s: ''
+          echo ${s}
+          if [ -f ${s}/nix-support/lib-dep-slices ]; then
+            cat ${s}/nix-support/lib-dep-slices
+          fi
+        '') v2Fragment.libDepSlices}
+        : # ensure the brace group is non-empty when there are no deps
+      } | sort -u > $out/nix-support/lib-dep-slices
+    ''}
 
     # Drop the package-db cache files from $out.  They're real files
     # `ghc-pkg recache` regenerated for this slice's specific composed

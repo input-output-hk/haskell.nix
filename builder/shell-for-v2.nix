@@ -167,12 +167,12 @@ let
   # (alex, happy, hsc2hs, ...) so cabal sees them in the store, but
   # drop tools whose source is a selected package so cabal rebuilds
   # them from the user's tree.  Also filter to v2 slices (have
-  # `passthru.transitiveTarballs`) to skip nixpkgs-side tools like
+  # `passthru.isSlice`) to skip nixpkgs-side tools like
   # `gcc` or `pkgconf` which aren't haskell-nix-built.
   ownBuildToolSlices = lib.filter
     (t: t != null
         && t ? passthru
-        && (t.passthru ? transitiveTarballs)
+        && (t.passthru.isSlice or false)
         && !(pkgIsSelected (exePkg t)))
     (lib.concatMap (c: c.executableToolDepends or []) selectedAllComps);
   ownDepSlices = ownLibDepSlices ++ ownBuildToolSlices;

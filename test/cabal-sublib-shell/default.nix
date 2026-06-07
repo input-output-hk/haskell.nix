@@ -63,12 +63,6 @@ in lib.recurseIntoAttrs {
       export HOME=$PWD/home
       mkdir -p "$HOME/.cabal"
 
-      # Replay the shellHook: seed ~/.cabal/store from the v2
-      # shell's composed store.  Nix derivations don't source
-      # shellHook themselves, so invoke the same command a user
-      # would get on PATH when they enter the shell.
-      haskell-nix-cabal-store-sync
-
       # Stage consumer, point cabal at a local repo containing
       # provider's tarball so the solver can see provider as a
       # hackage candidate in addition to the installed unit.
@@ -80,13 +74,15 @@ in lib.recurseIntoAttrs {
          "$repoDir/provider-0.1.0.0.tar.gz"
 
       cd consumer
-      # On native this writes `cabal.project.local`, which cabal
-      # picks up automatically.  On cross it writes
-      # `cabal.project.<targetPrefix>local`; the explicit `import:`
-      # below pulls it in (cabal doesn't auto-discover the
-      # prefixed name).  Skipped when the project has no
-      # `cabalProjectLocal` content.
-      haskell-nix-cabal-project-local-sync || true
+      # Run the v2 shell's shellHook exactly as a user gets it on
+      # entering the shell, rather than replaying individual steps.
+      # It seeds ~/.cabal/store from the composed store, writes the
+      # cross `cabal.project.<targetPrefix>local` (pulled in via the
+      # `import:` below — cabal doesn't auto-discover the prefixed
+      # name), and sets a writable EM_CACHE for emcc on ghcjs.  The
+      # hook is written to be *sourced* (it uses `return`), so source
+      # it from the project dir.
+      source ${buildPackages.writeText "v2-shell-hook" env.shellHook}
       cat > cabal.project <<EOF
       packages: .
       active-repositories: local

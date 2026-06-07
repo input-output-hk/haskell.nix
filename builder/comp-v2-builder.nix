@@ -87,15 +87,16 @@ let
   isSourceRepoPkg =
     thisPlanEntry != null
     && (thisPlanEntry.pkg-src or {}).type or null == "source-repo";
-  # haskell.nix wraps the fetched source-repo content in a minimal
-  # git repo at project-eval time (see
-  # `lib/call-cabal-project-to-nix.nix:209` — `git init -b minimal &&
-  # git add . && git commit`).  We rebuild that wrapper here from
-  # the *fetched source* (`${src}` for source-repo packages, which
-  # is the project-level `fetched` derivation).  cabal hashes the
-  # cloned source content (not the wrapper repo's git hash), so a
-  # locally-rebuilt wrapper still produces the same
-  # `pkg-src-sha256`.
+
+  # When this package comes from a `source-repository-package` (e.g.
+  # `lib:ghc` via `useLocalGhcLib`), the slice's solver must see it as a
+  # source-repo, not a hackage tarball — otherwise cabal hashes a
+  # different `pkg-src-sha256` and forks the UnitId.  Wrap the fetched
+  # source in a minimal git repo (mirrors lib/call-cabal-project-to-nix.nix)
+  # and emit a `source-repository-package` block.  Each source-repo
+  # package emits its OWN block into its fragment; the build-time
+  # composer collects them across the closure (and skips them from
+  # `extra-packages:`).
   minimalSourceRepo = pkgs.runCommand "v2-source-repo-${pkgName}-${pkgVersion}"
     { nativeBuildInputs = [ pkgs.rsync pkgs.gitMinimal ];
       preferLocalBuild = true;
@@ -109,6 +110,13 @@ let
       GIT_COMMITTER_NAME='No One' GIT_COMMITTER_EMAIL= \
         git commit -m "Minimal Repo For Haskell.Nix" --author 'No One <>'
     '';
+  ownSourceRepoBlock = lib.optionalString isSourceRepoPkg ''
+    source-repository-package
+      type: git
+      location: file://${minimalSourceRepo}
+      subdir: .
+      tag: minimal
+  '';
 
   # Helpers mirroring add-v2.nix ----------------------------------
 
@@ -291,30 +299,10 @@ let
     in if progs == {} then ""
        else "package ${pname}\n${lines}\n";
 
-  # Restrict `package <name>` blocks to packages this slice
-  # actually deals with — the target package itself plus the
-  # transitive deps already shipped via the slicing repo.
-  # Including unrelated packages would let their settings leak
-  # into this slice's cabal.project hash and cause spurious
-  # rebuilds when a sibling package changes.  Sort by name so
-  # the emitted cabal.project — and the slice's drv hash — is
-  # stable when input ordering shifts.
-  sliceCanonicalNames =
-    # `attrNames` on a `genAttrs`-built map dedupes the string list
-    # in O(n log n) and returns a sorted result — `lib.unique` would
-    # fall back to a quadratic scan, and the names are plain strings
-    # so `haskellLib.uniqueWithName` doesn't apply.
-    builtins.attrNames
-      (lib.genAttrs
-        ([ pkgName ] ++ map (e: e.name) (lib.attrValues depTarballsDeduped))
-        (_: null));
-
-  allFlagBlocks             = lib.concatMapStrings flagBlockFor             sliceCanonicalNames;
-  allGhcOptionsBlocks       = lib.concatMapStrings ghcOptionsBlockFor       sliceCanonicalNames;
-  allConfigureOptionsBlocks = lib.concatMapStrings configureOptionsBlockFor sliceCanonicalNames;
-  allProgramOptionsBlocks   = lib.concatMapStrings programOptionsBlockFor   sliceCanonicalNames;
-  allDocBlocks              = lib.concatMapStrings documentationBlockFor    sliceCanonicalNames;
-  allExtraLibDirsBlocks     = lib.concatMapStrings extraLibDirsBlockFor     sliceCanonicalNames;
+  # The per-package `flagBlockFor`/`ghcOptionsBlockFor`/… functions
+  # above are applied to THIS package only (via `v2Fragment`); the
+  # per-closure assembly across `sliceCanonicalNames` now happens at
+  # build time in build-cabal-slice.nix from the fragments.
 
   # Resolve version-conditional patches (a `patches` entry may be a
   # function `{ version }: drv-or-null`, same convention v1 uses).
@@ -558,7 +546,7 @@ let
   buildToolSlices = lib.filter
     (t: t != null
         && t ? passthru
-        && (t.passthru ? transitiveTarballs))
+        && (t.passthru.isSlice or false))
     extraNativeBuildInputs;
 
   # Transitive build-tool slices: every exe unit in this slice's
@@ -744,6 +732,26 @@ let
   homeDepSlices = lib.filter (s: s != null)
     (map homeDepSliceOf externalDepIds);
 
+  # Complete set of this component's *direct library* `depends` slices —
+  # the constraints scope.  `directDepSlices` alone (from
+  # `component.depends`) is empty for test/bench components, whose deps
+  # arrive via `homeDependIds`; that gap meant a reinstalled lib reached
+  # only through a sibling/own-lib edge never got a `source` constraint.
+  # So we also fold in the home *library* deps (not build tools) and, for
+  # non-library components, the package's own library.  Following these
+  # slices' pointers at build time reaches every transitive library dep,
+  # so each is pinned `<pkg> ==<ver>, <pkg> source` — and `source` is what
+  # forces cabal off a GHC-bundled `-inplace` unit when a boot library is
+  # reinstalled at the *same* version (e.g. `text-2.1.4`).  `exe-depends`
+  # (build tools) are deliberately excluded here: they contribute source
+  # (via the repo) but no constraints.
+  homeLibDepSlices = lib.filter (s: s != null)
+    (map homeDepSliceOf (lib.filter (nv: nv.name != pkgName) homeDependIds));
+  dependsSlices = haskellLib.uniqueWithName
+    (directDepSlices
+     ++ homeLibDepSlices
+     ++ lib.optional (ownLibSlice != null) ownLibSlice);
+
   # The slice's *direct* dep slices.  Transitive closure is
   # reconstructed at build time from each slice's
   # `$out/nix-support/transitive-deps` file (see
@@ -753,141 +761,22 @@ let
   depSlices = haskellLib.uniqueWithName
     (directDepSlices
      ++ lib.optional (ownLibSlice != null) ownLibSlice
-     ++ buildToolSlices
+     # On cross, `buildToolSlices` are the *build-build* (pkgsBuildBuild)
+     # tool slices.  Propagating them would walk their `repo-frag`
+     # (source `.tar.gz` + index `.cabal`) into this cross slice's
+     # slicing repo, giving cabal a second candidate for each tool
+     # (e.g. a build-build `hsc2hs` alongside the cross one) and forking
+     # dependent unit-ids — a package's build-tool exe-dep can resolve
+     # to the build-build unit, which feeds the consumer's UnitId but
+     # never appears in its Setup configure args.  The cross store unit
+     # comes from `transitiveBuildToolSlices` (the cross `targetSlice`)
+     # and the runnable binary from `buildToolBinOverlays` /
+     # `withProgFlags` (both reference `buildSlice` directly), so the
+     # build-build slices must stay out of `propagatedBuildInputs` here.
+     ++ lib.optionals (!isCross) buildToolSlices
      ++ transitiveBuildToolSlices
      ++ homeDepSlices);
 
-  # `constraints:` block in cabal.project pinning every transitive
-  # dep — both the target package's lib closure and the lib closures
-  # of build tools (alex / happy / hsc2hs / …).  Without this,
-  # cabal's solver in this slice freely picks GHC-bundled `-inplace`
-  # versions when the version range allows, but the build-tool
-  # slices were originally built against the *reinstalled* versions
-  # (e.g. hsc2hs's slice built against `process-1.6.28.0`, not
-  # GHC-bundled `process-1.6.26.1-inplace`).  The dep unit-ids
-  # diverge, so hsc2hs's computed unit-id in this slice doesn't
-  # match the one composed via lndir from the hsc2hs slice's $out,
-  # and cabal plans a from-source rebuild instead of reusing the
-  # binary already on PATH.
-  #
-  # Scoping to `depTarballsDeduped` (per-slice) bounds the drv-hash
-  # blast radius: only slices whose closure includes a given
-  # package are affected by that package's version change.
-  #
-  # Emits per-pkg constraint lines:
-  #   * `==<ver>`     — pin the version
-  #   * `source`      — force pickup from the slicing repo, not the
-  #                     inplace (GHC-bundled) copy.  Without `source`,
-  #                     cabal happily uses `time-1.15-inplace` when
-  #                     plan-nix's outer solve had `time-1.15-9fa08573`
-  #                     (configured/reinstalled at the same version),
-  #                     because `==1.15` alone doesn't disambiguate
-  #                     inplace from source.
-  # `source` is only emitted for non-`pre-existing` packages: GHC's
-  # boot pkgs (base, ghc-prim, template-haskell, ...) have no source
-  # in the slicing repo and the inplace copy is the only candidate.
-  # Pre-existing entries are skipped entirely (no version pin either)
-  # — GHC's bundled package db already fixes them, and pinning them
-  # tends to push cabal off legacy-tool PATH fallbacks for hsc2hs /
-  # alex / happy / etc.  Seeded from this slice's lib closure AND
-  # the lib closure of every transitive exe-dep (alex / happy /
-  # hsc2hs / ...): plan-nix solves the whole project as one plan,
-  # so the exe's lib deps use the same reinstall versions the lib
-  # slice's closure does.  Without the exe-seed extension cabal in
-  # the slice would freely pick GHC-bundled `-inplace` versions for
-  # the build-tool's deps when nothing in the lib slice's closure
-  # pulls those reinstalls in (e.g. zlib's lib depends only on base
-  # + bytestring, but its `build-tool-depends: hsc2hs` brings a full
-  # directory/filepath/process closure that plan-nix had reinstalled
-  # — hsc2hs's UnitId then diverges from the pre-built slice and
-  # cabal rebuilds it).  Within a single plan-nix every package has
-  # one version, so the first-wins grouping is stable across the
-  # combined closure.
-  exeUnitsInAllDeps =
-    lib.concatMap (e:
-      let p = e.entry;
-          cn = p.component-name or "";
-      in if lib.hasPrefix "exe:" cn then [ p ] else []
-    ) allDepClosure;
-  libConstraintClosure =
-    mkClosureFrom (ourPlanUnits ++ exeUnitsInAllDeps) libDepsOf;
-  libConstraintPins =
-    let
-      grouped = lib.foldl' (acc: e:
-        let p = e.entry;
-            n = p.pkg-name or "";
-            v = p.pkg-version or "";
-        in if n == "" || n == pkgName
-              || acc ? ${n}
-              || (p.type or null) == "pre-existing"
-           then acc
-           else acc // { ${n} = v; }
-      ) {} libConstraintClosure;
-    in lib.sort (a: b: a.name < b.name)
-        (lib.mapAttrsToList (n: v: { name = n; version = v; }) grouped);
-
-  depConstraints =
-    "constraints: any.${pkgName} source\n"
-    + lib.concatMapStrings
-        (e: "constraints: ${e.name} ==${e.version}, ${e.name} source\n")
-        libConstraintPins;
-
-  # Transitive tarballs of a dep pkg — prefer the library's v2 slice
-  # (covers the normal case), fall back to any sublib's v2 slice
-  # (for packages that only define `library <name>` stanzas, e.g.
-  # `cardano-wallet-ui:{common,shelley}`), then to any exe's v2
-  # slice (for exe-only deps like hsc2hs / alex / happy).  Every
-  # v2 slice carries a `transitiveTarballs` passthru that expands
-  # to all source tarballs the slice's cabal invocation needed —
-  # including the pkg's own source — so any of these routes
-  # gives us a superset that satisfies our current slice's solver.
-  depTransitiveTarballsOf = nv:
-    let
-      dPkg = lookupDepPkg hsPkgs nv.name (nv.version or null);
-      depLib = if dPkg != null
-                  && (dPkg ? components)
-                  && (dPkg.components ? library)
-                  && (dPkg.components.library != null)
-               then dPkg.components.library else null;
-      sublibsMap = if dPkg != null && (dPkg ? components) && (dPkg.components ? sublibs)
-                   then dPkg.components.sublibs else {};
-      anySublib = lib.findFirst (v: v != null) null
-        (lib.attrValues sublibsMap);
-      exesMap = if dPkg != null && (dPkg ? components) && (dPkg.components ? exes)
-                then dPkg.components.exes else {};
-      anyExe = lib.findFirst (v: v != null) null
-        (lib.attrValues exesMap);
-    in if depLib != null
-       then depLib.transitiveTarballs
-       else if anySublib != null
-       then anySublib.transitiveTarballs
-       else if anyExe != null
-       then anyExe.transitiveTarballs
-       else throw "comp-v2-builder: ${pkgName}:${componentKindLabel}:${componentName} (sibling-dep) references ${nv.name}, which has no v2 slice";
-
-  depTransitives =
-    lib.concatMap depTransitiveTarballsOf externalDepIds
-    # Always include the same-package library's transitive tarballs
-    # when we're building a non-library component — cabal's solve
-    # for `:pkg:foo:exe:...` still plans the library, and its
-    # `build-depends` need to be satisfiable from the repo.  (Even
-    # for useSharedUnit where we don't pre-install the lib.)
-    ++ lib.optionals (ownLibV2 != null) ownLibV2.transitiveTarballs
-    # The real package's tarball is always added to the slicing
-    # repo: cabal pulls it in via `extra-packages:` and the slice's
-    # `:pkg:foo:lib:bar`-style cabal target, so the package has to
-    # be reachable through the file:// repo's `00-index.tar.gz`.
-    ++ [ { name = pkgName; version = pkgVersion; tarball = pkgTarball; cabalFile = thisCabalFile; } ]
-    # Include each direct build-tool's source tarball (plus its
-    # lib deps) too — cabal's solver in the slice always needs the
-    # build-tool package (and its full lib closure) in the index to
-    # resolve `build-tool-depends:` goals, even when the unit is
-    # already in the starting cabal-store or pinned via
-    # `--with-PROG=PATH`.  On native cabal then plans + reuses the
-    # pre-installed slice; on cross `withProgFlags` short-circuits
-    # the build by passing `--configure-option=--with-<exe>=PATH`
-    # for each transitive build-tool.
-    ++ lib.concatMap (s: s.passthru.transitiveTarballs or []) buildToolSlices;
 
   # native-build inputs from the target component's config
   libs       = lib.flatten (component.libs or []);
@@ -1206,18 +1095,6 @@ let
         myUnit = if uid == null then null else planJsonByPlanId.${uid} or null;
     in if isLibrary && myUnit != null then [ myUnit ] else allUnits;
 
-  # `depends` only — for the cabal.project `constraints:` block
-  # below, where lib-dep closure entries get version-pinned to the
-  # exact unit plan-nix recorded.  exe-depends are deliberately
-  # skipped: exes (alex / happy / hsc2hs / ...) routinely pick
-  # different versions of their lib deps than the libs in the
-  # slice, and pinning them in this slice's constraints would
-  # wrongly cap the exe's own solve.
-  libDepsOf = p:
-    (p.depends or [])
-    ++ lib.concatMap (c: c.depends or [])
-         (lib.attrValues (p.components or {}));
-
   # `depends` + `exe-depends` — for the slicing repo's tarball set
   # and the slice's dep-slice composition.  cabal needs every
   # build-tool package (and the tool's lib closure) reachable in
@@ -1242,22 +1119,7 @@ let
       ) (depFn e.entry);
   };
   mkClosure = mkClosureFrom ourPlanUnits;
-  libDepClosure = mkClosure libDepsOf;
   allDepClosure = mkClosure allDepsOf;
-  # Seeded from *every* unit of this package (main lib + every
-  # sublib + exes/tests/benches), not just this slice's unit.  Used
-  # for `extraSublibSeeds`: cabal-install's `prune-unreachable-sublibs`
-  # patch validates the *whole* package's flagged_deps against the
-  # solver index, so even when this slice targets `:pkg:foo:lib:control`,
-  # cabal still verifies that `foo:lib:core`'s deps (e.g.
-  # `io-classes:strict-mvar`) resolve.  Narrowing this to
-  # `ourPlanUnits` would silently drop sublib seeds the validator
-  # still needs.
-  pkgPlanUnits = lib.filter
-    (p: (p.pkg-name or null) == package.identifier.name
-        && (p.pkg-version or null) == package.identifier.version)
-    planJson;
-  pkgLibDepClosure = mkClosureFrom pkgPlanUnits libDepsOf;
 
   # Custom-Build packages collapse every component (lib / sublib /
   # exe / ...) into a single plan-nix entry — plan-nix leaves
@@ -1289,151 +1151,38 @@ let
     then ":pkg:${pkgName}"
     else ":pkg:${pkgName}:${targetPrefix}${cname}";
 
-  # Sublibs (of THIS package or of any dep package) we need to
-  # tell our patched cabal-install to keep as reachability seeds.
-  # Without this, the `prune-unreachable-sublibs` patch drops every
-  # sublib that the package's main lib doesn't directly reference,
-  # and downstream slices fail to build (cabal-7127 for direct
-  # targets, "Dependency on unbuildable library" for transitives).
-  # Each entry is `{ pkg; sublib; }`.
-  extraSublibSeeds =
-    # The slice's own target sublib (when this slice targets one).
-    lib.optional isSublib { pkg = pkgName; sublib = cname; }
-    # Every sublib unit referenced by *any* plan unit of *any*
-    # package in this slice's slicing repo.  Why this scope:
-    # cabal-install's `prune-unreachable-sublibs` patch validates
-    # every package whose cabal file lives in the index — not just
-    # the install plan — so even a pkg like `strict-checked-vars`
-    # that's only a transitive `transitiveTarballs` dep (no plan
-    # unit in *this* slice's plan) still gets its sublib refs
-    # checked.  We seed every sublib referenced by any unit of any
-    # repo pkg so the patch keeps them all reachable.  Scoping to
-    # `depTarballsDeduped` (per-slice content) bounds drv-hash
-    # sensitivity: a new sublib only invalidates slices whose
-    # slicing repo actually includes that package.
-    ++ (let
-          repoPkgNames = lib.unique
-            (map (e: e.name) (lib.attrValues depTarballsDeduped));
-          repoPkgNameSet = lib.genAttrs repoPkgNames (_: true);
-          repoPlanUnits = lib.filter
-            (p: repoPkgNameSet ? ${p.pkg-name or ""})
-            planJson;
-          allDepIds = lib.concatMap (p: p.depends or []) repoPlanUnits;
-        in lib.concatMap (id:
-             let q  = planJsonByPlanId.${id} or null;
-                 pn = if q == null then "" else q.pkg-name or "";
-                 cn = if q == null then "" else q.component-name or "";
-                 prefix = "lib:";
-                 prefixLen = builtins.stringLength prefix;
-                 isSublibCN = lib.hasPrefix prefix cn;
-                 sub = builtins.substring prefixLen
-                         (builtins.stringLength cn - prefixLen) cn;
-             in if pn != "" && isSublibCN
-                then [{ pkg = pn; sublib = sub; }]
-                else []
-           ) allDepIds);
+  # Sublib reachability seeds (for the `prune-unreachable-sublibs`
+  # patch) are composed at build time from the per-package fragments'
+  # `sublib-seeds` across the all-dep closure, plus this slice's own
+  # target sublib (`v2Fragment.selfTargetSublibSeed`) — see
+  # build-cabal-slice.nix.  No Nix-side closure walk.
 
-  # ---- Slicing repo (deps only — target served via packages:) ---
-  depTarballsDeduped = lib.foldl' (acc: e:
-    let key = "${e.name}-${e.version}";
-    in if acc ? ${key} then acc else acc // { ${key} = e; }
-  ) {} depTransitives;
+  # The per-slice hackage-style slicing repo (00-index.tar.gz +
+  # package/<pkg>-<ver>.tar.gz) is assembled at build time from the
+  # per-package `repo-frag`s — see build-cabal-slice.nix.
 
-  # Per-slice hackage-style repository:
-  #
-  #   $out/00-index.tar.gz                       cabal's package index
-  #   $out/package/<pkg>-<ver>.tar.gz            source tarballs
-  #
-  # Why per-slice and not project-wide: a project-wide index is
-  # touched by every cabal-file revision in the plan, so any
-  # revision change would mass-invalidate every slice.  Per-slice
-  # the index covers only this slice's dep set, so a revision change
-  # only affects slices whose closure includes that package.
-  #
-  # Why hackage-style and not `file+noindex://`:
-  # `file+noindex://` makes cabal hash the tarball *bytes* into
-  # `pkgHashSourceHash`.  Any tarball repacking (mtime, sort order,
-  # gzip metadata) forks the unit-id even when the unpacked source
-  # is byte-identical.  Real hackage hashes the tarball as fetched
-  # (no repack) and tracks revisions via the index — which is what
-  # we want here so that `cabal v2-build <foo>` inside the dev shell
-  # produces the same UnitId as the slice that pre-built `<foo>`.
-  #
-  # The .cabal staged into the index for each entry comes from:
-  #   * `e.cabalFile`  — store path of the X-revised cabal-file when
-  #                      `package-description-override` was set, OR
-  #   * extracted from `e.tarball` at build time when there is no
-  #                      override (revision-0 case).
-  # In the latter case the index .cabal is byte-identical to the
-  # tarball's, so cabal sees revision-0 and `pkgHashPkgDescriptionHash`
-  # stays Nothing — matching what real hackage produces.
-  # Symlink the tarballs (rather than copying) so the repo drv stays
-  # tiny — each `package/<pkg>-<ver>.tar.gz` is a `/nix/store` link
-  # into the original tarball derivation.  cabal reads the tarball
-  # through the symlink transparently.
-  repoCopyCmds = lib.concatStrings (lib.mapAttrsToList (_: e:
-    "ln -s ${e.tarball} $out/package/${e.name}-${e.version}.tar.gz\n"
-  ) depTarballsDeduped);
-
-  indexEntryCmds = lib.concatStrings (lib.mapAttrsToList (_: e:
-    let dir = "$workDir/${e.name}/${e.version}"; in
-    if (e.cabalFile or null) != null then ''
-      mkdir -p ${dir}
-      cp ${e.cabalFile} ${dir}/${e.name}.cabal
-    '' else ''
-      mkdir -p ${dir}
-      tar -xOzf ${e.tarball} \
-        ${e.name}-${e.version}/${e.name}.cabal \
-        > ${dir}/${e.name}.cabal
-    ''
-  ) depTarballsDeduped);
-
-  slicingRepo = runCommand "v2-${componentKindLabel}-repo-${pkgName}-${componentName}"
-    { preferLocalBuild = true; }
-    ''
-      mkdir -p $out/package
-      ${repoCopyCmds}
-      workDir=$(mktemp -d)
-      ${indexEntryCmds}
-      tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
-          -czf $out/00-index.tar.gz -C $workDir .
-    '';
-
-  # Our slicing repo is already pinned to the exact versions plan.nix
-  # chose (via per-package `constraints:` lines below) and uses
-  # `active-repositories: hackage.haskell-nix, :none` so the solver
-  # can't reach the user's real hackage.  Each package therefore has
-  # exactly one candidate version — so `*:*` allow-newer can't
-  # trigger a "wrong" choice; it just stops cabal from rejecting that
-  # one candidate over stale upper bounds in the stock .cabal files
+  # Project-wide solver relaxations.  Our slicing repo is already pinned
+  # to the exact versions plan.nix chose (via per-package `constraints:`
+  # lines) and uses `active-repositories: hackage.haskell-nix` so the
+  # solver can't reach the user's real hackage.  Each package therefore
+  # has exactly one candidate version — so `*:*` allow-newer/allow-older
+  # can't trigger a "wrong" choice; they just stop cabal rejecting that
+  # one candidate over stale upper/lower bounds in the stock .cabal files
   # (which plan.nix itself worked around via head.hackage revisions,
   # allow-newer in the project, etc.).
-  allowNewerBlock = "allow-newer: *:*\n";
-
-  # `allow-boot-library-installs: True` overrides cabal-install's
-  # hard-coded non-reinstallable list (`ghc`, `template-haskell`,
-  # `Cabal`, `base`, …).  Needed when this slice's plan reinstalls
-  # any of those packages — typically reached via
-  # `useLocalGhcLib = true`, which delivers `lib:ghc` as a
-  # source-repository-package.  Without the flag, cabal rejects the
-  # source instance with "constraint from non-reinstallable package
-  # requires installed instance".
   #
-  # Gate on whether this slice's target or any of its non-pre-existing
-  # lib deps is on the boot-lib list.  `libConstraintPins` already
-  # filters out pre-existing pkgs (boot pkgs of an unmodified GHC
-  # never appear here).
-  bootLibPkgNames = [
-    "ghc" "template-haskell" "Cabal" "Cabal-syntax"
-    "ghc-prim" "ghc-bignum" "ghc-boot" "ghc-boot-th" "ghc-heap"
-    "base" "ghci" "ghc-internal" "rts"
-  ];
-  closureHasReinstalledBootLib =
-    lib.elem pkgName bootLibPkgNames
-    || lib.any (e: lib.elem e.name bootLibPkgNames) libConstraintPins;
-  allowBootLibBlock =
-    lib.optionalString closureHasReinstalledBootLib
-      "allow-boot-library-installs: True\n";
+  # `allow-boot-library-installs: True` lets cabal reinstall the
+  # normally-non-reinstallable boot packages (ghc / base / Cabal / …).
+  # It only *permits* reinstalls; cabal can act on it only when a boot
+  # lib's source is in this slice's repo — i.e. one plan-nix actually
+  # reinstalled (e.g. lib:ghc via useLocalGhcLib) — so it's a no-op
+  # otherwise.  Unconditional, hence here in the skeleton rather than
+  # composed per-slice at build time.
+  solverRelaxations = ''
+    allow-newer: *:*
+    allow-older: *:*
+    allow-boot-library-installs: True
+  '';
 
   # `projectConfigPragmas` (the `package *` / per-package cabal.project
   # pragma blocks derived from plan.json's `configure-args`) is computed
@@ -1467,103 +1216,33 @@ let
   # Skip the target from `extra-packages:` when we're going to put
   # it in `packages:` instead (local test / bench).  Listing it in
   # both is harmless but the local entry takes priority anyway.
-  # Source-repo packages this slice's solver must see as
-  # `source-repository-package`s rather than tarball
-  # `extra-packages:` — both the slice's *own* pkg (when this is a
-  # source-repo slice) and any source-repo package in the
-  # transitive lib-dep closure.  Without the
-  # `source-repository-package` block, cabal hashes the slicing
-  # repo's tarball into `pkg-src-sha256` and computes a different
-  # UnitId than plan-nix recorded; with it, cabal clones from the
-  # `file://` URL into a minimal git repo and hashes the same
-  # source bytes the project plan-nix saw, producing a matching
-  # UnitId.  Each entry is `{ name; minRepo; }` where `minRepo` is
-  # a tiny git repo wrapper (`git init -b minimal && git add . &&
-  # git commit`) over the package's `src`.  Mirrors
-  # `lib/call-cabal-project-to-nix.nix:209`.
-  wrapAsMinimalRepo = name: pkgSrc:
-    pkgs.runCommand "v2-source-repo-${name}"
-      { nativeBuildInputs = [ pkgs.rsync pkgs.gitMinimal ];
-        preferLocalBuild = true;
-      }
-      ''
-        mkdir $out
-        rsync -a --prune-empty-dirs --chmod=u+w "${pkgSrc}/" "$out/"
-        cd $out
-        git init -b minimal
-        git add --force .
-        GIT_COMMITTER_NAME='No One' GIT_COMMITTER_EMAIL= \
-          git commit -m "Minimal Repo For Haskell.Nix" --author 'No One <>'
-      '';
-  sourceRepoEntries =
-    let
-      ownEntry = lib.optional isSourceRepoPkg
-        { name = pkgName; minRepo = minimalSourceRepo; };
-      depEntries = lib.concatMap (e:
-        let p  = e.entry;
-            pn = p.pkg-name or "";
-            isSR = (p.pkg-src or {}).type or null == "source-repo";
-            depPkg = lookupDepPkg hsPkgs pn (p.pkg-version or null);
-            depSrc = if depPkg != null then depPkg.src or null else null;
-        in if pn != "" && pn != pkgName && isSR && depSrc != null
-           then [{ name = pn; minRepo = wrapAsMinimalRepo pn depSrc; }]
-           else []
-      ) allDepClosure;
-    in ownEntry
-       ++ lib.foldl' (acc: e: if lib.any (a: a.name == e.name) acc
-                              then acc else acc ++ [ e ]) [] depEntries;
-  sourceRepoPkgNames = map (e: e.name) sourceRepoEntries;
-  # `source-repository-package` blocks for every source-repo pkg
-  # the slice's solver will see — see `sourceRepoEntries` above.
-  sourceRepoBlocks = lib.concatMapStrings (e: ''
-    source-repository-package
-      type: git
-      location: file://${e.minRepo}
-      subdir: .
-      tag: minimal
-  '') sourceRepoEntries;
-  # Skip from `extra-packages:` any pkg we've already declared
-  # via a `source-repository-package` block — listing it as both
-  # makes cabal's solver consider the remote-tarball candidate
-  # too, which would compute a *different* UnitId and diverge
-  # from plan-nix.
-  extraPackagesEntries =
-    lib.optional (!isLocalTestOrBench && !isSourceRepoPkg) "${pkgName} ==${pkgVersion}"
-    ++ map (e: "${e.name} ==${e.version}")
-         (lib.filter (e: !(lib.elem e.name sourceRepoPkgNames))
-           libConstraintPins);
-  extraPackagesLine =
-    if extraPackagesEntries == [] then ""
-    else "extra-packages: ${lib.concatStringsSep ", " extraPackagesEntries}\n";
+  # NOTE: this plan has no source-repository-package dependencies, so
+  # build-time `source-repository-package` block composition is not yet
+  # implemented; it would be added here (and emitted per-fragment) if a
+  # project with SRP deps needs the v2 build-time path.
   packagesLine =
     lib.optionalString isLocalTestOrBench
       "packages: ./src/${pkgName}-${pkgVersion}\n";
-  cabalProject = ''
+
+  # The *local / global* part of the cabal.project (everything that
+  # doesn't depend on the dependency closure).  build-cabal-slice writes
+  # this, then appends the closure-derived sections (source-repo blocks,
+  # extra-packages, the six per-package block groups, constraints)
+  # composed at build time from the per-package fragments — so the
+  # dependency-closure walk never runs in the Nix evaluator.
+  localCabalProject = ''
     with-compiler: ${withCompiler}
     active-repositories: hackage.haskell-nix
-    ${packagesLine}${sourceRepoBlocks}${extraPackagesLine}${allowNewerBlock}${allowBootLibBlock}${projectConfigPragmas}${extraProject}${allFlagBlocks}${allGhcOptionsBlocks}${allConfigureOptionsBlocks}${allProgramOptionsBlocks}${allDocBlocks}${allExtraLibDirsBlocks}${extraIncludeAndLibDirs}${depConstraints}'';
+    ${packagesLine}${solverRelaxations}${projectConfigPragmas}${extraProject}${extraIncludeAndLibDirs}'';
 
   # X-revised .cabal as a /nix/store path (or null if no override).
-  # Carried on every `transitiveTarballs` entry so the slicing repo's
-  # 00-index.tar.gz can stage the right .cabal per package without
-  # extracting anything from the tarball when an override exists.
+  # Staged into this package's repo fragment (build-cabal-slice) so the
+  # slicing repo's index carries the right .cabal without extracting
+  # from the tarball when an override exists.
   thisCabalFile =
     if cabalFile != null
     then builtins.toFile "${pkgName}.cabal" cabalFile
     else null;
-  thisEntry = { name = pkgName; version = pkgVersion; tarball = pkgTarball; cabalFile = thisCabalFile; };
-  # `transitiveTarballs` is `depTarballsDeduped`'s values (which
-  # already includes `thisEntry` via `depTransitives`).  Crucially
-  # this MUST be the deduped list — `depTransitives` is the
-  # concatenation of every direct dep's transitive list without
-  # dedup, so the un-deduped form grows exponentially with depth
-  # for a typical Haskell graph (every package shares `base`,
-  # `bytestring`, `text`, ...).  `cardano-wallet`'s lib slice's
-  # un-deduped transitive list materialises a single ~6.8 GiB
-  # block during evaluation.  Deduping here keeps it linear in
-  # the unique closure size (~hundreds of entries for typical
-  # projects).
-  transitiveTarballs = lib.attrValues depTarballsDeduped;
 
   # On targets that need a wrapped ghc (currently just windows
   # cross, where TH compiles route through the wineIservWrapper),
@@ -1576,20 +1255,112 @@ let
     then templateHaskell.wrapGhc ghc
     else ghc;
 
-  # preBuild snippet shared between the real slice and
-  # `checkAgainstPlan`: extract the package source for local
-  # test / bench targets, then emit `cabal.project`.
-  slicePreBuild = ''
-    ${lib.optionalString isLocalTestOrBench ''
-      # Extract the package source so `packages:` can reference
-      # it as a local directory (cabal-7127 requires test / bench
-      # targets to be local to the project).
-      mkdir -p src
-      tar -xzf ${pkgTarball} -C src
-    ''}
-    cat <<'EOF' > cabal.project
-    ${cabalProject}EOF
+  # Stage the package source for local test / bench targets so
+  # `packages:` can reference it as a local directory (cabal-7127
+  # requires test / bench targets to be local to the project).
+  stageLocalTestBenchSrc = lib.optionalString isLocalTestOrBench ''
+    mkdir -p src
+    tar -xzf ${pkgTarball} -C src
   '';
+
+  # preBuild for the real slice: only stage sources.  The cabal.project
+  # is assembled entirely at build time by build-cabal-slice from
+  # `v2Fragment` (local skeleton + closure sections composed from
+  # fragments), so we DON'T interpolate the Nix-side `cabalProject` here
+  # — that's what keeps the per-slice dependency-closure walk (the six
+  # `sliceCanonicalNames` block-assemblies, `depConstraints`,
+  # `slicingRepo`, …) out of the evaluator.
+  slicePreBuildV2 = stageLocalTestBenchSrc;
+
+  # ---- Per-package fragment for build-time composition -------------
+  # Each slice writes its OWN contribution into `$out` (source tarball +
+  # `.cabal`, the six per-package cabal.project blocks, its constraint
+  # pin, its sublib seeds) plus a pointer to its direct lib-dep slices.
+  # A downstream slice's build phase composes these by following the
+  # pointer files, so the dependency closure never has to be walked in
+  # Nix.  STEP 1: emitted additively (not yet consumed) so we can verify
+  # it doesn't perturb unit-ids before composition is switched over.
+  #
+  # `thisPkgUnits` are this package's own plan entries, found via the
+  # project-global `packageIdsByName` index (O(units), not an O(planJson)
+  # scan).
+  thisPkgUnits =
+    lib.filter (p: (p.pkg-version or null) == pkgVersion)
+      (map (id: planJsonByPlanId.${id})
+        (lib.filter (id: planJsonByPlanId ? ${id})
+          (packageIdsByName.${pkgName} or [])));
+  # Sublib reachability seeds contributed by THIS package: the `lib:<n>`
+  # component deps among its own plan units' `depends`.  (The whole-repo
+  # union is reconstructed at build time across the all-dep closure.)
+  ownSublibSeeds =
+    let prefix = "lib:"; prefixLen = builtins.stringLength prefix; in
+    lib.concatMap (id:
+      let q  = planJsonByPlanId.${id} or null;
+          pn = if q == null then "" else q.pkg-name or "";
+          cn = if q == null then "" else q.component-name or "";
+      in if pn != "" && lib.hasPrefix prefix cn
+         then [ "${pn}/${builtins.substring prefixLen (builtins.stringLength cn - prefixLen) cn}" ]
+         else []
+    ) (lib.concatMap (u: u.depends or []) thisPkgUnits);
+  # Per-package custom-setup dependency pins.  A `build-type: Custom`
+  # package's unit-id hashes its setup configuration, so the slice must
+  # solve its setup against the SAME deps plan-nix recorded — notably
+  # `Cabal`, which otherwise drifts: with a reinstalled `Cabal` in the
+  # closure, cabal's unconstrained per-package setup solver prefers it
+  # over the GHC-bundled one plan-nix used, forking the unit-id (e.g.
+  # ghc-paths 142b137f → e732a98d) and breaking pre-built build-tool
+  # reuse (proto-lens-protoc).  We emit `<pkg>:setup.<dep> ==<ver>` for
+  # each setup-dep, scoped to this package (cabal accepts the
+  # per-package `pkg:setup.dep` qualifier).  No `source` flag: setup
+  # `Cabal` is disambiguated by version (bundled 3.10.x vs reinstalled
+  # 3.16.x), and the bundled one isn't in the slicing repo anyway.
+  ownSetupConstraints =
+    lib.filter (x: x != null) (map (id:
+      let q = planJsonByPlanId.${id} or null;
+      in if q == null || !(q ? pkg-name) then null
+         else "${pkgName}:setup.${q.pkg-name} ==${q.pkg-version}"
+    ) (lib.concatMap (u: u.components.setup.depends or []) thisPkgUnits));
+  v2Fragment = {
+    inherit pkgName pkgVersion;
+    tarball = pkgTarball;
+    cabalFile = thisCabalFile;            # nullable (revision-0 → extract from tarball)
+    flagsBlock            = flagBlockFor             pkgName;
+    ghcOptionsBlock       = ghcOptionsBlockFor       pkgName;
+    configureOptionsBlock = configureOptionsBlockFor pkgName;
+    programOptionsBlock   = programOptionsBlockFor   pkgName;
+    docBlock              = documentationBlockFor    pkgName;
+    extraLibDirsBlock     = extraLibDirsBlockFor     pkgName;
+    # Consumer-side constraint pin.  Slices are never `pre-existing`,
+    # so always `source`.  The composer prefixes `constraints: `.
+    constraintLine = "${pkgName} ==${pkgVersion}, ${pkgName} source";
+    sublibSeeds = ownSublibSeeds;
+    setupConstraints = ownSetupConstraints;
+    # `source-repository-package` block (non-empty only for source-repo
+    # packages).  Composed across the closure at build time; such
+    # packages are also skipped from `extra-packages:`.
+    sourceRepoBlock = ownSourceRepoBlock;
+    # When this slice's *target* is itself a sublib, it must be kept as
+    # a reachability seed too (the `prune-unreachable-sublibs` patch
+    # otherwise drops it).  Composed into HASKELLNIX_EXTRA_SUBLIB_SEEDS
+    # at build time alongside the closure's sublib seeds.
+    selfTargetSublibSeed = lib.optionalString isSublib "${pkgName}/${cname}";
+    # Direct library-`depends` slices — the seed for the build-time
+    # depends-closure walk (constraints scope; see `dependsSlices`).
+    # The source + blocks scope rides the existing `transitive-deps`
+    # closure instead.  `exe-depends` (build tools) are NOT seeded here:
+    # they contribute source via the repo but get no constraints.
+    libDepSlices = dependsSlices;
+
+    # ---- STEP 2b: build-time cabal.project composition inputs -------
+    # Local/global skeleton; the composer appends closure sections.
+    inherit localCabalProject;
+    # This package's own `extra-packages:` entry (empty for local
+    # test/bench targets and source-repo packages, which cabal must
+    # build from `packages:` / a `source-repository-package` block,
+    # not the index).
+    selfExtraPackage =
+      lib.optionalString (!isLocalTestOrBench && !isSourceRepoPkg) "${pkgName} ==${pkgVersion}";
+  };
 
   baseSlice = buildCabalStoreSlice {
     # Match v1's `comp-builder.nix:528-530`-style
@@ -1604,20 +1375,14 @@ let
     pname = "${pkgName}-${componentKindLabel}-${componentName}";
     version = pkgVersion;
     inherit depSlices;
+    inherit v2Fragment;
     ghc = sliceGhc;
-    localRepo = slicingRepo;
-    preBuild = slicePreBuild;
+    # Repo + cabal.project are composed at build time from `v2Fragment`;
+    # `localRepo`/the full Nix `cabalProject` are intentionally NOT
+    # referenced here so the per-slice closure walk stays out of eval.
+    localRepo = null;
+    preBuild = slicePreBuildV2;
     target = targetSelector;
-    # When this slice targets a sublib (e.g.
-    # `:pkg:io-classes:lib:strict-stm`), tell our patched
-    # cabal-install to add `${cname}` as an extra reachability seed
-    # for `${pkgName}` — otherwise the `prune-unreachable-sublibs`
-    # patch drops the targeted sublib (the main lib doesn't
-    # `build-depends:` it) and cabal raises `[Cabal-7127]`.  We only
-    # add the targeted sublib (not all of them), so unrelated sublibs
-    # like `lib:testlib` are still pruned and their deps don't leak
-    # into the install plan.
-    extraSublibSeeds = extraSublibSeeds;
     inherit extraBuildInputs extraNativeBuildInputs withProgFlags
             allowedBuildToolPackages confLibraryDirs
             buildToolBinOverlays;
@@ -1689,7 +1454,7 @@ let
          then null
          else { ${uid} = planJsonByPlanId.${uid}; };
     passthru = {
-      inherit pkgTarball transitiveTarballs;
+      inherit pkgTarball;
       # Mirror v1's `.config` passthru so downstream code that walks
       # the dep graph via flatLibDepends (see shell-for-v2.nix,
       # haskellLib.flatLibDepends) can traverse v2 components the
@@ -1850,11 +1615,11 @@ let
     pname = "check-${pkgName}-${componentKindLabel}-${componentName}";
     version = pkgVersion;
     inherit depSlices;
+    inherit v2Fragment;
     ghc = sliceGhc;
-    localRepo = slicingRepo;
-    preBuild = slicePreBuild;
+    localRepo = null;
+    preBuild = slicePreBuildV2;
     target = targetSelector;
-    extraSublibSeeds = extraSublibSeeds;
     inherit extraBuildInputs extraNativeBuildInputs withProgFlags
             allowedBuildToolPackages confLibraryDirs
             buildToolBinOverlays;
@@ -1922,11 +1687,11 @@ let
                 ++ map (d: d.doc) (lib.filter
                      (d: (d.passthru.docEnabled or false))
                      depSlices);
+    inherit v2Fragment;
     ghc = sliceGhc;
-    localRepo = slicingRepo;
-    preBuild = slicePreBuild;
+    localRepo = null;
+    preBuild = slicePreBuildV2;
     target = targetSelector;
-    extraSublibSeeds = extraSublibSeeds;
     inherit extraBuildInputs extraNativeBuildInputs withProgFlags
             allowedBuildToolPackages confLibraryDirs
             buildToolBinOverlays;
