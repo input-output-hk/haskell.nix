@@ -41,14 +41,15 @@ let
     (import ../../lib/pkgconf-nixpkgs-map.nix evalPackages));
 
   # The packages behind today's `pc-version` modules are all systemd, which
-  # only builds on non-static glibc Linux.  Drop those modules on other
-  # targets so we neither build nor even *force* the systemd derivation there
-  # (it recurses in the musl/static stdenv adapter).  Extend both lists if a
-  # future `pc-version` package has similarly limited platform support.
+  # only builds on non-static glibc Linux — not musl, not android (bionic),
+  # not Windows / wasm.  Gate on the libc (rather than enumerating those) and
+  # drop these modules elsewhere, so we neither build nor even *force* the
+  # systemd derivation on an unsupported target (it recurses in the musl /
+  # static stdenv adapter).  Extend both if a future `pc-version` package has
+  # similarly limited platform support.
   systemdPkgConfigNames = [ "libsystemd" "systemd" "systemd-journal" "libudev" "udev" ];
   hostBuildsSystemd =
-    stdenv.hostPlatform.isLinux
-    && !stdenv.hostPlatform.isMusl
+    stdenv.hostPlatform.libc == "glibc"
     && !stdenv.hostPlatform.isStatic;
   wantedNames =
     if hostBuildsSystemd
