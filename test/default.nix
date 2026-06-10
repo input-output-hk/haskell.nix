@@ -180,6 +180,7 @@ let
   allTests = {
     cabal-simple = callTest ./cabal-simple { inherit util; };
     dummy-ghc-info = callTest ./dummy-ghc-info {};
+    pkgconf-pc-version = callTest ./pkgconf-pc-version {};
     cabal-simple-debug = callTest ./cabal-simple-debug { inherit util; };
     cabal-simple-prof = callTest ./cabal-simple-prof { inherit util; };
     cabal-sublib = callTest ./cabal-sublib { inherit util; };

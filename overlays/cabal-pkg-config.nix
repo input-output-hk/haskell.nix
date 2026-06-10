@@ -1,5 +1,17 @@
 final: prev:
 {
+  # systemd's `libsystemd.pc` reports only the major version (e.g. `259`),
+  # whereas the derivation `.version` is e.g. `259.3`.  Set `pc-version` so
+  # `allPkgConfigWrapper` (used by plan-to-nix) reports the same value the
+  # real `pkg-config` returns inside a v2 build slice, keeping the resolved
+  # `libsystemd` version — and therefore the slice's UnitId — in agreement.
+  # The `pkgconf-pc-version` test verifies this matches `pkg-config --modversion`.
+  systemd = prev.systemd.overrideAttrs (old: {
+    passthru = (old.passthru or {}) // {
+      pc-version = prev.lib.versions.major prev.systemd.version;
+    };
+  });
+
   # This is a wrapper for `cabal configure` use only.
   #
   # When creating a plan for building a project cabal first
@@ -29,10 +41,18 @@ final: prev:
   # overrides here.
   allPkgConfigWrapper =
     let
-      # Try getting the `.version` attribute or failing that look in the
-      # `.name`.  Some packages like `icu` have the correct version in
+      # Prefer an explicit `pc-version` when the derivation carries one:
+      # some packages' `.pc` `Version:` field differs from the derivation
+      # `.version` (e.g. systemd's libsystemd.pc reports `259` while the
+      # derivation `.version` is `259.3`).  The real `pkg-config` the v2
+      # build slice runs reads the `.pc` field, so plan-to-nix must report
+      # the same value here or the slice's UnitId (which folds the resolved
+      # pkgconfig-dep version into `pkgHashPkgConfigDeps`) will fork.
+      #
+      # Failing that, try the `.version` attribute, or failing that look in
+      # the `.name`.  Some packages like `icu` have the correct version in
       # `.name` but no `.version`.
-      getVersion = p: p.version or (builtins.parseDrvName (p.name or "")).version;
+      getVersion = p: p.pc-version or p.version or (builtins.parseDrvName (p.name or "")).version;
       pkgconfigPkgs =
         final.lib.filterAttrs (_name: p: __length p > 0 && getVersion (__head p) != "")
           (import ../lib/pkgconf-nixpkgs-map.nix final);
