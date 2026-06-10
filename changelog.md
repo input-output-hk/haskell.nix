@@ -1,6 +1,29 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## June 9, 2026
+
+Derivations in the pkgconf → nixpkgs map (`lib/pkgconf-nixpkgs-map.nix`)
+may now carry a `pc-version` attribute, which `allPkgConfigWrapper`
+reports for `pkg-config --modversion` in preference to the derivation
+`.version`.
+
+This fixes a `builderVersion = 2` UnitId fork for packages whose `.pc`
+`Version:` field differs from the nixpkgs derivation `.version`.  The
+motivating case is `systemd`: `libsystemd.pc` reports only the major
+version (e.g. `258` / `259`) while the derivation `.version` carries a
+patch component (`258.5` / `259.3`).  plan-to-nix's `allPkgConfigWrapper`
+reported the `.version`, while the real `pkg-config` a v2 build slice runs
+reports the `.pc` value; cabal folds the resolved pkgconfig-dep version
+into `pkgHashPkgConfigDeps`, so a `pkgconfig-depends`-using package (e.g.
+`libsystemd-journal`) got a different UnitId in the slice than plan-nix
+recorded, failing the slice's expected-package check.
+
+`systemd` is now overridden to set `pc-version` to its major version
+(matching the `.pc`).  The `pkgconf-pc-version` test verifies that every
+`pc-version` package agrees with what the real `pkg-config --modversion`
+returns.
+
 ## May 23, 2026
 
 **Breaking change:** `cabalProjectLocal` and `cabalProjectFreeze`
