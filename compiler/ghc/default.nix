@@ -718,6 +718,24 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
       fi
     done
   '' + ''
+    # GHC's configure is regenerated here via autoreconfHook using the host
+    # autoconf. Since autoconf 2.72, AC_PROG_CC appends the newest C standard
+    # flag the compiler accepts (e.g. -std=gnu23 with clang 21) to $CC, and GHC
+    # bakes $CC verbatim into the "C compiler command" / "C++ compiler command"
+    # / "Haskell CPP command" settings fields. GHC then tries to exec a binary
+    # literally named "cc -std=gnu23" and fails with "could not execute". Move
+    # the std flag out of each command field into its matching flags field.
+    for settingsFile in "$out/lib/settings" "$out/lib/ghc-"*"/lib/settings"; do
+      [ -f "$settingsFile" ] || continue
+      perl -0777 -i -pe '
+        for my $base ("C compiler", "C++ compiler", "Haskell CPP") {
+          my $std = "";
+          s/(\Q"$base command"\E,\s*"[^"]*?) (-std=\S+?)"/$std=$2;"$1\""/ge;
+          s/(\Q"$base flags"\E,\s*")/"$1$std "/e if $std ne "";
+        }
+      ' "$settingsFile"
+    done
+  '' + ''
     # Install the bash completion file.
     install -D -m 444 utils/completion/ghc.bash $out/share/bash-completion/completions/${targetPrefix}ghc
 
