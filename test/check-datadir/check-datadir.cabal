@@ -1,0 +1,33 @@
+cabal-version:       2.4
+name:                check-datadir
+version:             0.1.0.0
+license:             NONE
+build-type:          Simple
+-- Read by the test via `getDataFileName` (see test/Main.hs).
+data-files:          data-file.txt
+-- Read by the test relative to the package dir (so v1's cabal-cleaned source
+-- includes it too); the v2 check must run from the package source for this.
+extra-source-files:  golden.txt
+
+library
+  exposed-modules:     Lib
+  hs-source-dirs:      lib
+  build-depends:       base
+  default-language:    Haskell2010
+
+-- A build-tool the test spawns, to check the v2 check puts it on PATH.
+executable check-datadir-tool
+  main-is:             Tool.hs
+  hs-source-dirs:      tool
+  build-depends:       base
+  default-language:    Haskell2010
+
+test-suite test
+  type:                exitcode-stdio-1.0
+  main-is:             Main.hs
+  hs-source-dirs:      test
+  other-modules:       Paths_check_datadir
+  autogen-modules:     Paths_check_datadir
+  build-depends:       base, check-datadir, process
+  build-tool-depends:  check-datadir:check-datadir-tool
+  default-language:    Haskell2010

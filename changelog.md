@@ -1,6 +1,30 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## June 12, 2026
+
+`builderVersion = 2`: test `checks` now run with more of the environment
+`cabal v2-test` would provide, so tests that read their package's data,
+read source-relative files, or spawn build-tool executables work.
+
+The v2 check runs the installed test binary directly (rather than via
+`cabal v2-test`) in an empty directory with only the runtime libs on PATH,
+so `lib/check.nix` now additionally:
+
+  * sets each installed package's `<pkg>_datadir` (the env var Cabal's
+    `Paths_<pkg>` consults) at the `share` dir the slice stages under
+    `$out/store/ghc-*/<unit>/share`, so `getDataFileName` finds
+    `data-files` (the compiled-in datadir points at an ephemeral
+    build-time `cabal` dir);
+  * puts the component's `build-tool-depends` (`executableToolDepends`,
+    including same-package exes a test spawns) on `PATH`; and
+  * runs the test from a writable copy of the package source subdir, so
+    tests that read source-relative files (golden files / fixtures) find
+    them — mirroring v1, which unpacks `src` and `cd`s into it.
+
+All three happen before `preCheck`, so a project's own `preCheck` can
+still override them.
+
 ## June 9, 2026
 
 Derivations in the pkgconf → nixpkgs map (`lib/pkgconf-nixpkgs-map.nix`)
