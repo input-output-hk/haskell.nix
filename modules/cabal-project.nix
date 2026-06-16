@@ -242,11 +242,21 @@ in {
     (lib.mkIf config.useLocalGhcLib (
     let
       ghc = (config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name};
-      ghcSrc = (pkgs.buildPackages.symlinkJoin {
+      ghcFullSrc = pkgs.buildPackages.symlinkJoin {
         name = ghc.name + "-full-src";
         paths = [ ghc.configured-src ghc.generated ];
-      }) + "/compiler";
+      };
+      ghcSrc = ghcFullSrc + "/compiler";
       ghcMinRepoUrl = "file://${ghcSrc}";
+      # `lib:ghc`'s `build-tool-depends` (when the `build-tool-depends`
+      # flag is on) names `genprimopcode` and `deriveConstants`, which
+      # live in the GHC source tree (not on hackage).  Expose them as
+      # reinstallable source-repository-packages too, so cabal can
+      # satisfy those exe build-tool goals from the same tree.
+      genprimopcodeSrc = ghcFullSrc + "/utils/genprimopcode";
+      deriveConstantsSrc = ghcFullSrc + "/utils/deriveConstants";
+      genprimopcodeUrl = "file://${genprimopcodeSrc}";
+      deriveConstantsUrl = "file://${deriveConstantsSrc}";
     in {
       # When `useLocalGhcLib = true`, expose the GHC compiler tree
       # (configured + generated) as a `source-repository-package` in
@@ -283,6 +293,16 @@ in {
           location: ${ghcMinRepoUrl}
           subdir: .
           tag: minimal
+        source-repository-package
+          type: git
+          location: ${genprimopcodeUrl}
+          subdir: .
+          tag: minimal
+        source-repository-package
+          type: git
+          location: ${deriveConstantsUrl}
+          subdir: .
+          tag: minimal
         allow-boot-library-installs: True
       '';
       # Key by `<url>/<ref>` (the first lookup form in
@@ -294,6 +314,8 @@ in {
       # to store paths.
       inputMap = {
         ${builtins.unsafeDiscardStringContext "${ghcMinRepoUrl}/minimal"} = ghcSrc;
+        ${builtins.unsafeDiscardStringContext "${genprimopcodeUrl}/minimal"} = genprimopcodeSrc;
+        ${builtins.unsafeDiscardStringContext "${deriveConstantsUrl}/minimal"} = deriveConstantsSrc;
       };
     }
     ))
