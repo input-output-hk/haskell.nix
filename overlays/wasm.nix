@@ -62,6 +62,26 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.targetPlatform.isWasm {
     nativeBuildInputs = old.nativeBuildInputs or [] ++ [ final.buildPackages.lld ];
   });
 
+  # zlib doesn't cross-compile cleanly to wasm out of the box:
+  #  * gzguts.h only `#include <errno.h>` when NO_STRERROR is unset, but
+  #    gzread.c / gzwrite.c use errno / EAGAIN / EWOULDBLOCK unconditionally.
+  #    zlib's configure probes strerror by compiling *and running* a test,
+  #    which can't run when cross-compiling to wasm, so it defines NO_STRERROR
+  #    (even though wasi-libc has strerror) and the gz* sources fail to build
+  #    with "use of undeclared identifier 'errno'".  -> always include errno.h.
+  #  * zlib sets NIX_LDFLAGS = "--undefined-version" whenever the linker is lld
+  #    (to counter lld 16+'s --no-undefined-version default for its shared-lib
+  #    version script).  wasm-ld is lld-based but rejects that flag, and we
+  #    build static anyway, so drop it.
+  zlib = prev.zlib.overrideAttrs (old: {
+    postPatch = (old.postPatch or "") + ''
+      substituteInPlace gzguts.h \
+        --replace-fail '/* get errno and strerror definition */' '/* get errno and strerror definition */
+#include <errno.h>'
+    '';
+    env = (old.env or {}) // { NIX_LDFLAGS = ""; };
+  });
+
   haskell-nix = prev.haskell-nix // ({
     defaultModules = prev.haskell-nix.defaultModules ++ [
       ({ pkgs, ... }: {
