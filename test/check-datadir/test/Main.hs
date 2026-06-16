@@ -1,9 +1,10 @@
 module Main (main) where
 
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 import Data.List (isInfixOf)
 import Paths_check_datadir (getDataFileName)
 import System.Exit (exitFailure)
+import System.Info (arch)
 import System.Process (readProcess)
 
 -- Exercises the parts of a `cabal v2-test` environment that the
@@ -13,6 +14,8 @@ import System.Process (readProcess)
 --   1. `data-files` via `getDataFileName` — needs `<pkg>_datadir`.
 --   2. a source-relative file — needs the check to run in the package source.
 --   3. a `build-tool-depends` exe — needs it on `PATH`.
+--      (skipped on wasm: WASI has no process spawning, so readProcess can't
+--      run a build-tool — see overlays/wasm.nix testWrapper.)
 --
 -- Each fails with "does not exist" if the corresponding piece is missing.
 main :: IO ()
@@ -24,8 +27,9 @@ main = do
   golden <- readFile "golden.txt"
   expect "source-relative file" ("golden ok" `isInfixOf` golden)
 
-  toolOut <- readProcess "check-datadir-tool" [] ""
-  expect "build-tool on PATH" ("tool ran" `isInfixOf` toolOut)
+  when (arch /= "wasm32") $ do
+    toolOut <- readProcess "check-datadir-tool" [] ""
+    expect "build-tool on PATH" ("tool ran" `isInfixOf` toolOut)
 
   putStrLn "all check-datadir checks OK"
   where

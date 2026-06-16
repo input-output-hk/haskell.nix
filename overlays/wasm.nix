@@ -65,7 +65,10 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.targetPlatform.isWasm {
   haskell-nix = prev.haskell-nix // ({
     defaultModules = prev.haskell-nix.defaultModules ++ [
       ({ pkgs, ... }: {
-        testWrapper = ["HOME=$(mktemp -d)" (pkgs.pkgsBuildBuild.wasmtime + "/bin/wasmtime")];
+        # Grant the wasm guest access to the Nix store so tests can read e.g.
+        # their data-files (Paths_*.getDataFileName) under <pkg>-data/share/...;
+        # without a --dir preopen WASI gives the module no filesystem access.
+        testWrapper = ["HOME=$(mktemp -d)" (pkgs.pkgsBuildBuild.wasmtime + "/bin/wasmtime") "--dir" "/nix/store" "--dir" "."];
         package-keys = ["clock"];
         packages.clock.ghcOptions = ["-optc-Wno-int-conversion"];
       })
