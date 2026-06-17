@@ -12,6 +12,48 @@ final: prev:
     };
   });
 
+  # FreeType's `freetype2.pc` advertises a libtool/ABI version (e.g. `26.2.20`)
+  # that is deliberately decoupled from the release `.version` (e.g. `2.13.3`):
+  # see FreeType's `docs/VERSIONS.TXT`.  `pkg-config --modversion freetype2`
+  # returns the libtool number, so plan-to-nix must report the same value or
+  # the v2 slice's UnitId (which folds the resolved `freetype2` version into
+  # `pkgHashPkgConfigDeps`) forks — taking every transitive consumer
+  # (gi-freetype2 -> gi-harfbuzz -> gi-pango -> gi-gdk3 -> gi-gtk3 -> ...) with
+  # it.  The mapping is an arbitrary per-release table (no formula), so we
+  # encode the known rows and fall back to `.version` for unknown releases.
+  # Adding `passthru.pc-version` does not change freetype's derivation, so this
+  # neither rebuilds freetype nor forces it to build during planning.
+  # The `pkgconf-pc-version` test verifies this matches `pkg-config --modversion`.
+  freetype = prev.freetype.overrideAttrs (old: {
+    passthru = (old.passthru or {}) // {
+      pc-version =
+        let
+          # release version -> libtool/`.pc` version, from FreeType's
+          # `docs/VERSIONS.TXT`.  Add new rows here when bumping freetype.
+          pcVersions = {
+            "2.11.0" = "24.0.18";
+            "2.11.1" = "24.1.18";
+            "2.12.0" = "24.2.18";
+            "2.12.1" = "24.3.18";
+            "2.13.0" = "25.0.19";
+            "2.13.1" = "26.0.20";
+            "2.13.2" = "26.1.20";
+            "2.13.3" = "26.2.20";
+            "2.14.0" = "26.3.20";
+            "2.14.1" = "26.4.20";
+            "2.14.2" = "26.5.20";
+            "2.14.3" = "26.6.20";
+          };
+        in pcVersions.${prev.freetype.version} or (prev.lib.warn ''
+          haskell.nix: no freetype `pc-version` for ${prev.freetype.version}; using the
+          release version, which freetype2.pc usually disagrees with (e.g. 2.13.3 -> 26.2.20).
+          Add a row to overlays/cabal-pkg-config.nix (see the libtool column in
+          https://gitlab.freedesktop.org/freetype/freetype/-/raw/master/docs/VERSIONS.TXT):
+              "${prev.freetype.version}" = "<`pkg-config --modversion freetype2`>";
+        '' prev.freetype.version);
+    };
+  });
+
   # This is a wrapper for `cabal configure` use only.
   #
   # When creating a plan for building a project cabal first
