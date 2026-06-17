@@ -21,11 +21,17 @@ in lib.recurseIntoAttrs ({
   };
 
   run = project.hsPkgs.check-datadir.checks.test;
+
+  # The test spawns a build-tool-depends exe (readProcess) and reads its
+  # data-files / a source-relative file — this can't be reproduced when the test
+  # binary runs under an emulator (Windows/wine, Android), which can't reliably
+  # spawn the build-tool.  Disable the whole test there.
+  meta.disabled = stdenv.hostPlatform.isWindows || stdenv.hostPlatform.isAndroid;
 }
 # The v2 check stages data-files as absolute /nix/store symlinks and points
-# Cabal at them via the `<pkg>_datadir` env var.  wasmtime neither forwards
+# Cabal at them via the `<pkg>_datadir` env var, but wasmtime neither forwards
 # host env vars to the wasm guest nor follows absolute symlinks (no CLI option
-# for either), so this check can't run on wasm.  (The v1 `run` works because
+# for either), so this check can't run on wasm.  (The v1 `run` works on wasm:
 # its data-files are real files in a `-data` output.)  See overlays/wasm.nix.
 // lib.optionalAttrs (!stdenv.hostPlatform.isWasm) {
   run-v2 = projectV2.hsPkgs.check-datadir.checks.test;
