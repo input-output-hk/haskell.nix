@@ -88,6 +88,12 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.targetPlatform.isWasm {
         # Grant the wasm guest access to the Nix store so tests can read e.g.
         # their data-files (Paths_*.getDataFileName) under <pkg>-data/share/...;
         # without a --dir preopen WASI gives the module no filesystem access.
+        # `--dir .` likewise lets tests read source-relative files (golden
+        # files / fixtures) from the directory the check runs in.
+        #
+        # NB: wasmtime neither forwards host env vars to the guest nor follows
+        # absolute symlinks, so data-file tests under the v2 check can't run on
+        # wasm and are disabled there (see test/check-datadir/default.nix).
         testWrapper = ["HOME=$(mktemp -d)" (pkgs.pkgsBuildBuild.wasmtime + "/bin/wasmtime") "--dir" "/nix/store" "--dir" "."];
         package-keys = ["clock"];
         packages.clock.ghcOptions = ["-optc-Wno-int-conversion"];

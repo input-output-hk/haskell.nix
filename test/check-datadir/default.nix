@@ -3,7 +3,7 @@
 # the builder makes the package data-dir available to tests — in particular
 # under builderVersion = 2, where the check runs the installed binary directly
 # and `lib/check.nix` must set `<pkg>_datadir`.
-{ lib, project', testSrc, compiler-nix-name, evalPackages }:
+{ lib, stdenv, project', testSrc, compiler-nix-name, evalPackages }:
 
 let
   mkProject = builderVersion: project' {
@@ -14,12 +14,19 @@ let
   project = mkProject 1;
   projectV2 = mkProject 2;
 
-in lib.recurseIntoAttrs {
+in lib.recurseIntoAttrs ({
   ifdInputs = {
     inherit (project) plan-nix;
     plan-nix-v2 = projectV2.plan-nix;
   };
 
   run = project.hsPkgs.check-datadir.checks.test;
-  run-v2 = projectV2.hsPkgs.check-datadir.checks.test;
 }
+# The v2 check stages data-files as absolute /nix/store symlinks and points
+# Cabal at them via the `<pkg>_datadir` env var.  wasmtime neither forwards
+# host env vars to the wasm guest nor follows absolute symlinks (no CLI option
+# for either), so this check can't run on wasm.  (The v1 `run` works because
+# its data-files are real files in a `-data` output.)  See overlays/wasm.nix.
+// lib.optionalAttrs (!stdenv.hostPlatform.isWasm) {
+  run-v2 = projectV2.hsPkgs.check-datadir.checks.test;
+})
