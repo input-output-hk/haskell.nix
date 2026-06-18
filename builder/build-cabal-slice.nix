@@ -414,6 +414,12 @@ stdenv.mkDerivation ({
                          then pkgs.pkgsHostHost.gitReallyMinimal
                          else pkgsBuildBuild.gitReallyMinimal) ]
     ++ lib.optional stdenv.hostPlatform.isGhcjs pkgsBuildBuild.nodejs
+    # On aarch64-darwin ld64 ad-hoc signs executables but *non-deterministically*
+    # emits an invalid signature for large binaries, which recent macOS rejects
+    # (SIGKILL "Code Signature Invalid").  Add autoSignDarwinBinariesHook,
+    # patched to flush the binary to stable storage before signing so it signs
+    # the bytes that land on disk.  See haskell.nix#2018.
+    ++ import ./darwin-codesign-flush.nix { inherit lib buildPackages stdenv; }
     ++ extraNativeBuildInputs;
   # `depSlices` go in `propagatedBuildInputs` so stdenv chains each
   # slice's `nix-support/propagated-build-inputs` transitively.

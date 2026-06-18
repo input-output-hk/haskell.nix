@@ -596,7 +596,13 @@ let
       [ghc buildPackages.removeReferencesTo]
       ++ executableToolDepends
       ++ (lib.optional stdenv.hostPlatform.isGhcjs pkgsBuildBuild.nodejs)
-      ++ (lib.optional (ghc.useLdLld or false) llvmPackages.bintools);
+      ++ (lib.optional (ghc.useLdLld or false) llvmPackages.bintools)
+      # On aarch64-darwin ld64 ad-hoc signs executables but *non-deterministically*
+      # emits an invalid signature for large binaries, which recent macOS rejects
+      # (SIGKILL "Code Signature Invalid").  Add autoSignDarwinBinariesHook,
+      # patched to flush the binary to stable storage before signing so it signs
+      # the bytes that land on disk.  See haskell.nix#2018.
+      ++ import ./darwin-codesign-flush.nix { inherit lib buildPackages stdenv; };
 
     outputs = ["out"]
       ++ (lib.optional keepConfigFiles "configFiles")
@@ -904,7 +910,8 @@ let
   }
   // lib.optionalAttrs (hardeningDisable != [] || (stdenv.hostPlatform.isMusl && builtins.elem "pie" (stdenv.cc.defaultHardeningFlags or []))) {
     hardeningDisable = hardeningDisable ++ lib.optional (stdenv.hostPlatform.isMusl && builtins.elem "pie" (stdenv.cc.defaultHardeningFlags or [])) "pie";
-  });
+  }
+  );
 in drv; in self) {
   inherit componentId
           component
