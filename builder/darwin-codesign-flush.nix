@@ -43,11 +43,20 @@ lib.optional (stdenv.hostPlatform.isDarwin && stdenv.hostPlatform.isAarch64) (
       cc -O2 -Wall -o "$out/bin/fullfsync" fullfsync.c
     '';
 
-    # Append a flush of the target to signingUtils.sign, before it reads the
-    # binary.  overrideAttrs on the concrete derivation just adds a sed step.
+    # Append a flush of the target to signingUtils.sign, immediately before it
+    # reads the binary (overrideAttrs just adds a sed step to the concrete
+    # derivation).  The flush failure aborts the build rather than being
+    # swallowed (no `|| true`): signing an unflushed binary risks the very
+    # invalid signature this works around.  The grep guard fails loudly if the
+    # substitution did not take effect (e.g. upstream sign() changed) instead
+    # of silently reintroducing the bug.
     signingUtils = buildPackages.darwin.signingUtils.overrideAttrs (old: {
       installPhase = old.installPhase + ''
-        sed -i 's#cp "$1" "$tmpdir"#${fullfsync}/bin/fullfsync "$1" || true\n    cp "$1" "$tmpdir"#' $out
+        sed -i 's#cp "$1" "$tmpdir"#${fullfsync}/bin/fullfsync "$1"\n    cp "$1" "$tmpdir"#' $out
+        grep -qF '${fullfsync}/bin/fullfsync' $out || {
+          echo "darwin-codesign-flush: failed to patch signingUtils sign(); has upstream sign() changed?" >&2
+          exit 1
+        }
       '';
     });
   in
