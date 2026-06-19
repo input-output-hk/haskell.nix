@@ -344,6 +344,9 @@ let
                 " --with-ld=${binPrefix}ld")
     )
   );
+
+  # darwin write->copy coherence flush (haskell.nix#2018); no-op off darwin.
+  darwinFlush = import ./darwin-flush.nix { inherit lib buildPackages stdenv; };
 in
 
 stdenv.mkDerivation ({
@@ -1284,6 +1287,7 @@ stdenv.mkDerivation ({
 
     # Also expose dist-newstyle so callers can grab exes etc.
     if [ -d $buildRoot/project/dist-newstyle ]; then
+      ${darwinFlush.flushDir "$buildRoot/project/dist-newstyle"}
       cp -r $buildRoot/project/dist-newstyle $out/dist-newstyle
     fi
 

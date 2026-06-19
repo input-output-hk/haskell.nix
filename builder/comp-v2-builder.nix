@@ -41,6 +41,11 @@ let
   pkgVersion = package.identifier.version;
   ghcPkgVersion = ghc.version;
 
+  # darwin write->copy coherence flush (haskell.nix#2018); no-op off darwin.
+  darwinFlush = import ./darwin-flush.nix {
+    inherit lib stdenv; buildPackages = pkgs.buildPackages;
+  };
+
   # Project-global data computed once from the plan (see
   # `builder/v2-project-globals.nix`), not per slice.
   docEnabledNames      = planV2Globals.docEnabledNames or {};
@@ -1562,6 +1567,7 @@ let
           "${exeName}" > $out/bin/${exeName}
         chmod +x $out/bin/${exeName}
       else
+        ${darwinFlush.flushFile "$bin"}
         cp "$bin" $out/bin/${exeName}
         chmod +x $out/bin/${exeName}
       fi
@@ -1581,6 +1587,7 @@ let
         find $out/dist-newstyle \( -type f -o -type l \) >&2
         exit 1
       fi
+      ${darwinFlush.flushFile "$bin"}
       cp "$bin" $out/bin/${exeName}
       chmod +x $out/bin/${exeName}
       ${trimDistNewstyle}

@@ -715,6 +715,7 @@ let
         target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
       in ''
       runHook preInstall
+      ${(import ./darwin-flush.nix { inherit lib buildPackages stdenv; }).flushDir "dist/build"}
       ${ # `Setup copy` does not install tests and benchmarks.
         if !haskellLib.isTest componentId && !haskellLib.isBenchmark componentId
           then ''
@@ -904,7 +905,8 @@ let
   }
   // lib.optionalAttrs (hardeningDisable != [] || (stdenv.hostPlatform.isMusl && builtins.elem "pie" (stdenv.cc.defaultHardeningFlags or []))) {
     hardeningDisable = hardeningDisable ++ lib.optional (stdenv.hostPlatform.isMusl && builtins.elem "pie" (stdenv.cc.defaultHardeningFlags or [])) "pie";
-  });
+  }
+  );
 in drv; in self) {
   inherit componentId
           component
