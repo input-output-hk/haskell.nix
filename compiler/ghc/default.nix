@@ -717,6 +717,32 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         "$out/bin/${targetPrefix}ghc-pkg" recache
       fi
     done
+  ''
+  # GHC's configure is regenerated here via autoreconfHook using the host
+  # autoconf. As of autoconf 2.72.90, AC_PROG_CC prefers C23 if available, so it
+  # appends the newest C standard flag the compiler accepts (e.g. -std=gnu23 with
+  # clang 21, which supports but does not default to C23) to $CC. GHC then bakes
+  # $CC verbatim into the "C compiler command" / "C++ compiler command" /
+  # "Haskell CPP command" settings fields, tries to exec a binary literally named
+  # "cc -std=gnu23", and fails with "could not execute". Move the std flag out of
+  # each command field into its matching flags field.
+  #
+  # Earlier autoconf (<= 2.72) only prefers C11, which clang already defaults to,
+  # so no flag is appended and the settings fields are unaffected. The gate keeps
+  # existing GHC derivations byte-for-byte identical on those.
+  # autoconf NEWS (2.72.90, 2026-02-03):
+  # https://raw.githubusercontent.com/autotools-mirror/autoconf/master/NEWS
+  + lib.optionalString (builtins.compareVersions autoconf.version "2.72.90" >= 0) ''
+    for settingsFile in "$out/lib/settings" "$out/lib/ghc-"*"/lib/settings"; do
+      [ -f "$settingsFile" ] || continue
+      perl -0777 -i -pe '
+        for my $base ("C compiler", "C++ compiler", "Haskell CPP") {
+          my $std = "";
+          s/(\Q"$base command"\E,\s*"[^"]*?) (-std=\S+?)"/$std=$2;"$1\""/ge;
+          s/(\Q"$base flags"\E,\s*")/"$1$std "/e if $std ne "";
+        }
+      ' "$settingsFile"
+    done
   '' + ''
     # Install the bash completion file.
     install -D -m 444 utils/completion/ghc.bash $out/share/bash-completion/completions/${targetPrefix}ghc
