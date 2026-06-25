@@ -57,17 +57,6 @@ in addPackageKeys {
     (fromUntil "3.4.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.4-speedup-solver-when-tests-enabled-7490.patch)
   ];
 
-  # Avoid dependency on genprimopcode and deriveConstants (cabal does not put these in the plan,
-  # most likely because it finds them in the PATH).
-  # See https://github.com/input-output-hk/haskell.nix/issues/1808
-  #
-  # We now expose genprimopcode and deriveConstants from ghc directly (this is not in line with
-  # with upstream ghc) to be able to re-build lib:ghc.
-  packages.ghc.components.library.build-tools = lib.mkForce (
-    lib.optionals (__compareVersions config.hsPkgs.ghc.identifier.version "9.4.1" > 0) [
-      (config.hsPkgs.buildPackages.alex.components.exes.alex or (pkgs.haskell-nix.tool config.compiler.nix-name "alex" {}))
-      (config.hsPkgs.buildPackages.happy.components.exes.happy or (pkgs.haskell-nix.tool config.compiler.nix-name "happy" {}))
-    ]);
   # Remove dependency on hsc2hs (hsc2hs should be in ghc derivation)
   packages.mintty.components.library.build-tools = lib.mkForce [];
 

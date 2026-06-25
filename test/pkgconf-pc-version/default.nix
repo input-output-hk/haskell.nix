@@ -51,10 +51,21 @@ let
   hostBuildsSystemd =
     stdenv.hostPlatform.libc == "glibc"
     && !stdenv.hostPlatform.isStatic;
-  wantedNames =
-    if hostBuildsSystemd
-    then pcVersionNames
-    else lib.subtractLists systemdPkgConfigNames pcVersionNames;
+
+  # freetype carries a `pc-version` too, but its build (zlib / libpng / brotli
+  # …) doesn't cross-compile to wasm, musl or android.  Its `.pc` `Version:` is
+  # platform-independent, so checking it on glibc / darwin / windows is enough;
+  # drop it on the others so we don't force a broken cross build.
+  freetypePkgConfigNames = [ "freetype2" ];
+  hostBuildsFreetype =
+    !stdenv.hostPlatform.isWasm
+    && stdenv.hostPlatform.libc != "musl"
+    && !stdenv.hostPlatform.isAndroid;
+
+  wantedNames = lib.subtractLists
+    (lib.optionals (!hostBuildsSystemd) systemdPkgConfigNames
+     ++ lib.optionals (!hostBuildsFreetype) freetypePkgConfigNames)
+    pcVersionNames;
 
   # Resolve just those names against the *target* pkgs — forcing only a
   # handful of entries, never the whole map.
