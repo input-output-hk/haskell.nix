@@ -173,7 +173,7 @@ final: prev:
       if [[ "\$1" == "--libs" && "\$2" == "--static" ]]; then
         OUTPUT=\$(mktemp)
         ERROR=\$(mktemp)
-        if $out/bin/${targetPrefix}${baseBinName}-wrapped "\$@" >output 2>\$ERROR; then
+        if $out/bin/${targetPrefix}${baseBinName}-wrapped "\$@" >\$OUTPUT 2>\$ERROR; then
           cat \$OUTPUT
         else
           echo "--error-pkg-config-static-failed=\$ERROR"
