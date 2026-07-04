@@ -457,6 +457,16 @@ fixSystem "isDragonfly" = "isDragonFly"
 fixSystem "isHpux" = "isHPUX"
 fixSystem "isIos" = "isIOS"
 fixSystem "isIrix" = "isIRIX"
+-- PowerPC: cabal arch(ppc)/arch(ppc64) → capitalize → isPpc/isPpc64
+-- nixpkgs uses isPPC/isPPC64
+fixSystem "isPpc"   = "isPPC"
+fixSystem "isPpc64" = "isPPC64"
+-- RISC-V: cabal arch(riscv64) → capitalize → isRiscv64
+-- nixpkgs uses isRiscV64 (capital V)
+fixSystem "isRiscv64" = "isRiscV64"
+-- LoongArch: cabal arch(loongarch64) → capitalize → isLoongarch64
+-- nixpkgs uses isLoongArch64 (capital A) if/when supported
+fixSystem "isLoongarch64" = "isLoongArch64"
 fixSystem s = s
 
 instance ToNixExpr ConfVar where
