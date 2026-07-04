@@ -1,0 +1,28 @@
+{
+  "nodes": {
+    "root": {
+      "inputs": {
+        "sghc914-cabal": "sghc914-cabal"
+      }
+    },
+    "sghc914-cabal": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1781161476,
+        "narHash": "sha256-7Xz2Cfwn/VPacFSK/blFela2lbfo+QN7luR51l6RLL0=",
+        "ref": "stable-haskell/master",
+        "rev": "01d053ac98e93b24f2f93234f0dbf185c63f1a88",
+        "revCount": 15582,
+        "type": "git",
+        "url": "https://github.com/stable-haskell/Cabal.git"
+      },
+      "original": {
+        "ref": "stable-haskell/master",
+        "type": "git",
+        "url": "https://github.com/stable-haskell/Cabal.git"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

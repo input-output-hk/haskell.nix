@@ -1,0 +1,28 @@
+{
+  "nodes": {
+    "root": {
+      "inputs": {
+        "sghc914": "sghc914"
+      }
+    },
+    "sghc914": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1780981062,
+        "narHash": "sha256-OmfoZneIONxHUZQJJYoaa/kLk7T63rgaeFLYmPrw+zg=",
+        "ref": "stable-ghc-9.14",
+        "rev": "4ad586bbc2eb99d6bbd94b911b0db48d1c05cdf0",
+        "revCount": 68527,
+        "type": "git",
+        "url": "https://github.com/stable-haskell/ghc"
+      },
+      "original": {
+        "ref": "stable-ghc-9.14",
+        "type": "git",
+        "url": "https://github.com/stable-haskell/ghc"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
