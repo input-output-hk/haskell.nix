@@ -1295,7 +1295,8 @@ final: prev: {
             inherit (evalPackages) nix gitMinimal nix-prefetch-git;
           } // final.lib.optionalAttrs (final.stdenv.hostPlatform.libc == "glibc") {
             inherit (final) glibcLocales;
-          } // final.lib.optionalAttrs (builtins.compareVersions ghc.version "9.4" >= 0) {
+          } // final.lib.optionalAttrs (builtins.compareVersions ghc.version "9.4" >= 0
+              && ghc ? hadrianProject) {
             # Make sure the plan for hadrian is cached (we need it to instanciate ghc).
             hadrian-plan = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.hadrianProject.plan-nix;
             # Also include the same plan evaluated on the eval system.
@@ -1313,7 +1314,8 @@ final: prev: {
             # These seem to be the only things we use from `ghc-extra-packages`
             # in haskell.nix itself.
             && !final.stdenv.hostPlatform.isGhcjs
-            && !final.stdenv.hostPlatform.isWasm)
+            && !final.stdenv.hostPlatform.isWasm
+            && final.haskell-nix.iserv-proxy-exes ? ${compiler-nix-name})
               final.haskell-nix.iserv-proxy-exes.${compiler-nix-name});
     };
 }
