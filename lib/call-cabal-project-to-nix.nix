@@ -63,6 +63,9 @@
 , supportHpack ? false      # Run hpack on package.yaml files with no .cabal file
 , ignorePackageYaml ? false # Ignore package.yaml files even if they exist
 , prebuilt-depends ? []
+, replace-hackage-tarball-urls ? false # Rewrite direct Hackage tarball URLs in
+                            # `packages:` to local nix store paths (see
+                            # rewriteHackageTarballUrls below).
 , ...
 }@args:
 let
@@ -179,6 +182,29 @@ let
     builtins.readFile (pkgs.runCommand "hash-path" { preferLocalBuild = true; }
       "echo -n $(${pkgs.nix}/bin/nix-hash --type sha256 --base32 ${path}) > $out");
 
+  # Rewrite direct Hackage tarball URLs in a cabal.project's `packages:` stanza
+  # (of the form https://hackage.haskell.org/package/NAME-VER/NAME-VER.tar.gz)
+  # into local nix store paths fetched via hackage.nix.  This lets cabal use the
+  # exact pinned versions during plan-to-nix without network access and without
+  # the version needing to be present at the project's index-state.  Gated on
+  # the `replace-hackage-tarball-urls` project option.  We use replaceStrings so
+  # the substituted store paths retain their string context.
+  rewriteHackageTarballUrls = projectFile:
+    let
+      urlRe = "https://hackage[.]haskell[.]org/package/[^/[:space:]]+/[^/[:space:]]+[.]tar[.]gz";
+      urls = pkgs.lib.unique (builtins.concatMap
+        (x: if builtins.isList x then x else [])
+        (builtins.split "(${urlRe})" projectFile));
+      pathFor = url:
+        let nv = builtins.match
+          "https://hackage[.]haskell[.]org/package/[^/]+/(.+)-([0-9][0-9.]*)[.]tar[.]gz" url;
+        in toString (pkgs.haskell-nix.hackageTarball {
+             name = builtins.elemAt nv 0;
+             version = builtins.elemAt nv 1;
+             inherit evalPackages;
+           });
+    in builtins.replaceStrings urls (map pathFor urls) projectFile;
+
   replaceSourceRepos = projectFile:
     let
       fetchPackageRepo = fetchgit: repoData:
@@ -287,7 +313,10 @@ let
           );
     };
 
-  fixedProject = replaceSourceRepos rawCabalProject;
+  fixedProject = replaceSourceRepos
+    (if replace-hackage-tarball-urls
+      then rewriteHackageTarballUrls rawCabalProject
+      else rawCabalProject);
 
   ghcSrc = (ghc.raw-src or ghc.buildGHC.raw-src) evalPackages;
 
@@ -399,6 +428,8 @@ let
                 cabal_file=${ghcSrc}/utils/haddock/${name}/${name}.cabal
               elif [ -f ${ghcSrc}/${name}/${name}.cabal ]; then
                 cabal_file=${ghcSrc}/${name}/${name}.cabal
+              elif [ -f ${ghcSrc}/${name}/${name}.cabal.in ]; then
+                cabal_file=${ghcSrc}/${name}/${name}.cabal.in
               fi
               if [[ "$cabal_file" != "" ]]; then
                 fixed_cabal_file=$(mktemp)

@@ -44,6 +44,31 @@ final: prev: {
         # The only stack projects need hackage.nix now
         hackageForStack = import sources.hackage-for-stackage;
 
+        # Fetch a specific Hackage package version straight from Hackage using
+        # the sha256 recorded in hackage.nix (the `for-stackage` db) and unpack
+        # it into a source directory.  Unlike `hackage-package`, this bypasses
+        # the cabal solver and the project `index-state`, so it can supply an
+        # exact version that is newer than a project's pinned index-state — e.g.
+        # a GHC boot library that upstream pins via a direct
+        # `https://hackage.haskell.org/package/NAME-VER/NAME-VER.tar.gz` URL in
+        # its cabal.project.  Used by the `replace-hackage-tarball-urls` project
+        # option (see lib/call-cabal-project-to-nix.nix).  The result is a
+        # directory suitable for a cabal.project `packages:` entry.
+        hackageTarball = { name, version, evalPackages ? final.buildPackages }:
+          let
+            versions = hackageForStack.${name}
+              or (throw "hackageTarball: package '${name}' is not in hackage.nix");
+            entry = versions.${version}
+              or (throw "hackageTarball: '${name}-${version}' is not in hackage.nix");
+          in evalPackages.runCommand "${name}-${version}-src" { } ''
+            mkdir -p "$out"
+            tar -xzf ${evalPackages.fetchurl {
+              name = "${name}-${version}.tar.gz";
+              url = "mirror://hackage/${name}-${version}.tar.gz";
+              inherit (entry) sha256;
+            }} --strip-components=1 -C "$out"
+          '';
+
         # Contains the hashes of the cabal 01-index.tar.gz for given
         # index states.  Starting from April 1st 2019.
         indexStateHashesPath = hackageSrc + "/index-state-hashes.nix";

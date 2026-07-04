@@ -140,6 +140,22 @@ in {
       type = bool;
       default = false;
     };
+    replace-hackage-tarball-urls = mkOption {
+      type = bool;
+      default = false;
+      description = ''
+        When enabled, rewrite direct Hackage tarball URLs in the cabal.project
+        `packages:` stanza — of the form
+        `https://hackage.haskell.org/package/NAME-VER/NAME-VER.tar.gz` — into
+        local nix store paths fetched via hackage.nix (haskell-nix.hackageTarball).
+
+        This lets cabal use the exact pinned versions without network access
+        during plan-to-nix, and without the version needing to be present at the
+        project's `index-state` (hackage.nix carries the sha256 for the exact
+        version).  Off by default; enable for projects (such as the stable
+        Haskell GHC build) that pin dependencies via direct Hackage URLs.
+      '';
+    };
 
     # Used by mkCabalProjectPkgSet
     pkg-def-extras = mkOption {
