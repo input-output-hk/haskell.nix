@@ -46,7 +46,12 @@ let
               (lib.filterAttrs (_: d: d.config.doCheck) components.tests)));
     };
   buildableTargets = lib.filter (x: x.available != []) (
-    lib.map (x: x // { available = lib.filter (n: n != "TargetNotBuildable") x.available; })
+    # Targets the user disabled (e.g. via --disable-tests) are not buildable
+    # either; without this filter a package whose only target is disabled
+    # (unix on Windows) makes `defaultTargetId` below force
+    # `(builtins.head available).id` on the reason string and eval fails
+    # with "expected a set but found a string".
+    lib.map (x: x // { available = lib.filter (n: !builtins.elem n ["TargetNotBuildable" "TargetDisabledByUser"]) x.available; })
       config.plan-json.targets);
 in {
   options.hsPkgs = lib.mkOption {
