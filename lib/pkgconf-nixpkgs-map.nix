@@ -5521,6 +5521,9 @@ pkgs:
     "javascriptcoregtk-4.1" = [ "webkitgtk_4_1" ];
     "webkit2gtk-4.1" = [ "webkitgtk_4_1" ];
     "webkit2gtk-web-extension-4.1" = [ "webkitgtk_4_1" ];
+    "javascriptcoregtk-6.0" = [ "webkitgtk_6_0" ];
+    "webkitgtk-6.0" = [ "webkitgtk_6_0" ];
+    "webkitgtk-web-process-extension-6.0" = [ "webkitgtk_6_0" ];
     "webrtc-audio-processing" = [ "webrtc-audio-processing" ];
 #    "webrtc-audio-processing" = [ "webrtc-audio-processing_0_3" ];
     "weechat" = [ "weechat-unwrapped" ];
