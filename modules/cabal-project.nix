@@ -260,7 +260,11 @@ in {
       ghc = (config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name};
       ghcFullSrc = pkgs.buildPackages.symlinkJoin {
         name = ghc.name + "-full-src";
-        paths = [ ghc.configured-src ghc.generated ];
+        # `generated-light` builds hadrian's generated sources (primops,
+        # deriveConstants, config) without compiling all of GHC, so realising
+        # this source-repository-package during plan-to-nix (needed for the v2
+        # UnitId) does not force a full compiler build via IFD.
+        paths = [ ghc.configured-src (ghc.generated-light or ghc.generated) ];
       };
       ghcSrc = ghcFullSrc + "/compiler";
       ghcMinRepoUrl = "file://${ghcSrc}";

@@ -1330,6 +1330,13 @@ final: prev: {
             # Things that require one IFD to build (the inputs should be in level 0)
             inherit ghc;
             ghc-boot-packages-nix = final.ghc-boot-packages-nix.${compiler-nix-name};
+          } // final.lib.optionalAttrs (ifdLevel > 0 && ghc ? generated-light) {
+            # Cache hadrian's generated sources (primops / deriveConstants /
+            # config) built *without* compiling all of GHC.  Consumers pull
+            # these at evaluation time (`useLocalGhcLib` / `ghc-lib-reinstallable`
+            # and `ghc-boot-packages`); caching the derivation here means those
+            # evals substitute it instead of rebuilding it via IFD.
+            ghc-generated = ghc.generated-light;
           } // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             nix-tools-unchecked = final.pkgsBuildBuild.haskell-nix.nix-tools-unchecked;

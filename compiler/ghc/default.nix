@@ -934,6 +934,108 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
       '';
     });
 
+    # Lightweight replacement for the `generated` *output*.
+    #
+    # The `generated` output above is harvested from `_build/stage1` *after a
+    # full GHC build*, so anything that consumes `ghc.generated` at evaluation
+    # time (e.g. `useLocalGhcLib = true` / the `ghc-lib-reinstallable` test,
+    # whose source-repository-package is `configured-src + generated` and must
+    # be realised during plan-to-nix to compute the v2 UnitId) forces the whole
+    # compiler to be built via IFD.
+    #
+    # None of the files we actually keep need the built compiler: they are
+    # exactly hadrian's `compilerDependencies` (hadrian/src/Rules/Generate.hs),
+    # whose generators (`genprimopcode`, `deriveConstants`, template
+    # substitution) run in `stage0Boot` — i.e. with the *boot* compiler.  So we
+    # ask hadrian to build only those file targets, which skips the stage1
+    # library compile entirely (minutes instead of hours) and is independently
+    # cacheable.
+    generated-light = stdenv.mkDerivation ({
+      name = name + "-generated";
+      inherit
+        buildInputs
+        version
+        patches
+        src
+        strictDeps
+        depsBuildTarget
+        depsTargetTarget
+        depsTargetTargetPropagated
+        nativeBuildInputs
+        postPatch
+        preConfigure
+        configurePlatforms
+        configureFlags
+        ;
+      phases = [ "unpackPhase" "patchPhase" "autoreconfPhase"
+                 "configurePhase" "buildPhase" "installPhase" ];
+      # Same as `configured-src`: generate the `.cabal` files from the
+      # `.cabal.in` templates so hadrian can set the packages up.
+      postConfigure = ''
+        for a in libraries/*/*.cabal.in utils/*/*.cabal.in compiler/ghc.cabal.in; do
+          ${hadrian}/bin/hadrian ${hadrianArgs} "''${a%.*}"
+        done
+      '';
+      buildPhase = ''
+        runHook preBuild
+        # Only the generated-source targets — hadrian builds their prerequisites
+        # (genprimopcode / deriveConstants, both stage0Boot) but NOT lib:ghc.
+        # Only the generated-source targets — hadrian builds their prerequisites
+        # (genprimopcode / deriveConstants, both stage0Boot) but NOT lib:ghc.
+        #
+        # The set of `primop-*.hs-incl` files differs between GHC versions (GHC
+        # 9.14.1 dropped them entirely; older GHCs have ~20).  Rather than
+        # hardcode a version-specific list, read the authoritative set from
+        # hadrian's own `compilerDependencies` (Rules/Generate.hs), so this
+        # works for every GHC we build.
+        primopIncls=$(grep -oE 'primop-[A-Za-z0-9-]+\.hs-incl' hadrian/src/Rules/Generate.hs 2>/dev/null | sort -u)
+        echo "generated-light: primop includes:"; echo "$primopIncls" | sed 's/^/  /'
+        # NB: `-j1`.  genprimopcode is occasionally invoked without its mode
+        # argument under hadrian's parallel scheduler; serialising is reliable
+        # and cheap (each genprimopcode/deriveConstants run is sub-second).
+        ${hadrian}/bin/hadrian ${hadrianArgs} -j1 \
+          _build/stage1/compiler/build/GHC/Platform/Constants.hs \
+          _build/stage1/compiler/build/GHC/Settings/Config.hs \
+          _build/stage1/libraries/ghc-boot/build/GHC/Version.hs \
+          _build/stage1/libraries/ghc-boot/build/GHC/Platform/Host.hs \
+          $(for f in $primopIncls; do echo "_build/stage1/compiler/build/$f"; done)
+        runHook postBuild
+      '';
+      # Same layout as the `generated` output's population block above, but
+      # written to `$out`.  (The `.hss` typo in that block means the output
+      # never actually contained ghc-boot's `Version.hs`; this copies it.)
+      installPhase = ''
+        mkdir -p $out/includes
+        if [[ -f _build/stage1/lib/ghcplatform.h ]]; then
+          cp _build/stage1/lib/ghcplatform.h $out/includes
+        fi
+        mkdir -p $out/compiler/stage2/build/GHC/Platform
+        if [[ -f _build/stage1/compiler/build/GHC/Platform/Constants.hs ]]; then
+          cp _build/stage1/compiler/build/GHC/Platform/Constants.hs $out/compiler/stage2/build/GHC/Platform
+        fi
+        if [[ -f _build/stage1/compiler/build/GHC/Settings/Config.hs ]]; then
+          mkdir -p $out/compiler/stage2/build/GHC/Settings
+          cp _build/stage1/compiler/build/GHC/Settings/Config.hs $out/compiler/stage2/build/GHC/Settings
+        fi
+        if [[ -f compiler/GHC/CmmToLlvm/Version/Bounds.hs ]]; then
+          mkdir -p $out/compiler/GHC/CmmToLlvm/Version
+          cp compiler/GHC/CmmToLlvm/Version/Bounds.hs $out/compiler/GHC/CmmToLlvm/Version/Bounds.hs
+        fi
+        cp _build/stage1/compiler/build/*.hs-incl $out/compiler/stage2/build || true
+        mkdir -p $out/libraries/ghc-boot/dist-install/build/GHC/Platform
+        if [[ -f _build/stage1/libraries/ghc-boot/build/GHC/Version.hs ]]; then
+          cp _build/stage1/libraries/ghc-boot/build/GHC/Version.hs $out/libraries/ghc-boot/dist-install/build/GHC/Version.hs
+        fi
+        if [[ -f _build/stage1/libraries/ghc-boot/build/GHC/Platform/Host.hs ]]; then
+          cp _build/stage1/libraries/ghc-boot/build/GHC/Platform/Host.hs $out/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs
+        fi
+      '';
+    } // lib.optionalAttrs targetPlatform.isGhcjs {
+      postPatch = ''
+        cp config.sub config.sub.ghcjs
+      '';
+    });
+
     # Used to detect non haskell-nix compilers (accidental use of nixpkgs compilers can lead to unexpected errors)
     isHaskellNixCompiler = true;
 
