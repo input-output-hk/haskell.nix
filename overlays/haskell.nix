@@ -761,7 +761,10 @@ final: prev: {
                             else
                               let ctype = builtins.elemAt m 0;
                                   cname = builtins.elemAt m 1;
-                                  group = components.${haskellLib.prefixComponent.${ctype}};
+                                  # Default to {} so a package with no exes/tests/etc. group
+                                  # still reaches the helpful throw below rather than a raw
+                                  # "attribute '<group>' missing".
+                                  group = components.${haskellLib.prefixComponent.${ctype}} or {};
                               in group.${cname} or (throw ''
                                 Package ${packageName} has no component ${componentName}.
                                 Available ${ctype} components: ${
