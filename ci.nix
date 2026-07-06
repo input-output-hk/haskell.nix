@@ -128,7 +128,7 @@
 in
 dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
   let evalPackages = import pinnedNixpkgsSrc (nixpkgsArgs // { system = evalSystem; });
-  in dimension "GHC version" (compilerNixNames nixpkgsName evalPackages) (compiler-nix-name: {runTests}:
+  in (dimension "GHC version" (compilerNixNames nixpkgsName evalPackages) (compiler-nix-name: {runTests}:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
           build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };
           platformFilter = platformFilterGeneric pkgs system;
@@ -193,5 +193,12 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
           hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }).getComponent "exe:hello";
         })
       ))
-    )
+    ))
+    # Run once (unstable, x86_64-linux): make sure the getting-started flake
+    # template stays in sync with `hix init` — see issue #2518.
+    // lib.optionalAttrs (nixpkgsName == "unstable" && system == "x86_64-linux") {
+      template-matches-hix-init = import ./test/template-matches-hix-init.nix {
+        pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
+      };
+    }
   )
