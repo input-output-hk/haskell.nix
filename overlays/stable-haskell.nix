@@ -457,6 +457,10 @@ let
         targetPrefix         = "";
         haskellCompilerName  = "ghc-${ghcVersionFull}";
         isHaskellNixCompiler = true;
+        # Built with `cabalProject` rather than hadrian; consumed by
+        # `ghc-boot-packages-src-and-nix` to skip the source-tree boot-package
+        # machinery (see the comment there).
+        isStableHaskell      = true;
         libDir               = "lib/ghc-${ghcVersionFull}";
         project              = stage1Project;
         # comp-builder.nix:44 accesses ghc.enableShared to decide whether to
@@ -636,8 +640,26 @@ ENDSCRIPT
     # cabal.project.common).  Since commit a695b259d, configure-args.nix
     # extracts these from plan.json automatically — no need to duplicate
     # them here or in modules.
+    # ghc-bin's `debug` flag defaults to True in the stable-haskell fork
+    # (ghc/ghc-bin.cabal.in), which links the final `ghc` executable against
+    # rts:threaded-debug; upstream GHC has no such flag and ships a non-debug
+    # (rts_thr) compiler.  Force -debug for a release-shaped (rts_thr) compiler:
+    # the debug RTS carries assertions + heap sanity checks and is slower.  This
+    # is purely a perf/release choice — NOT the WHITEHOLE crash fix (both RTS
+    # ways are crash-free once the source fix below is in place; verified 0/20
+    # on each).  Could instead be flipped upstream (ghc-bin.cabal.in `Default:
+    # False`, or cabal.project.stage2.common).
+    #
+    # The WHITEHOLE `ghc --make -jN` crash (THREADED_RTS not reaching the RTS
+    # Cmm CPP; see project_sghc914_parallel_make_whitehole) is fixed at the
+    # source — rts.cabal's rts-threaded-flags gained `cmm-options:
+    # -optc-DTHREADED_RTS` (stable-haskell/ghc#191, pinned via the
+    # hkm/rts-threaded-cmm-optc branch) — so no `package rts` ghc-options
+    # workaround is needed here.
     cabalProjectLocal = ''
       active-repositories: hackage.haskell.org
+      package ghc-bin
+        flags: -debug
     '';
 
     modules = [{
@@ -1071,6 +1093,10 @@ ENDSCRIPT
         targetPrefix         = "";
         haskellCompilerName  = "ghc-${ghcVersionFull}";
         isHaskellNixCompiler = true;
+        # Built with `cabalProject` rather than hadrian; consumed by
+        # `ghc-boot-packages-src-and-nix` to skip the source-tree boot-package
+        # machinery (see the comment there).
+        isStableHaskell      = true;
         libDir               = "lib/ghc-${ghcVersionFull}";
         enableShared         = !pkgs.stdenv.hostPlatform.isMusl && !pkgs.stdenv.hostPlatform.isStatic;
         # call-cabal-project-to-nix.nix:297 uses raw-src to synthesise the
@@ -1291,6 +1317,10 @@ ENDSCRIPT
         targetPrefix         = "";
         haskellCompilerName  = "ghc-${ghcVersionFull}";
         isHaskellNixCompiler = true;
+        # Built with `cabalProject` rather than hadrian; consumed by
+        # `ghc-boot-packages-src-and-nix` to skip the source-tree boot-package
+        # machinery (see the comment there).
+        isStableHaskell      = true;
         libDir               = "lib/ghc-${ghcVersionFull}";
         enableShared         = false;
         raw-src              = _: nativeConfiguredSrc;
@@ -1741,6 +1771,10 @@ STUB
         targetPrefix         = "";
         haskellCompilerName  = "ghc-${ghcVersionFull}";
         isHaskellNixCompiler = true;
+        # Built with `cabalProject` rather than hadrian; consumed by
+        # `ghc-boot-packages-src-and-nix` to skip the source-tree boot-package
+        # machinery (see the comment there).
+        isStableHaskell      = true;
         libDir               = "lib/ghc-${ghcVersionFull}";
         enableShared         = !(tp.isStatic or false) && !(tp.isMusl or false);
         # Dump view so user-project plans against the cross compiler (hello,

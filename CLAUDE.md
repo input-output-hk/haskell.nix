@@ -38,7 +38,35 @@ If the `.cabal` file is also generated use:
 
 Remove it from `cabal.project` file if necessary.
 
+## Updating the `head.hackage` pin (stale-hash build failures)
+
+`head.hackage.ghc.haskell.org` is a **rolling** repository, so the fixed-output
+derivation that runs `cabal v2-update` against it (see
+`lib/cabal-project-parser.nix`) goes stale whenever head.hackage updates. Symptom
+(hits GHC >= 9.13 / `sghc914` plans that use head.hackage):
+
+```
+error: hash mismatch in fixed-output derivation '…-head.hackage.ghc.haskell.org.drv':
+         specified: sha256-<old>
+            got:    sha256-<new>
+```
+
+Fix — build the failing FOD to learn the current hash, then update the
+`--sha256:` line of the `head.hackage.ghc.haskell.org` repository block in
+`test/cabal.project.local`:
+
+```
+nix build /nix/store/…-head.hackage.ghc.haskell.org.drv^out --no-link   # prints specified/got
+# copy the `got:` value into test/cabal.project.local  (the `--sha256:` under `repository head.hackage…`)
+```
+
+Expect to redo this periodically; it is inherent to pinning a rolling repo.
+
 ## Notes
 
 - `"cabal"` is aliased to package `cabal-install`; other aliases in `overlays/tools.nix`.
 - Pass `evalPackages` whenever possible.
+- Compilers built with `cabalProject` instead of hadrian (e.g. `sghc914`, the
+  stable-haskell GHCs) set `passthru.isStableHaskell = true`. Their boot packages
+  are **not** in the GHC source tree, so the `ghc-boot-packages` /
+  `ghc-extra-pkgs` machinery in `overlays/ghc-packages.nix` is skipped for them.

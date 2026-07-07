@@ -123,6 +123,13 @@ in rec {
   inherit combineAndMaterialize;
   ghc-boot-packages-src-and-nix = builtins.mapAttrs
     (ghcName: ghc:
+      # stable-haskell compilers are built with `cabalProject` rather than
+      # hadrian, so their boot packages are not present in the GHC source tree
+      # (`ghc-extra-pkgs` locations don't exist).  They are provided via
+      # `source-repository-package` blocks and discovered through the installed
+      # package dump instead, so the whole source-tree boot-package mechanism
+      # does not apply -- skip it entirely for these compilers.
+      if ghc.isStableHaskell or false then {} else
       # Prefer the lightweight `generated` derivation (hadrian's generated
       # sources built without compiling all of GHC); fall back to the full
       # `generated` output for compilers that don't provide it.

@@ -8,16 +8,16 @@
     "sghc914": {
       "flake": false,
       "locked": {
-        "lastModified": 1780981062,
-        "narHash": "sha256-OmfoZneIONxHUZQJJYoaa/kLk7T63rgaeFLYmPrw+zg=",
-        "ref": "stable-ghc-9.14",
-        "rev": "4ad586bbc2eb99d6bbd94b911b0db48d1c05cdf0",
-        "revCount": 68527,
+        "lastModified": 1783460076,
+        "narHash": "sha256-5MP5oafzXiOcz29nwPvVCIlMdffL8Py5a3kNjZNddFI=",
+        "ref": "hkm/rts-threaded-cmm-optc",
+        "rev": "0fee7fb07345f047b86b36060c2df732dbff0ecd",
+        "revCount": 68528,
         "type": "git",
         "url": "https://github.com/stable-haskell/ghc"
       },
       "original": {
-        "ref": "stable-ghc-9.14",
+        "ref": "hkm/rts-threaded-cmm-optc",
         "type": "git",
         "url": "https://github.com/stable-haskell/ghc"
       }
