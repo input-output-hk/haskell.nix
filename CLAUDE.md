@@ -43,7 +43,7 @@ Remove it from `cabal.project` file if necessary.
 `head.hackage.ghc.haskell.org` is a **rolling** repository, so the fixed-output
 derivation that runs `cabal v2-update` against it (see
 `lib/cabal-project-parser.nix`) goes stale whenever head.hackage updates. Symptom
-(hits GHC >= 9.13 / `sghc914` plans that use head.hackage):
+(hits GHC >= 9.13 / `ghc914-sh` plans that use head.hackage):
 
 ```
 error: hash mismatch in fixed-output derivation '…-head.hackage.ghc.haskell.org.drv':
@@ -66,7 +66,7 @@ Expect to redo this periodically; it is inherent to pinning a rolling repo.
 
 - `"cabal"` is aliased to package `cabal-install`; other aliases in `overlays/tools.nix`.
 - Pass `evalPackages` whenever possible.
-- Compilers built with `cabalProject` instead of hadrian (e.g. `sghc914`, the
+- Compilers built with `cabalProject` instead of hadrian (e.g. `ghc914-sh`, the
   stable-haskell GHCs) set `passthru.isStableHaskell = true`. Their boot packages
   are **not** in the GHC source tree, so the `ghc-boot-packages` /
   `ghc-extra-pkgs` machinery in `overlays/ghc-packages.nix` is skipped for them.

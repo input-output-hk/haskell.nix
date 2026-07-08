@@ -2,10 +2,10 @@
   "nodes": {
     "root": {
       "inputs": {
-        "sghc914-cabal": "sghc914-cabal"
+        "ghc914-sh-cabal": "ghc914-sh-cabal"
       }
     },
-    "sghc914-cabal": {
+    "ghc914-sh-cabal": {
       "flake": false,
       "locked": {
         "lastModified": 1781161476,

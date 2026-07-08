@@ -2,10 +2,10 @@
   "nodes": {
     "root": {
       "inputs": {
-        "sghc914-hpc-bin": "sghc914-hpc-bin"
+        "ghc914-sh-hpc-bin": "ghc914-sh-hpc-bin"
       }
     },
-    "sghc914-hpc-bin": {
+    "ghc914-sh-hpc-bin": {
       "flake": false,
       "locked": {
         "lastModified": 1748637034,

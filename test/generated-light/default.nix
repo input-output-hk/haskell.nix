@@ -22,7 +22,7 @@ runCommand "generated-light-check-${compiler-nix-name}" {
   meta.disabled =
     # Only hadrian-built GHCs have both a full `generated` output and the
     # lightweight `generated-light`.  cabalProject-built compilers (e.g.
-    # sghc914) generate their sources at build time and have neither.
+    # ghc914-sh) generate their sources at build time and have neither.
     !(ghc ? generated-light && ghc ? generated)
     # The generated files are the same derivation regardless of the eventual
     # cross target, so compare once, on the native build compiler.

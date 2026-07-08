@@ -1,6 +1,6 @@
 # overlays/stable-haskell.nix
 #
-# Builds `haskell-nix.compiler.sghc914` (stable-haskell GHC 9.14) using
+# Builds `haskell-nix.compiler.ghc914-sh` (stable-haskell GHC 9.14) using
 # haskell-nix.cabalProject' to replicate the two-stage cabal build described in
 # ../stable-ghc-9.14/Makefile (without invoking Hadrian).
 #
@@ -12,7 +12,7 @@
 #   stage1Compiler -- wrapper scripts + empty package DB
 #   stage2Project  -- cabalProject' with ghcOverride = stage1Compiler
 #                     builds: all boot libraries + GHC executables
-#   sghc914        -- final compiler with populated package DB
+#   ghc914-sh        -- final compiler with populated package DB
 
 final: prev:
 let
@@ -28,7 +28,7 @@ let
   # ── Cross-compilation detection ──────────────────────────────────────────
   # isCrossTarget: targetPlatform != hostPlatform
   #   e.g. pkgsCross.wasi32.buildPackages (host=native, target=wasm32)
-  #   → we must BUILD a cross-targeting sghc914 here
+  #   → we must BUILD a cross-targeting ghc914-sh here
   # isCrossHost: buildPlatform != hostPlatform
   #   e.g. pkgsCross.wasi32 (build=native, host=wasm32)
   #   → can't build a compiler that runs on wasm32; skip
@@ -59,7 +59,7 @@ let
   ghcUnregisterised = "NO";
   tablesNextToCode  = "YES";
 
-  sghc914Src = pkgs.haskell-nix.sources.sghc914;
+  ghc914-shSrc = pkgs.haskell-nix.sources.ghc914-sh;
 
   # ── source-repository-packages ────────────────────────────────────────────
   # The stable-haskell GHC source lists Cabal (from the stable-haskell fork,
@@ -73,16 +73,16 @@ let
   # (subdirs like Cabal/Cabal-syntax are appended by haskell.nix itself).
   # hsc2hs is no longer an in-tree submodule (upstream dropped submodules);
   # its source — including data/template-hsc.h, which the compiler packaging
-  # steps install into lib/ghc-*/ — comes from the sghc914-hsc2hs lazy-input.
-  hsc2hsSrc = pkgs.haskell-nix.sources.sghc914-hsc2hs;
+  # steps install into lib/ghc-*/ — comes from the ghc914-sh-hsc2hs lazy-input.
+  hsc2hsSrc = pkgs.haskell-nix.sources.ghc914-sh-hsc2hs;
 
   srpInputMap = {
     "https://github.com/stable-haskell/Cabal.git/stable-haskell/master" =
-      pkgs.haskell-nix.sources.sghc914-cabal;
+      pkgs.haskell-nix.sources.ghc914-sh-cabal;
     "https://github.com/stable-haskell/hpc-bin.git/5923da3fe77993b7afc15b5163cffcaa7da6ecf5" =
-      pkgs.haskell-nix.sources.sghc914-hpc-bin;
+      pkgs.haskell-nix.sources.ghc914-sh-hpc-bin;
     "https://github.com/stable-haskell/hsc2hs.git/d07eea1260894ce5fe456f881fbc62366c9eb1b7" =
-      pkgs.haskell-nix.sources.sghc914-hsc2hs;
+      pkgs.haskell-nix.sources.ghc914-sh-hsc2hs;
   };
 
   # ── External tools (built with boot GHC) ──────────────────────────────────
@@ -124,8 +124,8 @@ let
   # placeholders in cabal.project.common, and produces self-contained
   # (import-inlined) project files.
   configuredSrc = pkgs.stdenv.mkDerivation {
-    name = "sghc914-configured-src";
-    src  = sghc914Src;
+    name = "ghc914-sh-configured-src";
+    src  = ghc914-shSrc;
 
     nativeBuildInputs = with pkgs; [ autoconf automake libtool python3 ];
 
@@ -260,7 +260,7 @@ let
   # avoids any dependency on ghc-internal.
 
   stage1Project = pkgs.haskell-nix.cabalProject' {
-    name                 = "sghc914-stage1";
+    name                 = "ghc914-sh-stage1";
     inputMap             = srpInputMap;
     # Boot-lib deps are pinned via direct hackage tarball URLs in the source's
     # cabal.project; rewrite them to local store paths (fetched via hackage.nix)
@@ -451,7 +451,7 @@ let
   # let binding used by stage2Project's ghcOverride — without it every
   # stage2 library build emits "WARNING: ghc.cachedDeps not found".
   stage1Compiler =
-    let rawDrv = pkgs.runCommand "sghc914-stage1-compiler" {
+    let rawDrv = pkgs.runCommand "ghc914-sh-stage1-compiler" {
       passthru = {
         version              = ghcVersionFull;
         targetPrefix         = "";
@@ -605,7 +605,7 @@ ENDSCRIPT
   # Builds all GHC boot libraries and executables using the stage1 compiler.
 
   stage2Project = pkgs.haskell-nix.cabalProject' {
-    name                 = "sghc914-stage2";
+    name                 = "ghc914-sh-stage2";
     inputMap             = srpInputMap;
     # Boot-lib deps are pinned via direct hackage tarball URLs in the source's
     # cabal.project; rewrite them to local store paths (fetched via hackage.nix)
@@ -613,9 +613,9 @@ ENDSCRIPT
     replace-hackage-tarball-urls = true;
     src                  = configuredSrc;
     cabalProjectFileName = "cabal.project.stage2.merged";
-    # Use the stage1 compiler (exported as sghc914-stage1) to build
+    # Use the stage1 compiler (exported as ghc914-sh-stage1) to build
     # all stage2 boot libraries and executables.
-    compiler-nix-name    = "sghc914-stage1";
+    compiler-nix-name    = "ghc914-sh-stage1";
     inherit evalPackages;
     # The plan step passes --enable-tests --enable-benchmarks by default.
     # GHC 9.14's base-4.22 is not yet in the transitive test-dep closure of
@@ -651,7 +651,7 @@ ENDSCRIPT
     # False`, or cabal.project.stage2.common).
     #
     # The WHITEHOLE `ghc --make -jN` crash (THREADED_RTS not reaching the RTS
-    # Cmm CPP; see project_sghc914_parallel_make_whitehole) is fixed at the
+    # Cmm CPP; see project_ghc914-sh_parallel_make_whitehole) is fixed at the
     # source — rts.cabal's rts-threaded-flags gained `cmm-options:
     # -optc-DTHREADED_RTS` (stable-haskell/ghc#191, pinned via the
     # hkm/rts-threaded-cmm-optc branch) — so no `package rts` ghc-options
@@ -758,7 +758,7 @@ ENDSCRIPT
         done
       '';
 
-      # The per-package source root is extracted from the raw sghc914 source
+      # The per-package source root is extracted from the raw ghc914-sh source
       # (git checkout), which does not include the autoreconf-generated
       # configure script.  Copy it from configuredSrc (where rts autoreconf
       # was run) so autoconfUserHooks can run it to generate ghcautoconf.h,
@@ -893,7 +893,7 @@ ENDSCRIPT
       #   "Settings file doesn't exist: <ghc-pkg-derivation>/lib/settings"
       # Provide the settings file in the ghc-pkg derivation output via
       # postInstall so that we can use the raw binary for `recache` when
-      # assembling the final sghc914Compiler.
+      # assembling the final ghc914-shCompiler.
       # GHC 9.14's ghc and ghc-pkg binaries read a settings file at startup.
       # On Unix, getBaseDir returns Nothing so the topdir is the compiled-in
       # derivation output path ($out/lib/settings).  Without it, ANY invocation
@@ -1010,7 +1010,7 @@ ENDSCRIPT
 
   # Stage2 boot library packages that need to be registered in the final
   # compiler's package DB so that `ghc-pkg list` shows them to cabal when
-  # users build projects with sghc914.
+  # users build projects with ghc914-sh.
   bootLibraries = [
     "array"        "base"          "binary"         "bytestring"
     "Cabal"        "Cabal-syntax"  "containers"     "deepseq"
@@ -1051,7 +1051,7 @@ ENDSCRIPT
       (lib.splitString "\n" (builtins.readFile "${src}/cabal.project.stage2.merged")));
   urlBootPkgs = urlBootPkgsFrom configuredSrc;
 
-  dumpSrc = pkgs.buildPackages.runCommand "sghc914-dump-src" { } (''
+  dumpSrc = pkgs.buildPackages.runCommand "ghc914-sh-dump-src" { } (''
     mkdir -p $out
     ${pkgs.buildPackages.lndir or pkgs.buildPackages.xorg.lndir}/bin/lndir -silent ${configuredSrc} $out
   '' + lib.concatMapStrings (p: ''
@@ -1084,7 +1084,7 @@ ENDSCRIPT
   ) bootLibraries
   # Include rts sub-libraries so the final compiler's package DB contains
   # rts:nonthreaded-nodebug etc.  These are needed for GHC 9.14's mkUnitState
-  # wiring when users compile projects with sghc914.
+  # wiring when users compile projects with ghc914-sh.
   ++ lib.optionals (s2 ? rts && s2.rts.components ? sublibs) (
     lib.concatMap (sublibName:
       let hasSub = s2.rts.components.sublibs ? ${sublibName};
@@ -1093,9 +1093,9 @@ ENDSCRIPT
     ) [ "nonthreaded-nodebug" "threaded-nodebug" "nonthreaded-debug" "threaded-debug" ]
   );
 
-  # ── Final sghc914 compiler ────────────────────────────────────────────────
-  sghc914Compiler =
-    let rawDrv = pkgs.runCommand "sghc914-compiler" {
+  # ── Final ghc914-sh compiler ────────────────────────────────────────────────
+  ghc914-shCompiler =
+    let rawDrv = pkgs.runCommand "ghc914-sh-compiler" {
       passthru = {
         version              = ghcVersionFull;
         targetPrefix         = "";
@@ -1115,8 +1115,8 @@ ENDSCRIPT
         # The bare configured tree, for consumers that want the source
         # (e.g. the cross section's nativeConfiguredSrc), not the dump view.
         configured-src       = configuredSrc;
-        # override references the outer sghc914Compiler (with cachedDeps).
-        override             = _: sghc914Compiler;
+        # override references the outer ghc914-shCompiler (with cachedDeps).
+        override             = _: ghc914-shCompiler;
       };
     } ''
     mkdir -p $out/bin
@@ -1204,16 +1204,16 @@ ENDSCRIPT
   # Active when targetPlatform != hostPlatform, i.e. in
   # pkgsCross.wasi32.buildPackages (host=native, target=wasm32).
   #
-  # Uses the native sghc914 (compiler-nix-name = "sghc914") to build boot
+  # Uses the native ghc914-sh (compiler-nix-name = "ghc914-sh") to build boot
   # libraries via buildPackages.haskell-nix.cabalProject'.  The cross compiler
-  # is a single assembly: native sghc914 binaries + target-platform settings
+  # is a single assembly: native ghc914-sh binaries + target-platform settings
   # (from ghc-toolchain-bin) + boot library package DB.
   # ═══════════════════════════════════════════════════════════════════════════
 
-  # The native sghc914 compiler, already built for the build platform.
+  # The native ghc914-sh compiler, already built for the build platform.
   # In case 2, buildPackages = (native, native, native) = case 1.
-  nativeSghc914       = pkgs.buildPackages.haskell-nix.compiler.sghc914;
-  nativeStage1        = pkgs.buildPackages.haskell-nix.compiler."sghc914-stage1";
+  nativeSghc914       = pkgs.buildPackages.haskell-nix.compiler.ghc914-sh;
+  nativeStage1        = pkgs.buildPackages.haskell-nix.compiler."ghc914-sh-stage1";
   # The bare configured source tree (NOT the dump view — raw-src now points
   # at dumpSrc, which must not leak into build inputs like crossBootProject's
   # src or every cross derivation would change).
@@ -1263,8 +1263,8 @@ ENDSCRIPT
   # (headers in $dev/include, libffi.a/.so in $out/lib).
   libffiWasm = pkgs.buildPackages.runCommand "libffi-wasm" {
       nativeBuildInputs = [
-        # Built with the sghc914 boot compiler (mainline pins ghc912 here,
-        # but bootGhcName is already required for every other sghc914 tool,
+        # Built with the ghc914-sh boot compiler (mainline pins ghc912 here,
+        # but bootGhcName is already required for every other ghc914-sh tool,
         # so reusing it avoids building an extra GHC just for this).
         (pkgs.buildPackages.haskell-nix.tool bootGhcName "libffi-wasm" {
           src = pkgs.buildPackages.haskell-nix.sources.libffi-wasm;
@@ -1319,7 +1319,7 @@ ENDSCRIPT
   # Native stage1 binaries + target-platform settings from ghc-toolchain-bin
   # + empty package DB.  This GHC runs natively but produces target code.
   crossStage1Compiler =
-    let rawDrv = pkgs.buildPackages.runCommand "sghc914-cross-stage1" {
+    let rawDrv = pkgs.buildPackages.runCommand "ghc914-sh-cross-stage1" {
       passthru = {
         version              = ghcVersionFull;
         targetPrefix         = "";
@@ -1424,7 +1424,7 @@ ENDSCRIPT
   # is the cross CC (e.g. wasm32-unknown-wasi-cc), so configure scripts
   # and C compilation target the right platform.
   crossBootProject = pkgs.targetPackages.haskell-nix.cabalProject' {
-    name                 = "sghc914-cross";
+    name                 = "ghc914-sh-cross";
     inputMap             = srpInputMap;
     # Boot-lib deps are pinned via direct hackage tarball URLs in the source's
     # cabal.project; rewrite them to local store paths (fetched via hackage.nix)
@@ -1434,11 +1434,11 @@ ENDSCRIPT
     # Use the cross-specific merged file which has -build-tool-depends
     # and does not require hackage (hackage remains :none).
     cabalProjectFileName = "cabal.project.cross.merged";
-    # Use "sghc914" (not "sghc914-stage1") because the compiler-nix-name
+    # Use "ghc914-sh" (not "ghc914-sh-stage1") because the compiler-nix-name
     # must exist in ghc-boot-packages and in the target buildPackages
-    # compiler set.  "sghc914-stage1" is only registered in the native
+    # compiler set.  "ghc914-sh-stage1" is only registered in the native
     # case.  The actual GHC binary comes from ghcOverride below.
-    compiler-nix-name    = "sghc914";
+    compiler-nix-name    = "ghc914-sh";
     ghcOverride          = crossStage1Compiler;
     evalPackages         = pkgs.buildPackages;
     configureArgs = "--disable-tests --disable-benchmarks";
@@ -1457,7 +1457,7 @@ ENDSCRIPT
       # Windows, android) the defaultModules from overlays/armv6l-linux.nix /
       # overlays/windows.nix define setupBuildFlags/configureFlags/testWrapper
       # in terms of templateHaskell.${compiler-nix-name}, which forces
-      # iserv-proxy-exes → the sghc914 cross compiler → THIS project —
+      # iserv-proxy-exes → the ghc914-sh cross compiler → THIS project —
       # infinite recursion.  crossBootProject builds the boot libraries the
       # compiler is assembled FROM, so it can never use the TH wrapper anyway.
       # mkForce keeps the cyclic definitions from ever being evaluated (the
@@ -1771,9 +1771,9 @@ STUB
   );
 
   # ── Cross compiler ──────────────────────────────────────────────────────
-  # Single assembly: native sghc914 binaries + target settings + boot libs.
+  # Single assembly: native ghc914-sh binaries + target settings + boot libs.
   crossCompiler =
-    let rawDrv = pkgs.buildPackages.runCommand "sghc914-cross-compiler" {
+    let rawDrv = pkgs.buildPackages.runCommand "ghc914-sh-cross-compiler" {
       passthru = {
         version              = ghcVersionFull;
         targetPrefix         = "";
@@ -1894,15 +1894,15 @@ ENDSCRIPT
   # ── Dev shells for hacking on the stable-haskell GHC tree ─────────────────
   # Consumed by a flake.nix in the GHC checkout.  The user drives the build
   # with cabal / the top-level Makefile; these shells supply the toolchain
-  # from haskell.nix, reusing the same boot compiler and tools as the sghc914
+  # from haskell.nix, reusing the same boot compiler and tools as the ghc914-sh
   # build itself.  Two starting points:
   #
   #  * from-boot   — nothing prebuilt: the boot GHC (ghc9103) is GHC0, for
   #                  `make stage1` (and then stage2) from a clean tree.
-  #  * from-stage1 — haskell.nix's cached sghc914-stage1 serves as the stage1
+  #  * from-stage1 — haskell.nix's cached ghc914-sh-stage1 serves as the stage1
   #                  compiler, so only stage2 needs rebuilding:
   #                  `make stage2 STAGE1_PATH=$STAGE1_PATH`.
-  sghc914Shells =
+  ghc914-shShells =
     let
       bootGhc = pkgs.buildPackages.haskell-nix.compiler.${bootGhcName};
       commonTools = [
@@ -1917,25 +1917,25 @@ ENDSCRIPT
       ]);
     in {
       from-boot = pkgs.mkShell {
-        name = "sghc914-dev-from-boot";
+        name = "ghc914-sh-dev-from-boot";
         packages = commonTools ++ [ bootGhc ];
         # `GHC0 ?=` in the Makefile respects the environment.
         GHC0 = "${bootGhc}/bin/ghc";
         shellHook = ''
-          echo "sghc914 dev shell — starting from the boot GHC (${bootGhc.version})"
+          echo "ghc914-sh dev shell — starting from the boot GHC (${bootGhc.version})"
           echo "  make stage1          # build stage1 with GHC0=$GHC0"
           echo "  make stage2          # then stage2 with the in-tree stage1"
         '';
       };
       from-stage1 = pkgs.mkShell {
-        name = "sghc914-dev-from-stage1";
+        name = "ghc914-sh-dev-from-stage1";
         packages = commonTools ++ [ bootGhc stage1Compiler ];
         GHC0 = "${bootGhc}/bin/ghc";
         # `STAGE1_PATH :=` in the Makefile ignores the environment, so it has
         # to be overridden on the make command line (see shellHook).
         STAGE1_PATH = "${stage1Compiler}";
         shellHook = ''
-          echo "sghc914 dev shell — starting from haskell.nix's prebuilt stage1"
+          echo "ghc914-sh dev shell — starting from haskell.nix's prebuilt stage1"
           echo "  make stage2 STAGE1_PATH=$STAGE1_PATH"
           echo "or drive cabal directly:"
           echo "  cabal build --project-file cabal.project.stage2.static \\"
@@ -1947,31 +1947,31 @@ ENDSCRIPT
 in {
   haskell-nix = prev.haskell-nix // pkgs.lib.optionalAttrs (!isCrossTarget && !isCrossHost) {
     # Dev shells for the stable-haskell GHC source tree (native only).
-    sghc914-shells = sghc914Shells;
+    ghc914-sh-shells = ghc914-shShells;
   } // {
     compiler = prev.haskell-nix.compiler // (
       # Case 2: isCrossTarget (e.g. pkgsCross.wasi32.buildPackages)
-      #   sghc914 = cross compiler with target boot libraries
+      #   ghc914-sh = cross compiler with target boot libraries
       if isCrossTarget then {
-        sghc914 = crossCompiler;
+        ghc914-sh = crossCompiler;
       }
       # Case 3: isCrossHost (e.g. pkgsCross.wasi32)
       #   We can't build a compiler that RUNS on the cross host, but the
       #   attribute still has to exist: per-compiler attrsets derived from
       #   `haskell-nix.compiler` in cross-host pkgs — `iserv-proxy-exes`
       #   and (via overlays/windows.nix / overlays/armv6l-linux.nix)
-      #   `templateHaskell` — otherwise have no sghc914 entry, which
+      #   `templateHaskell` — otherwise have no ghc914-sh entry, which
       #   breaks evaluation for any target that wires cross-TH (Windows,
       #   aarch64-linux, android).  Point it at the buildPackages cross
       #   compiler; anything that actually compiles uses buildPackages'
       #   GHC anyway.
       else if isCrossHost then {
-        sghc914 = pkgs.buildPackages.haskell-nix.compiler.sghc914;
+        ghc914-sh = pkgs.buildPackages.haskell-nix.compiler.ghc914-sh;
       }
       # Case 1: native
       else {
-        "sghc914-stage1" = stage1Compiler;
-        sghc914           = sghc914Compiler;
+        "ghc914-sh-stage1" = stage1Compiler;
+        ghc914-sh           = ghc914-shCompiler;
       }
     );
   };

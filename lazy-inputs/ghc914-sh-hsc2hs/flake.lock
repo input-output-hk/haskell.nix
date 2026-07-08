@@ -2,10 +2,10 @@
   "nodes": {
     "root": {
       "inputs": {
-        "sghc914-hsc2hs": "sghc914-hsc2hs"
+        "ghc914-sh-hsc2hs": "ghc914-sh-hsc2hs"
       }
     },
-    "sghc914-hsc2hs": {
+    "ghc914-sh-hsc2hs": {
       "flake": false,
       "locked": {
         "lastModified": 1772348474,
