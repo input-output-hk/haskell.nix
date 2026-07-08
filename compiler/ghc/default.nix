@@ -189,6 +189,25 @@ let
       then libffi-wasm
     else targetLibffi;
 
+  # Directory passed to --with-ffi-libraries.  hadrian configures the
+  # stage0 (build platform) in-tree libraries with the same TARGET
+  # --with-ffi-libraries dir as stage1 (the same hadrian bug class as the
+  # --with-curses-libraries one noted at `enableTerminfo` above).  On
+  # Linux build hosts the same-arch ELF libffi happens to satisfy the
+  # stage0 link, but when cross-compiling from darwin, ld64 finds the ELF
+  # libffi.so, ignores it as wrong-format, and stops searching — leaving
+  # ffi_call & co undefined in stage0 executables linked against the
+  # in-tree rts/ghci.  Joining the build-platform libffi.dylib into the
+  # same directory fixes both sides: ld64 prefers the .dylib, while the
+  # target's GNU ld only ever looks for libffi.so/libffi.a.
+  targetLibffiLibDir =
+    if haskell-nix.haskellLib.isCrossTarget && stdenv.buildPlatform.isDarwin && libffi != null
+    then pkgsBuildBuild.symlinkJoin {
+        name = "libffi-${targetPlatform.config}-with-build-dylib";
+        paths = [ (lib.getLib targetLibffi) (lib.getLib libffi) ];
+      } + "/lib"
+    else "${lib.getLib targetLibffi}/lib";
+
   targetGmp = targetPackages.gmp or gmp;
 
   targetIconv = targetPackages.libiconv or libiconv;
@@ -258,7 +277,7 @@ let
   configureFlags = [
         "--datadir=$doc/share/doc/ghc"
     ] ++ lib.optionals (enableTerminfo && !targetPlatform.isGhcjs && !targetPlatform.isWasm && !targetPlatform.isAndroid) ["--with-curses-includes=${lib.getDev targetPackages.ncurses}/include" "--with-curses-libraries=${lib.getLib targetPackages.ncurses}/lib"
-    ] ++ lib.optionals (targetLibffi != null && !targetPlatform.isGhcjs && !targetPlatform.isWasm) ["--with-system-libffi" "--with-ffi-includes=${lib.getDev targetLibffi}/include" "--with-ffi-libraries=${lib.getLib targetLibffi}/lib"
+    ] ++ lib.optionals (targetLibffi != null && !targetPlatform.isGhcjs && !targetPlatform.isWasm) ["--with-system-libffi" "--with-ffi-includes=${lib.getDev targetLibffi}/include" "--with-ffi-libraries=${targetLibffiLibDir}"
     ] ++ lib.optionals (targetPlatform.isWasm) [
         "--with-system-libffi"
     ] ++ lib.optionals (!enableIntegerSimple && !targetPlatform.isGhcjs && !targetPlatform.isWasm) [
