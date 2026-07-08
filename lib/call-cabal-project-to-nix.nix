@@ -469,6 +469,16 @@ let
                 + pkgs.lib.optionalString (name == "haskeline" && !pkgs.stdenv.targetPlatform.isWindows && ghc.enableTerminfo or true) ''
                 deps+=" terminfo"
                 ''
+                # Same for `text` built with the `simdutf` flag: its installed
+                # conf depends on system-cxx-std-lib, but the flag conditional
+                # in text.cabal is invisible to the extraction above.  Without
+                # this edge the solver never marks system-cxx-std-lib
+                # pre-existing and the pruned component package DB has a
+                # broken installed text.  Compilers whose bundled text links
+                # simdutf set passthru.enableTextSimdutf (e.g. ghc914-sh).
+                + pkgs.lib.optionalString (name == "text" && ghc.enableTextSimdutf or false) ''
+                deps+=" system-cxx-std-lib"
+                ''
                 # Similar issue for Win32:filepath build-depends (hidden behind `if impl(ghc >= 8.0)`)
                 + pkgs.lib.optionalString (name == "Win32" && pkgs.stdenv.targetPlatform.isWindows) ''
                 deps+=" filepath"

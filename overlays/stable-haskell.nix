@@ -1057,7 +1057,20 @@ ENDSCRIPT
     mkdir -p $out/libraries/${p.name}
     cp ${pkgs.haskell-nix.hackageTarball { inherit (p) name version; inherit evalPackages; }}/${p.name}.cabal \
        $out/libraries/${p.name}/${p.name}.cabal
-  '') urlBootPkgs);
+  '') urlBootPkgs
+  # Cabal and Cabal-syntax are source-repository-packages (the
+  # stable-haskell/Cabal fork) — neither in the GHC tree nor hackage URL
+  # pins — so the lndir and urlBootPkgs overlays above both miss their
+  # .cabal files.  Without them the dummy ghc-pkg dump omits the packages
+  # entirely, and (worse) silently drops ghc-boot's Cabal-syntax depends
+  # edge, so user-project plans (e.g. iserv-proxy) never treat Cabal-syntax
+  # as pre-existing and the pruned per-component package DB has a broken
+  # ghc-boot ("missing package Cabal-syntax").
+  + lib.concatMapStrings (name: ''
+    mkdir -p $out/libraries/${name}
+    cp ${pkgs.haskell-nix.sources.ghc914-sh-cabal}/${name}/${name}.cabal \
+       $out/libraries/${name}/${name}.cabal
+  '') [ "Cabal" "Cabal-syntax" ]);
 
   # For each boot library, the path to its registered .conf file(s).
   # We check `s2 ? name` first to handle any packages missing from the plan.
@@ -1106,6 +1119,11 @@ ENDSCRIPT
         isStableHaskell      = true;
         libDir               = "lib/ghc-${ghcVersionFull}";
         enableShared         = !pkgs.stdenv.hostPlatform.isMusl && !pkgs.stdenv.hostPlatform.isStatic;
+        # stage2 builds text with +simdutf (see cabalProjectLocal), so the
+        # installed text depends on system-cxx-std-lib.  The dummy ghc-pkg
+        # dump synthesis reads this to add that depends edge (the flag
+        # conditional in text.cabal is invisible to it).
+        enableTextSimdutf    = true;
         # call-cabal-project-to-nix.nix:297 uses raw-src to synthesise the
         # dummy ghc-pkg dump for plan-time.  Use dumpSrc (configuredSrc +
         # the hackage-pinned boot libraries' .cabal files) so user-project
@@ -1784,6 +1802,9 @@ STUB
         isStableHaskell      = true;
         libDir               = "lib/ghc-${ghcVersionFull}";
         enableShared         = !(tp.isStatic or false) && !(tp.isMusl or false);
+        # NOTE: no enableTextSimdutf here — the cross boot libs build text
+        # WITHOUT +simdutf (ghc-pkg field text depends has no
+        # system-cxx-std-lib), unlike the native stage2.
         # Dump view so user-project plans against the cross compiler (hello,
         # iserv-proxy for cross-TH targets) see the hackage-pinned boot libs
         # as installed (see dumpSrc in the native section).
