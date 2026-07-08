@@ -268,8 +268,12 @@ in {
   # This is the same as isCrossHost but for use when building ghc itself
   isCrossTarget = stdenv.targetPlatform != stdenv.hostPlatform
     && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && stdenv.hostPlatform.linuxArch == stdenv.targetPlatform.linuxArch);
-  # Native musl build-host-target combo
-  isNativeMusl = stdenv.targetPlatform.isMusl
+  # Native musl build-host-target combo.  The build platform must be
+  # Linux: `linuxArch` is defined for any OS (aarch64-darwin is "arm64"
+  # too), but a darwin build machine cannot run the musl binaries, so
+  # same-arch darwin->linux-musl is a real cross compile, not native.
+  isNativeMusl = stdenv.buildPlatform.isLinux
+    && stdenv.targetPlatform.isMusl
     && stdenv.buildPlatform.linuxArch == stdenv.hostPlatform.linuxArch
     && stdenv.hostPlatform.linuxArch == stdenv.targetPlatform.linuxArch;
 
