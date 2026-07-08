@@ -5,13 +5,17 @@ let
     && prev.stdenv.hostPlatform.isLinux
     && (prev.stdenv.hostPlatform.isAarch32
      || prev.stdenv.hostPlatform.isAarch64
-     || prev.stdenv.hostPlatform.isi686);
+     || prev.stdenv.hostPlatform.isi686
+        # x86_64-linux is only a cross HOST from a non-x86_64 or non-linux
+        # build platform (e.g. aarch64-darwin → musl64 under hyper-linux);
+        # x86_64-linux → musl64 is native musl and isCrossHost is false.
+     || prev.stdenv.hostPlatform.isx86_64);
 
 in
 {
    haskell-nix = prev.haskell-nix // final.lib.optionalAttrs isLinuxCross ({
      templateHaskell = builtins.mapAttrs (_compiler-nix-name: iserv-proxy-exes:
-        import ./linux-cross.nix {
+        import ./linux-cross.nix ({
           inherit (final.stdenv) hostPlatform buildPlatform;
           inherit (final) stdenv lib;
           inherit (final.pkgsBuildBuild) writeShellScriptBin symlinkJoin runCommand makeWrapper;
@@ -19,7 +23,15 @@ in
           qemu = final.pkgsBuildBuild.qemu;
           inherit (final) gmp;
           inherit (iserv-proxy-exes) iserv-proxy iserv-proxy-interpreter iserv-proxy-interpreter-prof;
-        }) final.haskell-nix.iserv-proxy-exes;
+        } // final.lib.optionalAttrs final.stdenv.buildPlatform.isDarwin {
+          # qemu user-mode emulation does not exist on macOS; run the
+          # (static musl) target ELF under hyper-linux instead.
+          pipeCommand = "${final.pkgsBuildBuild.hyper-linux or (throw
+            ("haskell.nix: Linux cross-compilation on a darwin build host "
+            + "needs `hyper-linux` (github:zw3rk/hyper-linux) as a nixpkgs "
+            + "overlay attribute to run target binaries for TH and tests"))
+          }/bin/hl";
+        })) final.haskell-nix.iserv-proxy-exes;
      defaultModules = prev.haskell-nix.defaultModules ++ [
       ({ pkgs, buildModules, config, lib, ... }:
       let
