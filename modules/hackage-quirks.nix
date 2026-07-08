@@ -90,3 +90,28 @@ in [
       }];
     };
   }
+
+  # Common CLI tools are pulled in via `hackage-tool`/`tool` without a version
+  # pin, leaving the choice to the solver.  For a brand-new GHC where no recent
+  # release has compatible bounds yet, the solver can silently fall back to a
+  # prehistoric version whose (usually unbounded) dependencies happen to solve
+  # -- e.g. hoogle-3.1, whose CLI predates `hoogle generate` and so breaks
+  # `hoogle-with-packages` (see input-output-hk/haskell.nix#2477).  A
+  # conservative lower bound excludes those ancient versions: each floor is low
+  # enough to still solve on the oldest GHCs we support (it never rules out a
+  # legitimate choice), while on a too-new GHC it turns the silent
+  # wrong-version into an honest solve failure until Hackage catches up.  These
+  # are lower bounds only -- users are still free to pin any newer version.
+  ++ mapAttrsToList (name: bound: {config, lib, ...}:
+    { _file = "haskell.nix/overlays/hackage-quirks.nix#lower-bound-${name}"; } //
+    lib.mkIf (config.name == name) {
+      cabalProjectLocal = "constraints: ${name} >= ${bound}";
+    }) {
+    hoogle          = "5.0";
+    hlint           = "3.0";
+    ghcid           = "0.8";
+    ormolu          = "0.5";
+    fourmolu        = "0.8";
+    stylish-haskell = "0.13";
+    cabal-fmt       = "0.1.6";
+  }
