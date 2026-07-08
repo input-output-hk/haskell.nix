@@ -3,7 +3,7 @@ name: Update Static Nix Tools
 on:
   push:
     branches:
-      - main
+      - master
     tags:
       - "nix-tools-*"
   pull_request:
@@ -11,6 +11,14 @@ on:
 env:
   FLAKE_REF: github:${{ github.repository }}?ref=${{ github.head_ref || github.ref }}
   GH_TOKEN: ${{ github.token }}
+
+# PR-triggered runs evaluate pull request code (`nix build --impure` on the
+# PR's flake), so the default token must stay read-only.  The tag-only
+# `release` job below elevates its own permissions.
+permissions:
+  contents: read
+  checks: read
+  statuses: read
 
 jobs:
   wait-for-hydra:
@@ -49,17 +57,75 @@ jobs:
           cp $(nix build --impure --builders "" --max-jobs 0 ${{ steps.flake-metadata.outputs.LOCKED_URL }}#hydraJobs.x86_64-linux.nix-tools.static.zipped.nix-tools-static-no-ifd --no-link --print-out-paths)/*.zip .
           cp $(nix build --impure --builders "" --max-jobs 0 ${{ steps.flake-metadata.outputs.LOCKED_URL }}#hydraJobs.x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64-no-ifd --no-link --print-out-paths)/*.zip .
 
-      - name: Configure Git
+      # Hand the zips to the `release` job so it publishes exactly the
+      # binaries this hydra-gated job pulled.
+      - name: Upload nix-tools zips
         if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: nix-tools-static
+          path: "*-nix-tools-static.zip"
+          if-no-files-found: error
+
+  release:
+    needs: wait-for-hydra
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+
+    # Needed to publish the release, push the pin branch and open the PR that
+    # bumps nix-tools-static.nix on master.  This job only runs for
+    # `nix-tools-*` tag pushes, never for pull requests, so the write token
+    # is not exposed to PR code.
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Only needed for `nix-hash` in the pin computation below.
+      - name: Install Nix with good defaults
+        uses: input-output-hk/install-nix-action@v20
+        with:
+          extra_nix_config: |
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= loony-tools:pr9m4BkM/5/eSTZlkQyRt57Jz7OMBxNSUiMC4FkcNfk=
+            substituters = https://cache.nixos.org/ https://cache.iog.io/ https://cache.zw3rk.com
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Download nix-tools zips
+        uses: actions/download-artifact@v4
+        with:
+          name: nix-tools-static
+
+      # Publish the release first so the download URLs the pin refers to
+      # exist before the pin-bump PR does.
+      - name: Release
+        uses: input-output-hk/action-gh-release@v1
+        with:
+          files: |
+            *-nix-tools-static.zip
+
+      - name: Configure Git
         run: |
           git config --global user.name 'Auto Update Bot'
           git config --global user.email 'no-reply@iohk.io'
 
-      - name: "Compute nix-tools-static.nix"
-        if: startsWith(github.ref, 'refs/tags/')
+      # Update the pin on a fresh, per-release branch and open a PR against
+      # master, rather than force-pushing a single reused `static-nix-tools`
+      # branch and hand-copying the file.  A per-tag branch keeps a 1:1 trail
+      # from release to pin and avoids clobbering when two nix-tools changes
+      # are in flight; the PR removes the manual copy step.
+      - name: "Compute nix-tools-static.nix and open PR"
         run: |
-          git fetch --all
-          git switch --force static-nix-tools
+          git fetch origin master
+          branch="update-nix-tools-static/${GITHUB_REF_NAME}"
+          # Fetch the branch if an earlier run of this tag already pushed it,
+          # so --force-with-lease has a remote-tracking ref to check against
+          # (without one it insists the remote branch not exist and reruns
+          # would fail).
+          git fetch origin "+refs/heads/$branch:refs/remotes/origin/$branch" || true
+          git switch --force-create "$branch" origin/master
           (
             echo "pkgs: let baseurl = \"https://github.com/input-output-hk/haskell.nix/releases/download/${GITHUB_REF_NAME}/\"; in {"
             for arch in aarch64-darwin x86_64-darwin aarch64-linux x86_64-linux; do
@@ -72,18 +138,21 @@ jobs:
             echo "}"
           ) > nix-tools-static.nix
           cat nix-tools-static.nix
-
-
-      - name: Push to nix branch
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
           git add nix-tools-static.nix
-          git commit -m "update nix-tools-static.nix"
-          git push origin static-nix-tools
-
-      - name: Release
-        uses: input-output-hk/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: |
-            *-nix-tools-static.zip
+          # Nothing to do if this release's pin is already on master.
+          if git diff --cached --quiet; then
+            echo "nix-tools-static.nix already up to date for ${GITHUB_REF_NAME}; skipping PR."
+            exit 0
+          fi
+          git commit -m "Update nix-tools-static.nix for ${GITHUB_REF_NAME}"
+          git push --force-with-lease origin "$branch"
+          # Skip PR creation only when one is already open for this branch;
+          # any other gh failure (auth, API errors) must fail the job so a
+          # dropped pin bump is not reported as success.
+          if [ "$(gh pr list --head "$branch" --base master --state open --json number --jq length)" -gt 0 ]; then
+            echo "A PR for $branch already exists."
+          else
+            gh pr create --base master --head "$branch" \
+              --title "Update nix-tools-static.nix for ${GITHUB_REF_NAME}" \
+              --body "Automated pin bump: point \`nix-tools-static.nix\` at the static nix-tools binaries released for \`${GITHUB_REF_NAME}\`."
+          fi
