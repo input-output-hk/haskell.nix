@@ -660,6 +660,10 @@ ENDSCRIPT
       active-repositories: hackage.haskell.org
       package ghc-bin
         flags: -debug
+      package haskeline
+        flags: +terminfo
+      package text
+        flags: +simdutf
     '';
 
     modules = [{
@@ -1020,6 +1024,10 @@ ENDSCRIPT
     "rts"          "rts-fs"        "rts-headers"    "semaphore-compat"
     "stm"          "template-haskell"               "text"
     "time"         "transformers"  "unix"           "xhtml"
+    # terminfo (haskeline +terminfo) and system-cxx-std-lib (text +simdutf)
+    # must be registered in the final compiler's package DB, else haskeline/text
+    # are broken by dangling deps ("unusable due to missing dependencies").
+    "terminfo"     "system-cxx-std-lib"
   ];
 
   # ── Dump source for plan-time "installed packages" ────────────────────────
