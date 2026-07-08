@@ -1,25 +1,25 @@
 {
   "nodes": {
-    "root": {
-      "inputs": {
-        "ghc914-sh": "ghc914-sh"
-      }
-    },
     "ghc914-sh": {
       "flake": false,
       "locked": {
-        "lastModified": 1783460076,
+        "lastModified": 1783465965,
         "narHash": "sha256-5MP5oafzXiOcz29nwPvVCIlMdffL8Py5a3kNjZNddFI=",
-        "ref": "hkm/rts-threaded-cmm-optc",
-        "rev": "0fee7fb07345f047b86b36060c2df732dbff0ecd",
+        "ref": "stable-ghc-9.14",
+        "rev": "2c2ebfa8a18a017f023d3681efc98e6731281abd",
         "revCount": 68528,
         "type": "git",
         "url": "https://github.com/stable-haskell/ghc"
       },
       "original": {
-        "ref": "hkm/rts-threaded-cmm-optc",
+        "ref": "stable-ghc-9.14",
         "type": "git",
         "url": "https://github.com/stable-haskell/ghc"
+      }
+    },
+    "root": {
+      "inputs": {
+        "ghc914-sh": "ghc914-sh"
       }
     }
   },
