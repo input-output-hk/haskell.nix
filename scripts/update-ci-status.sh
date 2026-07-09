@@ -13,8 +13,9 @@
 # which cheaply redirects to that job's most recent build.  A 404 means the job
 # does not exist for that pin/host/target/compiler and is simply left blank in
 # the table.  A build only counts as ✅ if it succeeded *and* belongs to the
-# current evaluation (see the freshness check in ci-status.jq); otherwise it is
-# shown as in-flight, so we never advertise a stale green.
+# current evaluation (see the freshness check in ci-status.jq): an in-progress
+# rebuild shows as building, while a job the current evaluation no longer
+# includes renders as a blank cell, so we never advertise a stale green.
 #
 # The set of columns (COMPILERS) and rows (PLATFORMS) below is the CI matrix we
 # advertise.  When a GHC version, cross target, or nixpkgs pin is added to or
@@ -27,7 +28,7 @@
 # what is already there — so running this on an unchanged CI status is a no-op
 # and produces no commit.
 #
-# Requires: bash, curl, jq (>= 1.7).  No Nix evaluation.
+# Requires: bash, curl, jq (>= 1.6).  No Nix evaluation.
 
 set -euo pipefail
 

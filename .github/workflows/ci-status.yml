@@ -27,7 +27,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ubuntu-latest already provides bash, curl and jq (>= 1.7).
+      # ubuntu-latest already provides bash, curl and jq (the script needs
+      # only jq >= 1.6, well below what the runner image ships).
       - name: Regenerate README table
         run: ./scripts/update-ci-status.sh
 

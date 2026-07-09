@@ -1,15 +1,14 @@
-# Render the roots.ghc builds of a Hydra evaluation as a Markdown table.
+# Render probed roots.ghc build results as a Markdown table.
 #
-# Input: the JSON array returned by Hydras /eval/<id>/builds endpoint.
+# Input: a JSON array of build objects {job, buildstatus, finished, jobsetevals}
+# as emitted by scripts/update-ci-status.sh (one per Hydra job that exists).
+# It also expects --argjson latest_eval <id|null> (see status_cell below).
 # Output: raw Markdown (one table) on stdout.
 #
 # The table lists, per nixpkgs pin and per host-to-target platform, the build
 # status of GHC itself (the roots.ghc job) for every compiler the CI currently
 # evaluates.  Ordering is fully derived and deterministic so that an unchanged
 # CI status produces byte-identical output (and hence no commit).
-#
-# NOTE: keep comments free of double quotes and backticks; jq 1.7+ parses a
-# quote inside a comment as the start of a string literal.
 
 # Known cross-target to human label.  Targets missing here still appear, using
 # their raw Hydra name and sorting after all known targets, so a newly added
