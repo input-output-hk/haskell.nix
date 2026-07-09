@@ -41,5 +41,10 @@ jobs:
           git config user.name 'Auto Update Bot'
           git config user.email 'no-reply@iohk.io'
           git add README.md
+          # This push uses the default GITHUB_TOKEN, and GitHub does not trigger
+          # workflow runs from GITHUB_TOKEN pushes, so this cosmetic commit will
+          # not kick off the push->master workflows (lints/pipeline/docs).  The
+          # [skip ci] marker (which GitHub natively honours for push/PR runs) is
+          # belt-and-suspenders in case the push ever moves to a PAT.
           git commit -m "Update compiler CI status table [skip ci]"
           git push
