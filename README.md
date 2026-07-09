@@ -30,10 +30,12 @@ The troubleshooting documentation also contains some help for other common issue
   `haskell.nix` CI — including cross-compilers — so configuring it as an extra
   substituter is the surest way to avoid building GHC yourself.
 
-The table below is generated automatically from the latest finished `master`
-builds on [`ci.zw3rk.com`](https://ci.zw3rk.com/jobset/input-output-hk-haskell-nix/master)
+The table below is generated automatically from the latest `master` builds on
+[`ci.zw3rk.com`](https://ci.zw3rk.com/jobset/input-output-hk-haskell-nix/master)
 and shows the build status of GHC itself (the `roots.ghc` job) for each
-compiler and platform. A ✅ means that compiler/platform is built and cached.
+compiler and platform. A ✅ means that compiler/platform is built and cached
+for the current `master` (a build only counts once it is part of the latest
+evaluation, so a green never reflects a stale build).
 
 Legend: ✅ built & cached · ⚠️ dependency failed · ❌ failed · ⚪ aborted/cancelled · 🕓 building · · not in the CI matrix
 
@@ -49,7 +51,7 @@ Legend: ✅ built & cached · ⚠️ dependency failed · ❌ failed · ⚪ abor
 | unstable | `x86_64-linux` → musl32 | ✅ | ✅ | ✅ | ✅ | ✅ | · |
 | unstable | `x86_64-linux` → aarch64 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | unstable | `x86_64-linux` → aarch64-musl | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| unstable | `x86_64-linux` → android/aarch64 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| unstable | `x86_64-linux` → android/aarch64 | · | · | · | ✅ | ✅ | ✅ |
 | unstable | `x86_64-linux` → android/armv7a | · | · | · | ✅ | ✅ | ✅ |
 | unstable | `x86_64-linux` → javascript | ✅ | ✅ | · | ✅ | ✅ | · |
 | unstable | `x86_64-linux` → wasm | · | · | · | ✅ | ✅ | · |

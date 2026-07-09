@@ -44,16 +44,31 @@ def system_rank:
 def pin_rank:
   { "unstable": 0 } as $m | $m[.] // 500;
 
+# Status cell for one build.  $latest is the id of the most recent evaluation
+# (or null if it could not be determined).
+#
+# Freshness: a cell only reflects a build that belongs to the current
+# evaluation.  Because Nix reuses an unchanged derivation across evaluations,
+# an unchanged compiler's current build carries the latest evaluation id in
+# .jobsetevals; a changed compiler gets a new build in that evaluation (still
+# building, or already failed).  So if the job's latest build does NOT carry
+# the latest evaluation id, the current evaluation simply does not build this
+# job (it was dropped from the matrix), and we render it the same as a job that
+# never existed (a dot) rather than advertising a stale green.  When $latest is
+# null the check is skipped and the latest build is reported as-is.
+#
 # Hydra buildstatus (only meaningful when finished == 1):
 #   0 success, 1 failed, 2 dependency failed, 3 aborted, 4 cancelled,
 #   6 failed with output, anything else treated as failed.
-def status_cell:
-  if .finished == 0 or .finished == null then "🕓"
-  elif .buildstatus == 0 then "✅"
-  elif .buildstatus == 2 then "⚠️"
-  elif (.buildstatus == 3 or .buildstatus == 4) then "⚪"
-  else "❌"
-  end;
+def status_cell($latest):
+  ( $latest == null or ([ .jobsetevals[]? ] | any(. == $latest)) ) as $fresh
+  | if ($fresh | not) then "·"
+    elif .finished == 0 or .finished == null then "🕓"
+    elif .buildstatus == 0 then "✅"
+    elif .buildstatus == 2 then "⚠️"
+    elif (.buildstatus == 3 or .buildstatus == 4) then "⚪"
+    else "❌"
+    end;
 
 # Sort key for a compiler name such as ghc9141 or ghc9141llvm: primary is the
 # numeric part as an integer, secondary puts llvm variants last.
@@ -64,7 +79,7 @@ def compiler_key:
   | select(.job | test("\\.roots\\.ghc$"))
   | (.job | split(".")) as $p
   | { pin: $p[1], system: $p[0], compiler: $p[2], target: $p[3]
-    , cell: status_cell }
+    , cell: status_cell($latest_eval) }
 ] as $jobs
 
 | ($jobs | map(.compiler) | unique | sort_by(compiler_key)) as $compilers
