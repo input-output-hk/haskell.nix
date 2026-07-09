@@ -49,10 +49,9 @@ This can be tricky to get setup properly. If you're still having trouble getting
 This section assumes you choose to uses the experimental flakes features, and so that you have added `experimental-features = [ "nix-command" "flakes" ];` in your Nix configuration. You can look at [the Wiki](https://nixos.wiki/wiki/Flakes) for more instructions.
 
 The following `nix flake init` command creates a template `hello` package containing a `flake.nix` and `nix/hix.nix` file. The project can be used with
-regular `nix` tools. This template is defined in the [NixOS/templates repository](https://github.com/NixOS/templates/tree/master/haskell.nix).
+regular `nix` tools. This template is defined in the [haskell.nix repository](https://github.com/input-output-hk/haskell.nix/tree/master/templates/haskell-nix), so it always matches the current `hix init` output and supported GHC versions.
 ```bash
-nix flake init --template templates#haskell-nix --impure
-# `--impure` is required by `builtins.currentSystem`
+nix flake init --template github:input-output-hk/haskell.nix
 nix develop
 cabal build
 ```

@@ -123,6 +123,19 @@
         overlay = self.overlays.combined;
         overlays = import ./overlays { sources = inputs; };
 
+        # `nix flake init --template github:input-output-hk/haskell.nix`
+        # scaffolds a new haskell.nix project (flake.nix + nix/hix.nix + a
+        # `hello` package).  Kept in-repo (rather than in NixOS/templates) so
+        # it stays in sync with the current `hix init` output and supported
+        # GHC versions.
+        templates = rec {
+          default = haskell-nix;
+          haskell-nix = {
+            path = ./templates/haskell-nix;
+            description = "A haskell.nix project: flake.nix, nix/hix.nix and a hello package.";
+          };
+        };
+
         internal = {
           nixpkgsArgs = {
             inherit config;
