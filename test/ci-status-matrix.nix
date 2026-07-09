@@ -11,15 +11,19 @@
 { lib, pkgs, ghcs, scriptFile }:
 
 let
-  # Extract the COMPILERS=(...) array from the script.  It is expected to be a
-  # single line (the script has a comment saying so for this reason).
+  # Extract the COMPILERS=(...) array from the script.  It must be a single
+  # line (the script has a comment saying so), but we tolerate leading
+  # indentation and any trailing content such as an inline comment.  The
+  # capture stops at the first ')', so trailing text after it is ignored.
   scriptText = builtins.readFile scriptFile;
-  compLine = lib.findFirst (lib.hasPrefix "COMPILERS=(") null
-    (lib.splitString "\n" scriptText);
-  captured = if compLine == null then null
-    else builtins.match "COMPILERS=\\((.*)\\)" compLine;
-  scriptCompilers = if captured == null then null
-    else builtins.filter (s: s != "") (lib.splitString " " (builtins.head captured));
+  matchLine = l:
+    let m = builtins.match "[[:space:]]*COMPILERS=\\(([^)]*)\\).*" l;
+    in if m == null then null else builtins.head m;
+  compilersInner = lib.findFirst (m: m != null) null
+    (map matchLine (lib.splitString "\n" scriptText));
+  scriptCompilers = if compilersInner == null then null
+    else builtins.filter (s: s != "")
+      (lib.splitString " " (builtins.replaceStrings [ "\t" ] [ " " ] compilersInner));
 
   hydraGhcs = lib.sort (a: b: a < b) (lib.unique ghcs);
 
