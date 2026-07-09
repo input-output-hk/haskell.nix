@@ -37,6 +37,8 @@ JOBSET="${JOBSET:-master}"
 PARALLEL="${PARALLEL:-12}"
 
 # Compiler columns, in the resolved names Hydra uses (left to right).
+# Keep this on a single line: test/ci-status-matrix.nix parses it to check that
+# it matches the GHCs actually built in hydraJobs.
 COMPILERS=(ghc967 ghc984 ghc9103 ghc9124 ghc9141 ghc9141llvm)
 
 # Table rows, one per "<nixpkgs-pin> <build-host-system> <target>".  `native`
