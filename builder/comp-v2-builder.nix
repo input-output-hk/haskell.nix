@@ -752,6 +752,26 @@ let
      ++ homeLibDepSlices
      ++ lib.optional (ownLibSlice != null) ownLibSlice);
 
+  # Custom-setup deps that plan-nix resolved to SOURCE packages need their
+  # slices composed in like library deps.  This happens when a package's
+  # `setup-depends` excludes the GHC-bundled Cabal (e.g. entropy's
+  # `Cabal < 3.17` against a compiler bundling 3.17): the plan picks a
+  # from-hackage Cabal, so the slice's per-package setup solver has the
+  # `<pkg>:setup.Cabal ==<ver>` pin (ownSetupConstraints) but — without
+  # the dep slice's repo fragment and store unit — no candidate that can
+  # satisfy it, failing with "rejecting: <pkg>:setup.Cabal-<bundled>
+  # /installed-inplace".  Installed (pre-existing) setup deps need
+  # nothing.  These go in `depSlices` (store + slicing repo) but NOT
+  # `dependsSlices`: a `Cabal source` constraint there would force
+  # from-source Cabal onto the slice's regular library scope, diverging
+  # from the plan.
+  setupDepSlices = lib.filter (s: s != null) (map (id:
+    let q = planJsonByPlanId.${id} or null;
+    in if q == null || (q.type or "") != "configured" || !(q ? pkg-name)
+       then null
+       else homeDepSliceOf { name = q.pkg-name; version = q.pkg-version; }
+  ) (lib.concatMap (u: u.components.setup.depends or []) thisPkgUnits));
+
   # The slice's *direct* dep slices.  Transitive closure is
   # reconstructed at build time from each slice's
   # `$out/nix-support/transitive-deps` file (see
@@ -775,7 +795,8 @@ let
      # build-build slices must stay out of `propagatedBuildInputs` here.
      ++ lib.optionals (!isCross) buildToolSlices
      ++ transitiveBuildToolSlices
-     ++ homeDepSlices);
+     ++ homeDepSlices
+     ++ setupDepSlices);
 
 
   # native-build inputs from the target component's config
@@ -1314,12 +1335,36 @@ let
   # per-package `pkg:setup.dep` qualifier).  No `source` flag: setup
   # `Cabal` is disambiguated by version (bundled 3.10.x vs reinstalled
   # 3.16.x), and the bundled one isn't in the slicing repo anyway.
+  #
+  # The pins cover the TRANSITIVE closure of the setup scope, not just
+  # the direct `setup-depends`: the slice solves under blanket
+  # allow-newer/allow-older relaxations, so a source setup `Cabal`
+  # (e.g. `Cabal-3.16.1.0` when the package's `setup-depends` excludes
+  # the GHC-bundled 3.17) would otherwise pair with the INSTALLED
+  # Cabal-syntax — whose module set no longer matches the re-exports
+  # that Cabal version declares ("Problem with module re-exports:
+  # Distribution.Compat.MonadFail is not exported...").  A
+  # `<pkg>:setup.<dep>` constraint applies to the whole setup
+  # qualifier scope, so pinning the closure reproduces plan-nix's
+  # setup resolution exactly; pins for packages that never become
+  # setup-scope goals (rts etc.) are ignored by the solver.
+  setupDepClosureIds = map (x: x.key) (builtins.genericClosure {
+    startSet = map (id: { key = id; })
+      (lib.concatMap (u: u.components.setup.depends or []) thisPkgUnits);
+    operator = item:
+      let q = planJsonByPlanId.${item.key} or null;
+          deps = if q == null then []
+                 else (q.depends or [])
+                      ++ lib.concatMap (c: c.depends or [])
+                           (lib.attrValues (q.components or {}));
+      in map (id: { key = id; }) deps;
+  });
   ownSetupConstraints =
-    lib.filter (x: x != null) (map (id:
+    lib.unique (lib.filter (x: x != null) (map (id:
       let q = planJsonByPlanId.${id} or null;
       in if q == null || !(q ? pkg-name) then null
          else "${pkgName}:setup.${q.pkg-name} ==${q.pkg-version}"
-    ) (lib.concatMap (u: u.components.setup.depends or []) thisPkgUnits));
+    ) setupDepClosureIds));
   v2Fragment = {
     inherit pkgName pkgVersion;
     tarball = pkgTarball;
@@ -1428,21 +1473,27 @@ let
     # `modules/install-plan/planned.nix` to the plan-id of the
     # specific install-plan entry this slice was built from.
     #
-    # Skip the unit-id check when plan-nix recorded `style: "local"`
-    # for this component: local packages are listed in cabal.project's
-    # `packages:` block, so plan-nix's unit-id was hashed with a
-    # `pkg-src: { type: local, ... }`.  The slice serves the same
-    # source through the slicing repo and `extra-packages:`, which
-    # cabal treats as `style: "global"` / `pkg-src: { type: repo-tar }`
-    # — same source bytes, different `pkgHashSourceHash` inputs,
-    # different unit-id.  The unit-id check would always fail; the
-    # plan diff at `.checkAgainstPlan` is the right tool for spotting
-    # real divergence here.
+    # Skip the unit-id check when plan-nix built this component
+    # in-place rather than for the store.  cabal's `style2str` reports
+    # two such cases: `"local"` (a package in cabal.project's
+    # `packages:` block) and `"inplace"` (a *non*-local package cabal
+    # still elaborated `BuildInplaceOnly` — e.g. the generated
+    # haskell-gi `gi-*` family under the stable-haskell GHC, whose
+    # boot-lib deps carry `-inplace` ids).  BuildInplaceOnly packages
+    # get the fixed unit-id suffix `<pkgid>-inplace`, whereas the slice
+    # serves the identical source through its slicing repo and cabal
+    # builds it `BuildAndInstall` → `style: "global"` with a hashed
+    # `<pkgid>-<hash>` id.  The suffix differs by construction (same
+    # source bytes either way), so the unit-id equality check can never
+    # hold; the plan diff at `.checkAgainstPlan` is the right tool for
+    # spotting real divergence here.  Downstream slices re-solve against
+    # the same repo and agree on the hashed id, so composition is
+    # consistent.
     expectedUnitId =
       let uid = package.identifier.unit-id or null;
           entry = if uid == null then null else planJsonByPlanId.${uid} or null;
           style = if entry == null then null else entry.style or null;
-      in if isCross || style == "local" || isCustomBuild then null else uid;
+      in if isCross || style == "local" || style == "inplace" || isCustomBuild then null else uid;
     # Plan-json entry for this slice's expected unit-id, written to
     # disk so the unit-id-mismatch diagnostic can diff what plan-nix
     # said this component should look like against what cabal actually

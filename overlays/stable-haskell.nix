@@ -21,8 +21,19 @@ let
   evalPackages = pkgs.buildPackages;
 
   bootGhcName      = "ghc9103";
+  # ProjectVersion / ProjectVersionMunged as handed to GHC's ./configure —
+  # the ONLY place the 3-component form may appear.  The built compiler
+  # identifies itself everywhere cabal can observe (--numeric-version, the
+  # ghc package's version, Project Unit Id and hence cabal's compiler id and
+  # store dir name) as the MUNGED "9.14", so every haskell.nix-facing surface
+  # (passthru.version, lib dir, versioned bin aliases) uses ghcVersion = the
+  # munged form.  A "9.14.0" the plan-time dummy ghc reports but the real
+  # compiler doesn't (or vice versa) makes cabal's plan-time and build-time
+  # compiler ids differ, forking every UnitId the v2 slice builder checks
+  # against plan-nix.
   ghcVersionFull   = "9.14.0";
   ghcVersionMunged = "9.14";
+  ghcVersion       = ghcVersionMunged;
   ghcVersionForLib = "9.1400";
 
   # ── Cross-compilation detection ──────────────────────────────────────────
@@ -453,15 +464,15 @@ let
   stage1Compiler =
     let rawDrv = pkgs.runCommand "ghc914-sh-stage1-compiler" {
       passthru = {
-        version              = ghcVersionFull;
+        version              = ghcVersion;
         targetPrefix         = "";
-        haskellCompilerName  = "ghc-${ghcVersionFull}";
+        haskellCompilerName  = "ghc-${ghcVersion}";
         isHaskellNixCompiler = true;
         # Built with `cabalProject` rather than hadrian; consumed by
         # `ghc-boot-packages-src-and-nix` to skip the source-tree boot-package
         # machinery (see the comment there).
         isStableHaskell      = true;
-        libDir               = "lib/ghc-${ghcVersionFull}";
+        libDir               = "lib/ghc-${ghcVersion}";
         project              = stage1Project;
         # comp-builder.nix:44 accesses ghc.enableShared to decide whether to
         # build shared Haskell libraries.  Stage1/2 use shared libs on Darwin.
@@ -495,7 +506,7 @@ let
       nativeBuildInputs = [ pkgs.stdenv.cc pkgs.stdenv.cc.bintools.bintools ];
     } ''
     mkdir -p $out/bin
-    mkdir -p $out/lib/ghc-${ghcVersionFull}
+    mkdir -p $out/lib/ghc-${ghcVersion}
     # Note: do NOT mkdir package.conf.d here; ghc-pkg init creates it below.
 
     # ── ghc wrapper ──────────────────────────────────────────────────────────
@@ -517,8 +528,8 @@ exec GHC_EXE \
 ENDSCRIPT
     sed -i \
       -e "s|GHC_EXE|${s1exe "ghc-bin" "ghc"}|" \
-      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersionFull}/package.conf.d|" \
-      -e "s|LIBDIR|$out/lib/ghc-${ghcVersionFull}|" \
+      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersion}/package.conf.d|" \
+      -e "s|LIBDIR|$out/lib/ghc-${ghcVersion}|" \
       $out/bin/ghc
     chmod +x $out/bin/ghc
 
@@ -539,14 +550,14 @@ exec GHC_PKG_EXE \
 ENDSCRIPT
     sed -i \
       -e "s|GHC_PKG_EXE|${s1exe "ghc-pkg" "ghc-pkg"}|" \
-      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersionFull}/package.conf.d|" \
+      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersion}/package.conf.d|" \
       $out/bin/ghc-pkg
     chmod +x $out/bin/ghc-pkg
 
     # ── Initialise empty package DB ───────────────────────────────────────────
     # Use the raw binary so the wrapper does not pass --global-package-db for
     # a path that does not yet exist.
-    ${s1exe "ghc-pkg" "ghc-pkg"} init $out/lib/ghc-${ghcVersionFull}/package.conf.d
+    ${s1exe "ghc-pkg" "ghc-pkg"} init $out/lib/ghc-${ghcVersion}/package.conf.d
 
     # ── Additional tools needed by stage2 packages ───────────────────────────
     # hsc2hs is needed by rts-fs and other packages; unlit is a standard GHC
@@ -556,8 +567,8 @@ ENDSCRIPT
     ln -sf ${s1exe "hsc2hs" "hsc2hs"}  $out/bin/hsc2hs
     ln -sf ${s1exe "unlit"  "unlit"}   $out/bin/unlit
     # GHC 9.14 computes the unlit path as $topdir/../bin/unlit where topdir is
-    # lib/ghc-9.14.0 (set by -B$NIX_GHC_LIBDIR in ghc-for-component-wrapper).
-    # lib/ghc-9.14.0/../bin/unlit resolves to lib/bin/unlit, NOT bin/unlit.
+    # lib/ghc-9.14 (set by -B$NIX_GHC_LIBDIR in ghc-for-component-wrapper).
+    # lib/ghc-9.14/../bin/unlit resolves to lib/bin/unlit, NOT bin/unlit.
     # ghc-for-component-wrapper.nix's lndir copies lib/bin/ from the unwrapped
     # GHC, so we must provide lib/bin/unlit (and hsc2hs) here.
     mkdir -p $out/lib/bin
@@ -578,7 +589,7 @@ ENDSCRIPT
       --cc  $(type -P cc) \
       --cxx $(type -P c++) \
       --output-settings \
-      -o $out/lib/ghc-${ghcVersionFull}/settings
+      -o $out/lib/ghc-${ghcVersion}/settings
 
     ${lib.optionalString hp.isx86_64 ''
     # On x86_64, the RTS includes XXHash3 which uses 256-bit AVX2 vectors.
@@ -590,14 +601,14 @@ ENDSCRIPT
     sed -i \
       -e 's|("C compiler flags","\([^"]*\)")|("C compiler flags","\1 -mno-avx -mno-avx2")|' \
       -e 's|("C-- CPP flags","\([^"]*\)")|("C-- CPP flags","\1 -mno-avx -mno-avx2")|' \
-      $out/lib/ghc-${ghcVersionFull}/settings
+      $out/lib/ghc-${ghcVersion}/settings
     ''}
 
     # ── ghcversion.h ─────────────────────────────────────────────────────────
     # The stage2 build needs the generated ghcversion.h header.
-    mkdir -p $out/lib/ghc-${ghcVersionFull}/include
+    mkdir -p $out/lib/ghc-${ghcVersion}/include
     cp ${configuredSrc}/rts/include/ghcversion.h \
-       $out/lib/ghc-${ghcVersionFull}/include/
+       $out/lib/ghc-${ghcVersion}/include/
     '';
     in pkgs.haskell-nix.haskellLib.makeCompilerDeps rawDrv;
 
@@ -900,11 +911,11 @@ ENDSCRIPT
       # Provide the settings file in each exe derivation via postInstall.
       packages.ghc-pkg.components.exes.ghc-pkg.postInstall = ''
         mkdir -p $out/lib
-        cp ${stage1Compiler}/lib/ghc-${ghcVersionFull}/settings $out/lib/settings
+        cp ${stage1Compiler}/lib/ghc-${ghcVersion}/settings $out/lib/settings
       '';
       packages.ghc-bin.components.exes.ghc.postInstall = ''
         mkdir -p $out/lib
-        cp ${stage1Compiler}/lib/ghc-${ghcVersionFull}/settings $out/lib/settings
+        cp ${stage1Compiler}/lib/ghc-${ghcVersion}/settings $out/lib/settings
       '';
     }
     # GHC 9.14's unit resolver checks that all dependencies listed in .conf
@@ -999,7 +1010,54 @@ ENDSCRIPT
       # automatically via configure-args.nix.  Only unlit still needs it
       # here (it's not covered by the cabal.project files).
       packages.unlit.ghcOptions = ["-no-rts"];
-    }];
+    }
+    # Register the boot libraries under deterministic, hadrian-style unit
+    # ids (`<pkg>-<version>-inplace`; the rts family and system-cxx-std-lib
+    # keep plain `<pkg>-<version>`, mirroring the exceptions GHC's own
+    # bindists make).  Cabal's default component id
+    # (Distribution.Backpack.Id.computeComponentId) appends a base62 hash
+    # of the dep unit-ids + flag assignment, which nothing at Nix eval time
+    # can predict.  The dummy `ghc-pkg dump` synthesised for plan-time
+    # (call-cabal-project-to-nix.nix) must present the same installed ids
+    # cabal later sees against the real DB: a direct dep's id enters the
+    # depending package's `--dependency=<dep>=<id>` configure arg and
+    # therefore its UnitId hash, so with unpredictable boot-lib ids the v2
+    # slice builder's plan-nix/slice unit-id equality can never hold for
+    # projects built with this compiler.
+    ({ config, lib, ... }: let
+      # `$pkgid` is a Cabal path-template (substituted with `<name>-<version>`
+      # by computeComponentId via packageTemplateEnv), NOT a shell variable —
+      # comp-builder.nix interpolates configure flags unquoted into the
+      # configurePhase script, so the `$` is backslash-escaped from bash.
+      # Using the template avoids reading package versions back out of
+      # `config.packages` (in-tree units like rts are plan-keyed by unit id,
+      # and the name alias doesn't expose `package.identifier`).
+      ipid = suffix: [ "--ipid=\\$pkgid${suffix}" ];
+    in {
+      packages =
+        lib.genAttrs
+          (lib.filter (name: config.packages ? ${name})
+            (lib.subtractLists [ "rts" "system-cxx-std-lib" ] bootLibraries))
+          (name: { components.library.configureFlags = ipid "-inplace"; })
+        # rts: the same --ipid goes to the main library and every way
+        # sublib — computeComponentId itself appends `-<sublib>`, giving
+        # `rts-1.0.3`, `rts-1.0.3-threaded-nodebug`, etc.  The sublib
+        # names are static because this native stage2 always builds all
+        # four ways (the JS/wasm single-way case only arises in
+        # crossBootProject, which doesn't use this module).
+        // lib.optionalAttrs (config.packages ? rts) {
+          rts.components = {
+            library.configureFlags = ipid "";
+            sublibs = lib.genAttrs [
+              "nonthreaded-nodebug" "nonthreaded-debug"
+              "threaded-nodebug"    "threaded-debug"
+            ] (_: { configureFlags = ipid ""; });
+          };
+        }
+        // lib.optionalAttrs (config.packages ? system-cxx-std-lib) {
+          system-cxx-std-lib.components.library.configureFlags = ipid "";
+        };
+    })];
   };
 
   s2 = stage2Project.hsPkgs;
@@ -1109,21 +1167,27 @@ ENDSCRIPT
   ghc914-shCompiler =
     let rawDrv = pkgs.runCommand "ghc914-sh-compiler" {
       passthru = {
-        version              = ghcVersionFull;
+        version              = ghcVersion;
         targetPrefix         = "";
-        haskellCompilerName  = "ghc-${ghcVersionFull}";
+        haskellCompilerName  = "ghc-${ghcVersion}";
         isHaskellNixCompiler = true;
         # Built with `cabalProject` rather than hadrian; consumed by
         # `ghc-boot-packages-src-and-nix` to skip the source-tree boot-package
         # machinery (see the comment there).
         isStableHaskell      = true;
-        libDir               = "lib/ghc-${ghcVersionFull}";
+        libDir               = "lib/ghc-${ghcVersion}";
         enableShared         = !pkgs.stdenv.hostPlatform.isMusl && !pkgs.stdenv.hostPlatform.isStatic;
         # stage2 builds text with +simdutf (see cabalProjectLocal), so the
         # installed text depends on system-cxx-std-lib.  The dummy ghc-pkg
         # dump synthesis reads this to add that depends edge (the flag
         # conditional in text.cabal is invisible to it).
         enableTextSimdutf    = true;
+        # Real `ghc --info` "Project Unit Id" — the ghc library's unit id,
+        # registered under the MUNGED version plus the deterministic
+        # `-inplace` suffix (see the stage2 --ipid module).  dummy-ghc.nix
+        # emits this value so cabal's plan-time view matches the real
+        # compiler (it defaults to ghc-<full-version>-inplace otherwise).
+        projectUnitId        = "ghc-${ghcVersion}-inplace";
         # call-cabal-project-to-nix.nix:297 uses raw-src to synthesise the
         # dummy ghc-pkg dump for plan-time.  Use dumpSrc (configuredSrc +
         # the hackage-pinned boot libraries' .cabal files) so user-project
@@ -1137,19 +1201,28 @@ ENDSCRIPT
       };
     } ''
     mkdir -p $out/bin
-    mkdir -p $out/lib/ghc-${ghcVersionFull}
+    mkdir -p $out/lib/ghc-${ghcVersion}
 
     # ── Executables ──────────────────────────────────────────────────────────
+    # -B matters: without it topdir falls back to the libdir baked into the
+    # ghc-bin exe derivation, which ships only a settings file — so
+    # $topdir-relative tool lookups (unlit at $topdir/../bin/unlit, needed
+    # for literate sources like happy's) fail.  Callers that need a
+    # different libdir (ghc-for-component-wrapper's -B$NIX_GHC_LIBDIR)
+    # still win: GHC honours the LAST -B on the command line and "$@"
+    # comes after ours.
     cat > $out/bin/ghc << 'ENDSCRIPT'
 #!/bin/sh
 exec GHC_EXE \
   -no-global-package-db \
   -package-db PACKAGEDB \
+  -BLIBDIR \
   "$@"
 ENDSCRIPT
     sed -i \
       -e "s|GHC_EXE|${s2exe "ghc-bin" "ghc"}|" \
-      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersionFull}/package.conf.d|" \
+      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersion}/package.conf.d|" \
+      -e "s|LIBDIR|$out/lib/ghc-${ghcVersion}|" \
       $out/bin/ghc
     chmod +x $out/bin/ghc
 
@@ -1168,16 +1241,28 @@ exec GHC_PKG_EXE \
 ENDSCRIPT
     sed -i \
       -e "s|GHC_PKG_EXE|${s2exe "ghc-pkg" "ghc-pkg"}|" \
-      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersionFull}/package.conf.d|" \
+      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersion}/package.conf.d|" \
       $out/bin/ghc-pkg
     chmod +x $out/bin/ghc-pkg
 
     ln -sf ${s2exe "hsc2hs"  "hsc2hs"}  $out/bin/hsc2hs
     ln -sf ${s2exe "runghc"  "runghc"}  $out/bin/runghc
     ln -sf ${s2exe "unlit"   "unlit"}   $out/bin/unlit
-    # GHC 9.14 looks for unlit at $topdir/../bin/unlit where topdir = lib/ghc-9.14.0
+
+    # Versioned aliases, as in a standard GHC bindist (a real bindist of
+    # this source would install ghc-${ghcVersion}).  Tooling relies on the
+    # versioned names: ghc-for-component-wrapper.nix wraps ghc-${ghcVersion}
+    # when present, comp-v2-builder writes `with-compiler: ghc-${ghcVersion}`
+    # (= ghc-<passthru.version>, resolved on PATH), and cabal's
+    # "tool near compiler" lookup probes `<tool>-<numeric-version>` names.
+    v=${ghcVersion}
+    ln -s $out/bin/ghc     $out/bin/ghc-$v
+    ln -s $out/bin/ghci    $out/bin/ghci-$v
+    ln -s $out/bin/ghc-pkg $out/bin/ghc-pkg-$v
+    ln -s $out/bin/runghc  $out/bin/runghc-$v
+    # GHC 9.14 looks for unlit at $topdir/../bin/unlit where topdir = lib/ghc-9.14
     # (set via -B$NIX_GHC_LIBDIR in ghc-for-component-wrapper.nix).
-    # lib/ghc-9.14.0/../bin/ resolves to lib/bin/, so unlit must be there.
+    # lib/ghc-9.14/../bin/ resolves to lib/bin/, so unlit must be there.
     # ghc-for-component-wrapper lndir's the compiler then re-links lib/bin/
     # if it exists, so we provide lib/bin/{unlit,hsc2hs} here.
     mkdir -p $out/lib/bin
@@ -1187,8 +1272,8 @@ ENDSCRIPT
     # ── settings + support files ─────────────────────────────────────────────
     # Copy settings BEFORE ghc-pkg init/recache — the stage2 ghc-pkg binary
     # (built with GHC 9.14) expects a settings file at $libdir/settings.
-    cp ${stage1Compiler}/lib/ghc-${ghcVersionFull}/settings \
-       $out/lib/ghc-${ghcVersionFull}/settings
+    cp ${stage1Compiler}/lib/ghc-${ghcVersion}/settings \
+       $out/lib/ghc-${ghcVersion}/settings
 
     # ── Package DB ───────────────────────────────────────────────────────────
     # Populate package DB with .conf files from all stage2-built boot
@@ -1197,22 +1282,22 @@ ENDSCRIPT
     # The stage2 ghc-pkg binary has a settings file at its derivation
     # output ($out/lib/settings) thanks to the postInstall hook above.
     # Use it directly with --global-package-db to point at our output DB.
-    mkdir -p $out/lib/ghc-${ghcVersionFull}/package.conf.d
+    mkdir -p $out/lib/ghc-${ghcVersion}/package.conf.d
 
     for confDir in ${lib.concatStringsSep " " bootLibConfs}; do
       cp "$confDir"/*.conf \
-         $out/lib/ghc-${ghcVersionFull}/package.conf.d/ 2>/dev/null || true
+         $out/lib/ghc-${ghcVersion}/package.conf.d/ 2>/dev/null || true
     done
 
     ${s2exe "ghc-pkg" "ghc-pkg"} recache \
       --no-user-package-db \
-      --global-package-db $out/lib/ghc-${ghcVersionFull}/package.conf.d
-    cp -r ${stage1Compiler}/lib/ghc-${ghcVersionFull}/include \
-          $out/lib/ghc-${ghcVersionFull}/include
+      --global-package-db $out/lib/ghc-${ghcVersion}/package.conf.d
+    cp -r ${stage1Compiler}/lib/ghc-${ghcVersion}/include \
+          $out/lib/ghc-${ghcVersion}/include
     cp ${hsc2hsSrc}/data/template-hsc.h \
-       $out/lib/ghc-${ghcVersionFull}/template-hsc.h
-    cp ${configuredSrc}/driver/ghc-usage.txt  $out/lib/ghc-${ghcVersionFull}/
-    cp ${configuredSrc}/driver/ghci-usage.txt $out/lib/ghc-${ghcVersionFull}/
+       $out/lib/ghc-${ghcVersion}/template-hsc.h
+    cp ${configuredSrc}/driver/ghc-usage.txt  $out/lib/ghc-${ghcVersion}/
+    cp ${configuredSrc}/driver/ghci-usage.txt $out/lib/ghc-${ghcVersion}/
     '';
     in pkgs.haskell-nix.haskellLib.makeCompilerDeps rawDrv;
 
@@ -1338,15 +1423,15 @@ ENDSCRIPT
   crossStage1Compiler =
     let rawDrv = pkgs.buildPackages.runCommand "ghc914-sh-cross-stage1" {
       passthru = {
-        version              = ghcVersionFull;
+        version              = ghcVersion;
         targetPrefix         = "";
-        haskellCompilerName  = "ghc-${ghcVersionFull}";
+        haskellCompilerName  = "ghc-${ghcVersion}";
         isHaskellNixCompiler = true;
         # Built with `cabalProject` rather than hadrian; consumed by
         # `ghc-boot-packages-src-and-nix` to skip the source-tree boot-package
         # machinery (see the comment there).
         isStableHaskell      = true;
-        libDir               = "lib/ghc-${ghcVersionFull}";
+        libDir               = "lib/ghc-${ghcVersion}";
         enableShared         = false;
         raw-src              = _: nativeConfiguredSrc;
         buildGHC             = pkgs.buildPackages.haskell-nix.compiler.${bootGhcName};
@@ -1354,7 +1439,7 @@ ENDSCRIPT
       };
       nativeBuildInputs = [ targetCC targetBintools ];
     } ''
-    mkdir -p $out/bin $out/lib/ghc-${ghcVersionFull}
+    mkdir -p $out/bin $out/lib/ghc-${ghcVersion}
 
     # ── ghc wrapper (same flags as native stage1, without -no-rts)
     cat > $out/bin/ghc << 'ENDSCRIPT'
@@ -1367,8 +1452,8 @@ exec GHC_EXE \
 ENDSCRIPT
     sed -i \
       -e "s|GHC_EXE|${cs1exe "ghc-bin" "ghc"}|" \
-      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersionFull}/package.conf.d|" \
-      -e "s|LIBDIR|$out/lib/ghc-${ghcVersionFull}|" \
+      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersion}/package.conf.d|" \
+      -e "s|LIBDIR|$out/lib/ghc-${ghcVersion}|" \
       $out/bin/ghc
     chmod +x $out/bin/ghc
 
@@ -1384,7 +1469,7 @@ exec GHC_PKG_EXE \
 ENDSCRIPT
     sed -i \
       -e "s|GHC_PKG_EXE|${cs1exe "ghc-pkg" "ghc-pkg"}|" \
-      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersionFull}/package.conf.d|" \
+      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersion}/package.conf.d|" \
       $out/bin/ghc-pkg
     chmod +x $out/bin/ghc-pkg
 
@@ -1395,7 +1480,7 @@ ENDSCRIPT
     ln -sf ${cs1exe "hsc2hs" "hsc2hs"}  $out/lib/bin/hsc2hs
 
     # ── Empty package DB
-    ${cs1exe "ghc-pkg" "ghc-pkg"} init $out/lib/ghc-${ghcVersionFull}/package.conf.d
+    ${cs1exe "ghc-pkg" "ghc-pkg"} init $out/lib/ghc-${ghcVersion}/package.conf.d
 
     # ── Target-platform settings (wasm32 etc.)
     cp ${nativeConfiguredSrc}/config.sub ./config.sub
@@ -1405,7 +1490,7 @@ ENDSCRIPT
       --cc  ${targetCCPath} \
       --cxx ${targetCXXPath} \
       --output-settings \
-      -o $out/lib/ghc-${ghcVersionFull}/settings
+      -o $out/lib/ghc-${ghcVersion}/settings
 
     ${lib.optionalString (tp.isWasm or false) ''
     # Patch settings to match the Hadrian-built WASM cross compiler:
@@ -1419,19 +1504,19 @@ ENDSCRIPT
       -e 's|("Merge objects command","")|("Merge objects command","${pkgs.buildPackages.llvmPackages.lld}/bin/wasm-ld")|' \
       -e 's|("Merge objects flags","")|("Merge objects flags","-r")|' \
       -e 's|("Merge objects supports response files","NO")|("Merge objects supports response files","YES")|' \
-      $out/lib/ghc-${ghcVersionFull}/settings
+      $out/lib/ghc-${ghcVersion}/settings
     ''}
 
     # ── ghcversion.h
-    mkdir -p $out/lib/ghc-${ghcVersionFull}/include
+    mkdir -p $out/lib/ghc-${ghcVersion}/include
     cp ${nativeConfiguredSrc}/rts/include/ghcversion.h \
-       $out/lib/ghc-${ghcVersionFull}/include/
+       $out/lib/ghc-${ghcVersion}/include/
 
     # ── Support files
     cp ${hsc2hsSrc}/data/template-hsc.h \
-       $out/lib/ghc-${ghcVersionFull}/template-hsc.h
-    cp ${nativeConfiguredSrc}/driver/ghc-usage.txt  $out/lib/ghc-${ghcVersionFull}/
-    cp ${nativeConfiguredSrc}/driver/ghci-usage.txt $out/lib/ghc-${ghcVersionFull}/
+       $out/lib/ghc-${ghcVersion}/template-hsc.h
+    cp ${nativeConfiguredSrc}/driver/ghc-usage.txt  $out/lib/ghc-${ghcVersion}/
+    cp ${nativeConfiguredSrc}/driver/ghci-usage.txt $out/lib/ghc-${ghcVersion}/
     '';
     in pkgs.buildPackages.haskell-nix.haskellLib.makeCompilerDeps rawDrv;
 
@@ -1792,15 +1877,15 @@ STUB
   crossCompiler =
     let rawDrv = pkgs.buildPackages.runCommand "ghc914-sh-cross-compiler" {
       passthru = {
-        version              = ghcVersionFull;
+        version              = ghcVersion;
         targetPrefix         = "";
-        haskellCompilerName  = "ghc-${ghcVersionFull}";
+        haskellCompilerName  = "ghc-${ghcVersion}";
         isHaskellNixCompiler = true;
         # Built with `cabalProject` rather than hadrian; consumed by
         # `ghc-boot-packages-src-and-nix` to skip the source-tree boot-package
         # machinery (see the comment there).
         isStableHaskell      = true;
-        libDir               = "lib/ghc-${ghcVersionFull}";
+        libDir               = "lib/ghc-${ghcVersion}";
         enableShared         = !(tp.isStatic or false) && !(tp.isMusl or false);
         # NOTE: no enableTextSimdutf here — the cross boot libs build text
         # WITHOUT +simdutf (ghc-pkg field text depends has no
@@ -1819,7 +1904,7 @@ STUB
       nativeBuildInputs = [ targetCC targetBintools ];
     } ''
     mkdir -p $out/bin
-    mkdir -p $out/lib/ghc-${ghcVersionFull}
+    mkdir -p $out/lib/ghc-${ghcVersion}
 
     # ── ghc wrapper ──────────────────────────────────────────────────────
     cat > $out/bin/ghc << 'ENDSCRIPT'
@@ -1832,8 +1917,8 @@ exec GHC_EXE \
 ENDSCRIPT
     sed -i \
       -e "s|GHC_EXE|${nativeSghc914}/bin/ghc|" \
-      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersionFull}/package.conf.d|" \
-      -e "s|LIBDIR|$out/lib/ghc-${ghcVersionFull}|" \
+      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersion}/package.conf.d|" \
+      -e "s|LIBDIR|$out/lib/ghc-${ghcVersion}|" \
       $out/bin/ghc
     chmod +x $out/bin/ghc
 
@@ -1849,13 +1934,21 @@ exec GHC_PKG_EXE \
 ENDSCRIPT
     sed -i \
       -e "s|GHC_PKG_EXE|${nativeSghc914}/bin/ghc-pkg|" \
-      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersionFull}/package.conf.d|" \
+      -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersion}/package.conf.d|" \
       $out/bin/ghc-pkg
     chmod +x $out/bin/ghc-pkg
 
     ln -sf ${nativeSghc914}/bin/hsc2hs  $out/bin/hsc2hs
     ln -sf ${nativeSghc914}/bin/runghc  $out/bin/runghc
     ln -sf ${nativeSghc914}/bin/unlit   $out/bin/unlit
+
+    # Versioned aliases, as in a standard GHC bindist (see the native
+    # compiler assembly above).
+    v=${ghcVersion}
+    ln -s $out/bin/ghc     $out/bin/ghc-$v
+    ln -s $out/bin/ghci    $out/bin/ghci-$v
+    ln -s $out/bin/ghc-pkg $out/bin/ghc-pkg-$v
+    ln -s $out/bin/runghc  $out/bin/runghc-$v
     mkdir -p $out/lib/bin
     ln -sf ${nativeSghc914}/bin/unlit   $out/lib/bin/unlit
     ln -sf ${nativeSghc914}/bin/hsc2hs  $out/lib/bin/hsc2hs
@@ -1868,7 +1961,7 @@ ENDSCRIPT
       --cc  ${targetCCPath} \
       --cxx ${targetCXXPath} \
       --output-settings \
-      -o $out/lib/ghc-${ghcVersionFull}/settings
+      -o $out/lib/ghc-${ghcVersion}/settings
 
     ${lib.optionalString (tp.isWasm or false) ''
     sed -i \
@@ -1877,31 +1970,31 @@ ENDSCRIPT
       -e 's|("Merge objects command","")|("Merge objects command","${pkgs.buildPackages.llvmPackages.lld}/bin/wasm-ld")|' \
       -e 's|("Merge objects flags","")|("Merge objects flags","-r")|' \
       -e 's|("Merge objects supports response files","NO")|("Merge objects supports response files","YES")|' \
-      $out/lib/ghc-${ghcVersionFull}/settings
+      $out/lib/ghc-${ghcVersion}/settings
     ''}
 
     # ── ghcversion.h ─────────────────────────────────────────────────────
-    mkdir -p $out/lib/ghc-${ghcVersionFull}/include
+    mkdir -p $out/lib/ghc-${ghcVersion}/include
     cp ${nativeConfiguredSrc}/rts/include/ghcversion.h \
-       $out/lib/ghc-${ghcVersionFull}/include/
+       $out/lib/ghc-${ghcVersion}/include/
 
     # ── Package DB (boot libraries) ──────────────────────────────────────
-    mkdir -p $out/lib/ghc-${ghcVersionFull}/package.conf.d
+    mkdir -p $out/lib/ghc-${ghcVersion}/package.conf.d
 
     for confDir in ${lib.concatStringsSep " " crossBootLibConfs}; do
       cp "$confDir"/*.conf \
-         $out/lib/ghc-${ghcVersionFull}/package.conf.d/ 2>/dev/null || true
+         $out/lib/ghc-${ghcVersion}/package.conf.d/ 2>/dev/null || true
     done
 
     ${nativeSghc914}/bin/ghc-pkg recache \
       --no-user-package-db \
-      --global-package-db $out/lib/ghc-${ghcVersionFull}/package.conf.d
+      --global-package-db $out/lib/ghc-${ghcVersion}/package.conf.d
 
     # ── Support files ────────────────────────────────────────────────────
     cp ${hsc2hsSrc}/data/template-hsc.h \
-       $out/lib/ghc-${ghcVersionFull}/template-hsc.h
-    cp ${nativeConfiguredSrc}/driver/ghc-usage.txt  $out/lib/ghc-${ghcVersionFull}/
-    cp ${nativeConfiguredSrc}/driver/ghci-usage.txt $out/lib/ghc-${ghcVersionFull}/
+       $out/lib/ghc-${ghcVersion}/template-hsc.h
+    cp ${nativeConfiguredSrc}/driver/ghc-usage.txt  $out/lib/ghc-${ghcVersion}/
+    cp ${nativeConfiguredSrc}/driver/ghci-usage.txt $out/lib/ghc-${ghcVersion}/
 
     # ── JSFFI runtime (.mjs) ──────────────────────────────────────────────
     # These scripts are needed by the wasm backend for JavaScript interop.

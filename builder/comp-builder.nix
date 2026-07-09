@@ -890,14 +890,24 @@ let
     '');
 
     doInstallCheck = true;
-    installCheckPhase = lib.optionalString (haskellLib.isLibrary componentId) ''
-      if test -n "$(shopt -s nullglob; echo $out/package.conf.d/${name}-*.conf)"; then
-          echo $out/package.conf.d/${name}-*.conf " is present"
+    installCheckPhase = lib.optionalString (haskellLib.isLibrary componentId) (
+      let
+        # The registered id is normally `<pkgid>-<hash>[-<sublib>]`, but an
+        # explicit `--ipid` (e.g. the stable-haskell stage2 boot libraries'
+        # `--ipid=$pkgid`) can register under the bare `<pkgid>.conf`.  Only
+        # widen the glob for components that pass --ipid, so everything else
+        # keeps its derivation hash.
+        hasIpid = lib.any (lib.hasPrefix "--ipid") configureFlags;
+        confGlob = "$out/package.conf.d/${name}-*.conf"
+          + lib.optionalString hasIpid " $out/package.conf.d/${name}.conf";
+      in ''
+      if test -n "$(shopt -s nullglob; echo ${confGlob})"; then
+          echo ${confGlob} " is present"
       else
-        echo "ERROR: $out/package.conf.d/${name}-*.conf was not created"
+        echo "ERROR: ${confGlob} was not created"
         exit 1
       fi
-    '';
+    '');
 
     shellHook = ''
       export PATH=$ghc/bin:$PATH

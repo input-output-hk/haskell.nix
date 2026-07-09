@@ -139,8 +139,11 @@ in evalPackages.writeTextFile {
           # suffix below for those versions so cabal computes
           # UnitIds against the dummy that match what it would
           # compute against the real GHC.
+          # stable-haskell compilers override this via passthru.projectUnitId:
+          # their `ghc` library is registered under the munged version
+          # (`ghc-9.14-inplace`), not haskell.nix's full version string.
           if pkgs.lib.versionAtLeast ghc.version "9.8"
-            then ''echo ',("Project Unit Id","ghc-${ghc.version}-inplace")' ''
+            then ''echo ',("Project Unit Id","${ghc.projectUnitId or "ghc-${ghc.version}-inplace"}")' ''
             else ""
         }
         ${
@@ -272,7 +275,15 @@ in evalPackages.writeTextFile {
             echo ',("RTS ways","v thr thr_debug thr_debug_p thr_p debug debug_p p")'
             echo ',("Stage","${if pkgs.stdenv.buildPlatform.parsed.cpu.name != pkgs.stdenv.targetPlatform.parsed.cpu.name then "1" else "2"}")'
           ''
-          else ''
+          else let
+            # stable-haskell (cabalProject-built) native compilers: the ghc
+            # binary is statically linked (`GHC Dynamic: NO`) and the stage2
+            # rts is built with only the four non-dyn, non-profiling ways.
+            # Cabal keys `--enable-shared` vs `--disable-shared` (and hence
+            # every pkgHash/UnitId) on these fields, so lying "dynamic" here
+            # makes plan-nix unit-ids unreproducible in v2 slice builds.
+            isStableHaskell = ghc.isStableHaskell or false;
+          in ''
             # Native (Linux / Darwin / etc.).  Real GHC 9.14.1 omits
             # `Support shared libraries` on these — cabal infers it
             # from `Support dynamic-too` and `RTS ways` instead — so
@@ -290,7 +301,7 @@ in evalPackages.writeTextFile {
             ${if builtins.compareVersions ghc.version "9.12" >= 0
               then ''echo ',("target RTS linker only supports shared libraries","NO")' ''
               else ""}
-            echo ',("GHC Dynamic","YES")'
+            echo ',("GHC Dynamic","${if isStableHaskell then "NO" else "YES"}")'
             # Real `ghc --info` RTS-ways strings (verified per-version
             # against the actual cross / native GHCs):
             #
@@ -306,7 +317,9 @@ in evalPackages.writeTextFile {
             # must match verbatim.  Cross GHCs with a different cpu
             # take a different branch above (8-way set without any
             # `_dyn`); this rule is only for native-cpu targets.
-            ${if pkgs.lib.versionAtLeast ghc.version "9.12"
+            ${if isStableHaskell
+              then ''echo ',("RTS ways","v thr debug thr_debug")' ''
+              else if pkgs.lib.versionAtLeast ghc.version "9.12"
               then ''echo ',("RTS ways","v thr thr_debug thr_debug_p thr_debug_p_dyn thr_debug_dyn thr_p thr_p_dyn thr_dyn debug debug_p debug_p_dyn debug_dyn p p_dyn dyn")' ''
               else if pkgs.lib.versionAtLeast ghc.version "9.10"
                    || pkgs.stdenv.targetPlatform.isMusl
