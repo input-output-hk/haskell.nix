@@ -190,7 +190,8 @@ instance FromJSON Location where
 
 instance FromJSON Stack where
   parseJSON = withObject "Stack" $ \s -> Stack
-    <$> s .: "resolver"
+    -- `snapshot` is the modern synonym for `resolver` (stack >= 2.15.1).
+    <$> (s .: "resolver" <|> s .: "snapshot")
     <*> s .:? "compiler" .!= Nothing
     <*> ((<>) <$> s .:? "packages"   .!= [LocalPath "."]
               <*> s .:? "extra-deps" .!= [])
@@ -199,7 +200,7 @@ instance FromJSON Stack where
 
 instance FromJSON StackSnapshot where
   parseJSON = withObject "Snapshot" $ \s -> Snapshot
-    <$> s .: "resolver"
+    <$> (s .: "resolver" <|> s .: "snapshot")
     <*> s .:? "compiler" .!= Nothing
     <*> s .: "name"
     <*> s .:? "packages" .!= []
