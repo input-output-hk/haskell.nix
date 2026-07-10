@@ -84,6 +84,7 @@ let
     darwin = import ./darwin.nix;
     windows = import ./windows.nix;
     armv6l-linux = import ./armv6l-linux.nix;
+    hyper-linux = import ./hyper-linux.nix { inherit sources; };
     musl = import ./musl.nix;
     android = import ./android.nix;
     tools = import ./tools.nix;
@@ -123,6 +124,7 @@ let
     darwin
     windows
     armv6l-linux
+    hyper-linux
     musl
     android
     tools

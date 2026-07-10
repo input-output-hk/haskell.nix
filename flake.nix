@@ -69,6 +69,15 @@
       url = "github:stable-haskell/iserv-proxy?ref=iserv-syms";
       flake = false;
     };
+    # hyper-linux (`hl`, github:zw3rk/hyper-linux) runs Linux ELFs on Apple
+    # Silicon macOS via Hypervisor.framework.  It fills the qemu-user-mode slot
+    # (which doesn't exist on macOS) when cross-compiling darwin -> linux, so
+    # Template Haskell / tests can run the target binary.  This is a real flake
+    # (we want its `hl` package); keep its nixpkgs on ours.
+    hyper-linux = {
+      url = "github:zw3rk/hyper-linux";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =

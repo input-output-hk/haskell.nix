@@ -124,6 +124,18 @@
         inherit (lib.systems.examples) aarch64-multiplatform-musl;
       } // lib.optionalAttrs (system == "aarch64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc8107" "ghc902"]) {
         inherit (lib.systems.examples) aarch64-multiplatform-musl;
+      } // lib.optionalAttrs (system == "aarch64-darwin"
+          && nixpkgsName == "unstable"
+          && builtins.elem compiler-nix-name ["ghc9141" "ghc914-sh"]) {
+        # darwin -> linux cross-compilation (compile side only — see the tests
+        # gate in the cross section below), with target binaries run under
+        # hyper-linux (`hl`) on Apple Silicon via the `hyper-linux` overlay.
+        # ghc9141 is the hadrian GHC 9.14; ghc914-sh the stable-haskell
+        # cabalProject build.  Both the fully-static aarch64 (`aarch64-
+        # multiplatform-musl`) and x86_64 (`musl64`) musl targets cross-compile;
+        # note `hl` only *runs* aarch64 ELFs on this M1-class hardware (x86_64
+        # guests need Rosetta's M2+ VM), which is why the test run is deferred.
+        inherit (lib.systems.examples) aarch64-multiplatform-musl musl64;
       };
   isDisabled = d: d.meta.disabled or false;
 in
@@ -176,6 +188,15 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
                 then import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; })
                 else crossSystem (import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; }));
             build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };
+            # darwin -> linux cross runs target binaries under hyper-linux
+            # (`hl`).  Building the cross tests would need `hl` to run the
+            # target's Template Haskell iserv interpreter inside the nix build,
+            # which currently hits an `hl` SIGBUS under the nix-daemon — so
+            # build only the compile side (roots + ghc + iserv-proxy-exes +
+            # hello) here and leave the test run to `nix develop`/manual until
+            # that upstream `hl` bug is fixed.
+            isDarwinLinuxCross =
+              pkgs.stdenv.buildPlatform.isDarwin && pkgs.stdenv.hostPlatform.isLinux;
         in pkgs.lib.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
             roots = pkgs.haskell-nix.roots' { inherit compiler-nix-name evalPackages; } ifdLevel // {
               ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { ghcEvalPackages = evalPackages; };
@@ -184,7 +205,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
             # ghc = pkgs.haskell-nix.compiler.${compiler-nix-name};
             # TODO: look into making tools work when cross compiling
             # inherit (build) tools;
-          } // pkgs.lib.optionalAttrs runTests {
+          } // pkgs.lib.optionalAttrs (runTests && !isDarwinLinuxCross) {
             inherit (build) tests;
         })
         # GHCJS builds its own template haskell runner.
