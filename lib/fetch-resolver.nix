@@ -13,12 +13,17 @@ let
     rawStackYaml = builtins.readFile (srcDir + "/${stackYaml}");
 
     # Determine the resolver as it may point to another file we need
-    # to look at.
+    # to look at.  `snapshot` is the modern synonym for `resolver`
+    # (stack >= 2.15.1), so accept either key.
     resolver =
       let
+        # Each returns a single-element capture list (the value) or null.
+        matchLine = l:
+          let r = builtins.match "^resolver: *(.*)" l;
+          in if r != null then r else builtins.match "^snapshot: *(.*)" l;
         rs = pkgs.lib.lists.concatLists (
           pkgs.lib.lists.filter (l: l != null)
-            (builtins.map (l: builtins.match "^resolver: *(.*)" l)
+            (builtins.map matchLine
               (pkgs.lib.splitString "\n" rawStackYaml)));
       in
         pkgs.lib.lists.head (rs ++ [ null ]);

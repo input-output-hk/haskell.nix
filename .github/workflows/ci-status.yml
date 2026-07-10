@@ -1,0 +1,50 @@
+name: Update Compiler CI status
+
+# Refresh the "Compiler CI status" table in README.md from the latest master
+# builds on ci.zw3rk.com. Runs every 4 hours (and on demand), and only commits
+# when the rendered table actually changes.
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+
+# Only the commit step needs write access; nothing here runs untrusted code.
+permissions:
+  contents: write
+
+# Don't pile up overlapping runs; a later run supersedes an in-flight one.
+concurrency:
+  group: ci-status
+  cancel-in-progress: true
+
+jobs:
+  update-ci-status:
+    # Scheduled runs only make sense on the canonical repo, not on forks.
+    if: github.event_name == 'workflow_dispatch' || github.repository == 'input-output-hk/haskell.nix'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ubuntu-latest already provides bash, curl and jq (the script needs
+      # only jq >= 1.6, well below what the runner image ships).
+      - name: Regenerate README table
+        run: ./scripts/update-ci-status.sh
+
+      - name: Commit if the table changed
+        run: |
+          if git diff --quiet -- README.md; then
+            echo "No change to the CI status table; nothing to commit."
+            exit 0
+          fi
+          git config user.name 'Auto Update Bot'
+          git config user.email 'no-reply@iohk.io'
+          git add README.md
+          # This push uses the default GITHUB_TOKEN, and GitHub does not trigger
+          # workflow runs from GITHUB_TOKEN pushes, so this cosmetic commit will
+          # not kick off the push->master workflows (lints/pipeline/docs).  The
+          # [skip ci] marker (which GitHub natively honours for push/PR runs) is
+          # belt-and-suspenders in case the push ever moves to a PAT.
+          git commit -m "Update compiler CI status table [skip ci]"
+          git push

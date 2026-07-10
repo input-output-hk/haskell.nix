@@ -123,6 +123,19 @@
         overlay = self.overlays.combined;
         overlays = import ./overlays { sources = inputs; };
 
+        # `nix flake init --template github:input-output-hk/haskell.nix`
+        # scaffolds a new haskell.nix project (flake.nix + nix/hix.nix + a
+        # `hello` package).  Kept in-repo (rather than in NixOS/templates) so
+        # it stays in sync with the current `hix init` output and supported
+        # GHC versions.
+        templates = rec {
+          default = haskell-nix;
+          haskell-nix = {
+            path = ./templates/haskell-nix;
+            description = "A haskell.nix project: flake.nix, nix/hix.nix and a hello package.";
+          };
+        };
+
         internal = {
           nixpkgsArgs = {
             inherit config;
@@ -248,10 +261,30 @@
                 };
               in
               cf.defaultNix.hydraJobs;
+
+            # The GHC compilers present in the CI matrix (the keys of the "GHC
+            # version" dimension, under each nixpkgs pin).  Used by the
+            # ci-status-matrix guard test below.
+            jobs = self.allJobs.${system};
+            ghcsInHydra = lib.unique (lib.concatMap
+              (pin: builtins.filter (lib.hasPrefix "ghc") (builtins.attrNames jobs.${pin}))
+              (builtins.filter (n: n != "meta" && n != "recurseForDerivations")
+                (builtins.attrNames jobs)));
           in
           self.allJobs.${system}
           // lib.optionalAttrs (ifdLevel > 2)
             { nix-tools = nix-tools-hydraJobs.${system} or { }; }
+          # Fail CI if a compiler enters/leaves the matrix without the README
+          # CI-status table's generator being updated to match.  Only needs to
+          # run on one system (the compiler dimension is system-independent).
+          // lib.optionalAttrs (system == "x86_64-linux")
+            { ci-status-matrix = import ./test/ci-status-matrix.nix {
+                inherit lib;
+                pkgs = self.legacyPackages.${system};
+                ghcs = ghcsInHydra;
+                scriptFile = ./scripts/update-ci-status.sh;
+              };
+            }
         );
 
         devShells = forEachSystemPkgs (pkgs:

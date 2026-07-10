@@ -783,7 +783,24 @@ final: prev: {
                             "Invalid package component name ${componentName}.  Expected it to start with one of lib: flib: exe: test: or bench:";
                           if builtins.elemAt m 0 == "lib" && builtins.elemAt m 1 == packageName
                             then components.library
-                            else components.${haskellLib.prefixComponent.${builtins.elemAt m 0}}.${builtins.elemAt m 1};
+                            else
+                              let ctype = builtins.elemAt m 0;
+                                  cname = builtins.elemAt m 1;
+                                  # Default to {} so a package with no exes/tests/etc. group
+                                  # still reaches the helpful throw below rather than a raw
+                                  # "attribute '<group>' missing".
+                                  group = components.${haskellLib.prefixComponent.${ctype}} or {};
+                              in group.${cname} or (throw ''
+                                Package ${packageName} has no component ${componentName}.
+                                Available ${ctype} components: ${
+                                  if group == {} then "(none)"
+                                  else final.lib.concatStringsSep ", " (builtins.attrNames group)}.
+                                A missing component is often caused by an automatic Cabal flag being turned off by the solver (for example cabal-plan's `exe` flag, which drops exe:cabal-plan), or by the component not existing for this GHC.
+                                If it is a disabled flag, force it back on with cabalProjectLocal, e.g.
+                                    cabalProjectLocal = "package ${packageName}\n  flags: +<flag>";
+                                For a tool this goes in the tool's module, e.g.
+                                    tools.${packageName} = { version = "<version>"; cabalProjectLocal = "package ${packageName}\n  flags: +<flag>"; };
+                                Otherwise pin a version of ${packageName} that solves cleanly for this GHC.'');
 
                       coverageReport = haskellLib.coverageReport ({
                         name = package.identifier.id;
