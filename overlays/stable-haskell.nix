@@ -245,20 +245,27 @@ let
       # `replace-hackage-tarball-urls` is enabled on the project (see below).
       inline_imports cabal.project.stage2.static > cabal.project.stage2.merged
 
-      # The constraint 'build:any.ghc-internal installed' uses a 'build:' role
-      # qualifier that cabal-install 3.16 does not recognise (parser expects
-      # 'setup.' as the only valid qualifier).  Since our stage1 package DB is
-      # intentionally empty (no installed ghc-internal) the constraint would be
-      # impossible to satisfy anyway.  Strip it so cabal can parse the file.
+      # Snapshot the cross project BEFORE stripping the 'build:' constraint
+      # (below) — the cross boot project keeps it (see next comment).
+      cp cabal.project.stage2.merged cabal.project.cross.merged
+
+      # The source's 'constraints: build:any.ghc-internal installed' uses the
+      # cross-compilation "stage" system from the stable-haskell cabal fork
+      # (haskell/cabal#11179).  make-install-plan now links that fork, so the
+      # 'build:' qualifier parses.  Native stage2, however, has an intentionally
+      # empty stage1 package DB (no installed ghc-internal), so the constraint
+      # is unsatisfiable there — strip it for the native merged file only.
       sed -i '/build:any\.ghc-internal/d' cabal.project.stage2.merged
 
-      # Cross builds: re-enable hackage so build-tool-depends exes
-      # (hsc2hs, alex, etc.) can be resolved.  Note: on Windows targets
-      # this still hits the Win32 → hsc2hs → process → Win32 solver cycle
-      # (the solver has no build-vs-target-platform awareness); that
-      # remains an open blocker tracked separately.
-      cp cabal.project.stage2.merged cabal.project.cross.merged
-      printf '\nactive-repositories: hackage.haskell.org\n' >> cabal.project.cross.merged
+      # The cross boot project keeps the 'build:' constraint and stays under
+      # active-repositories: :none.  It breaks the Windows Win32 → hsc2hs →
+      # process → Win32 build-tool cycle the way the stable-haskell Makefile's
+      # stage3 does: hsc2hs (a build-tool-depends) is solved in the *build*
+      # scope against the build compiler passed via `with-build-compiler`
+      # (crossBootProject's cabalProjectLocal), where `process` does not depend
+      # on Win32 — so the cyclic edge never forms.  No full hackage "older
+      # universe" needed (previously re-enabled here), so cross drops back to
+      # :none like stage2.
 
     '';
 
@@ -277,6 +284,9 @@ let
     # cabal.project; rewrite them to local store paths (fetched via hackage.nix)
     # so plan-to-nix needs no network and no matching index-state.
     replace-hackage-tarball-urls = true;
+    # NOTE: stage1 (unlike stage2/cross) does NOT set active-repositories: :none
+    # — it resolves some boot tools (e.g. hpc) from hackage — so it needs the
+    # full prepopulated index and must NOT set prepopulateHackageIndex = false.
     src                  = configuredSrc;
     cabalProjectFileName = "cabal.project.stage1.merged";
     compiler-nix-name    = bootGhcName;
@@ -622,6 +632,11 @@ ENDSCRIPT
     # cabal.project; rewrite them to local store paths (fetched via hackage.nix)
     # so plan-to-nix needs no network and no matching index-state.
     replace-hackage-tarball-urls = true;
+    # With everything pinned locally and active-repositories: :none, cabal
+    # resolves nothing from hackage — but it still parses the prepopulated index
+    # on startup, so the full ~1.2 GB index is a large, needless plan-to-nix cost
+    # (seconds natively, minutes under emulation).  Prepopulate an empty index.
+    prepopulateHackageIndex = false;
     src                  = configuredSrc;
     cabalProjectFileName = "cabal.project.stage2.merged";
     # Use the stage1 compiler (exported as ghc914-sh-stage1) to build
@@ -635,16 +650,15 @@ ENDSCRIPT
     # building the boot libraries.
     configureArgs = "--disable-tests --disable-benchmarks";
 
-    # Re-enable Hackage so alex, happy, and happy-lib can be found for
-    # build-tool-depends resolution.  They were direct-URL packages in the
-    # original cabal.project.stage2 but were stripped above.
-    # active-repositories in this local override wins over the ":none" in
-    # the merged project file (later stanzas take precedence in cabal).
-    # Re-enable Hackage so alex, happy, and happy-lib can be found for
-    # build-tool-depends resolution.  They were direct-URL packages in the
-    # original cabal.project.stage2 but were stripped above.
-    # active-repositories in this local override wins over the ":none" in
-    # the merged project file (later stanzas take precedence in cabal).
+    # NOTE: do NOT re-enable Hackage here.  stable-haskell intentionally sets
+    # `active-repositories: :none` in cabal.project.stage2.common — every boot
+    # library and build tool (alex, happy, happy-lib, ...) is pinned as a direct
+    # hackage tarball URL in the packages: stanza, and `replace-hackage-tarball-urls`
+    # (set above) rewrites each to a local store path fetched via hackage.nix.  So
+    # cabal resolves the whole plan from local packages + source-repository-packages
+    # and needs no Hackage index.  Re-enabling it would force cabal to load the
+    # entire ~1.2 GB index to resolve zero packages — a large, needless plan-to-nix
+    # cost (worse still under emulation on a foreign build platform).
     #
     # The -no-rts ghc-options for rts, rts-fs, rts-headers, ghc-internal,
     # and libffi-clib are already set in cabal.project.stage2 (which imports
@@ -667,7 +681,6 @@ ENDSCRIPT
     # -optc-DTHREADED_RTS` (stable-haskell/ghc#191, merged to stable-ghc-9.14) —
     # so no `package rts` ghc-options workaround is needed here.
     cabalProjectLocal = ''
-      active-repositories: hackage.haskell.org
       package ghc-bin
         flags: -debug
       package haskeline
@@ -1532,6 +1545,15 @@ ENDSCRIPT
     # cabal.project; rewrite them to local store paths (fetched via hackage.nix)
     # so plan-to-nix needs no network and no matching index-state.
     replace-hackage-tarball-urls = true;
+    # Like stage2, the cross boot project resolves nothing from hackage: every
+    # boot library / build tool is a local package or source-repository-package,
+    # and active-repositories stays :none.  The Windows Win32 → hsc2hs →
+    # process → Win32 build-tool cycle is now broken by the fork's cross "stage"
+    # system (withBuildCompiler below), NOT by drawing an "older universe" of
+    # Win32/process/hsc2hs from a full hackage index — so, like stage2, we
+    # prepopulate an empty index and avoid loading the ~1.2 GB one to resolve
+    # zero packages.
+    prepopulateHackageIndex = false;
     src                  = nativeConfiguredSrc;
     # Use the cross-specific merged file which has -build-tool-depends
     # and does not require hackage (hackage remains :none).
@@ -1545,10 +1567,25 @@ ENDSCRIPT
     evalPackages         = pkgs.buildPackages;
     configureArgs = "--disable-tests --disable-benchmarks";
 
-    # The JS backend has no threaded or debug RTS ways, so rts.cabal marks
-    # the threaded-* sub-libraries unbuildable there and ghc-bin's default
-    # +threaded +debug flags make the plan unsatisfiable
-    # ("library 'threaded-debug' is not buildable").  Disable them for ghcjs.
+    # Cross "stage" system (stable-haskell cabal fork, haskell/cabal#11179):
+    # make-install-plan is handed a *build*-platform dummy ghc + ghc-pkg (via
+    # --with-build-compiler / --with-build-hc-pkg) so build-tool-depends (e.g.
+    # hsc2hs) resolve in the *build* scope — where `process` does not pull in
+    # Win32 — which breaks the Windows Win32 → hsc2hs → process → Win32 cycle
+    # without the full hackage "older universe" the cross project used to
+    # re-enable.  The build dummy's `ghc-pkg dump` also lists the build boot
+    # libs (ghc-internal) as installed, satisfying the
+    # `build:any.ghc-internal installed` constraint kept in
+    # cabal.project.cross.merged.  The dummy is synthesised at PLAN time from
+    # the native ghc914-sh's raw-src (boot-lib .cabal files) — it does NOT
+    # build the real native compiler.  See withBuildCompiler /
+    # dummy-build-ghc in lib/call-cabal-project-to-nix.nix.
+    withBuildCompiler = true;
+
+    # The JS backend has no threaded or debug RTS ways, so rts.cabal marks the
+    # threaded-* sub-libraries unbuildable there and ghc-bin's default +threaded
+    # +debug flags make the plan unsatisfiable ("library 'threaded-debug' is not
+    # buildable").  Disable them for ghcjs.
     cabalProjectLocal = lib.optionalString isGhcjsTarget ''
       package ghc-bin
         flags: -threaded -debug
