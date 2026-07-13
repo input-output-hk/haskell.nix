@@ -156,6 +156,44 @@ in {
         Haskell GHC build) that pin dependencies via direct Hackage URLs.
       '';
     };
+    withBuildCompiler = mkOption {
+      type = bool;
+      default = false;
+      description = ''
+        Pass a *build*-platform dummy `ghc` + `ghc-pkg` to `make-install-plan`
+        during plan-to-nix, via `--with-build-compiler` / `--with-build-hc-pkg`
+        (the stable-haskell cabal fork's cross "stage" system,
+        haskell/cabal#11179).
+
+        The build dummy's `ghc --info` reports the build (native) platform and
+        its `ghc-pkg dump --global` lists the build boot libraries (especially
+        `ghc-internal`) as installed.  That satisfies a source project's
+        `constraints: build:any.ghc-internal installed` and lets cabal resolve
+        build-tool-depends (e.g. `hsc2hs`) in the build scope, reusing the
+        installed build-stage `process`/`base` rather than rebuilding them —
+        breaking cross build-tool cycles (e.g. the Windows
+        `Win32 -> hsc2hs -> process -> Win32` cycle) without the full Hackage
+        index.  Off by default; projects that don't set it get no
+        `--with-build-compiler` (unchanged behaviour).
+      '';
+    };
+    prepopulateHackageIndex = mkOption {
+      type = bool;
+      default = true;
+      description = ''
+        Whether to prepopulate the full Hackage index (~1.2 GB, truncated to the
+        project's `index-state`) into the `CABAL_DIR` used for plan-to-nix.
+
+        cabal parses this index at startup on every invocation — even with
+        `active-repositories: :none` — so for projects that resolve nothing from
+        Hackage (every dependency pinned as a local package or
+        source-repository-package, e.g. via `replace-hackage-tarball-urls`), the
+        full index is a large, needless cost (seconds natively, minutes under
+        emulation).  Set this false for such projects to prepopulate an empty
+        index instead, which cabal loads instantly.  Leave true (the default)
+        for normal projects that resolve dependencies from Hackage.
+      '';
+    };
 
     # Used by mkCabalProjectPkgSet
     pkg-def-extras = mkOption {

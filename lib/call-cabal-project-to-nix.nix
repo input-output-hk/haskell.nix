@@ -66,6 +66,18 @@
 , replace-hackage-tarball-urls ? false # Rewrite direct Hackage tarball URLs in
                             # `packages:` to local nix store paths (see
                             # rewriteHackageTarballUrls below).
+, prepopulateHackageIndex ? true # When false, prepopulate an *empty* hackage
+                            # index in CABAL_DIR instead of the full ~1.2 GB one.
+                            # cabal parses this index on every invocation even
+                            # with `active-repositories: :none`, so projects that
+                            # resolve nothing from hackage (all packages pinned
+                            # locally) set this false to avoid a large needless
+                            # cost in the plan-to-nix step.
+, withBuildCompiler ? false # When true, pass a *build*-platform dummy ghc +
+                            # ghc-pkg to make-install-plan via
+                            # --with-build-compiler / --with-build-hc-pkg (the
+                            # stable-haskell cabal fork's cross "stage" system).
+                            # See dummy-build-ghc below.
 , ...
 }@args:
 let
@@ -318,17 +330,24 @@ let
       then rewriteHackageTarballUrls rawCabalProject
       else rawCabalProject);
 
-  ghcSrc = (ghc.raw-src or ghc.buildGHC.raw-src) evalPackages;
-
   platformString = p: with p.parsed; "${cpu.name}-${vendor.name}-${kernel.name}";
 
-  # Dummy `ghc` script cabal-install runs against during plan-to-nix.
-  # See `lib/dummy-ghc.nix` for the implementation and rationale; the
-  # `--info` output is what cabal uses to elaborate per-unit settings
-  # that feed into UnitId computation.
-  dummy-ghc = import ./dummy-ghc.nix { inherit pkgs evalPackages ghc; };
+  # Build the dummy `ghc` + `ghc-pkg` pair that `make-install-plan` runs
+  # against during plan-to-nix.  Parameterised over the pkgs level and the
+  # compiler so the same machinery synthesises BOTH the project's target
+  # pair AND (for the stable-haskell cabal fork's cross "stage" system) a
+  # *build*-platform pair — see `withBuildCompiler` / `dummy-build-ghc` below.
+  mkDummyGhcPkg = { pkgs, ghc }:
+    let
+    ghcSrc = (ghc.raw-src or ghc.buildGHC.raw-src) evalPackages;
 
-  dummy-ghc-pkg-dump = evalPackages.runCommand "dummy-ghc-pkg-dump" {
+    # Dummy `ghc` script cabal-install runs against during plan-to-nix.
+    # See `lib/dummy-ghc.nix` for the implementation and rationale; the
+    # `--info` output is what cabal uses to elaborate per-unit settings
+    # that feed into UnitId computation.
+    dummy-ghc = import ./dummy-ghc.nix { inherit pkgs evalPackages ghc; };
+
+    dummy-ghc-pkg-dump = evalPackages.runCommand "dummy-ghc-pkg-dump" {
       buildInputs = prebuilt-depends;
       nativeBuildInputs = [
         evalPackages.haskell-nix.nix-tools-unchecked.exes.cabal2json
@@ -598,6 +617,28 @@ let
       exit 0
     '';
   };
+    in { inherit dummy-ghc dummy-ghc-pkg; };
+
+  # The project's own (target) dummy pair.
+  inherit (mkDummyGhcPkg { inherit pkgs ghc; }) dummy-ghc dummy-ghc-pkg;
+
+  # A dummy pair instantiated for the BUILD platform (pkgs.buildPackages,
+  # whose targetPlatform is the build platform) and the build-platform
+  # compiler of the same name.  `ghc --info` then reports the build (native)
+  # platform and `ghc-pkg dump --global` lists the build boot libraries
+  # (esp. ghc-internal) as installed.  This satisfies the fork's
+  # `build:any.ghc-internal installed` constraint AND is the cross cycle
+  # break: build-tool-depends (e.g. hsc2hs) resolve in the build scope and
+  # reuse the *installed* build-stage process/base instead of rebuilding
+  # them from source, so the Windows process -> Win32 edge never forms.
+  # Referenced only when the project sets `withBuildCompiler` (so a normal
+  # project never forces the build-platform compiler's source).
+  buildDummyGhcPkg = mkDummyGhcPkg {
+    pkgs = pkgs.buildPackages;
+    ghc = (compilerSelection pkgs.buildPackages)."${compiler-nix-name}";
+  };
+  dummy-build-ghc = buildDummyGhcPkg.dummy-ghc;
+  dummy-build-ghc-pkg = buildDummyGhcPkg.dummy-ghc-pkg;
 
   plan-json = materialize ({
     inherit materialized;
@@ -614,7 +655,21 @@ let
         nix-tools.exes.cabal
       ]
       ++ pkgs.lib.optional supportHpack nix-tools.exes.hpack
-      ++ [dummy-ghc dummy-ghc-pkg evalPackages.rsync evalPackages.gitMinimal evalPackages.allPkgConfigWrapper ];
+      ++ [dummy-ghc dummy-ghc-pkg evalPackages.rsync evalPackages.gitMinimal evalPackages.allPkgConfigWrapper ]
+      # The stable-haskell cabal fork configures a C toolchain during plan
+      # elaboration (its cross "stage" system) and does `requireProgram gcc`,
+      # but haskell.nix plans against a dummy GHC and never put a C compiler on
+      # PATH.  Provide a `gcc` that execs the build `cc` so the probe succeeds.
+      # The C-compiler identity is not part of pkgHashConfigInputs (cabal-install
+      # PackageHash.hs hashes compiler-id/platform/program-args, not cc), so this
+      # does not shift UnitIds.
+      ++ [ (evalPackages.writeShellScriptBin "gcc" ''exec ${evalPackages.stdenv.cc}/bin/cc "$@"'') ]
+      # The build-platform dummy pair for the fork's cross stage system.
+      # Appended AFTER the target dummy-ghc/dummy-ghc-pkg so the target pair
+      # still wins on PATH for `-w ghc` (earlier nativeBuildInputs entries take
+      # PATH precedence); the build pair is referenced by full store path in
+      # --with-build-compiler / --with-build-hc-pkg below.
+      ++ pkgs.lib.optionals withBuildCompiler [ dummy-build-ghc dummy-build-ghc-pkg ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
@@ -692,26 +747,36 @@ let
       # some packages that will be excluded by `index-state-max`
       # which is used by cabal (cached-index-state >= index-state-max).
       dotCabal {
-        inherit nix-tools extra-hackage-tarballs;
+        inherit nix-tools extra-hackage-tarballs prepopulateHackageIndex;
         extra-hackage-repos = fixedProject.repos;
         index-state = cached-index-state;
         sha256 = index-sha256-found;
       }
     }
 
+    ${pkgs.lib.optionalString (!prepopulateHackageIndex) ''
+      # With prepopulateHackageIndex = false the prepopulated hackage index is a
+      # tiny placeholder that does not reach the project's declared index-state,
+      # so cabal would abort with Cabal-7159 ("index-state is newer than the
+      # latest known"). Nothing here is resolved by index-state (every package is
+      # pinned locally and active-repositories is :none), so strip it.
+      sed -i '/^[[:space:]]*index-state:/d' cabal.project
+    ''}
     make-install-plan ${
           # Setting the desired `index-state` here in case it is not
           # in the cabal.project file. This will further restrict the
           # packages used by the solver (cached-index-state >= index-state-max).
           # Cabal treats `--index-state` > the last known package as an error,
           # so we only include this if it is < cached-index-state.
-          pkgs.lib.optionalString (index-state != null && index-state < cached-index-state) "--index-state=${index-state}"
+          pkgs.lib.optionalString (prepopulateHackageIndex && index-state != null && index-state < cached-index-state) "--index-state=${index-state}"
         } \
         -w ${
           # We are using `-w` rather than `--with-ghc` here to override
           # the `with-compiler:` in the `cabal.project` file.
           ghc.targetPrefix}ghc \
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
+        ${pkgs.lib.optionalString withBuildCompiler
+            "--with-build-compiler=${dummy-build-ghc}/bin/ghc --with-build-hc-pkg=${dummy-build-ghc-pkg}/bin/ghc-pkg"} \
         --enable-tests \
         --enable-benchmarks \
         ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-")

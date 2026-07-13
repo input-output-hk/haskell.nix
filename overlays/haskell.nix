@@ -254,7 +254,7 @@ final: prev: {
           })
         ];
 
-        dotCabal = { index-state, sha256, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, nix-tools, ... }:
+        dotCabal = { index-state, sha256, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, nix-tools, prepopulateHackageIndex ? true, ... }:
             let
               # NOTE: root-keys: aaa is because key-threshold: 0 does not seem to be enough by itself
               bootstrapIndexTarball = name: index: final.runCommand "cabal-bootstrap-index-tarball-${name}" {
@@ -273,17 +273,42 @@ final: prev: {
                 cp -r $HOME/.cabal/packages/${name} $out
                 '';
 
+              # An empty hackage index, for projects that resolve nothing from
+              # hackage (`active-repositories: :none` with every package pinned
+              # locally, e.g. the stable-haskell GHCs).  cabal parses the
+              # prepopulated index at startup regardless of active-repositories,
+              # so a full ~1.2 GB index costs seconds — minutes under emulation —
+              # for zero benefit; an empty one loads instantly.  Selected by
+              # `prepopulateHackageIndex = false`.
               # Produce a fixed output derivation from a moving target (hackage index tarball)
-              bootstrapped-hackage-tarball =
-                bootstrapIndexTarball "hackage.haskell.org"
-                (final.fetchurl {
+              fullHackageIndexTarball = final.fetchurl {
                   name = "01-index.tar.gz-at-${builtins.replaceStrings [ ":" ] [ "" ] index-state}";
                   url = "https://hackage.haskell.org/01-index.tar.gz";
                   downloadToTemp = true;
                   postFetch = "${nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
                   outputHashAlgo = "sha256";
                   outputHash = sha256;
-                });
+                };
+
+              # A minimal hackage index, for projects that resolve nothing from
+              # hackage (every dependency pinned locally, `active-repositories:
+              # :none`).  cabal parses the prepopulated index on startup even
+              # under :none, so a full index costs seconds (minutes under
+              # emulation) for zero benefit.  cabal's index reader rejects a
+              # literally empty tar ("short tar trailer"), so we truncate the
+              # full index to an early index-state — a tiny but well-formed index
+              # (~2 MB vs ~1.2 GB) that cabal loads instantly.  The truncation
+              # input is the index FOD, whose store path is fixed by the
+              # project's index-state and its (immutable) sha256, so the plan
+              # does not recalculate when hackage.nix updates.  Selected by
+              # `prepopulateHackageIndex = false`.
+              emptyHackageIndexTarball = final.runCommand "minimal-01-index.tar.gz" {
+                preferLocalBuild = true;
+              } "${nix-tools}/bin/truncate-index -o $out -i ${fullHackageIndexTarball} -s 2008-01-01T00:00:00Z";
+
+              bootstrapped-hackage-tarball =
+                bootstrapIndexTarball "hackage.haskell.org"
+                (if prepopulateHackageIndex then fullHackageIndexTarball else emptyHackageIndexTarball);
 
               bootstrapped-extra-hackage-tarballs = final.lib.mapAttrs bootstrapIndexTarball extra-hackage-tarballs;
             in

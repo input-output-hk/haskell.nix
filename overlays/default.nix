@@ -52,7 +52,7 @@ let
         static-nix-tools-for-default-setup = static-nix-tools' ../nix-tools-static-for-default-setup.nix;
 
         # Version of nix-tools built with a pinned version of haskell.nix.
-        pinned-nix-tools-lib = (import final.haskell-nix.sources.flake-compat {
+        pinned-nix-tools-flake = (import final.haskell-nix.sources.flake-compat {
             pkgs = final;
             inherit (final.stdenv.hostPlatform) system;
             src = ../nix-tools;
@@ -60,15 +60,45 @@ let
               # Avoid downloading another `hackage.nix`.
               inherit (final.haskell-nix.sources) hackage;
             };
-          }).defaultNix.lib;
+          }).defaultNix;
+        pinned-nix-tools-lib = pinned-nix-tools-flake.lib;
+
+        # `static-nix-tools` is disabled for now: we build nix-tools
+        # from source so that `make-install-plan` links the
+        # stable-haskell cabal fork (see nix-tools/cabal.project),
+        # which carries the cross-compilation "stage" system
+        # (--with-build-compiler / build:/host: constraints).  The
+        # pinned static tarball cannot pick that up.
+        #
+        # We route the from-source build through the *pinned*
+        # haskell.nix (`pinned-nix-tools-lib`, same flake-compat used
+        # for hadrian) rather than `nix-tools-pkgs` directly: planning
+        # nix-tools with our own overlay would recurse, because
+        # plan-to-nix consumes `nix-tools-unchecked` twice — the
+        # overridable `nix-tools` param (make-install-plan/plan-to-nix)
+        # *and* the hardcoded `cabal2json` in `dummy-ghc-pkg-dump`.
+        # The pinned instance bootstraps with its own static nix-tools,
+        # so the recursion is broken outside our fixpoint.
+        #
+        # Use the *unchecked* variant (the fork exes planned by the pinned
+        # static 3.16 make-install-plan), NOT the checked one: the checked
+        # variant re-plans itself with the freshly-built fork make-install-plan,
+        # and the fork's stage system configures a C toolchain at plan time
+        # (requireProgram gcc), which the pinned plan-to-nix env doesn't provide.
+        # The unchecked variant is planned by the 3.16 static binary, which does
+        # not, so the bootstrap stays clean.
+        from-source-nix-tools =
+          pinned-nix-tools-flake.legacyPackages.${final.stdenv.hostPlatform.system}.nix-tools-unchecked;
       in
       {
         haskell-nix =
           prev.haskell-nix // {
             inherit (nix-tools-pkgs) nix-tools nix-tools-set;
-            # either nix-tools from its overlay or from the tarball.
-            nix-tools-unchecked = static-nix-tools // {
-              exes =  static-nix-tools.exes // {
+            # nix-tools built from source (with the cabal fork).
+            # `default-setup` is still taken from the static pin so a
+            # fork change doesn't force a global v1 rebuild.
+            nix-tools-unchecked = from-source-nix-tools // {
+              exes = from-source-nix-tools.exes // {
                 inherit (static-nix-tools-for-default-setup.exes) default-setup default-setup-ghcjs;
               };
             };
