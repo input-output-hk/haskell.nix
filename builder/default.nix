@@ -63,16 +63,48 @@ let
                 + "in `builder/default.nix`.")
        else picked;
 
+  # The v2 builder's cabal is the stable-haskell cabal fork (3.17,
+  # branch stable-haskell/master) pulled via source-repository-package
+  # — the same sources make-install-plan links (see
+  # nix-tools/cabal.project).  This gives the per-slice `cabal
+  # v2-build` the cross-compilation "stage" system
+  # (--with-build-compiler / build:/host: constraints) so build-time
+  # tool deps resolve in the build scope.
   v2CabalInstall = pkgsBuildBuild.haskell-nix.tool v2CabalInstallCompiler "cabal" {
-    version = "3.16.1.0";
+    version = "3.17.0.1";
     builderVersion = 1;
     compilerSelection = p: p.haskell.compiler;
+    cabalProjectLocal = ''
+      source-repository-package
+          type: git
+          location: https://github.com/stable-haskell/Cabal.git
+          tag: 01d053ac98e93b24f2f93234f0dbf185c63f1a88
+          --sha256: sha256-7Xz2Cfwn/VPacFSK/blFela2lbfo+QN7luR51l6RLL0=
+          subdir: Cabal
+                  Cabal-syntax
+                  cabal-install
+                  cabal-install-solver
+                  hooks-exe
+
+      source-repository-package
+          type: git
+          location: https://github.com/stable-haskell/hackage-security.git
+          tag: baaad2e189a8203966f7d3f752a348f02eefd1b2
+          --sha256: sha256-mVWZCWGJKsSjQSqb5iw0Q8fmV+4aFZVL4zOmMaNnEhA=
+          subdir: hackage-security
+    '';
     modules = [{
-      packages.cabal-install-solver.patches = [
-        ./cabal-install-patches/prune-unreachable-sublibs.patch
-      ];
+      # TODO(cabal-fork): the prune-unreachable-sublibs patches
+      # (solver + installplan companion) are temporarily dropped for
+      # the 3.17 fork.  Their `reachableSubLibs`/`reachablePDSubLibs`
+      # helpers walk `CondNode _ ds branches` to collect the per-node
+      # `[Dependency]` constraints, but Cabal-syntax 3.17 removed the
+      # constraint field from CondNode (deps now come from each
+      # component's BuildInfo) — so they need a data-model rewrite, not
+      # just an arity fix.  They only matter for sublib-heavy hackage
+      # packages (e.g. vector's benchmarks-O2 sublib needing tasty);
+      # the cabal tool and the stable-haskell boot libs don't hit that.
       packages.cabal-install.patches = [
-        ./cabal-install-patches/prune-unreachable-sublibs-installplan.patch
         ./cabal-install-patches/skip-installed-revdeps-in-completed.patch
         ./cabal-install-patches/setup-build-num-jobs-env.patch
       ];

@@ -25,14 +25,14 @@ exported) so both sites share one implementation.
 --- a/src/Distribution/Client/Dependency.hs
 +++ b/src/Distribution/Client/Dependency.hs
 @@ -65,6 +65,9 @@
-   , addSetupCabalMinVersionConstraint
    , addSetupCabalMaxVersionConstraint
    , addSetupCabalProfiledDynamic
+   , setImplicitSetupInfo
 +
 +    -- ** haskell.nix helpers
 +  , reachablePDSubLibs
    ) where
-
+ 
  import Distribution.Client.Compat.Prelude
 @@ -96,6 +99,11 @@
    , mergeBy
@@ -46,7 +46,7 @@ exported) so both sites share one implementation.
  import Distribution.Compiler
    ( CompilerInfo (..)
    )
-@@ -1108,13 +1116,76 @@
+@@ -1164,13 +1172,76 @@
              -- but no finalizePDs picks components we are not building, eg. exes.
              -- See #3775
              --
@@ -72,7 +72,7 @@ exported) so both sites share one implementation.
 +                 ++ maybe [] PD.setupDepends (PD.setupBuildInfo prunedPkg)
            Left _ ->
              error "configuredPackageInvalidDeps internal error"
-+
+ 
 +-- | Sublib component names reachable from the main library or any executable
 +-- of a finalized PackageDescription.  Mirrors the GenericPackageDescription
 +-- pruning in Distribution.Solver.Modular.IndexConversion so solver output
@@ -84,7 +84,7 @@ exported) so both sites share one implementation.
 +    go Set.empty (seed ++ extraSeeds)
 +  where
 +    thisPn = packageName pd
-
++
 +    sublibNamesIn :: [Dependency] -> [PD.UnqualComponentName]
 +    sublibNamesIn = concatMap $ \(Dependency n _ libs) ->
 +      if n == thisPn
@@ -125,29 +125,29 @@ exported) so both sites share one implementation.
 +          Just deps -> go (Set.insert n acc) (sublibNamesIn deps ++ rest)
 +
  -- ------------------------------------------------------------
-
+ 
  -- * Simple resolver that ignores dependencies
 --- a/src/Distribution/Client/ProjectPlanning.hs
 +++ b/src/Distribution/Client/ProjectPlanning.hs
-@@ -2229,7 +2229,20 @@
-               (compilerInfo compiler)
-               []
-               gdesc of
--              Right (desc, _) -> desc
-+              -- haskell.nix: drop sublibs unreachable from main-lib / exes so
-+              -- Cabal's ConfiguredComponent step doesn't evaluate unused
-+              -- sublibs (whose deps the solver intentionally dropped) and
-+              -- fail with "Dependency on unbuildable package ...".  Must
-+              -- stay in sync with the pruning in
-+              -- Distribution.Solver.Modular.IndexConversion and
-+              -- Distribution.Client.Dependency.
-+              Right (desc, _) ->
-+                let reach           = reachablePDSubLibs desc
-+                    keepSubLib lib  = case PD.libName lib of
-+                      PD.LSubLibName n -> n `Set.member` reach
-+                      _                -> True
-+                in desc
-+                     { PD.subLibraries = filter keepSubLib (PD.subLibraries desc) }
-               Left _ -> error "Failed to finalizePD in elaborateSolverToCommon"
-             elabFlagAssignment = flags
-             elabFlagDefaults =
+@@ -2135,7 +2135,20 @@
+                 (compilerInfo elabCompiler)
+                 []
+                 srcpkgDescription of
+-                Right (desc, _) -> desc
++                -- haskell.nix: drop sublibs unreachable from main-lib / exes so
++                -- Cabal's ConfiguredComponent step doesn't evaluate unused
++                -- sublibs (whose deps the solver intentionally dropped) and
++                -- fail with "Dependency on unbuildable package ...".  Must
++                -- stay in sync with the pruning in
++                -- Distribution.Solver.Modular.IndexConversion and
++                -- Distribution.Client.Dependency.
++                Right (desc, _) ->
++                  let reach           = reachablePDSubLibs desc
++                      keepSubLib lib  = case PD.libName lib of
++                        PD.LSubLibName n -> n `Set.member` reach
++                        _                -> True
++                  in desc
++                       { PD.subLibraries = filter keepSubLib (PD.subLibraries desc) }
+                 Left _ -> error "Failed to finalizePD in elaborateSolverToCommon"
+ 
+             elabGPkgDescription = srcpkgDescription
