@@ -18,7 +18,24 @@ final: prev:
 let
   pkgs         = final;
   lib          = final.lib;
-  evalPackages = pkgs.buildPackages;
+
+  # `ghcEvalPackages` is the eval platform on which plan-to-nix / IFD
+  # derivations are built.  It mirrors `ghcEvalPackages` in
+  # compiler/ghc/default.nix (used there for the hadrian compilers): we use it
+  # instead of `buildPackages` so plan evaluation can run on a platform other
+  # than the build platform.  It defaults to `pkgsBuildBuild` (the machine
+  # running nix); `roots'` / `cabalProject'` rethread it via
+  # `ghc.override { ghcEvalPackages = evalPackages; }` (overlays/haskell.nix:749,
+  # :1355) so that, e.g., `hydraJobs.x86_64-linux.…ghc914-sh.native.roots.ghc`
+  # evaluated on a darwin host computes its plans on darwin instead of shipping
+  # the plan-to-nix derivations to a linux builder.
+  #
+  # The whole compiler pipeline is a function of `ghcEvalPackages` so that
+  # `.override { ghcEvalPackages = …; }` (see the `override` passthru on each
+  # compiler) actually rebuilds the plans against the requested eval platform.
+  mkGhc = { ghcEvalPackages ? pkgs.pkgsBuildBuild }:
+  let
+  evalPackages = ghcEvalPackages;
 
   bootGhcName      = "ghc9103";
   # ProjectVersion / ProjectVersionMunged as handed to GHC's ./configure —
@@ -108,6 +125,9 @@ let
   # Lexer.x / Parser.y (resolved from Hackage by haskell-nix.tool).
   genPrimopCodeTool = pkgs.haskell-nix.tool bootGhcName "genprimopcode" {
     src = "${configuredSrc}/utils/genprimopcode";
+    # Read the tool's `.cabal` from an eval-platform configured tree so its
+    # plan-to-nix does not force a build-platform `configuredSrc` at eval time.
+    evalSrc = "${mkConfiguredSrc evalPackages}/utils/genprimopcode";
     inherit evalPackages;
   };
 
@@ -126,6 +146,7 @@ let
   # same N_9.14 constant count.
   deriveConstantsTool = pkgs.haskell-nix.tool bootGhcName "deriveConstants" {
     src = "${configuredSrc}/utils/deriveConstants";
+    evalSrc = "${mkConfiguredSrc evalPackages}/utils/deriveConstants";
     inherit evalPackages;
   };
 
@@ -134,11 +155,23 @@ let
   # synthesises libraries/ghc-boot-th-next, patches the FIXME platform
   # placeholders in cabal.project.common, and produces self-contained
   # (import-inlined) project files.
-  configuredSrc = pkgs.stdenv.mkDerivation {
+  # `mkConfiguredSrc buildPkgs` builds the configured GHC source tree using
+  # `buildPkgs`.  Building the source requires a build machine (autoconf +
+  # configure), so plan-to-nix must read the `.cabal` files from a copy built
+  # on the EVAL platform (`mkConfiguredSrc evalPackages`, wired as `evalSrc` /
+  # `raw-src`) to avoid an eval-time dependency on the target-platform builder.
+  # The real builds use `configuredSrc = mkConfiguredSrc pkgs` (build platform).
+  # The `sed` FIXME patches below use Nix-level `buildTriple`/`buildArch`/… that
+  # describe the build/host platform of the compiler being produced and are
+  # independent of `buildPkgs` — a darwin-built tree still yields the correct,
+  # plan-equivalent `.cabal` metadata (platform `if os(…)` conditionals are
+  # resolved at solve time by the dummy ghc's `--info`, not by which platform
+  # generated the `.cabal`).
+  mkConfiguredSrc = buildPkgs: buildPkgs.stdenv.mkDerivation {
     name = "ghc914-sh-configured-src";
     src  = ghc914-shSrc;
 
-    nativeBuildInputs = with pkgs; [ autoconf automake libtool python3 ];
+    nativeBuildInputs = with buildPkgs; [ autoconf automake libtool python3 ];
 
     # Nix's default unpackPhase is fine; skip configure/install phases.
     phases = [ "unpackPhase" "buildPhase" "installPhase" ];
@@ -272,6 +305,9 @@ let
     installPhase = "cp -r . $out";
   };
 
+  # The build-platform configured tree, used for the actual boot-library builds.
+  configuredSrc = mkConfiguredSrc pkgs;
+
   # ── Stage 1 ───────────────────────────────────────────────────────────────
   # Builds GHC executables (ghc, ghc-pkg, ghc-toolchain-bin, …) using the
   # boot compiler.  The +bootstrap flag on ghc/ghci/ghc-boot/ghc-boot-th-next
@@ -288,6 +324,9 @@ let
     # — it resolves some boot tools (e.g. hpc) from hackage — so it needs the
     # full prepopulated index and must NOT set prepopulateHackageIndex = false.
     src                  = configuredSrc;
+    # Read `.cabal` files for plan-to-nix from an eval-platform configured tree
+    # (avoids an eval-time build-platform dependency; see mkConfiguredSrc).
+    evalSrc              = mkConfiguredSrc evalPackages;
     cabalProjectFileName = "cabal.project.stage1.merged";
     compiler-nix-name    = bootGhcName;
     inherit evalPackages;
@@ -491,7 +530,7 @@ let
         # package .cabal files.  Our configuredSrc is the fully-patched GHC
         # source tree with all .cabal files generated, which is exactly what
         # is needed.  raw-src is a function of evalPackages (ignored here).
-        raw-src              = _: configuredSrc;
+        raw-src              = evalPkgs: mkConfiguredSrc evalPkgs;
         # builder/default.nix:29 uses `ghc.buildGHC or ghc` for setup-builder.
         # Setup.hs compilation (for buildType: Configure/Custom packages) requires
         # `base` and `Cabal` to be registered in the GHC's package DB.  Our
@@ -508,7 +547,7 @@ let
         # when isHaskellNixCompiler is true (overlays/haskell.nix:699).
         # override references the outer stage1Compiler (with cachedDeps) so
         # callers always get the fully-formed version.
-        override             = _: stage1Compiler;
+        override             = args: (mkGhc ({ inherit ghcEvalPackages; } // args)).stage1Compiler;
       };
       # Make bintools (ranlib, nm, ar, otool, install_name_tool) available in
       # PATH so ghc-toolchain-bin can auto-discover them.  Also make the C
@@ -638,6 +677,8 @@ ENDSCRIPT
     # (seconds natively, minutes under emulation).  Prepopulate an empty index.
     prepopulateHackageIndex = false;
     src                  = configuredSrc;
+    # Eval-platform configured tree for plan-to-nix (see mkConfiguredSrc).
+    evalSrc              = mkConfiguredSrc evalPackages;
     cabalProjectFileName = "cabal.project.stage2.merged";
     # Use the stage1 compiler (exported as ghc914-sh-stage1) to build
     # all stage2 boot libraries and executables.
@@ -1121,14 +1162,21 @@ ENDSCRIPT
       (lib.splitString "\n" (builtins.readFile "${src}/cabal.project.stage2.merged")));
   urlBootPkgs = urlBootPkgsFrom configuredSrc;
 
-  dumpSrc = pkgs.buildPackages.runCommand "ghc914-sh-dump-src" { } (''
+  # `mkDumpSrc buildPkgs` builds the dump-source tree (configured tree + the
+  # overlaid boot-library `.cabal` files) using `buildPkgs`.  Used as the
+  # ghc914-sh compiler's `raw-src`, from which call-cabal-project-to-nix
+  # synthesises the dummy `ghc-pkg dump` at plan time — so it must be buildable
+  # on the eval platform (`mkDumpSrc evalPackages`).
+  mkDumpSrc = buildPkgs:
+    let dumpUrlBootPkgs = urlBootPkgsFrom (mkConfiguredSrc buildPkgs);
+    in buildPkgs.runCommand "ghc914-sh-dump-src" { } (''
     mkdir -p $out
-    ${pkgs.buildPackages.lndir or pkgs.buildPackages.xorg.lndir}/bin/lndir -silent ${configuredSrc} $out
+    ${buildPkgs.lndir or buildPkgs.xorg.lndir}/bin/lndir -silent ${mkConfiguredSrc buildPkgs} $out
   '' + lib.concatMapStrings (p: ''
     mkdir -p $out/libraries/${p.name}
-    cp ${pkgs.haskell-nix.hackageTarball { inherit (p) name version; inherit evalPackages; }}/${p.name}.cabal \
+    cp ${buildPkgs.haskell-nix.hackageTarball { inherit (p) name version; evalPackages = buildPkgs; }}/${p.name}.cabal \
        $out/libraries/${p.name}/${p.name}.cabal
-  '') urlBootPkgs
+  '') dumpUrlBootPkgs
   # Cabal and Cabal-syntax are source-repository-packages (the
   # stable-haskell/Cabal fork) — neither in the GHC tree nor hackage URL
   # pins — so the lndir and urlBootPkgs overlays above both miss their
@@ -1139,9 +1187,12 @@ ENDSCRIPT
   # ghc-boot ("missing package Cabal-syntax").
   + lib.concatMapStrings (name: ''
     mkdir -p $out/libraries/${name}
-    cp ${pkgs.haskell-nix.sources.ghc914-sh-cabal}/${name}/${name}.cabal \
+    cp ${buildPkgs.haskell-nix.sources.ghc914-sh-cabal}/${name}/${name}.cabal \
        $out/libraries/${name}/${name}.cabal
   '') [ "Cabal" "Cabal-syntax" ]);
+
+  # Build-platform dump source (for consumers that realize it on the builder).
+  dumpSrc = mkDumpSrc pkgs;
 
   # For each boot library, the path to its registered .conf file(s).
   # We check `s2 ? name` first to handle any packages missing from the plan.
@@ -1205,12 +1256,12 @@ ENDSCRIPT
         # dummy ghc-pkg dump for plan-time.  Use dumpSrc (configuredSrc +
         # the hackage-pinned boot libraries' .cabal files) so user-project
         # plans see the full installed-package set (see dumpSrc above).
-        raw-src              = _: dumpSrc;
+        raw-src              = evalPkgs: mkDumpSrc evalPkgs;
         # The bare configured tree, for consumers that want the source
         # (e.g. the cross section's nativeConfiguredSrc), not the dump view.
         configured-src       = configuredSrc;
         # override references the outer ghc914-shCompiler (with cachedDeps).
-        override             = _: ghc914-shCompiler;
+        override             = args: (mkGhc ({ inherit ghcEvalPackages; } // args)).ghc914-shCompiler;
       };
     } ''
     mkdir -p $out/bin
@@ -1448,7 +1499,7 @@ ENDSCRIPT
         enableShared         = false;
         raw-src              = _: nativeConfiguredSrc;
         buildGHC             = pkgs.buildPackages.haskell-nix.compiler.${bootGhcName};
-        override             = _: crossStage1Compiler;
+        override             = args: (mkGhc ({ inherit ghcEvalPackages; } // args)).crossStage1Compiler;
       };
       nativeBuildInputs = [ targetCC targetBintools ];
     } ''
@@ -1936,7 +1987,7 @@ STUB
         # itself would be used, producing target (WASM) binaries that
         # can't run on the build machine.
         buildGHC             = nativeSghc914;
-        override             = _: crossCompiler;
+        override             = args: (mkGhc ({ inherit ghcEvalPackages; } // args)).crossCompiler;
       };
       nativeBuildInputs = [ targetCC targetBintools ];
     } ''
@@ -2093,6 +2144,17 @@ ENDSCRIPT
         '';
       };
     };
+
+  in {
+    inherit isCrossTarget isCrossHost
+            stage1Compiler ghc914-shCompiler crossStage1Compiler crossCompiler
+            ghc914-shShells;
+  };
+
+  built = mkGhc { };
+  inherit (built) isCrossTarget isCrossHost
+                  stage1Compiler ghc914-shCompiler crossCompiler
+                  ghc914-shShells;
 
 in {
   haskell-nix = prev.haskell-nix // pkgs.lib.optionalAttrs (!isCrossTarget && !isCrossHost) {
