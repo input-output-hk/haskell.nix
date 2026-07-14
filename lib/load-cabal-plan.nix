@@ -13,8 +13,29 @@ let
     in if storeDirMatch == null
       then s
       else callProjectResults.rawCabalProjectContext + s;
+  # A single unit id can legitimately appear TWICE in the install-plan: once as
+  # a `pre-existing` unit (reported installed by the compiler / the plan-time
+  # dummy `ghc-pkg dump`) and once as a `configured` unit rebuilt from source.
+  # This happens with the stable-haskell stage2/cross projects, where boot
+  # libraries like `rts` are both reported installed by the (dummy) boot
+  # compiler AND listed as local packages — cabal builds and registers the
+  # local one, so it must win.  Otherwise the pre-existing shadow (which
+  # `listToAttrs` keeps because it comes first) makes `lookupDependency` treat
+  # the unit as pre-existing and drop it from `depends` (e.g. the rts flavour
+  # sublibraries' `build-depends: rts` → Cabal-8010 "missing dependency: rts",
+  # since the boot compiler's package DB is actually empty).  Drop the
+  # pre-existing entry whenever a same-id configured entry exists; this is a
+  # no-op for the common case where an id has a single entry.
+  install-plan =
+    let hasConfigured = pkgs.lib.listToAttrs (pkgs.lib.concatMap
+          (p: pkgs.lib.optional (p.type == "configured") { name = p.id; value = true; })
+          plan-json.install-plan);
+    in builtins.filter
+         (p: !(p.type == "pre-existing" && hasConfigured ? ${p.id}))
+         plan-json.install-plan;
+
   # All the units in the plan indexed by unit ID.
-  by-id = pkgs.lib.listToAttrs (map (x: { name = x.id; value = x; }) plan-json.install-plan);
+  by-id = pkgs.lib.listToAttrs (map (x: { name = x.id; value = x; }) install-plan);
 
   # Single-pass categorization via builtins.groupBy (runs in C++, O(n log k)).
   # Replaces three separate concatMap+optional filters over the full plan.
@@ -29,7 +50,7 @@ let
       else if p.type == "configured" && p.style == "local" then "local"
       else if p.type == "configured" && (p.style == "global" || p.style == "inplace") then "nonLocal"
       else throw "load-cabal-plan: unexpected install-plan entry ${p.id or "<no id>"}: type=${p.type or "<unset>"} style=${p.style or "<unset>"}"
-    ) plan-json.install-plan;
+    ) install-plan;
   in {
     preExisting = grouped.preExisting or [];
     nonLocal = grouped.nonLocal or [];
@@ -51,7 +72,7 @@ let
             map (dname: { name = dname; value = null; })
               (pkgs.lib.concatMap (d: builtins.attrNames pre-existing-depends.${d}) directDeps));
         in selfEntry // transitiveDeps;
-    }) plan-json.install-plan);
+    }) install-plan);
   lookupPreExisting = depends:
     pkgs.lib.concatMap (d: builtins.attrNames pre-existing-depends.${d}) depends;
   # Lookup a dependency in `hsPkgs`
