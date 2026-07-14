@@ -13,29 +13,59 @@ let
     in if storeDirMatch == null
       then s
       else callProjectResults.rawCabalProjectContext + s;
-  # A single unit id can legitimately appear TWICE in the install-plan: once as
-  # a `pre-existing` unit (reported installed by the compiler / the plan-time
+  # A package can legitimately appear TWICE in the install-plan: once as a
+  # `pre-existing` unit (reported installed by the compiler / the plan-time
   # dummy `ghc-pkg dump`) and once as a `configured` unit rebuilt from source.
   # This happens with the stable-haskell stage2/cross projects, where boot
-  # libraries like `rts` are both reported installed by the (dummy) boot
-  # compiler AND listed as local packages — cabal builds and registers the
-  # local one, so it must win.  Otherwise the pre-existing shadow (which
-  # `listToAttrs` keeps because it comes first) makes `lookupDependency` treat
-  # the unit as pre-existing and drop it from `depends` (e.g. the rts flavour
-  # sublibraries' `build-depends: rts` → Cabal-8010 "missing dependency: rts",
-  # since the boot compiler's package DB is actually empty).  Drop the
-  # pre-existing entry whenever a same-id configured entry exists; this is a
-  # no-op for the common case where an id has a single entry.
-  install-plan =
-    let hasConfigured = pkgs.lib.listToAttrs (pkgs.lib.concatMap
-          (p: pkgs.lib.optional (p.type == "configured") { name = p.id; value = true; })
-          plan-json.install-plan);
-    in builtins.filter
-         (p: !(p.type == "pre-existing" && hasConfigured ? ${p.id}))
-         plan-json.install-plan;
+  # libraries are both reported installed by the (dummy) boot compiler AND
+  # listed as local packages — cabal builds and registers the local one, so it
+  # must win.  Otherwise the pre-existing shadow makes `lookupDependency` treat
+  # the unit as pre-existing and drop it from `depends`, while the boot
+  # compiler's package DB is actually empty — Cabal-8010 "missing or private
+  # dependencies".
+  #
+  # The pre-existing shadow's id relates to the configured id in one of two
+  # ways, and both must be recognised:
+  #   * SAME id — GHC registers `rts` and `system-cxx-std-lib` without the
+  #     `-inplace` suffix, so the dummy dump mirrors that (`rts-1.0.3`).  Here
+  #     the deduped plan already keys the configured unit under that id.
+  #   * `-inplace` SUFFIX — every other boot lib is dumped as
+  #     `base-4.22.0.0-inplace` (GHC ≥ 9.8 registers in-tree boot libs with the
+  #     suffix; see the dummy-dump synthesis in call-cabal-project-to-nix.nix)
+  #     while the rebuilt local unit registers under the bare `base-4.22.0.0`.
+  #     A dependent still `depends` on the `-inplace` id, so we must both drop
+  #     the shadow AND redirect that id to the configured sibling.  The
+  #     configured boot lib is built with `--ipid=$pkgid-inplace`, so its
+  #     `package.conf.d` carries *both* `base-4.22.0.0.conf` and
+  #     `base-4.22.0.0-inplace.conf` — resolving the dependent to the
+  #     configured derivation therefore satisfies its `--dependency=base=
+  #     base-4.22.0.0-inplace` exact-configuration pin.
+  #
+  # A configured unit with a same-name-version `-inplace` pre-existing sibling
+  # only arises when a boot lib is rebuilt at its bundled version under the
+  # stable-haskell `-inplace` ipid scheme; ordinary projects never produce that
+  # pairing, so this is a no-op for them.
+  configuredById = pkgs.lib.listToAttrs (pkgs.lib.concatMap
+    (p: pkgs.lib.optional (p.type == "configured") { name = p.id; value = p; })
+    plan-json.install-plan);
+  # The configured id shadowed by a pre-existing unit `p`, or null.
+  shadowedConfiguredId = p:
+    if p.type != "pre-existing" then null
+    else if configuredById ? ${p.id} then p.id
+    else let bare = pkgs.lib.removeSuffix "-inplace" p.id;
+         in if bare != p.id && configuredById ? ${bare} then bare else null;
+  install-plan = builtins.filter (p: shadowedConfiguredId p == null)
+    plan-json.install-plan;
 
-  # All the units in the plan indexed by unit ID.
-  by-id = pkgs.lib.listToAttrs (map (x: { name = x.id; value = x; }) install-plan);
+  # All the units in the plan indexed by unit ID.  On top of the deduped plan,
+  # redirect each dropped `-inplace` shadow id to its configured sibling so a
+  # dependent's `depends` reference resolves to the rebuilt unit.
+  by-id = (pkgs.lib.listToAttrs (map (x: { name = x.id; value = x; }) install-plan))
+    // (pkgs.lib.listToAttrs (pkgs.lib.concatMap
+         (p: let s = shadowedConfiguredId p;
+             in pkgs.lib.optional (s != null && s != p.id)
+                  { name = p.id; value = configuredById.${s}; })
+         plan-json.install-plan));
 
   # Single-pass categorization via builtins.groupBy (runs in C++, O(n log k)).
   # Replaces three separate concatMap+optional filters over the full plan.
@@ -62,7 +92,7 @@ let
   # reachable through its dependency graph.  Uses Nix lazy evaluation
   # for memoization -- each entry is computed at most once.
   pre-existing-depends =
-    pkgs.lib.listToAttrs (map (p: {
+    (pkgs.lib.listToAttrs (map (p: {
       name = p.id;
       value =
         let
@@ -72,21 +102,36 @@ let
             map (dname: { name = dname; value = null; })
               (pkgs.lib.concatMap (d: builtins.attrNames pre-existing-depends.${d}) directDeps));
         in selfEntry // transitiveDeps;
-    }) install-plan);
+    }) install-plan))
+    # Redirect each dropped `-inplace` shadow id to its configured sibling's
+    # closure so a dependent whose raw `depends` references the `-inplace` id
+    # (which no longer keys the deduped plan) still resolves.  The configured
+    # unit isn't pre-existing, so the redirect drops the boot lib from the
+    # dependent's pre-existing set — it moves into `depends` instead.
+    // (pkgs.lib.listToAttrs (pkgs.lib.concatMap
+         (p: let s = shadowedConfiguredId p;
+             in pkgs.lib.optional (s != null && s != p.id)
+                  { name = p.id; value = pre-existing-depends.${s}; })
+         plan-json.install-plan));
   lookupPreExisting = depends:
     pkgs.lib.concatMap (d: builtins.attrNames pre-existing-depends.${d}) depends;
   # Lookup a dependency in `hsPkgs`
   lookupDependency = let
     lookupDependency' = hsPkgs: d: let
+      # `by-id` redirects a dropped `-inplace` shadow id to its configured
+      # sibling entry, so index `hsPkgs` by the sibling's real id — indexing by
+      # the raw `-inplace` id would auto-vivify an undefined module stub (its
+      # plan entry was dropped) and fail on `package.license`.
+      resolvedId = by-id.${d}.id;
       instantiated-with = by-id.${d}.instantiated-with or {};
       instantiations = pkgs.lib.mapAttrs (_: value: value // {
         unit = lookupDependency' hsPkgs value.unit-id;
       }) instantiated-with;
-      lib-comp' = hsPkgs.${d} or hsPkgs."${by-id.${d}.pkg-name}-${by-id.${d}.pkg-version}" or hsPkgs.${by-id.${d}.pkg-name};
+      lib-comp' = hsPkgs.${resolvedId} or hsPkgs."${by-id.${d}.pkg-name}-${by-id.${d}.pkg-version}" or hsPkgs.${by-id.${d}.pkg-name};
       lib-comp = if instantiations == {} then lib-comp' else lib-comp' // {
         inherit instantiations;
       };
-      sublib-comp' = hsPkgs.${d}.components.sublibs.${pkgs.lib.removePrefix "lib:" by-id.${d}.component-name};
+      sublib-comp' = hsPkgs.${resolvedId}.components.sublibs.${pkgs.lib.removePrefix "lib:" by-id.${d}.component-name};
       sublib-comp = if instantiations == {} then sublib-comp' else sublib-comp'.override { inherit instantiations; };
       comp = if by-id.${d}.component-name or "lib" == "lib"
              then lib-comp
