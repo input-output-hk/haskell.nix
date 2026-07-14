@@ -278,6 +278,17 @@ let
       # `replace-hackage-tarball-urls` is enabled on the project (see below).
       inline_imports cabal.project.stage2.static > cabal.project.stage2.merged
 
+      # Drop the 'index-state:' inherited from cabal.project.common.  stage2 and
+      # cross both run under 'active-repositories: :none' with every dependency
+      # pinned locally, and they use the empty (2008-truncated) hackage index
+      # (prepopulateHackageIndex = false), so a 2025 index-state resolves to
+      # nothing yet is newer than that placeholder index → cabal aborts with
+      # Cabal-7159.  Strip it at the source (both merged files) rather than in
+      # the shared plan-to-nix code, so an unrelated project's index-state is
+      # never touched.  stage1 keeps its index-state (separate merged file, full
+      # index) — it resolves some boot tools (e.g. hpc) from hackage.
+      sed -i '/^[[:space:]]*index-state:/d' cabal.project.stage2.merged
+
       # Snapshot the cross project BEFORE stripping the 'build:' constraint
       # (below) — the cross boot project keeps it (see next comment).
       cp cabal.project.stage2.merged cabal.project.cross.merged

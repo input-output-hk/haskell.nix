@@ -754,14 +754,6 @@ let
       }
     }
 
-    ${pkgs.lib.optionalString (!prepopulateHackageIndex) ''
-      # With prepopulateHackageIndex = false the prepopulated hackage index is a
-      # tiny placeholder that does not reach the project's declared index-state,
-      # so cabal would abort with Cabal-7159 ("index-state is newer than the
-      # latest known"). Nothing here is resolved by index-state (every package is
-      # pinned locally and active-repositories is :none), so strip it.
-      sed -i '/^[[:space:]]*index-state:/d' cabal.project
-    ''}
     make-install-plan ${
           # Setting the desired `index-state` here in case it is not
           # in the cabal.project file. This will further restrict the
