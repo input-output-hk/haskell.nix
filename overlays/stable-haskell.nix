@@ -1271,6 +1271,11 @@ ENDSCRIPT
         # The bare configured tree, for consumers that want the source
         # (e.g. the cross section's nativeConfiguredSrc), not the dump view.
         configured-src       = configuredSrc;
+        # Eval-platform bare configured tree, for consumers that read .cabal
+        # files at plan time on a different platform (the cross section's
+        # nativeConfiguredSrcEval).  Mirrors raw-src; closes over THIS (native)
+        # invocation's buildTriple so the tree describes the native build.
+        configured-src-for  = evalPkgs: mkConfiguredSrc evalPkgs;
         # override references the outer ghc914-shCompiler (with cachedDeps).
         override             = args: (mkGhc ({ inherit ghcEvalPackages; } // args)).ghc914-shCompiler;
       };
@@ -1389,15 +1394,20 @@ ENDSCRIPT
 
   # The native ghc914-sh compiler, already built for the build platform.
   # In case 2, buildPackages = (native, native, native) = case 1.
-  nativeSghc914       = pkgs.buildPackages.haskell-nix.compiler.ghc914-sh;
-  nativeStage1        = pkgs.buildPackages.haskell-nix.compiler."ghc914-sh-stage1";
-  # The bare configured source tree (NOT the dump view — raw-src now points
-  # at dumpSrc, which must not leak into build inputs like crossBootProject's
-  # src or every cross derivation would change).
-  nativeConfiguredSrc = nativeSghc914.configured-src or (nativeSghc914.raw-src {});
-  # Dump view (configuredSrc + hackage-pinned boot lib .cabal files) for the
-  # final cross compiler's raw-src; content-identical to the native one.
-  nativeDumpSrc = nativeSghc914.raw-src {};
+  # Thread ghcEvalPackages so the native bootstrap's own plan-to-nix runs on
+  # the eval platform too (the built binaries are unchanged — ghcEvalPackages
+  # is eval-only); otherwise a cross build evaluated on a foreign host (e.g.
+  # ucrt64 from darwin) ships the bootstrap plans to a build-platform builder.
+  nativeSghc914       = (pkgs.buildPackages.haskell-nix.compiler.ghc914-sh).override { inherit ghcEvalPackages; };
+  nativeStage1        = (pkgs.buildPackages.haskell-nix.compiler."ghc914-sh-stage1").override { inherit ghcEvalPackages; };
+  # The bare configured source tree on the BUILD platform (NOT the dump view —
+  # raw-src now points at dumpSrc, which must not leak into build inputs like
+  # crossBootProject's src or every cross derivation would change).  Used for
+  # build-time references (${nativeConfiguredSrc}/… copies, packages.ghc.src).
+  nativeConfiguredSrc = nativeSghc914.configured-src or (nativeSghc914.configured-src-for ghcEvalPackages);
+  # The same bare configured tree built on the EVAL platform, for plan-to-nix
+  # evalSrc (so reading .cabal files at plan time needs no build-platform IFD).
+  nativeConfiguredSrcEval = nativeSghc914.configured-src-for ghcEvalPackages;
 
   # ghc-toolchain-bin from the native stage1 build (runs natively).
   nativeGhcToolchainBin =
@@ -1445,7 +1455,7 @@ ENDSCRIPT
         # so reusing it avoids building an extra GHC just for this).
         (pkgs.buildPackages.haskell-nix.tool bootGhcName "libffi-wasm" {
           src = pkgs.buildPackages.haskell-nix.sources.libffi-wasm;
-          evalPackages = pkgs.buildPackages;
+          evalPackages = ghcEvalPackages;
         })
         pkgs.targetPackages.buildPackages.llvmPackages.clang
         pkgs.targetPackages.buildPackages.llvmPackages.llvm
@@ -1474,18 +1484,20 @@ ENDSCRIPT
   # Build tools must run natively.  Use buildPackages.haskell-nix.tool so
   # they are compiled for the build platform, not the target.
   crossAlexTool  = pkgs.buildPackages.haskell-nix.tool bootGhcName "alex"  {
-    version = "3.5.2.0"; evalPackages = pkgs.buildPackages;
+    version = "3.5.2.0"; evalPackages = ghcEvalPackages;
   };
   crossHappyTool = pkgs.buildPackages.haskell-nix.tool bootGhcName "happy" {
-    version = "2.1.5";   evalPackages = pkgs.buildPackages;
+    version = "2.1.5";   evalPackages = ghcEvalPackages;
   };
   crossGenPrimopCodeTool = pkgs.buildPackages.haskell-nix.tool bootGhcName "genprimopcode" {
     src = "${nativeConfiguredSrc}/utils/genprimopcode";
-    evalPackages = pkgs.buildPackages;
+    evalSrc = "${nativeConfiguredSrcEval}/utils/genprimopcode";
+    evalPackages = ghcEvalPackages;
   };
   crossDeriveConstantsTool = pkgs.buildPackages.haskell-nix.tool bootGhcName "deriveConstants" {
     src = "${nativeConfiguredSrc}/utils/deriveConstants";
-    evalPackages = pkgs.buildPackages;
+    evalSrc = "${nativeConfiguredSrcEval}/utils/deriveConstants";
+    evalPackages = ghcEvalPackages;
   };
 
   # Convenience: path to a native stage1 executable (for cross tools).
@@ -1508,7 +1520,7 @@ ENDSCRIPT
         isStableHaskell      = true;
         libDir               = "lib/ghc-${ghcVersion}";
         enableShared         = false;
-        raw-src              = _: nativeConfiguredSrc;
+        raw-src              = evalPkgs: nativeSghc914.configured-src-for evalPkgs;
         buildGHC             = pkgs.buildPackages.haskell-nix.compiler.${bootGhcName};
         override             = args: (mkGhc ({ inherit ghcEvalPackages; } // args)).crossStage1Compiler;
       };
@@ -1617,6 +1629,9 @@ ENDSCRIPT
     # zero packages.
     prepopulateHackageIndex = false;
     src                  = nativeConfiguredSrc;
+    # Read .cabal files for plan-to-nix from the eval-platform configured tree
+    # (avoids a build-platform IFD at plan time; see nativeConfiguredSrcEval).
+    evalSrc              = nativeConfiguredSrcEval;
     # Use the cross-specific merged file which has -build-tool-depends
     # and does not require hackage (hackage remains :none).
     cabalProjectFileName = "cabal.project.cross.merged";
@@ -1626,7 +1641,7 @@ ENDSCRIPT
     # case.  The actual GHC binary comes from ghcOverride below.
     compiler-nix-name    = "ghc914-sh";
     ghcOverride          = crossStage1Compiler;
-    evalPackages         = pkgs.buildPackages;
+    evalPackages         = ghcEvalPackages;
     configureArgs = "--disable-tests --disable-benchmarks";
 
     # Cross "stage" system (stable-haskell cabal fork, haskell/cabal#11179):
@@ -1991,8 +2006,10 @@ STUB
         # system-cxx-std-lib), unlike the native stage2.
         # Dump view so user-project plans against the cross compiler (hello,
         # iserv-proxy for cross-TH targets) see the hackage-pinned boot libs
-        # as installed (see dumpSrc in the native section).
-        raw-src              = _: nativeDumpSrc;
+        # as installed (see dumpSrc in the native section).  Honour the caller's
+        # evalPkgs so the dump is synthesised on the eval platform, and delegate
+        # to the native compiler's raw-src (evalPkgs: mkDumpSrc evalPkgs).
+        raw-src              = evalPkgs: nativeSghc914.raw-src evalPkgs;
         # buildGHC is used by setup-builder.nix and make-config-files.nix
         # to compile Setup.hs natively.  Without it, the cross compiler
         # itself would be used, producing target (WASM) binaries that
