@@ -674,20 +674,22 @@ let
       ) transitiveBuildToolEntries);
 
   # Package names whose presence in the slice's plan / captured-unit
-  # set is tolerated.  On cross this is a safety net: normally cabal
-  # recognises each transitive build-tool's `targetSlice` (matching
-  # unit-id) and neither plans nor builds it, but if a uid mismatch
-  # slips through we accept the in-slice tool build rather than fail.
-  # With the stable-haskell cabal fork the in-slice tool build is the
-  # NORM: a pre-built executable has no `.conf`, so the solver cannot
-  # see it as installed (the fork dropped cabal's store-entry reuse —
-  # see build-cabal-slice's solver-visibility block, which only covers
-  # libraries), and every tool-consuming slice rebuilds its
-  # `build-tool-depends` exes from the slicing repo.  So the allowance
-  # applies on native too; for mainline-native cabal the store carries
-  # the tool unit and the allowance simply never fires.
+  # set is tolerated — CROSS ONLY.  On cross this is a safety net:
+  # normally cabal recognises each transitive build-tool's
+  # `targetSlice` (matching unit-id) and neither plans nor builds it,
+  # but a uid mismatch can slip through legitimately (`--with-PROG`
+  # flags enter the real cabal's pkgHashProgramArgs but not
+  # plan-nix's), and we accept the in-slice tool build rather than
+  # fail.  On NATIVE the check is strict: the fork writes a unit
+  # receipt for every store install and its plan-improvement pass
+  # flips receipt-backed units (including executables, which the
+  # solver can never see as installed) to Installed — so a pre-built
+  # tool appearing in the slice's will-build set means its re-solved
+  # unit id diverged from the composed slice's, which is a real bug
+  # to fix, never to tolerate.
   allowedBuildToolPackages =
-    lib.unique (map (e: e.pkgName) transitiveBuildToolEntries);
+    lib.optionals isCross
+      (lib.unique (map (e: e.pkgName) transitiveBuildToolEntries));
 
   # Cross-only: entries fed to `build-cabal-slice.nix`'s
   # `buildToolBinOverlays`.  After the slice composes its starting

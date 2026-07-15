@@ -1427,7 +1427,7 @@ stdenv.mkDerivation ({
         case "$unitId" in
           # `bin` and `etc` are the staged layout's flat bindir /
           # sysconfdir, not unit dirs.
-          lib|bin|etc|package.db|package.conf.d|incoming) continue ;;
+          lib|bin|etc|units|package.db|package.conf.d|incoming) continue ;;
         esac
         if grep -qx -- "$unitId" $buildRoot/unitdirs-before 2>/dev/null; then
           continue
@@ -1560,7 +1560,7 @@ stdenv.mkDerivation ({
         for unit_dir in $ghcDir/*/; do
           uid=$(basename "$unit_dir")
           case "$uid" in
-            package.db|package.conf.d|incoming|lib|bin|etc) continue ;;
+            package.db|package.conf.d|incoming|lib|bin|etc|units) continue ;;
           esac
           if [ "$uid" != "$target_uid" ] && [ -d "$unit_dir/share/doc" ]; then
             chmod -R u+w "$unit_dir/share/doc" 2>/dev/null || true
@@ -1868,7 +1868,7 @@ stdenv.mkDerivation ({
       if [ ''${#own_uids[@]} -gt 0 ] \
          && ! { [ ''${#own_uids[@]} -eq 1 ] && [ -z "''${own_uids[0]}" ]; }; then
         side=$buildRoot/keep
-        mkdir -p "$side/$storePkgDb" "$side/lib" "$side/bin"
+        mkdir -p "$side/$storePkgDb" "$side/lib" "$side/bin" "$side/units"
         shopt -s nullglob
         for keep in "''${own_uids[@]}"; do
           [ -n "$keep" ] || continue
@@ -1880,6 +1880,13 @@ stdenv.mkDerivation ({
           fi
           if [ -e "$ghcDir/$storePkgDb/$keep.conf" ]; then
             mv "$ghcDir/$storePkgDb/$keep.conf" "$side/$storePkgDb/$keep.conf"
+          fi
+          # Unit receipt (fork layout): must be kept for exactly the
+          # units whose content the slice keeps — a receipt without its
+          # unit would make a downstream improvement pass mark a
+          # missing unit Installed.
+          if [ -e "$ghcDir/units/$keep" ]; then
+            mv "$ghcDir/units/$keep" "$side/units/$keep"
           fi
           for f in "$ghcDir/lib/libHS$keep"-*; do
             mv "$f" "$side/lib/$(basename "$f")"
@@ -1908,6 +1915,10 @@ stdenv.mkDerivation ({
           fi
           if [ -e "$side/$storePkgDb/$keep.conf" ]; then
             mv "$side/$storePkgDb/$keep.conf" "$ghcDir/$storePkgDb/$keep.conf"
+          fi
+          if [ -e "$side/units/$keep" ]; then
+            mkdir -p "$ghcDir/units"
+            mv "$side/units/$keep" "$ghcDir/units/$keep"
           fi
         done
         kept_libs=("$side/lib/libHS"*)
