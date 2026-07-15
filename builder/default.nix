@@ -70,6 +70,11 @@ let
   # v2-build` the cross-compilation "stage" system
   # (--with-build-compiler / build:/host: constraints) so build-time
   # tool deps resolve in the build scope.
+  # Branch `hkm/installed-sublibs` (2 commits on top of
+  # stable-haskell/master 01d053ac): lets installed instances satisfy
+  # named sub-library deps — required by the ghc-bin slice, whose
+  # +threaded/+debug flags depend on the composed installed rts's
+  # flavour sublibs (rts:threaded-nodebug etc.).
   v2CabalInstall = pkgsBuildBuild.haskell-nix.tool v2CabalInstallCompiler "cabal" {
     version = "3.17.0.1";
     builderVersion = 1;
@@ -78,8 +83,8 @@ let
       source-repository-package
           type: git
           location: https://github.com/stable-haskell/Cabal.git
-          tag: 01d053ac98e93b24f2f93234f0dbf185c63f1a88
-          --sha256: sha256-7Xz2Cfwn/VPacFSK/blFela2lbfo+QN7luR51l6RLL0=
+          tag: 44ffc338367fe1b858799de857b4b37f958decd3
+          --sha256: sha256-XnLw9/SRGLxCUG35WyGFsgNGbGAVhDeAA55KHtYdmGc=
           subdir: Cabal
                   Cabal-syntax
                   cabal-install

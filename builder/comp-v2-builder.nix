@@ -674,14 +674,20 @@ let
       ) transitiveBuildToolEntries);
 
   # Package names whose presence in the slice's plan / captured-unit
-  # set is expected on cross.  Normally cabal recognises each
-  # transitive build-tool's `targetSlice` (matching unit-id) and
-  # neither plans nor builds it; this list is the safety net for
-  # cases where a uid mismatch slips through (cabal would then
-  # plan + build the tool, the unit would be captured here, and
-  # we want to accept that rather than fail).  Empty on native.
+  # set is tolerated.  On cross this is a safety net: normally cabal
+  # recognises each transitive build-tool's `targetSlice` (matching
+  # unit-id) and neither plans nor builds it, but if a uid mismatch
+  # slips through we accept the in-slice tool build rather than fail.
+  # With the stable-haskell cabal fork the in-slice tool build is the
+  # NORM: a pre-built executable has no `.conf`, so the solver cannot
+  # see it as installed (the fork dropped cabal's store-entry reuse —
+  # see build-cabal-slice's solver-visibility block, which only covers
+  # libraries), and every tool-consuming slice rebuilds its
+  # `build-tool-depends` exes from the slicing repo.  So the allowance
+  # applies on native too; for mainline-native cabal the store carries
+  # the tool unit and the allowance simply never fires.
   allowedBuildToolPackages =
-    if isCross then lib.unique (map (e: e.pkgName) transitiveBuildToolEntries) else [];
+    lib.unique (map (e: e.pkgName) transitiveBuildToolEntries);
 
   # Cross-only: entries fed to `build-cabal-slice.nix`'s
   # `buildToolBinOverlays`.  After the slice composes its starting
@@ -1242,8 +1248,14 @@ let
   # implemented; it would be added here (and emitted per-fragment) if a
   # project with SRP deps needs the v2 build-time path.
   packagesLine =
-    lib.optionalString isLocalTestOrBench
-      "packages: ./src/${pkgName}-${pkgVersion}\n";
+    if isLocalTestOrBench
+    then "packages: ./src/${pkgName}-${pkgVersion}\n"
+    # The stable-haskell Cabal fork (3.17) rejects a project with neither
+    # `packages:` nor `optional-packages:` (Cabal-7168).  A dependency slice
+    # builds its target from the slicing repo's `extra-packages:`, not a local
+    # package, so give an `optional-packages:` glob that matches nothing here —
+    # it satisfies the check without adding any package (UnitId-neutral).
+    else "optional-packages: ./*\n";
 
   # The *local / global* part of the cabal.project (everything that
   # doesn't depend on the dependency closure).  build-cabal-slice writes
@@ -1552,7 +1564,8 @@ let
   # tix files dropped by inplace-built test exes.  Tix files don't
   # land here (they're produced at test-run time by `lib/check.nix`).
   hpcCopyForLibrary = lib.optionalString isLibrary ''
-    for src_hpc in $out/store/ghc-*/*/lib/extra-compilation-artifacts/hpc; do
+    for src_hpc in $out/store/ghc-*/*/lib/extra-compilation-artifacts/hpc \
+                   $out/store/host/*/lib/*/extra-compilation-artifacts/hpc; do
       [ -d "$src_hpc" ] || continue
       for way_dir in "$src_hpc"/*/; do
         [ -d "$way_dir" ] || continue
@@ -1582,7 +1595,22 @@ let
         cp $out/dist-newstyle/cache/plan.json $out/plan.json
       fi
       chmod -R u+w $out/dist-newstyle 2>/dev/null || true
-      rm -rf $out/dist-newstyle
+      # Keep the `store` symlink: the slice ran cabal with
+      # `--builddir=$out/dist-newstyle`, so with the stable-haskell
+      # cabal fork every baked path (Paths_ datadir, RPATHs, .conf
+      # fields) is spelled through `$out/dist-newstyle/store` and the
+      # link must stay resolvable forever (see build-cabal-slice.nix's
+      # "Staged store layout" comment).  Everything else is build-tree
+      # bulk no downstream consumer reads.
+      shopt -s nullglob dotglob
+      for entry in $out/dist-newstyle/*; do
+        [ "$(basename "$entry")" = store ] && continue
+        rm -rf "$entry"
+      done
+      shopt -u nullglob dotglob
+      if [ ! -d $out/store ]; then
+        rm -rf $out/dist-newstyle
+      fi
     fi
   '';
 

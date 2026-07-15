@@ -82,6 +82,15 @@ let
       kv = builtins.match "--([a-z0-9-]+)=(.+)" arg;
     in
       if forceShared && arg == "--disable-shared" then "shared: True"
+      # `debug-info` is a LEVEL (0..3), not a boolean: its cabal.project value is
+      # parsed by `flagToDebugInfoLevel`, which rejects True/False ("Can't parse
+      # debug info level False").  This matters with the stable-haskell Cabal
+      # fork (3.17); older Cabal accepted the boolean form.  Map the enable/
+      # disable Setup flags to the equivalent level (disable → 0 = NoDebugInfo,
+      # matching `--disable-debug-info`; enable → 2 = NormalDebugInfo, the
+      # no-arg default) so `pkgHashConfigInputs` stays aligned with plan-nix.
+      else if di != null && builtins.head di == "debug-info" then "debug-info: 0"
+      else if en != null && builtins.head en == "debug-info" then "debug-info: 2"
       else if en != null && isProjectField (builtins.head en) then "${builtins.head en}: True"
       else if di != null && isProjectField (builtins.head di) then "${builtins.head di}: False"
       else if kv != null && isProjectField (builtins.head kv) then "${builtins.head kv}: ${builtins.elemAt kv 1}"

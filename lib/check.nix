@@ -57,9 +57,14 @@ if drvOrig.passthru.isSlice or false then
       # `<pkg>_datadir` (the env var Cabal's `Paths_<pkg>` consults before the
       # baked-in path) at that `share` dir.  Done before `preCheck` so a
       # project's own preCheck can still override it.
-      for _conf in ${drvOrig}/store/ghc-*/package.db/*.conf; do
+      for _conf in ${drvOrig}/store/ghc-*/package.db/*.conf \
+                   ${drvOrig}/store/host/*/package.conf.d/*.conf; do
         [ -e "$_conf" ] || continue
-        _share=$(dirname "$(dirname "$_conf")")/$(basename "$_conf" .conf)/share
+        _unitroot=$(dirname "$(dirname "$_conf")")
+        # Mainline layout stages data-files at `<store>/<uid>/share`;
+        # the stable-haskell fork's staged layout at `<store>/lib/<uid>/share`.
+        _share=$_unitroot/$(basename "$_conf" .conf)/share
+        [ -d "$_share" ] || _share=$_unitroot/lib/$(basename "$_conf" .conf)/share
         [ -d "$_share" ] || continue
         _pkgname=$(sed -n 's/^name: *//p' "$_conf" | head -1)
         [ -n "$_pkgname" ] || continue
