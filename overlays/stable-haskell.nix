@@ -212,6 +212,38 @@ let
         fi
       done
 
+      # rts's generated configure has no AC_CONFIG_AUX_DIR, so at run time
+      # it searches `.`, `..`, `../..` for its aux files — which in this
+      # tree sit at the TOP level.  The v2 builder ships each package as a
+      # standalone sdist-style tarball, so `..` is empty there; copy the
+      # aux files into rts/ so a sliced rts configure still finds them.
+      # (rts is the only in-tree build-type: Configure package; the
+      # hackage-pinned Configure packages bundle their own aux files.)
+      for aux in install-sh config.guess config.sub; do
+        if [ -f "$aux" ] && [ ! -f "rts/$aux" ]; then
+          cp "$aux" "rts/$aux"
+        fi
+      done
+
+      # rts/configure.ac hard-codes the deriveConstants probe's include
+      # path as `-I$srcdir/../rts-headers/include` (upstream marks it
+      # FIXME) — valid only when rts/ sits inside this tree next to
+      # rts-headers/.  In a v2 slice the unpacked sdist has no such
+      # sibling, but rts-headers IS an installed dependency there and
+      # cabal exports GHC_PKG to the configure env — so fall back to the
+      # registered include-dirs when the relative path is missing.
+      sed -i 's|--gcc-flag "-I$srcdir/../rts-headers/include"|--gcc-flag "-I$(if test -d "$srcdir/../rts-headers/include"; then echo "$srcdir/../rts-headers/include"; else "$GHC_PKG" field rts-headers include-dirs --simple-output; fi)"|' \
+        rts/configure
+
+      # ghc-boot/Setup.hs's confHook falls back to `git rev-parse HEAD`
+      # when $GIT_COMMIT_ID is unset.  v1 exports the variable via
+      # packages.ghc-boot.preConfigure, but v2 slices don't run per-package
+      # preConfigure hooks, and the sliced sdist is not a git repo — so
+      # rewrite the fallback itself to the same constant v1 exports.
+      # (`if True then … else do` keeps the original do-block parsing as
+      # the dead else-branch, so the sed stays a one-liner.)
+      sed -i 's|Nothing -> do|Nothing -> if True then return "0000000000000000000000000000000000000000" else do|' \
+        libraries/ghc-boot/Setup.hs
 
       # configure generates config.status AND all AC_CONFIG_FILES (the .cabal
       # files, ghcversion.h, …).
@@ -511,6 +543,16 @@ let
   # Convenience: path to a stage1 executable.
   s1exe = pkg: exe: s1.${pkg}.components.exes.${exe}.exePath;
 
+  # Programs rts's configure locates via AC_PATH_PROG (DERIVE_CONSTANTS,
+  # GENAPPLY, PYTHON, NM, OBJDUMP) — put on the build PATH via the rts
+  # components' build-tools (see the stage2 rts module).
+  rtsConfigureTools = [
+    deriveConstantsTool
+    s1.genapply.components.exes.genapply
+    pkgs.buildPackages.python3
+    pkgs.stdenv.cc.bintools.bintools
+  ];
+
   # Assemble the stage1 compiler: wrapper scripts that override the package DB
   # path (cabal puts the wrong GhcLibDir into the compiled-in settings), plus
   # an empty package DB (stage2 lists all packages as local so cabal builds
@@ -596,6 +638,12 @@ ENDSCRIPT
     # ghci is just ghc in interactive mode
     ln -s $out/bin/ghc $out/bin/ghci
 
+    # Versioned alias.  The v2 builder writes `with-compiler: ghc-${ghcVersion}`
+    # (comp-v2-builder.nix uses `ghc-<version>`), which cabal resolves by name
+    # on PATH — a real GHC install ships this, our hand-rolled wrapper must too
+    # (else Cabal-5490 "Cannot find the program 'ghc'").
+    ln -s $out/bin/ghc $out/bin/ghc-${ghcVersion}
+
     # ── ghc-pkg wrapper ───────────────────────────────────────────────────────
     # Wrap ghc-pkg to always use our own (empty) package DB.  Without this
     # makeCompilerDeps (haskell.nix's cachedDeps mechanism) would call
@@ -613,6 +661,9 @@ ENDSCRIPT
       -e "s|PACKAGEDB|$out/lib/ghc-${ghcVersion}/package.conf.d|" \
       $out/bin/ghc-pkg
     chmod +x $out/bin/ghc-pkg
+    # Versioned alias so cabal (with-compiler: ghc-${ghcVersion}) finds the
+    # matching ghc-pkg-${ghcVersion} next to it.
+    ln -s $out/bin/ghc-pkg $out/bin/ghc-pkg-${ghcVersion}
 
     # ── Initialise empty package DB ───────────────────────────────────────────
     # Use the raw binary so the wrapper does not pass --global-package-db for
@@ -677,6 +728,11 @@ ENDSCRIPT
 
   stage2Project = pkgs.haskell-nix.cabalProject' {
     name                 = "ghc914-sh-stage2";
+    # Build the boot libraries with the v2 builder (fork v2CabalInstall) so
+    # per-file Cmm options (rts AutoApply_V32.cmm (-mavx2) etc.) are applied —
+    # matching the stable-ghc-9.14 Makefile's `cabal build`.  v1's standalone
+    # Setup.hs links the boot GHC's Cabal 3.12, which drops those options.
+    builderVersion       = 2;
     inputMap             = srpInputMap;
     # Boot-lib deps are pinned via direct hackage tarball URLs in the source's
     # cabal.project; rewrite them to local store paths (fetched via hackage.nix)
@@ -894,6 +950,21 @@ ENDSCRIPT
         export CABAL_FLAG_leading_underscore=${if hp.isDarwin then "1" else "0"}
         ./configure
       '';
+
+      # The v2 builder runs rts's configure through cabal itself (no
+      # preConfigure hook, and cabal exports the CABAL_FLAG_* env
+      # natively), so the five AC_PATH_PROG programs above must be
+      # discoverable on the slice's PATH instead.  build-tools feed both
+      # builders' PATHs (v1: make-config-files; v2: the slice's
+      # extraNativeBuildInputs); the env-var exports in preConfigure
+      # still win for v1 (AC_PATH_PROG checks the variable first).
+      # configure runs per SLICE, so the flavour sublibs need the tools
+      # as much as the main library does.
+      packages.rts.components.library.build-tools = rtsConfigureTools;
+      packages.rts.components.sublibs = lib.genAttrs
+        [ "nonthreaded-nodebug" "threaded-nodebug"
+          "nonthreaded-debug" "threaded-debug" ]
+        (_: { build-tools = rtsConfigureTools; });
 
       # ghc-boot has build-type: Custom.  Its Setup.hs:
       # 1. Embeds a git commit hash via confHook — reads $GIT_COMMIT_ID
@@ -1224,7 +1295,10 @@ ENDSCRIPT
       key     = bootLibKey name;
       hasPkg  = s2 ? ${key};
       hasLib  = hasPkg && (s2.${key}.components ? library);
-      libDrv  = lib.optionalString hasLib "${s2.${key}.components.library}/package.conf.d";
+      # Component OUTPUT roots — the assembly script's `copyBootConfs`
+      # finds the conf(s) inside, handling both the v1 layout
+      # (`$out/package.conf.d`) and the v2 slice layouts (`$out/store/...`).
+      libDrv  = lib.optionalString hasLib "${s2.${key}.components.library}";
     in lib.optional hasLib libDrv
   ) bootLibraries
   # Include rts sub-libraries so the final compiler's package DB contains
@@ -1234,9 +1308,39 @@ ENDSCRIPT
     lib.concatMap (sublibName:
       let hasSub = s2.rts.components.sublibs ? ${sublibName};
       in lib.optional hasSub
-           "${s2.rts.components.sublibs.${sublibName}}/package.conf.d"
+           "${s2.rts.components.sublibs.${sublibName}}"
     ) [ "nonthreaded-nodebug" "threaded-nodebug" "nonthreaded-debug" "threaded-debug" ]
   );
+
+  # Copy every boot-lib component's package conf(s) into the compiler's
+  # global DB, resolving layout differences:
+  #  * v1 components expose `$compOut/package.conf.d` with absolute paths;
+  #  * v2 slices keep the conf inside their cabal store —
+  #    `store/ghc-*/package.db` (mainline cabal) or the stable-haskell
+  #    fork's staged `store/host/<platform>/package.conf.d` — with
+  #    `''${pkgroot}`-relative fields, which we resolve against the
+  #    slice's store dir while copying (composed dep units are reachable
+  #    next to the db through the slice's lndir symlinks).
+  copyBootConfsFn = ''
+    copyBootConfs() {
+      local compOut=$1 db pkgrootDir conf
+      if [ -d "$compOut/package.conf.d" ]; then
+        cp "$compOut/package.conf.d"/*.conf \
+           $out/lib/ghc-${ghcVersion}/package.conf.d/ 2>/dev/null || true
+        return 0
+      fi
+      for db in "$compOut"/store/ghc-*/package.db \
+                "$compOut"/store/host/*/package.conf.d; do
+        [ -d "$db" ] || continue
+        pkgrootDir=$(dirname "$db")
+        for conf in "$db"/*.conf; do
+          [ -e "$conf" ] || continue
+          sed "s|\''${pkgroot}|$pkgrootDir|g" "$conf" \
+            > $out/lib/ghc-${ghcVersion}/package.conf.d/$(basename "$conf")
+        done
+      done
+    }
+  '';
 
   # ── Final ghc914-sh compiler ────────────────────────────────────────────────
   ghc914-shCompiler =
@@ -1268,6 +1372,10 @@ ENDSCRIPT
         # the hackage-pinned boot libraries' .cabal files) so user-project
         # plans see the full installed-package set (see dumpSrc above).
         raw-src              = evalPkgs: mkDumpSrc evalPkgs;
+        # The stage2 boot-lib project, for debugging single boot libs
+        # (e.g. `…compiler.ghc914-sh.stage2Project.hsPkgs.rts.components
+        # .sublibs.nonthreaded-nodebug`) without assembling the compiler.
+        inherit stage2Project;
         # The bare configured tree, for consumers that want the source
         # (e.g. the cross section's nativeConfiguredSrc), not the dump view.
         configured-src       = configuredSrc;
@@ -1364,9 +1472,9 @@ ENDSCRIPT
     # Use it directly with --global-package-db to point at our output DB.
     mkdir -p $out/lib/ghc-${ghcVersion}/package.conf.d
 
-    for confDir in ${lib.concatStringsSep " " bootLibConfs}; do
-      cp "$confDir"/*.conf \
-         $out/lib/ghc-${ghcVersion}/package.conf.d/ 2>/dev/null || true
+    ${copyBootConfsFn}
+    for compOut in ${lib.concatStringsSep " " bootLibConfs}; do
+      copyBootConfs "$compOut"
     done
 
     ${s2exe "ghc-pkg" "ghc-pkg"} recache \
@@ -1975,14 +2083,16 @@ STUB
       key     = crossBootLibKey name;
       hasPkg  = cs2 ? ${key};
       hasLib  = hasPkg && (cs2.${key}.components ? library);
-      libDrv  = lib.optionalString hasLib "${cs2.${key}.components.library}/package.conf.d";
+      # Component output roots, resolved by `copyBootConfs` (see the
+      # native `bootLibConfs`).
+      libDrv  = lib.optionalString hasLib "${cs2.${key}.components.library}";
     in lib.optional hasLib libDrv
   ) bootLibraries
   ++ lib.optionals (cs2 ? rts && cs2.rts.components ? sublibs) (
     lib.concatMap (sublibName:
       let hasSub = cs2.rts.components.sublibs ? ${sublibName};
       in lib.optional hasSub
-           "${cs2.rts.components.sublibs.${sublibName}}/package.conf.d"
+           "${cs2.rts.components.sublibs.${sublibName}}"
     ) [ "nonthreaded-nodebug" "threaded-nodebug" "nonthreaded-debug" "threaded-debug" ]
   );
 
@@ -2097,9 +2207,9 @@ ENDSCRIPT
     # ── Package DB (boot libraries) ──────────────────────────────────────
     mkdir -p $out/lib/ghc-${ghcVersion}/package.conf.d
 
-    for confDir in ${lib.concatStringsSep " " crossBootLibConfs}; do
-      cp "$confDir"/*.conf \
-         $out/lib/ghc-${ghcVersion}/package.conf.d/ 2>/dev/null || true
+    ${copyBootConfsFn}
+    for compOut in ${lib.concatStringsSep " " crossBootLibConfs}; do
+      copyBootConfs "$compOut"
     done
 
     ${nativeSghc914}/bin/ghc-pkg recache \
