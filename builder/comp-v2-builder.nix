@@ -583,7 +583,13 @@ let
   #     `.y` files in the slice.
   #
   # On NATIVE the two are the same slice (pkgsBuildBuild == hsPkgs).
+  # Empty for two-stage (stable-haskell -target cross) plans: build tools
+  # are BUILD-stage inplace units the consuming slice's cabal builds
+  # itself (see load-cabal-plan's lookupDependencies) — there are no
+  # per-tool slices whose unit ids a consumer's re-plan would recognise.
   transitiveBuildToolEntries =
+    lib.optionals (!isTwoStagePlan) transitiveBuildToolEntries';
+  transitiveBuildToolEntries' =
     let raw = lib.concatMap (e:
       let p   = e.entry;
           pn  = p.pkg-name or "";
@@ -1279,6 +1285,34 @@ let
     then builtins.toFile "${pkgName}.cabal" cabalFile
     else null;
 
+  # Two-stage (stable-haskell `-target` cross) plans.  The compiler is a
+  # wrapper around the native ghc whose target global db is empty
+  # (`emptyGlobalPackageDb`); its plan was made with
+  # `--with-build-compiler` (see call-cabal-project-to-nix.nix), so every
+  # unit carries a stage:
+  #
+  #   * "host" units target the cross platform.  Their slices must
+  #     re-plan the same two-stage way — without `--with-build-compiler`
+  #     cabal would default the build compiler to the host path (the
+  #     TARGET wrapper) and plan every build-stage goal for the target.
+  #   * "build" units (build-tool-depends subtrees, setup deps) run on
+  #     the build machine.  Their slices use the BUILD compiler in an
+  #     ordinary single-stage invocation: the stage does not enter
+  #     cabal's unit hash, so the plan unit id reproduces exactly (same
+  #     compiler id, native platform, same flags, deps installed from
+  #     the native compiler's db).  Captured under the store's
+  #     `host/<native-platform>/`, which a host slice's build-stage
+  #     lookups reach through the compose step's `build` → `host` link.
+  isTwoStagePlan = ghc.emptyGlobalPackageDb or false;
+  # plan.json carries no top-level stage key; the stage is the first path
+  # component under dist-newstyle/build/ in the unit's dist-dir
+  # (`./dist-newstyle/build/<stage>/<platform>/<unit>`).
+  planStage =
+    let dd = (planJsonByPlanId.${package.identifier.unit-id or ""} or {}).dist-dir or "";
+        m  = builtins.match "[.]/dist-newstyle/build/([a-z]+)/.*" dd;
+    in if m == null then null else builtins.head m;
+  isBuildStageUnit = isTwoStagePlan && planStage == "build";
+
   # On targets that need a wrapped ghc (currently just windows
   # cross, where TH compiles route through the wineIservWrapper),
   # `templateHaskell.wrapGhc` is set by the host-platform overlay.
@@ -1286,7 +1320,8 @@ let
   # same compiler-id (UnitId hash unaffected) but every compile
   # silently picks up `-fexternal-interpreter -pgmi <wrapper>`.
   sliceGhc =
-    if templateHaskell != null && templateHaskell.wrapGhc or null != null
+    if isBuildStageUnit then ghc.buildGHC
+    else if templateHaskell != null && templateHaskell.wrapGhc or null != null
     then templateHaskell.wrapGhc ghc
     else ghc;
 
@@ -1436,6 +1471,7 @@ let
     inherit depSlices;
     inherit v2Fragment;
     ghc = sliceGhc;
+    twoStage = isTwoStagePlan && !isBuildStageUnit;
     # Repo + cabal.project are composed at build time from `v2Fragment`;
     # `localRepo`/the full Nix `cabalProject` are intentionally NOT
     # referenced here so the per-slice closure walk stays out of eval.
@@ -1698,6 +1734,7 @@ let
     inherit depSlices;
     inherit v2Fragment;
     ghc = sliceGhc;
+    twoStage = isTwoStagePlan && !isBuildStageUnit;
     localRepo = null;
     preBuild = slicePreBuildV2;
     target = targetSelector;
@@ -1770,6 +1807,7 @@ let
                      depSlices);
     inherit v2Fragment;
     ghc = sliceGhc;
+    twoStage = isTwoStagePlan && !isBuildStageUnit;
     localRepo = null;
     preBuild = slicePreBuildV2;
     target = targetSelector;

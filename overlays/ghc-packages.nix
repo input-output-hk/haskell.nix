@@ -243,7 +243,7 @@ in rec {
   # A `cabalProject'` project for each ghc
   ghc-extra-projects = builtins.mapAttrs (ghcName: proj:
     final.haskell-nix.cabalProject' ({pkgs, ...}: {
-      evalPackages = pkgs.buildPackages;
+      evalSystem = pkgs.buildPackages.stdenv.hostPlatform.system;
       name = "ghc-extra-projects-${ghc-extra-projects-type proj.ghc}-${ghcName}";
       src = proj;
       inherit (proj) cabalProject;

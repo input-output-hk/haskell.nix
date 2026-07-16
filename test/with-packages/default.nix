@@ -1,11 +1,11 @@
-{ stdenv, lib, haskellLib, util, cabalProject', testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, haskellLib, util, cabalProject', testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages }:
 
 with lib;
 with util;
 
 let
   project = doExactConfig: cabalProject' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "with-packages";
     cabalProjectLocal = builtins.readFile ../cabal.project.local;
     modules = [
@@ -18,8 +18,6 @@ let
       {
         packages.test-with-packages.components.library.doExactConfig = doExactConfig;
       }
-
-      { inherit evalPackages; }
     ];
   };
 

@@ -1363,7 +1363,7 @@ in {
                     isHaskellNixCompiler = true;
                     enableShared = false;
                     inherit (booted-ghcjs) configured-src bundled-ghcjs project;
-                    raw-src = _evalPackages: booted-ghcjs.configured-src;
+                    raw-src = booted-ghcjs.configured-src;
                     inherit booted-ghcjs buildGHC;
                     extraConfigureFlags = [
                         "--ghcjs"
@@ -1393,7 +1393,7 @@ in {
     # recursion.
     cabal-install-tool = {compiler-nix-name, ...}@args:
       (final.haskell-nix.tool compiler-nix-name "cabal" ({pkgs, ...}: {
-        evalPackages = pkgs.buildPackages;
+        evalSystem = pkgs.buildPackages.stdenv.hostPlatform.system;
         version = "3.10.3.0";
       } // args));
 

@@ -18,6 +18,7 @@
     ];
   }
 , evalPackages ? import pkgs.path nixpkgsArgs
+, evalSystem ? evalPackages.stdenv.hostPlatform.system
 , ifdLevel ? 1000
 , compiler-nix-name
 , CADerivationsEnabled ? false
@@ -163,7 +164,16 @@ let
   # testSrc = subDir: testSrcRoot + "/${subDir}";
   testSrcRootWithGitDir = evalPackages.haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; includeSiblings = true; keepGitDir = true; };
   testSrcWithGitDir = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRootWithGitDir; inherit subDir; includeSiblings = true; };
-  callTest = x: args: haskell-nix.callPackage x (args // { inherit testSrc compiler-nix-name evalPackages; });
+  # Thread `evalSystem` (the platform plan-to-nix runs on) into tests that
+  # declare it, so a project sets `evalSystem` rather than the now read-only
+  # `evalPackages` option (see modules/project-common.nix).  Passed only to
+  # tests whose function accepts it (via `functionArgs`) so tests that don't
+  # need it are unaffected.  `evalPackages` is still passed unconditionally
+  # for tests that use it as a plain nixpkgs (cleanGit, runCommand, …).
+  callTest = x: args:
+    let wantsEvalSystem = (builtins.functionArgs (if builtins.isFunction x then x else import x)) ? evalSystem;
+    in haskell-nix.callPackage x (args // { inherit testSrc compiler-nix-name evalPackages; }
+      // lib.optionalAttrs wantsEvalSystem { inherit evalSystem; });
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.

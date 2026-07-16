@@ -1,4 +1,4 @@
-{ stdenv, lib, haskell-nix, haskellLib, testSrc, compiler-nix-name, evalPackages, runCommand, gitReallyMinimal, buildPackages }:
+{ stdenv, lib, haskell-nix, haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, runCommand, gitReallyMinimal, buildPackages }:
 
 with lib;
 
@@ -58,7 +58,7 @@ let
     modules = [{
       packages.githash-test.components.exes.githash-test.build-tools = mkForce [ git ];
     }];
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
   };
 
   packages = project.hsPkgs;

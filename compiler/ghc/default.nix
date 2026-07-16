@@ -108,8 +108,15 @@ let self =
 #
 # We use this instead of `buildPackages` so that plan evaluation
 # can work on platforms other than the `buildPlatform`.
-, ghcEvalPackages ? pkgsBuildBuild
+, evalSystem ? pkgsBuildBuild.stdenv.hostPlatform.system
 }@args:
+
+# The eval platform is threaded as a system string (`evalSystem`).  Internal
+# cabalProject'/tool calls pass `evalSystem` (from which the project derives its
+# read-only `evalPackages` option, see modules/project-common.nix) rather than
+# setting `evalPackages` directly.  Per-eval-system variants are selected via
+# the compiler's `evalWith.${evalSystem}` attrset (built from `override` in the
+# stable-haskell final block), not by calling `.override` at each site.
 
 assert !(enableIntegerSimple || enableNativeBignum) -> gmp != null;
 
@@ -126,7 +133,7 @@ let
   inherit (haskell-nix.haskellLib) isCrossTarget;
 
   ghc = if bootPkgs.ghc.isHaskellNixCompiler or false
-    then bootPkgs.ghc.override { inherit ghcEvalPackages; }
+    then bootPkgs.ghc.evalWith.${evalSystem} or (bootPkgs.ghc.override { inherit evalSystem; })
     else bootPkgs.ghc;
 
   ghcHasNativeBignum = builtins.compareVersions ghc-version "9.0" >= 0;
@@ -147,7 +154,7 @@ let
       nativeBuildInputs = [
         (pkgsBuildBuild.haskell-nix.tool "ghc912" "libffi-wasm" {
           src = pkgsBuildBuild.haskell-nix.sources.libffi-wasm;
-          evalPackages = ghcEvalPackages;
+          inherit evalSystem;
         })
         targetPackages.buildPackages.llvmPackages.clang
         targetPackages.buildPackages.llvmPackages.llvm
@@ -363,7 +370,7 @@ let
       inherit compiler-nix-name;
       name = "hadrian";
       compilerSelection = p: p.haskell.compiler;
-      evalPackages = ghcEvalPackages;
+      inherit evalSystem;
       # TODO remove: keeps GHC rebuilds from being triggered every
       # time the v2 code path changes while v2 is still evolving.
       builderVersion = 1;
@@ -886,7 +893,13 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     # We could add `configured-src` as an output of the ghc derivation, but
     # having it as its own derivation means it can be accessed quickly without
     # building GHC.
-    raw-src = evalPackages: evalPackages.stdenv.mkDerivation {
+    # Plain value for THIS compiler's eval platform (its `evalSystem`): the
+    # source tree built on the eval host, from which plan-to-nix reads bundled
+    # `.cabal` files.  Consumers select `ghc.evalWith.${evalSystem}.raw-src`
+    # (attribute selection is memoised) rather than calling a function; the eval
+    # nixpkgs comes from the memoised per-system `haskell-nix.evalPackages`.
+    raw-src = let evalPackages = pkgsBuildBuild.haskell-nix.evalPackages.${evalSystem};
+      in evalPackages.stdenv.mkDerivation {
       name = name + "-raw-src";
       inherit
         version
@@ -1069,7 +1082,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
       disableLargeAddressSpace = true;
     });
   } // extra-passthru // {
-    buildGHC = extra-passthru.buildGHC.override { inherit ghcEvalPackages; };
+    buildGHC = extra-passthru.buildGHC.evalWith.${evalSystem} or (extra-passthru.buildGHC.override { inherit evalSystem; });
   };
 
   meta = {

@@ -1,4 +1,4 @@
-{ lib, config, pkgs, ... }:
+{ lib, options, config, pkgs, ... }:
 with lib;
 with lib.types;
 {
@@ -43,6 +43,12 @@ with lib.types;
     };
     evalSystem = mkOption {
       type = str;
+      # `evalSystem` is the single knob for the platform on which `cabal` /
+      # `nix-tools` (plan-to-nix, IFD) run.  The `evalPackages` option below is
+      # derived from it (via the memoised `haskell-nix.evalPackages`) and is
+      # read-only, so this default is simple and does NOT reference
+      # `evalPackages` (which would recurse: evalPackages' default references
+      # `config.evalSystem`).
       default = pkgs.pkgsBuildBuild.stdenv.hostPlatform.system;
       description = ''
         Specifies the system on which `cabal` and `nix-tools` should run.
@@ -54,25 +60,28 @@ with lib.types;
     };
     evalPackages = mkOption {
       type = attrs;
-      default =
-        if pkgs.pkgsBuildBuild.stdenv.hostPlatform.system == config.evalSystem
-        then pkgs.pkgsBuildBuild
-        else
-          import pkgs.path {
-            system = config.evalSystem;
-            overlays = pkgs.overlays;
-          };
+      # Derived (read-only) from `evalSystem` via the fixpoint-memoised
+      # `haskell-nix.evalPackages` attrset (overlays/haskell.nix) so every
+      # project sharing an `evalSystem` reuses ONE nixpkgs instance (and its
+      # dummy-ghc / configured-src / nix-tools artifacts) instead of importing
+      # a fresh one per project.  Select the eval platform with `evalSystem`.
+      #
+      # Read-only: `evalPackages` is derived from `evalSystem` and can no longer
+      # be set.  `readOnly` forbids *definitions* while still allowing this
+      # `default`, so any attempt to set it errors (pointing at the offending
+      # module); select the eval platform with `evalSystem` instead.  The
+      # default is cycle-free because `evalSystem`'s default does not reference
+      # `evalPackages`.
+      readOnly = true;
+      default = pkgs.haskell-nix.evalPackages.${config.evalSystem};
       description = ''
-        Packages used to run `cabal` and `nix-tools`.
-        This will default to `pkgs.pkgsBuildBuild` if it
-        matches the `evalSystem` (or if `evalSystem` was
-        not specified).
-        If a different `evalSystem` was requested, `evalPackages` will
-        default to be:
-          import pkgs.path {
-            system = config.evalSystem;
-            overlays = pkgs.overlays;
-          };
+        Packages used to run `cabal` and `nix-tools`, derived from
+        `evalSystem` via the memoised `haskell-nix.evalPackages` attrset.
+        Defaults to `pkgs.pkgsBuildBuild` when `evalSystem` matches the
+        `pkgsBuildBuild` system (the common case), otherwise a shared
+        nixpkgs imported for `evalSystem` from the same path and overlays.
+        Select the eval platform with `evalSystem` rather than setting this
+        directly.
       '';
     };
     evalSrc = mkOption {
@@ -134,6 +143,24 @@ with lib.types;
             unconditionally — stack only supports the v1 builder for
             now, so the post-plan override is harmless (v1 doesn't
             enforce UnitId alignment).
+      '';
+    };
+    injectStableHaskellBootPackages = mkOption {
+      type = nullOr bool;
+      default = null;
+      description = ''
+        Inject the stable-haskell GHC's boot package sources
+        (source-repository-package on the configured GHC tree, exact
+        version pins for the hackage-resolved boot deps, and the
+        stage3-style project configuration) into the project's
+        cabal.project, so cabal plans and builds rts, base, … from
+        source alongside the project's own packages.
+
+        `null` (the default) auto-detects: the injection is applied
+        exactly when the selected compiler is a stable-haskell
+        `-target` cross wrapper (`passthru.emptyGlobalPackageDb`),
+        whose global package db ships no boot libraries.  See
+        `modules/cabal-project.nix` for the wiring.
       '';
     };
   };

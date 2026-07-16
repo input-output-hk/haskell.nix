@@ -25,10 +25,12 @@ let
   # Construct the dummy-ghc the same way `lib/call-cabal-project-to-nix.nix`
   # does at plan-to-nix time.  Using the same function ensures the
   # test exercises the actual code path.
-  dummyGhc = import ../../lib/dummy-ghc.nix {
+  # lib/dummy-ghc.nix now returns the { dummy-ghc, dummy-ghc-pkg } pair; this
+  # test exercises the `ghc` half.
+  dummyGhc = (import ../../lib/dummy-ghc.nix {
     inherit pkgs evalPackages;
     ghc = realGhc;
-  };
+  }).dummy-ghc;
 
   ghcCmd = "${realGhc.targetPrefix}ghc";
 

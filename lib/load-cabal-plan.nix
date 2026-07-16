@@ -48,9 +48,19 @@ let
   configuredById = pkgs.lib.listToAttrs (pkgs.lib.concatMap
     (p: pkgs.lib.optional (p.type == "configured") { name = p.id; value = p; })
     plan-json.install-plan);
+  # Two-stage plans (stable-haskell `-target` cross compilers, whose target
+  # global db — and hence the plan-time dump — is EMPTY): every
+  # pre-existing unit is a BUILD-stage installed package from the native
+  # compiler's db, never a shadow of a host configured unit.  A host boot
+  # lib rebuilt from source (`base-4.22.0.0`) and the build-stage installed
+  # one (`base-4.22.0.0-inplace`) are BOTH live, for different stages —
+  # redirecting the latter to the former would hand build-stage tools a
+  # cross-target base.  Skip the dedup entirely.
+  isTwoStagePlan = selectedCompiler.emptyGlobalPackageDb or false;
   # The configured id shadowed by a pre-existing unit `p`, or null.
   shadowedConfiguredId = p:
-    if p.type != "pre-existing" then null
+    if isTwoStagePlan then null
+    else if p.type != "pre-existing" then null
     else if configuredById ? ${p.id} then p.id
     else let bare = pkgs.lib.removeSuffix "-inplace" p.id;
          in if bare != p.id && configuredById ? ${bare} then bare else null;
@@ -139,15 +149,33 @@ let
       in comp;
   in hsPkgs: d:
       pkgs.lib.optional (by-id.${d}.type != "pre-existing") (lookupDependency' hsPkgs d);
-  # Lookup an executable dependency in `hsPkgs.pkgsBuildBuild`
+  # Lookup an executable dependency.
+  #
+  # Two-stage plans carry their build tools as BUILD-stage units of the
+  # SAME plan (built natively — comp-v2-builder gives stage:"build" units
+  # the build compiler), so the exe-depends id resolves right here in
+  # `hsPkgs`.  Single-stage cross plans predate that: their tools live in
+  # the separate `pkgsBuildBuild` (native) project, found by id or —
+  # since that project's plan differs — by name.
   lookupExeDependency = hsPkgs: d:
-    # Try to lookup by ID, but if that fails use the name (currently a different plan is used by pkgsBuildBuild when cross compiling)
-    (hsPkgs.pkgsBuildBuild.${d} or hsPkgs.pkgsBuildBuild.${by-id.${d}.pkg-name}).components.exes.${pkgs.lib.removePrefix "exe:" by-id.${d}.component-name};
+    if isTwoStagePlan
+    then (hsPkgs.${d} or hsPkgs.${by-id.${d}.pkg-name}).components.exes.${pkgs.lib.removePrefix "exe:" by-id.${d}.component-name}
+    else (hsPkgs.pkgsBuildBuild.${d} or hsPkgs.pkgsBuildBuild.${by-id.${d}.pkg-name}).components.exes.${pkgs.lib.removePrefix "exe:" by-id.${d}.component-name};
   # Populate `depends`, `pre-existing` and `build-tools`
+  #
+  # Two-stage plans get NO build-tools entries: their tools are
+  # BUILD-stage units the fork elaborates inplace — each consuming
+  # slice's cabal builds them itself (into the staged dist store, where
+  # composition + unit receipts let later slices reuse them).  A
+  # separate haskell.nix slice per tool would re-plan the tool
+  # single-stage and compute a different (hashed, BuildAndInstall)
+  # unit id that no consumer would ever look up.
   lookupDependencies = hsPkgs: depends: exe-depends: {
     depends = pkgs.lib.concatMap (lookupDependency hsPkgs) depends;
     pre-existing = lookupPreExisting depends;
-    build-tools = map (lookupExeDependency hsPkgs) exe-depends;
+    build-tools =
+      pkgs.lib.optionals (!isTwoStagePlan)
+        (map (lookupExeDependency hsPkgs) exe-depends);
   };
   # Calculate the packages for a component
   getComponents = cabal2nixComponents: hsPkgs: p:
@@ -182,7 +210,12 @@ let
       } // pkgs.lib.optionalAttrs (components ? setup) {
         setup = {
           buildable = true;
-        } // lookupDependencies hsPkgs.pkgsBuildBuild (components.setup.depends or []) (components.setup.exe-depends or []);
+          # Setup deps run on the build machine.  In a two-stage plan they
+          # are build-stage units of THIS plan (see lookupExeDependency);
+          # otherwise they come from the pkgsBuildBuild project.
+        } // lookupDependencies
+               (if isTwoStagePlan then hsPkgs else hsPkgs.pkgsBuildBuild)
+               (components.setup.depends or []) (components.setup.exe-depends or []);
       };
   # We use unsafeDiscardStringContext to ensure that we don't query this derivation when importing
   # each package. The cost can be very high when using a remote store, as we need to do a network call.

@@ -1,5 +1,5 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages }:
 
 with lib;
 
@@ -9,7 +9,7 @@ let
   # `profiled` here to instantiate a project whose plan-nix has
   # `--enable-library-profiling`.
   project = { externalInterpreter, profiled ? false }: project' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "th-dlls";
     # TODO figure out why TH breaks with pkgsStatic for `libsodium` and `HsOpenSSL`
     # `libsodium` fails with the unhandled ELF relocation(RelA) type 23

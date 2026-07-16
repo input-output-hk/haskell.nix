@@ -1,10 +1,10 @@
-{ stdenv, lib, cabal-install, cabalProject', stackProject', runCommand, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, cabal-install, cabalProject', stackProject', runCommand, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages }:
 
 with lib;
 
 let
   projectArgs = {
-    inherit evalPackages;
+    inherit evalSystem;
     src = testSrc "coverage";
     modules = [{
       # Coverage

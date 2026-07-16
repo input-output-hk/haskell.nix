@@ -1,11 +1,11 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages }:
 
 with lib;
 
 let
   project = project' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "exe-dlls";
     cabalProjectLocal = builtins.readFile ../cabal.project.local
       + lib.optionalString stdenv.hostPlatform.isAndroid
@@ -19,7 +19,7 @@ let
   # `docs/dev/profiling.md`).  The profiled variant is a sibling
   # project with the toggles in `cabalProjectLocal`.
   projectProfiled = project' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "exe-dlls";
     cabalProjectLocal = builtins.readFile ../cabal.project.local
       + lib.optionalString stdenv.hostPlatform.isAndroid

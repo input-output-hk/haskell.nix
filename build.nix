@@ -5,7 +5,7 @@
 { nixpkgs ? haskellNix.sources.nixpkgs-unstable
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
-, evalPackages ? import nixpkgs nixpkgsArgs
+, evalSystem ? pkgs.pkgsBuildBuild.stdenv.hostPlatform.system
 , ifdLevel ? 1000
 , compiler-nix-name ? throw "No `compiler-nix-name` passed to build.nix"
 , haskellNix ? (import ./default.nix {})
@@ -17,18 +17,18 @@ let
   tool = buildHaskell.tool;
   ghcFromTo = from: to: __compareVersions haskell.compiler.${compiler-nix-name}.version from >= 0 && __compareVersions haskell.compiler.${compiler-nix-name}.version to < 0;
 in rec {
-  tests = import ./test/default.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
+  tests = import ./test/default.nix { inherit pkgs evalSystem ifdLevel compiler-nix-name; };
 
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.lib.recurseIntoAttrs ({
       cabal-latest = tool compiler-nix-name "cabal" ({
-        inherit evalPackages;
+        inherit evalSystem;
       } // pkgs.lib.optionalAttrs (ghcFromTo "9.13" "9.14") {
         cabalProjectLocal = builtins.readFile ./test/cabal.project.local;
       });
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0) {
       hlint-latest = tool compiler-nix-name "hlint" {
-        inherit evalPackages;
+        inherit evalSystem;
         version = {
             "ghc865" = "3.2.8";
             "ghc882" = "3.3.6";
@@ -48,11 +48,11 @@ in rec {
       stack =
         tool compiler-nix-name "stack" {
           version = "2.11.1";
-          inherit evalPackages;
+          inherit evalSystem;
         };
     } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.13") {
       "hls" = tool compiler-nix-name "haskell-language-server" {
-        inherit evalPackages;
+        inherit evalSystem;
       };
     })
   );

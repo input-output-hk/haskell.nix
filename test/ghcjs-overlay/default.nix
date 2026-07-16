@@ -1,11 +1,11 @@
-{ stdenv, lib, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages }:
 
 with lib;
 
 let
   project = cabalProject' {
     src = testSrc "ghcjs-overlay";
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     cabalProjectLocal = builtins.readFile ../cabal.project.local;
   };
   packages = project.hsPkgs;

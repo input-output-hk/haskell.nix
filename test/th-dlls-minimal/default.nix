@@ -1,5 +1,5 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages }:
 
 with lib;
 
@@ -12,7 +12,7 @@ let
     src = testSrc "th-dlls-minimal/test-clib";
   };
   project = { externalInterpreter, profiled ? false }: project' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "th-dlls-minimal";
     # Spell test-clib's lib dirs out in `cabal.project` (not via
     # `components.library.libs` alone): that way plan-nix evaluates

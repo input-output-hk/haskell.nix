@@ -12,6 +12,7 @@ let readIfExists = src: fileName:
           else null;
 in {
   _file = "haskell.nix/modules/cabal-project.nix";
+  imports = [ ./replace-hackage-tarball-urls.nix ];
   options = {
     # Used by callCabalProjectToNix
     compiler-nix-name = mkOption {
@@ -22,7 +23,7 @@ in {
     };
     compilerSelection = mkOption {
       type = unspecified;
-      default = p: builtins.mapAttrs (_: x: x.override { ghcEvalPackages = config.evalPackages; }) p.haskell-nix.compiler;
+      default = p: builtins.mapAttrs (_: x: x.evalWith.${config.evalSystem} or (x.override { evalSystem = config.evalSystem; })) p.haskell-nix.compiler;
       description = "Use GHC from pkgs.haskell instead of pkgs.haskell-nix";
     };
     index-state = mkOption {
@@ -139,22 +140,6 @@ in {
     supportHpack = mkOption {
       type = bool;
       default = false;
-    };
-    replace-hackage-tarball-urls = mkOption {
-      type = bool;
-      default = false;
-      description = ''
-        When enabled, rewrite direct Hackage tarball URLs in the cabal.project
-        `packages:` stanza — of the form
-        `https://hackage.haskell.org/package/NAME-VER/NAME-VER.tar.gz` — into
-        local nix store paths fetched via hackage.nix (haskell-nix.hackageTarball).
-
-        This lets cabal use the exact pinned versions without network access
-        during plan-to-nix, and without the version needing to be present at the
-        project's `index-state` (hackage.nix carries the sha256 for the exact
-        version).  Off by default; enable for projects (such as the stable
-        Haskell GHC build) that pin dependencies via direct Hackage URLs.
-      '';
     };
     withBuildCompiler = mkOption {
       type = bool;
@@ -377,5 +362,210 @@ in {
       };
     }
     ))
+    # stable-haskell `-target` cross compilers (ghc914-sh for a cross
+    # target) ship NO boot libraries: the compiler's target package db is
+    # empty and the plan-time dummy `ghc-pkg dump` is empty too (see
+    # `emptyGlobalPackageDb` in lib/call-cabal-project-to-nix.nix).  Every
+    # project using such a compiler therefore builds the boot packages
+    # (rts, base, …) from source as part of its own plan.  This block
+    # injects the boot package sources and the project configuration the
+    # stable-haskell GHC's own stage3 (cross) project uses.
+    (let
+      shGhc = (config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name};
+      shBootInject =
+        if config.injectStableHaskellBootPackages != null
+          then config.injectStableHaskellBootPackages
+          else shGhc.emptyGlobalPackageDb or false;
+    in lib.mkIf shBootInject (let
+      # The configured GHC source tree.  The BUILD-platform tree is what
+      # the `packages:` entries point at (same tree the compiler itself is
+      # built from); the eval-platform copy is only read (below) for the
+      # boot dep versions, so plan-time text stays eval-light.
+      shSrc = shGhc.configured-src;
+      # `shGhc` is already the compiler variant selected for this project's
+      # `evalSystem` (via `compilerSelection` → `evalWith.${evalSystem}`), so its
+      # plain `configured-src-eval` is the eval-platform tree for this project.
+      shSrcEval = shGhc.configured-src-eval;
+      # (name, version) pairs of the boot deps the stable-haskell stage2
+      # project pins as direct hackage tarball URLs.  The same versions are
+      # pinned here as exact version constraints, resolved from the
+      # project's normal hackage index (the URL form would require
+      # `replace-hackage-tarball-urls` on every user project).  Commented
+      # URLs in the project file are skipped.
+      shUrlBootPkgs = lib.concatMap (line:
+          let m = builtins.match ".*(https://hackage[.]haskell[.]org/package/[^/]+/(.*)-([0-9][0-9.]*)[.]tar[.]gz).*" line;
+          in lib.optional (m != null && builtins.match "[[:space:]]*--.*" line == null)
+            { name = builtins.elemAt m 1; version = builtins.elemAt m 2; })
+        (lib.splitString "\n" (builtins.readFile "${shSrcEval}/cabal.project.stage2.merged"));
+      # In-tree boot packages, as subdirs of the configured tree.  Mirrors
+      # the packages: stanza of the tree's cabal.project.stage3 (the cross
+      # project): everything not resolvable from hackage.  utils/ghc-iserv
+      # is included for the external TH interpreter; utils/genprimopcode
+      # and utils/deriveConstants satisfy lib:ghc's build-tool-depends
+      # (build-stage units, they run on the build machine).
+      #
+      # These are injected as LOCAL `packages:` entries (absolute store
+      # paths), NOT as a source-repository-package: cabal hashes an SRP by
+      # listing its package sources sdist-style, which fails on
+      # ghc-internal's compiler-generated virtual modules
+      # (GHC.Internal.Prim & co have no source files, and upstream
+      # deliberately leaves them out of `autogen-modules` — see the
+      # commented block in ghc-internal.cabal.in).  Local packages skip
+      # that hashing and get `<pkg>-<ver>-inplace` unit ids — exactly the
+      # arrangement the native ghc914-sh stage2 build (also all-local)
+      # already exercises under the v2 builder.
+      shSubdirs = [
+        "rts-headers" "rts-fs" "rts"
+        "compiler"
+        "libraries/base"
+        "libraries/ghc-bignum"
+        "libraries/ghc-boot"
+        "libraries/ghc-boot-th"
+        "libraries/ghc-compact"
+        "libraries/ghc-experimental"
+        "libraries/ghc-heap"
+        "libraries/ghc-internal"
+        "libraries/ghc-platform"
+        "libraries/ghc-prim"
+        "libraries/ghci"
+        "libraries/integer-gmp"
+        "libraries/system-cxx-std-lib"
+        "libraries/template-haskell"
+        "utils/genprimopcode"
+        "utils/deriveConstants"
+        "utils/ghc-iserv"
+      ];
+      tp = pkgs.stdenv.hostPlatform;
+      isWasm = tp.isWasm or false;
+      # Extra fields appended inside `package` stanzas below.  Built with
+      # explicit "\n  " (two-space) indentation — nix's `''` indentation
+      # stripping applies to nested `''` strings separately, which would
+      # push these lines to column 0 and change their cabal scope from the
+      # stanza to the whole project.
+      rtsWasmExtras = lib.optionalString isWasm ("\n"
+        + "  -- GHC's wasm backend uses JSFFI, but the rts C sources still\n"
+        + "  -- include ffi.h; nixpkgs' wasi toolchain ships no libffi, so\n"
+        + "  -- point at the libffi-wasm build (same one hadrian wasm\n"
+        + "  -- bindists use).\n"
+        + "  extra-include-dirs: ${shGhc.libffi-wasm.dev}/include\n"
+        + "  extra-lib-dirs: ${shGhc.libffi-wasm.out}/lib");
+      crossLinkFields = lib.optionalString (!isWasm) ("\n"
+        + "  shared: ${if shGhc.enableShared or false then "True" else "False"}\n"
+        + "  executable-dynamic: False");
+    in {
+      # The boot packages resolve in the HOST stage against an empty
+      # installed set, while build-tool-depends / setup-depends resolve in
+      # the BUILD stage against the (fully populated) native compiler — a
+      # two-stage plan (the fork's `--with-build-compiler`).
+      withBuildCompiler = true;
+      # rts needs per-file Cmm options (`cmm-options:` stanzas) that only
+      # the v2 (cabal v2-build slicing) builder applies — v1's standalone
+      # Setup.hs links a mainline Cabal that drops them.  Hard-set (not
+      # mkDefault) so an explicit `builderVersion = 1` fails loudly
+      # instead of building a subtly broken rts.
+      builderVersion = 2;
+      cabalProjectLocal = lib.mkBefore ''
+        -- Added by the stable-haskell boot-package injection (see the
+        -- `injectStableHaskellBootPackages` option): the compiler ships no
+        -- target boot libraries, so the plan builds them from source.
+        packages:
+        ${lib.concatMapStrings (d: "  ${shSrc}/${d}\n        ") shSubdirs}
+        -- Forked boot packages that live outside the GHC tree.
+        source-repository-package
+          type: git
+          location: https://github.com/stable-haskell/Cabal.git
+          tag: stable-haskell/master
+          subdir: Cabal Cabal-syntax
+
+        -- hsc2hs with batch cross-compilation support (a build-stage tool).
+        source-repository-package
+          type: git
+          location: https://github.com/stable-haskell/hsc2hs.git
+          tag: d07eea1260894ce5fe456f881fbc62366c9eb1b7
+
+        -- Mirrors cabal.project.stage2.common: the boot packages' bounds
+        -- predate base-4.22 etc.
+        allow-newer: hsc2hs:*, Win32:*, array:*, binary:*, bytestring:*,
+                     containers:*, deepseq:*, directory:*, exceptions:*,
+                     file-io:*, filepath:*, haskeline:*, hpc:*,
+                     libffi-clib:*, mtl:*, os-string:*, parsec:*, pretty:*,
+                     process:*, semaphore-compat:*, stm:*, terminfo:*,
+                     text:*, time:*, transformers:*, template-haskell-lift:*,
+                     template-haskell-quasiquoter:*, unix:*, xhtml:*
+
+        constraints:
+          -- Build-stage dependencies come installed from the native
+          -- compiler (mirrors cabal.project.stage3).
+          build:any.ghc-internal installed
+          -- The solver otherwise believes these are installed for the
+          -- target although they only exist in the build compiler's db
+          -- (mirrors cabal.project.stage3).
+          , Cabal source, Cabal-syntax source, array source, base source
+          , binary source, bytestring source, containers source
+          , deepseq source, directory source, exceptions source
+          , file-io source, filepath source, ghc-bignum source, hpc source
+          , integer-gmp source, mtl source, os-string source, parsec source
+          , pretty source, process source, rts source, rts-headers source
+          , rts-fs source, stm source, system-cxx-std-lib source
+          , template-haskell source, text source, time source
+          , transformers source, unix source, xhtml source, Win32 source
+          -- Exact versions of the hackage-resolved boot deps, matching the
+          -- compiler's own stage2 pins.
+          ${lib.concatMapStrings (p: ", ${p.name} ==${p.version}\n  ") shUrlBootPkgs}
+
+        package libffi-clib
+          ghc-options: -no-rts -optc-Wno-error
+
+        package ghc
+          flags: +build-tool-depends +internal-interpreter
+
+        package ghc-bin
+          flags: +internal-interpreter
+
+        package ghci
+          flags: +internal-interpreter${lib.optionalString isWasm " +use-system-libffi"}
+
+        package ghc-internal
+          flags: +bignum-native
+          ghc-options: -no-rts
+
+        package rts
+          ghc-options: -no-rts
+          flags: ${if isWasm then "+use-system-libffi -tables-next-to-code" else "+tables-next-to-code"}${rtsWasmExtras}
+
+        package rts-headers
+          ghc-options: -no-rts
+
+        package rts-fs
+          ghc-options: -no-rts
+
+        package *
+          library-for-ghci: False${crossLinkFields}
+      '';
+      inputMap = {
+        "https://github.com/stable-haskell/Cabal.git/stable-haskell/master" =
+          pkgs.haskell-nix.sources.ghc914-sh-cabal;
+        "https://github.com/stable-haskell/hsc2hs.git/d07eea1260894ce5fe456f881fbc62366c9eb1b7" =
+          pkgs.haskell-nix.sources.ghc914-sh-hsc2hs;
+      };
+      # rts/configure AC_PATH_PROGs programs that are not cabal-level
+      # dependencies (DERIVE_CONSTANTS, GENAPPLY, NM, OBJDUMP, PYTHON).
+      # The v2 builder runs configure through cabal (no preConfigure
+      # hooks), so they must be on the rts slices' PATH — build-tools feed
+      # the slice's extraNativeBuildInputs.  The tools come from the
+      # compiler's passthru (built natively; nm/objdump handle TARGET
+      # objects).
+      modules = [ ({ config, lib, ... }: {
+        packages = lib.optionalAttrs (config.packages ? rts) {
+          rts.components = {
+            library.build-tools = shGhc.bootPkgTools or [];
+            sublibs = lib.genAttrs
+              [ "nonthreaded-nodebug" "threaded-nodebug"
+                "nonthreaded-debug" "threaded-debug" ]
+              (_: { build-tools = shGhc.bootPkgTools or []; });
+          };
+        };
+      }) ];
+    }))
   ];
 }

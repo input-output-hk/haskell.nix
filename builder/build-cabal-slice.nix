@@ -109,6 +109,16 @@ let outerGhc = ghc; in
                              # the cross-target unit-id (so cabal's solver
                              # is happy) but lets the executable actually
                              # run on the build machine.
+, twoStage ? false           # stable-haskell two-stage (cross) plan:
+                             # pass `--with-build-compiler` /
+                             # `--with-build-hc-pkg` (the compiler's
+                             # buildGHC) to every cabal invocation so
+                             # the slice re-plans with the same
+                             # build/host stage split the project plan
+                             # was made with.  Without it cabal
+                             # defaults the build compiler to the host
+                             # path — the TARGET wrapper — and plans
+                             # build-stage goals for the target.
 , expectedPackage ? null     # if non-null, the only package name
                              # cabal's dry-run plan is allowed to
                              # build.  Any other package means cabal
@@ -325,6 +335,19 @@ let
       haskellLib.isNativeMusl
       "${buildPackages.gcc-unwrapped.lib}/${stdenv.hostPlatform.config}/lib";
   };
+
+  # Two-stage (stable-haskell -target cross) plan: thread the build
+  # compiler through to cabal.  The real build compiler here vs the
+  # dummy pair at plan time is fine — compiler PATHS don't enter
+  # cabal's unit hashes (only the probed compiler id / platform do,
+  # and the dummies report the same values as the real compilers).
+  # `ghc` may be a TH-wrapping of the project compiler (wrapGhc) whose
+  # passthru doesn't carry buildGHC — fall back to the unwrapped outer
+  # compiler.
+  twoStageBuildGhc = ghc.buildGHC or outerGhc.buildGHC;
+  twoStageFlags = lib.optionalString twoStage (
+    " --with-build-compiler=${twoStageBuildGhc}/bin/ghc"
+    + " --with-build-hc-pkg=${twoStageBuildGhc}/bin/ghc-pkg");
 
   crossWithFlags = lib.optionalString (targetPrefix != "") (
     " --with-compiler=${ghcShim}/bin/${ghcBin}"
@@ -557,6 +580,15 @@ stdenv.mkDerivation ({
     # dir, yielding the bogus `ghcDir="."`.  `for` just skips unmatched
     # globs under nullglob (and the `-d` test rejects the literal
     # pattern if nullglob were ever off).
+    # The compiler's platform dir name inside the staged store: the fork
+    # names it after the compiler's `--info` "Target platform"
+    # (DistDirLayout.hs `betterPlatform`).  On cross the composed store
+    # holds a SECOND platform dir — build-stage units (native) reached
+    # through the `build` → `host` link — so the host dir must be picked
+    # by name, not by glob order.
+    hostPlatformDir=$(${ghcBin} --info 2>/dev/null \
+      | sed -n 's/.*("Target platform","\([^"]*\)").*/\1/p' | head -1)
+
     discoverStore() {
       local d
       ghcDir=""
@@ -566,11 +598,15 @@ stdenv.mkDerivation ({
         ghcDir=$d
         break
       done
+      if [ -z "$ghcDir" ] && [ -n "$hostPlatformDir" ] \
+         && [ -d "$storeDir/host/$hostPlatformDir" ]; then
+        ghcDir=$storeDir/host/$hostPlatformDir
+        storePkgDb=package.conf.d
+      fi
       if [ -z "$ghcDir" ]; then
-        # First platform dir wins: natively there is exactly one.  A
-        # CROSS fork slice would put build-stage units under a second
-        # platform dir (through the `build` → `host` link); picking the
-        # target dir by name is TODO for when cross uses v2 slices.
+        # No dir matches the compiler's platform (or --info gave none):
+        # fall back to the first platform dir.  Natively there is
+        # exactly one.
         for d in $storeDir/host/*/; do
           [ -d "$d" ] || continue
           ghcDir=''${d%/}
@@ -1036,7 +1072,7 @@ stdenv.mkDerivation ({
     # after the build (see the staged-store-layout comment above).
     # comp-v2-builder's `trimDistNewstyle` clears the bulk out of $out
     # again, keeping the `store` symlink.
-    cabalCmdArgs="--builddir=$distDir ${crossWithFlags}${withProgFlags}"
+    cabalCmdArgs="--builddir=$distDir ${crossWithFlags}${twoStageFlags}${withProgFlags}"
     # Match v1's `-j` behaviour: cap GHC's per-module parallelism at
     # 4 even when nix gives us more cores.  Going much wider tends to
     # thrash memory on big modules (cardano-ledger templates,
@@ -1093,7 +1129,15 @@ stdenv.mkDerivation ({
           #   ` - host rts-headers-1.0.3 (lib) (requires build)`
           # so the `<name>-<version>` token is $3, not $2.  Skip a leading stage
           # keyword.  (A real package is never named exactly build/host/target.)
-          if (pkg_ver == "host" || pkg_ver == "build" || pkg_ver == "target") pkg_ver = $3
+          #
+          # BUILD-stage units are tolerated wholesale: the fork elaborates
+          # build tools (and their setup-style deps, e.g. the Cabal fork
+          # for Custom setups) as inplace units of the consuming plan, so
+          # the first slice that needs one legitimately builds it into the
+          # composed store (where unit receipts let later slices reuse it).
+          # Only HOST-stage extras indicate a real composition failure.
+          if (pkg_ver == "build") next
+          if (pkg_ver == "host" || pkg_ver == "target") pkg_ver = $3
           n = split(pkg_ver, parts, "-")
           for (i = n; i > 0; i--) if (parts[i] ~ /^[0-9]+(\.[0-9]+)*$/) break
           if (i <= 1) { name = pkg_ver }

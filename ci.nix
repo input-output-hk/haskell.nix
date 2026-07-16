@@ -143,17 +143,17 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
   let evalPackages = import pinnedNixpkgsSrc (nixpkgsArgs // { system = evalSystem; });
   in (dimension "GHC version" (compilerNixNames nixpkgsName evalPackages) (compiler-nix-name: {runTests}:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
-          build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };
+          build = import ./build.nix { inherit pkgs evalSystem ifdLevel compiler-nix-name haskellNix; };
           platformFilter = platformFilterGeneric pkgs system;
       in filterAttrsOnlyRecursive (_: v: platformFilter v && !(isDisabled v)) ({
         # Native builds
         # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
         native = pkgs.lib.recurseIntoAttrs ({
-          roots = pkgs.haskell-nix.roots' { inherit compiler-nix-name evalPackages; } ifdLevel;
+          roots = pkgs.haskell-nix.roots' { inherit compiler-nix-name evalSystem; } ifdLevel;
         } // pkgs.lib.optionalAttrs runTests {
           inherit (build) tests tools maintainer-scripts maintainer-script-cache;
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) rec {
-          hello = (pkgs.haskell-nix.hackage-package ({ name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }
+          hello = (pkgs.haskell-nix.hackage-package ({ name = "hello"; version = "1.0.0.2"; inherit evalSystem compiler-nix-name; }
             // lib.optionalAttrs (builtins.compareVersions pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.13" >= 0) {
               shell.tools.hoogle.cabalProjectLocal = ''
                 -- The following `allow-newer` are needed for
@@ -187,7 +187,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
               if builtins.isAttrs crossSystem
                 then import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; })
                 else crossSystem (import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; }));
-            build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };
+            build = import ./build.nix { inherit pkgs evalSystem ifdLevel compiler-nix-name haskellNix; };
             # darwin -> linux cross runs target binaries under hyper-linux
             # (`hl`).  Building the cross tests would need `hl` to run the
             # target's Template Haskell iserv interpreter inside the nix build,
@@ -198,8 +198,9 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
             isDarwinLinuxCross =
               pkgs.stdenv.buildPlatform.isDarwin && pkgs.stdenv.hostPlatform.isLinux;
         in pkgs.lib.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
-            roots = pkgs.haskell-nix.roots' { inherit compiler-nix-name evalPackages; } ifdLevel // {
-              ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { ghcEvalPackages = evalPackages; };
+            roots = pkgs.haskell-nix.roots' { inherit compiler-nix-name evalSystem; } ifdLevel // {
+              ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.evalWith.${evalSystem}
+                or (pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { evalSystem = evalSystem; });
             };
             # TODO: look into cross compiling ghc itself
             # ghc = pkgs.haskell-nix.compiler.${compiler-nix-name};
@@ -212,7 +213,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
         // pkgs.lib.optionalAttrs (ifdLevel >= 2 && !builtins.elem crossSystemName ["ghcjs" "wasi32"])
             pkgs.haskell-nix.iserv-proxy-exes.${compiler-nix-name}
         // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
-          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }).getComponent "exe:hello";
+          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit evalSystem compiler-nix-name; }).getComponent "exe:hello";
         })
       ))
     ))

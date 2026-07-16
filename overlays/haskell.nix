@@ -23,6 +23,29 @@ final: prev: {
         # here and be explicit about imports and dependencies.
         callPackage = prev.lib.callPackageWith (final // final.haskell-nix);
 
+        # The systems on which plan-to-nix / IFD ("eval") derivations may
+        # run.  A project selects one via its `evalSystem` option; the
+        # eval-side artifacts (nixpkgs, dummy-ghc, configured-src, …) are
+        # memoised per entry so every project sharing an `evalSystem`
+        # reuses one instance instead of re-deriving it per `cabalProject`.
+        eval-systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+
+        # nixpkgs used to run `cabal` / `nix-tools`, keyed by eval system
+        # and memoised at the fixpoint level.  Non-native systems are
+        # imported lazily from the same nixpkgs path and overlays; the
+        # native `pkgsBuildBuild` system is always overlaid on top so it
+        # reuses the already-instantiated `pkgsBuildBuild` (no second
+        # import) AND is present even when it is not in `eval-systems`
+        # (future-proofing new host systems).  `genAttrs` is lazy, so the
+        # fresh-import thunk for the native key is created but never forced.
+        # Replaces the inline construction the `evalPackages` project option
+        # used to do (modules/project-common.nix), as a single shared
+        # attribute rather than one rebuilt per project.
+        evalPackages =
+          final.lib.genAttrs eval-systems (evalSystem:
+            import final.path { system = evalSystem; overlays = final.overlays; })
+          // { ${final.pkgsBuildBuild.stdenv.hostPlatform.system} = final.pkgsBuildBuild; };
+
         # ghc hackage patches.
         # these are patches that turn hackage packages into the same as the ones
         # ghc ships with the supposedly same version. See GHC Track Issue: 16199
@@ -705,7 +728,7 @@ final: prev: {
           projectModule: haskellLib.evalProjectModule ../modules/cabal-project.nix projectModule (
             { config, options, ... }:
             let
-              inherit (config) compiler-nix-name compilerSelection evalPackages;
+              inherit (config) compiler-nix-name compilerSelection evalPackages evalSystem;
               selectedCompiler = (compilerSelection final.buildPackages).${compiler-nix-name};
               callProjectResults = callCabalProjectToNix config;
               plan-pkgs = if !builtins.pathExists (callProjectResults.projectNix + "/plan.json")
@@ -746,7 +769,7 @@ final: prev: {
                             then config.ghc
                           else
                             final.lib.mkDefault selectedCompiler;
-                        in if ghc.isHaskellNixCompiler or false then ghc.override { ghcEvalPackages = evalPackages; } else ghc;
+                        in if ghc.isHaskellNixCompiler or false then (ghc.evalWith.${evalSystem} or (ghc.override { evalSystem = evalSystem; })) else ghc;
                       compiler.nix-name = final.lib.mkForce config.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
                       inherit (config) prebuilt-depends builderVersion cabalProjectLocal;
@@ -761,9 +784,9 @@ final: prev: {
                   args = config;
                   plan-nix = callProjectResults.projectNix;
                   inherit (callProjectResults) index-state-max;
-                  tool = final.buildPackages.haskell-nix.tool' evalPackages pkg-set.config.compiler.nix-name;
-                  tools = final.buildPackages.haskell-nix.tools' evalPackages pkg-set.config.compiler.nix-name;
-                  roots = final.haskell-nix.roots { compiler-nix-name = pkg-set.config.compiler.nix-name; inherit evalPackages; };
+                  tool = final.buildPackages.haskell-nix.tool' evalSystem pkg-set.config.compiler.nix-name;
+                  tools = final.buildPackages.haskell-nix.tools' evalSystem pkg-set.config.compiler.nix-name;
+                  roots = final.haskell-nix.roots { compiler-nix-name = pkg-set.config.compiler.nix-name; inherit evalSystem; };
                   projectFunction = haskell-nix: haskell-nix.cabalProject';
                   inherit projectModule buildProject;
                 };
@@ -1018,7 +1041,7 @@ final: prev: {
         stackProject' =
           projectModule: haskellLib.evalProjectModule ../modules/stack-project.nix projectModule (
             { config, options, ... }:
-            let inherit (config) evalPackages;
+            let inherit (config) evalPackages evalSystem;
                 callProjectResults = callStackToNix (config
                   // final.lib.optionalAttrs (config.cache == null) { inherit cache; });
                 generatedCache = genStackCache config;
@@ -1033,7 +1056,7 @@ final: prev: {
                   modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; }
                       (mkCacheModule cache) ]
                     ++ (config.modules or [])
-                    ++ final.lib.optional (config.ghc != null) { ghc.package = config.ghc.override { ghcEvalPackages = evalPackages; }; }
+                    ++ final.lib.optional (config.ghc != null) { ghc.package = config.ghc.evalWith.${evalSystem} or (config.ghc.override { evalSystem = evalSystem; }); }
                     ++ final.lib.optional (config.compiler-nix-name != null)
                         { compiler.nix-name = final.lib.mkForce config.compiler-nix-name; }
                     ++ [ { evalPackages = final.lib.mkDefault evalPackages;
@@ -1047,9 +1070,9 @@ final: prev: {
                   inherit options;
                   args = config;
                   stack-nix = callProjectResults.projectNix;
-                  tool = final.buildPackages.haskell-nix.tool' evalPackages pkg-set.config.compiler.nix-name;
-                  tools = final.buildPackages.haskell-nix.tools' evalPackages pkg-set.config.compiler.nix-name;
-                  roots = final.haskell-nix.roots { compiler-nix-name = pkg-set.config.compiler.nix-name; inherit evalPackages; };
+                  tool = final.buildPackages.haskell-nix.tool' evalSystem pkg-set.config.compiler.nix-name;
+                  tools = final.buildPackages.haskell-nix.tools' evalSystem pkg-set.config.compiler.nix-name;
+                  roots = final.haskell-nix.roots { compiler-nix-name = pkg-set.config.compiler.nix-name; inherit evalSystem; };
                   projectFunction = haskell-nix: haskell-nix.stackProject';
                   inherit projectModule buildProject;
                 };
@@ -1345,14 +1368,16 @@ final: prev: {
         # are tested and cached. Consider using `p.roots` where `p` is a
         # project as it will automatically match the `compiler-nix-name`
         # of the project.
-        roots = { compiler-nix-name, evalPackages ? final.pkgsBuildBuild }@args: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
+        roots = { compiler-nix-name, evalSystem ? final.pkgsBuildBuild.stdenv.hostPlatform.system }@args: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
           (final.lib.filter (x: x.name != "recurseForDerivations")
             (final.lib.mapAttrsToList (name: path: { inherit name path; })
               (roots' args 2)));
 
-        roots' = { compiler-nix-name, evalPackages ? final.pkgsBuildBuild }: ifdLevel:
+        roots' = { compiler-nix-name, evalSystem ? final.pkgsBuildBuild.stdenv.hostPlatform.system }: ifdLevel:
           let
-            ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { ghcEvalPackages = evalPackages; };
+            evalPackages = final.haskell-nix.evalPackages.${evalSystem};
+            ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.evalWith.${evalSystem}
+              or (final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { evalSystem = evalSystem; });
           in
             final.lib.recurseIntoAttrs ({
             # Things that require no IFD to build

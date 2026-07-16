@@ -14,7 +14,7 @@
 , cabalProjectLocal    ? null
 , cabalProjectFreeze   ? null
 , caller               ? "callCabalProjectToNix" # Name of the calling function for better warning messages
-, compilerSelection    ? p: builtins.mapAttrs (_: x: x.override { ghcEvalPackages = evalPackages; }) p.haskell-nix.compiler
+, compilerSelection    ? p: builtins.mapAttrs (_: x: x.evalWith.${evalPackages.stdenv.hostPlatform.system} or (x.override { evalSystem = evalPackages.stdenv.hostPlatform.system; })) p.haskell-nix.compiler
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
 , configureArgs ? "" # Extra arguments to pass to `cabal v2-configure`.
                      # `--enable-tests --enable-benchmarks` are included by default.
@@ -63,9 +63,6 @@
 , supportHpack ? false      # Run hpack on package.yaml files with no .cabal file
 , ignorePackageYaml ? false # Ignore package.yaml files even if they exist
 , prebuilt-depends ? []
-, replace-hackage-tarball-urls ? false # Rewrite direct Hackage tarball URLs in
-                            # `packages:` to local nix store paths (see
-                            # rewriteHackageTarballUrls below).
 , prepopulateHackageIndex ? true # When false, prepopulate an *empty* hackage
                             # index in CABAL_DIR instead of the full ~1.2 GB one.
                             # cabal parses this index on every invocation even
@@ -194,29 +191,6 @@ let
     builtins.readFile (pkgs.runCommand "hash-path" { preferLocalBuild = true; }
       "echo -n $(${pkgs.nix}/bin/nix-hash --type sha256 --base32 ${path}) > $out");
 
-  # Rewrite direct Hackage tarball URLs in a cabal.project's `packages:` stanza
-  # (of the form https://hackage.haskell.org/package/NAME-VER/NAME-VER.tar.gz)
-  # into local nix store paths fetched via hackage.nix.  This lets cabal use the
-  # exact pinned versions during plan-to-nix without network access and without
-  # the version needing to be present at the project's index-state.  Gated on
-  # the `replace-hackage-tarball-urls` project option.  We use replaceStrings so
-  # the substituted store paths retain their string context.
-  rewriteHackageTarballUrls = projectFile:
-    let
-      urlRe = "https://hackage[.]haskell[.]org/package/[^/[:space:]]+/[^/[:space:]]+[.]tar[.]gz";
-      urls = pkgs.lib.unique (builtins.concatMap
-        (x: if builtins.isList x then x else [])
-        (builtins.split "(${urlRe})" projectFile));
-      pathFor = url:
-        let nv = builtins.match
-          "https://hackage[.]haskell[.]org/package/[^/]+/(.+)-([0-9][0-9.]*)[.]tar[.]gz" url;
-        in toString (pkgs.haskell-nix.hackageTarball {
-             name = builtins.elemAt nv 0;
-             version = builtins.elemAt nv 1;
-             inherit evalPackages;
-           });
-    in builtins.replaceStrings urls (map pathFor urls) projectFile;
-
   replaceSourceRepos = projectFile:
     let
       fetchPackageRepo = fetchgit: repoData:
@@ -325,10 +299,12 @@ let
           );
     };
 
+  # `cabalProjectRewrite` (identity by default) is a `text -> text` hook set by
+  # project modules that need to transform the assembled cabal.project before
+  # plan-to-nix — e.g. `modules/replace-hackage-tarball-urls.nix`, which
+  # rewrites direct Hackage tarball URLs to local eval-platform store paths.
   fixedProject = replaceSourceRepos
-    (if replace-hackage-tarball-urls
-      then rewriteHackageTarballUrls rawCabalProject
-      else rawCabalProject);
+    ((args.cabalProjectRewrite or (p: p)) rawCabalProject);
 
   platformString = p: with p.parsed; "${cpu.name}-${vendor.name}-${kernel.name}";
 
@@ -337,290 +313,29 @@ let
   # compiler so the same machinery synthesises BOTH the project's target
   # pair AND (for the stable-haskell cabal fork's cross "stage" system) a
   # *build*-platform pair — see `withBuildCompiler` / `dummy-build-ghc` below.
+  # The dummy `ghc`/`ghc-pkg` pair lives in lib/dummy-ghc.nix so it can also be
+  # a plain passthru on each per-eval-system compiler variant
+  # (`ghc.evalWith.${evalSystem}.dummyGhcPkgs`, overlays/stable-haskell.nix).
+  # Interface here is unchanged (`{ pkgs, ghc }`), closing over `evalPackages` +
+  # `prebuilt-depends`.
   mkDummyGhcPkg = { pkgs, ghc }:
-    let
-    ghcSrc = (ghc.raw-src or ghc.buildGHC.raw-src) evalPackages;
+    import ./dummy-ghc.nix { inherit pkgs ghc evalPackages prebuilt-depends; };
 
-    # Dummy `ghc` script cabal-install runs against during plan-to-nix.
-    # See `lib/dummy-ghc.nix` for the implementation and rationale; the
-    # `--info` output is what cabal uses to elaborate per-unit settings
-    # that feed into UnitId computation.
-    dummy-ghc = import ./dummy-ghc.nix { inherit pkgs evalPackages ghc; };
-
-    dummy-ghc-pkg-dump = evalPackages.runCommand "dummy-ghc-pkg-dump" {
-      buildInputs = prebuilt-depends;
-      nativeBuildInputs = [
-        evalPackages.haskell-nix.nix-tools-unchecked.exes.cabal2json
-        evalPackages.jq
-      ];
-    } (let varname = x: builtins.replaceStrings ["-"] ["_"] x; in ''
-          PACKAGE_VERSION=${ghc.version}
-          ProjectVersion=${ghc.version}
-
-          # The following logic is from GHC m4/setup_project_version.m4
-
-          # Split PACKAGE_VERSION into (possibly empty) parts
-          VERSION_MAJOR=`echo $PACKAGE_VERSION | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\1'/`
-          VERSION_TMP=`echo $PACKAGE_VERSION | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\3'/`
-          VERSION_MINOR=`echo $VERSION_TMP | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\1'/`
-          ProjectPatchLevel=`echo $VERSION_TMP | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\3'/`
-
-          # Calculate project version as an integer, using 2 digits for minor version
-          case $VERSION_MINOR in
-            ?) ProjectVersionInt=''${VERSION_MAJOR}0''${VERSION_MINOR} ;;
-            ??) ProjectVersionInt=''${VERSION_MAJOR}''${VERSION_MINOR} ;;
-            *) echo bad minor version in $PACKAGE_VERSION; exit 1 ;;
-          esac
-          # AC_SUBST([ProjectVersionInt])
-
-          # The project patchlevel is zero unless stated otherwise
-          test -z "$ProjectPatchLevel" && ProjectPatchLevel=0
-
-          # Save split version of ProjectPatchLevel
-          ProjectPatchLevel1=`echo $ProjectPatchLevel | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\1/'`
-          ProjectPatchLevel2=`echo $ProjectPatchLevel | sed 's/^\([^.]*\)\(\.\{0,1\}\(.*\)\)$/\3/'`
-
-          # The project patchlevel1/2 is zero unless stated otherwise
-          test -z "$ProjectPatchLevel1" && ProjectPatchLevel1=0
-          test -z "$ProjectPatchLevel2" && ProjectPatchLevel2=0
-
-          # AC_SUBST([ProjectPatchLevel1])
-          # AC_SUBST([ProjectPatchLevel2])
-
-          # Remove dots from the patch level; this allows us to have versions like 6.4.1.20050508
-          ProjectPatchLevel=`echo $ProjectPatchLevel | sed 's/\.//'`
-
-          # AC_SUBST([ProjectPatchLevel])
-
-          # The version of the GHC package changes every day, since the
-          # patchlevel is the current date.  We don't want to force
-          # recompilation of the entire compiler when this happens, so for
-          # GHC HEAD we omit the patchlevel from the package version number.
-          #
-          # The ProjectPatchLevel1 > 20000000 iff GHC HEAD. If it's for a stable
-          # release like 7.10.1 or for a release candidate such as 7.10.1.20141224
-          # then we don't omit the patchlevel components.
-
-          ProjectVersionMunged="$ProjectVersion"
-          if test "$ProjectPatchLevel1" -gt 20000000; then
-            ProjectVersionMunged="''${VERSION_MAJOR}.''${VERSION_MINOR}"
-          fi
-          # AC_SUBST([ProjectVersionMunged])
-
-          # The version used for libraries tightly coupled with GHC (e.g.
-          # ghc-internal) which need a major version bump for every minor/patchlevel
-          # GHC version.
-          # Example: for GHC=9.10.1, ProjectVersionForLib=9.1001
-          #
-          # Just like with project version munged, we don't want to use the
-          # patchlevel version which changes every day, so if using GHC HEAD, the
-          # patchlevel = 00.
-          case $VERSION_MINOR in
-            ?) ProjectVersionForLibUpperHalf=''${VERSION_MAJOR}.0''${VERSION_MINOR} ;;
-            ??) ProjectVersionForLibUpperHalf=''${VERSION_MAJOR}.''${VERSION_MINOR} ;;
-            *) echo bad minor version in $PACKAGE_VERSION; exit 1 ;;
-          esac
-          # GHC HEAD uses patch level version > 20000000
-          case $ProjectPatchLevel1 in
-            ?) ProjectVersionForLib=''${ProjectVersionForLibUpperHalf}0''${ProjectPatchLevel1} ;;
-            ??) ProjectVersionForLib=''${ProjectVersionForLibUpperHalf}''${ProjectPatchLevel1} ;;
-            *) ProjectVersionForLib=''${ProjectVersionForLibUpperHalf}00
-          esac
-
-          PKGS=""
-          ${pkgs.lib.concatStrings
-            (builtins.map (name: ''
-              cabal_file=""
-              if [ -f ${ghcSrc}/libraries/${name}/${name}.cabal ]; then
-                cabal_file=${ghcSrc}/libraries/${name}/${name}.cabal
-              elif [ -f ${ghcSrc}/libraries/Cabal/${name}/${name}.cabal ]; then
-                cabal_file=${ghcSrc}/libraries/Cabal/${name}/${name}.cabal
-              elif [ -f ${ghcSrc}/libraries/${name}/${name}/${name}.cabal ]; then
-                cabal_file=${ghcSrc}/libraries/${name}/${name}/${name}.cabal
-              elif [ -f ${ghcSrc}/compiler/${name}.cabal ]; then
-                cabal_file=${ghcSrc}/compiler/${name}.cabal
-              elif [ -f ${ghcSrc}/compiler/${name}.cabal.in ]; then
-                cabal_file=${ghcSrc}/compiler/${name}.cabal.in
-              elif [ -f ${ghcSrc}/libraries/${name}/${name}.cabal.in ]; then
-                cabal_file=${ghcSrc}/libraries/${name}/${name}.cabal.in
-              elif [ -f ${ghcSrc}/utils/haddock/${name}/${name}.cabal ]; then
-                cabal_file=${ghcSrc}/utils/haddock/${name}/${name}.cabal
-              elif [ -f ${ghcSrc}/${name}/${name}.cabal ]; then
-                cabal_file=${ghcSrc}/${name}/${name}.cabal
-              elif [ -f ${ghcSrc}/${name}/${name}.cabal.in ]; then
-                cabal_file=${ghcSrc}/${name}/${name}.cabal.in
-              fi
-              if [[ "$cabal_file" != "" ]]; then
-                fixed_cabal_file=$(mktemp)
-                cat $cabal_file | sed -e "s/@ProjectVersionMunged@/$ProjectVersionMunged/g" -e "s/@ProjectVersionForLib@/$ProjectVersionForLib/g" -e 's/default: *@[A-Za-z0-9]*@/default: False/g' -e 's/@Suffix@//g' > $fixed_cabal_file
-                json_cabal_file=$(mktemp)
-                cabal2json $fixed_cabal_file > $json_cabal_file
-
-                exposed_modules="$(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="string")' $json_cabal_file)"
-                reexported_modules="$(jq -r '.components.lib."reexported-modules"//[]|.[]|select(type=="string")' $json_cabal_file | sed 's/.* as //g')"
-
-                # FIXME This is a bandaid. Rather than doing this, conditionals should be interpreted.
-                ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isGhcjs ''
-                exposed_modules+=" $(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="object" and ._if.arch == "javascript")|._then[]' $json_cabal_file)"
-                ''}
-                ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
-                exposed_modules+=" $(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="object" and ._if.os == "windows")|._then[]' $json_cabal_file)"
-                ''}
-                ${pkgs.lib.optionalString (!pkgs.stdenv.targetPlatform.isWindows) ''
-                exposed_modules+=" $(jq -r '.components.lib."exposed-modules"//[]|.[]|select(type=="object" and ._if.not.os == "windows")|._then[]' $json_cabal_file)"
-                ''}
-
-                EXPOSED_MODULES_${varname name}="$(tr '\n' ' ' <<< "$exposed_modules $reexported_modules")"
-                deps="$(jq -r '.components.lib."build-depends"//[]|.[]|select(.package)|.package' $json_cabal_file)"
-                deps+=" $(jq -r '.components.lib."build-depends"//[]|.[]|select((.if.flag or ._if.not.flag) and ._if.not.flag != "vendor-filepath")._then[]|.package' $json_cabal_file)"
-                ''
-                # containers-0.8 uses `if impl(ghc) build-depends: template-haskell`
-                + ''
-                deps+=" $(jq -r '.components.lib."build-depends"//[]|.[]|select(._if.impl == "ghc")|._then[]|.package' $json_cabal_file)"
-                ${pkgs.lib.optionalString pkgs.stdenv.targetPlatform.isWindows ''
-                deps+=" $(jq -r '.components.lib."build-depends"//[]|.[]|select(._if.os == "windows")|._then[]|.package' $json_cabal_file)"
-                ''}
-                ${pkgs.lib.optionalString (!pkgs.stdenv.targetPlatform.isWindows) ''
-                deps+=" $(jq -r '.components.lib."build-depends"//[]|.[]|select(._if.not.os == "windows")|._then[]|.package' $json_cabal_file)"
-                ''
-                # Fix problem with `haskeline` using a `terminfo` flag
-                # For haskell-nix ghc we can use ghc.enableTerminfo to get the flag setting
-                + pkgs.lib.optionalString (name == "haskeline" && !pkgs.stdenv.targetPlatform.isWindows && ghc.enableTerminfo or true) ''
-                deps+=" terminfo"
-                ''
-                # Same for `text` built with the `simdutf` flag: its installed
-                # conf depends on system-cxx-std-lib, but the flag conditional
-                # in text.cabal is invisible to the extraction above.  Without
-                # this edge the solver never marks system-cxx-std-lib
-                # pre-existing and the pruned component package DB has a
-                # broken installed text.  Compilers whose bundled text links
-                # simdutf set passthru.enableTextSimdutf (e.g. ghc914-sh).
-                + pkgs.lib.optionalString (name == "text" && ghc.enableTextSimdutf or false) ''
-                deps+=" system-cxx-std-lib"
-                ''
-                # Similar issue for Win32:filepath build-depends (hidden behind `if impl(ghc >= 8.0)`)
-                + pkgs.lib.optionalString (name == "Win32" && pkgs.stdenv.targetPlatform.isWindows) ''
-                deps+=" filepath"
-                ''
-                }
-                DEPS_${varname name}="$(tr '\n' ' ' <<< "$deps")"
-                VER_${varname name}="$(jq -r '.version' $json_cabal_file)"
-                PKGS+=" ${name}"
-                LAST_PKG="${name}"
-              fi
-            '') (pkgs.lib.filter (n: n != "system-cxx-std-lib") (pkgs.haskell-nix.ghc-pre-existing ghc)))
-          }
-          ${ # There is no .cabal file for system-cxx-std-lib
-            pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.2" >= 0) (
-              let name="system-cxx-std-lib"; in ''
-                EXPOSED_MODULES_${varname name}=""
-                DEPS_${varname name}=""
-                VER_${varname name}="1.0"
-                PKGS+=" ${name}"
-                LAST_PKG="${name}"
-              '')
-            # ghcjs packages (before the ghc JS backend). TODO remove this when GHC 8.10 support is dropped
-            + pkgs.lib.optionalString (pkgs.stdenv.targetPlatform.isGhcjs && builtins.compareVersions ghc.version "9" < 0) ''
-                EXPOSED_MODULES_${varname "ghcjs-prim"}="GHCJS.Prim GHCJS.Prim.Internal GHCJS.Prim.Internal.Build"
-                DEPS_${varname "ghcjs-prim"}="base ghc-prim"
-                VER_${varname "ghcjs-prim"}="0.1.1.0"
-                EXPOSED_MODULES_${varname "ghcjs-th"}="GHCJS.Prim.TH.Eval GHCJS.Prim.TH.Types"
-                DEPS_${varname "ghcjs-th"}="base binary bytestring containers ghc-prim ghci template-haskell"
-                VER_${varname "ghcjs-th"}="0.1.0.0"
-                PKGS+=" ghcjs-prim ghcjs-th"
-                LAST_PKG="ghcjs-th"
-              ''
-          }
-          for l in "''${pkgsHostTarget[@]}"; do
-            if [ -d "$l/package.conf.d" ]; then
-              files=("$l/package.conf.d/"*.conf)
-              for file in "''${files[@]}"; do
-                 cat "$file" >> $out
-                 echo '---' >> $out
-              done
-            fi
-          done
-          ${
-            # GHC ≥ 9.8 registers its pre-existing packages with
-            # ids that carry an `-inplace` suffix
-            # (`base-4.19.2.0-inplace`).  Two boot packages are
-            # exceptions even there:
-            #   - `rts`: GHC's runtime, registered as `id: rts-1.0.3`
-            #   - `system-cxx-std-lib`: virtual placeholder for the
-            #     host C++ stdlib, registered as
-            #     `id: system-cxx-std-lib-1.0`
-            # GHC < 9.8 registers everything with just
-            # `<name>-<version>`, no `-inplace` suffix at all.
-            # Mirror those real ids in the dummy `ghc-pkg dump` —
-            # both as the package's own id and as the dep id used
-            # by other packages — so the unit-id cabal computes
-            # against the dummy matches what it computes against
-            # the real GHC.
-            ""
-          }suffix() {
-            ${if pkgs.lib.versionAtLeast ghc.version "9.8" then ''
-              case "$1" in
-                rts|system-cxx-std-lib) echo "" ;;
-                *) echo "-inplace" ;;
-              esac
-            '' else ''
-              echo ""
-            ''}
-          }
-          for pkg in $PKGS; do
-            varname="$(echo $pkg | tr "-" "_")"
-            ver="VER_$varname"
-            exposed_mods="EXPOSED_MODULES_$varname"
-            deps="DEPS_$varname"
-            echo "name: $pkg" >> $out
-            echo "version: ''${!ver}" >> $out
-            echo "id: $pkg-''${!ver}$(suffix $pkg)" >> $out
-            echo "exposed-modules: ''${!exposed_mods}" >> $out
-            echo "depends:" >> $out
-            for dep in ''${!deps}; do
-              ver_dep="VER_$(echo $dep | tr "-" "_")"
-              if [[ "''${!ver_dep}" != "" ]]; then
-                echo "  $dep-''${!ver_dep}$(suffix $dep)" >> $out
-              fi
-            done
-            if [[ "$pkg" != "$LAST_PKG" ]]; then
-              echo '---' >> $out
-            fi
-          done
-        '');
-  # Dummy `ghc-pkg` that uses the captured output
-  dummy-ghc-pkg = evalPackages.writeTextFile {
-    name = "dummy-pkg-" + ghc.name;
-    executable = true;
-    destination = "/bin/${ghc.targetPrefix}ghc-pkg";
-    text = ''
-      #!${evalPackages.runtimeShell}
-      case "$*" in
-        --version)
-          echo "GHC package manager version ${ghc.version}"
-          ;;
-      ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
-        --numeric-ghcjs-version)
-          echo "${ghc.version}"
-          ;;
-      ''}
-        'dump --global -v0')
-          cat ${dummy-ghc-pkg-dump}
-          ;;
-        *)
-          echo "Unknown argument '$*'. " >&2
-          echo "Additional ghc-pkg-options are not currently supported." >&2
-          echo "See https://github.com/input-output-hk/haskell.nix/pull/658" >&2
-          exit 1
-          ;;
-        esac
-      exit 0
-    '';
-  };
-    in { inherit dummy-ghc dummy-ghc-pkg; };
-
-  # The project's own (target) dummy pair.
-  inherit (mkDummyGhcPkg { inherit pkgs ghc; }) dummy-ghc dummy-ghc-pkg;
+  # The project's own (target) dummy pair.  `ghc` is already the compiler
+  # variant selected for this project's eval platform (`compilerSelection` →
+  # `evalWith.${evalSystem}`), so its plain `dummyGhcPkgs` passthru (attached
+  # inside overlays/stable-haskell.nix / the hadrian compiler) is the memoised
+  # pair for this (compiler, evalSystem) — repeated cabalProjects sharing a
+  # compiler reuse it instead of re-deriving it here.  Fall back to inline
+  # construction when the compiler carries none (e.g. a custom ghc) or the
+  # project adds `prebuilt-depends` (which the memoised, prebuilt-depends-free
+  # dummy deliberately omits).
+  inherit (
+    let memoised = ghc.dummyGhcPkgs or null;
+    in if prebuilt-depends == [] && memoised != null
+       then memoised
+       else mkDummyGhcPkg { inherit pkgs ghc; }
+  ) dummy-ghc dummy-ghc-pkg;
 
   # A dummy pair instantiated for the BUILD platform (pkgs.buildPackages,
   # whose targetPlatform is the build platform) and the build-platform

@@ -91,13 +91,15 @@ in { haskell-nix = prev.haskell-nix // {
         ++ [(lib.mapAttrs (_: lib.mkOverride 1100) { inherit compiler-nix-name name; })]
       );
 
-  # tool with a default evalPackages to use.
-  tool' = evalPackages: compiler-nix-name: name: versionOrMod:
+  # tool with an explicit `evalSystem` to use (the platform plan-to-nix runs
+  # on).  Takes a system string, not a nixpkgs — the project derives its
+  # `evalPackages` from it (see modules/project-common.nix).
+  tool' = evalSystem: compiler-nix-name: name: versionOrMod:
       final.haskell-nix.hackage-tool (
            final.haskell-nix.haskellLib.versionOrModToMods versionOrMod
-        ++ [(lib.mapAttrs (_: lib.mkOverride 1100) { inherit evalPackages compiler-nix-name name; })]
+        ++ [(lib.mapAttrs (_: lib.mkOverride 1100) { inherit evalSystem compiler-nix-name name; })]
       );
 
   tools = compiler-nix-name: lib.mapAttrs (final.haskell-nix.tool compiler-nix-name);
-  tools' = evalPackages: compiler-nix-name: lib.mapAttrs (final.haskell-nix.tool' evalPackages compiler-nix-name);
+  tools' = evalSystem: compiler-nix-name: lib.mapAttrs (final.haskell-nix.tool' evalSystem compiler-nix-name);
 }; }

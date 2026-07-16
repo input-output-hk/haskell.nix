@@ -299,6 +299,24 @@ in {
 
   cabalToNixpkgsLicense = import ./spdx/cabal.nix pkgs;
 
+  # Every direct Hackage tarball URL — of the form
+  #   https://hackage.haskell.org/package/NAME-VER/NAME-VER.tar.gz
+  # — occurring in `text`, parsed to `{ url; name; version; }` (unique, in
+  # first-seen order).  Shared by `modules/replace-hackage-tarball-urls.nix`
+  # (URL rewrite + build `src` overrides) and the stable-haskell overlay's
+  # boot-package dump synthesis, which both need the same (name, version) set.
+  hackageTarballUrls = text:
+    let
+      urlRe = "https://hackage[.]haskell[.]org/package/[^/[:space:]]+/[^/[:space:]]+[.]tar[.]gz";
+      urls = lib.unique (builtins.concatMap
+        (x: if builtins.isList x then x else [])
+        (builtins.split "(${urlRe})" text));
+    in map (url:
+         let m = builtins.match
+           "https://hackage[.]haskell[.]org/package/[^/]+/(.+)-([0-9][0-9.]*)[.]tar[.]gz" url;
+         in { inherit url; name = builtins.elemAt m 0; version = builtins.elemAt m 1; })
+       urls;
+
   # This function is like
   #   `src + (if subDir == "" then "" else "/" + subDir)`
   # however when `includeSiblings` is set it maintains

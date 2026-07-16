@@ -1,11 +1,11 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages }:
 
 with lib;
 
 let
   project = project' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "gi-gtk";
     cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
       -- The overloading feature of haskell-gi makes build times very long
@@ -16,7 +16,7 @@ let
   # See `docs/dev/profiling.md` — v2 expects profiling toggles in
   # cabal.project so plan-nix records `--enable-…-profiling`.
   projectProfiled = project' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "gi-gtk";
     cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
       constraints: haskell-gi-overloading ==0.0
