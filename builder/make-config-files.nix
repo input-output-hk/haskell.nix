@@ -68,7 +68,8 @@ let
 
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList flagsAndConfig {
       "extra-lib-dirs" = map (p: "${lib.getLib p}/lib") (lib.flatten component.libs);
-      "extra-include-dirs" = map (p: "${lib.getDev p}/include") (lib.flatten component.libs);
+      "extra-include-dirs" = map (p: "${lib.getDev p}/include") (lib.flatten component.libs)
+        ++ map toString component.includeDirs;
       "extra-framework-dirs" = lib.optionals (stdenv.hostPlatform.isDarwin)
         (map (p: "${p}/Library/Frameworks") component.frameworks);
     })}
