@@ -510,7 +510,7 @@ let
     src                  = srcNoFilter configuredSrc;
     # Read `.cabal` files for plan-to-nix from an eval-platform configured tree
     # (avoids an eval-time build-platform dependency; see mkConfiguredSrc).
-    evalSrc              = srcNoFilter configuredSrcEval;
+    evalSrc              = configuredSrcEval;
     cabalProjectFileName = "cabal.project.stage1.merged";
     compiler-nix-name    = bootGhcName;
     inherit evalSystem;
@@ -894,7 +894,7 @@ ENDSCRIPT
     prepopulateHackageIndex = false;
     src                  = srcNoFilter configuredSrc;
     # Eval-platform configured tree for plan-to-nix (see mkConfiguredSrc).
-    evalSrc              = srcNoFilter configuredSrcEval;
+    evalSrc              = configuredSrcEval;
     cabalProjectFileName = "cabal.project.stage2.merged";
     # Use the stage1 compiler (exported as ghc914-sh-stage1) to build
     # all stage2 boot libraries and executables.
