@@ -1156,9 +1156,9 @@ final: prev: {
               # `comp-v2-builder` reads configure-args from plan-nix
               # instead, so the toggle has to live in cabal.project
               # to make it through plan-nix into the v2 slice.
-              exes = profiled: pkgs: (pkgs.haskell-nix.cabalProject' ({pkgs, ...}: {
+              exes = evalSystem: profiled: pkgs: (pkgs.haskell-nix.cabalProject' ({pkgs, ...}: {
                 name = "iserv-proxy";
-                inherit compiler-nix-name;
+                inherit compiler-nix-name evalSystem;
 
                 src = sources.iserv-proxy;
 
@@ -1271,12 +1271,12 @@ final: prev: {
                       profiling: True
                   '';
               })).hsPkgs.iserv-proxy.components.exes;
-            in rec {
+              exesFor = evalSystem: rec {
               # We need the proxy for the build system and the interpreter for the target.
               # `iserv-proxy` is invoked on the build platform — it doesn't
               # need profiling, so use the non-profiled project.
-              inherit (exes false final.pkgsBuildBuild) iserv-proxy;
-              iserv-proxy-interpreter = (exes false final).iserv-proxy-interpreter.override
+              inherit (exes evalSystem false final.pkgsBuildBuild) iserv-proxy;
+              iserv-proxy-interpreter = (exes evalSystem false final).iserv-proxy-interpreter.override
                 (final.lib.optionalAttrs final.stdenv.hostPlatform.isAndroid {
                   setupBuildFlags = ["--ghc-option=-optl-static" "--ghc-option=-optl-ldl"] ++ final.lib.optional final.stdenv.hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";
                   enableDebugRTS = true;
@@ -1289,7 +1289,7 @@ final: prev: {
               # cabal.project so v2's slice picks it up.  Keep the
               # v1-style `enableProfiling = true` override too in
               # case v1's comp-builder is ever in play here.
-              iserv-proxy-interpreter-prof = (exes true final).iserv-proxy-interpreter.override
+              iserv-proxy-interpreter-prof = (exes evalSystem true final).iserv-proxy-interpreter.override
                 ({ enableProfiling = true; }
                  // final.lib.optionalAttrs final.stdenv.hostPlatform.isAndroid {
                    setupBuildFlags = ["--ghc-option=-optl-static" "--ghc-option=-optl-ldl"] ++ final.lib.optional final.stdenv.hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";
@@ -1298,7 +1298,19 @@ final: prev: {
                    setupBuildFlags = ["--ghc-option=-optl-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000" ];
                    enableDebugRTS = true;
                  });
-            }) final.haskell-nix.compiler;
+              };
+              # Memoised per-eval-system variants (same pattern as the
+              # compiler's `evalWith`, overlays/stable-haskell.nix): the
+              # exe derivations are identical for every eval system, but
+              # *computing* them forces the iserv-proxy plan-to-nix IFD on
+              # the project's eval platform — so consumers must select the
+              # variant matching their `evalSystem` or the IFD runs on the
+              # default (pkgsBuildBuild) system, which may not even have a
+              # builder on the eval host.
+              byEvalSystem = final.lib.mapAttrs (evalSystem: _evalPackages:
+                exesFor evalSystem) final.haskell-nix.evalPackages;
+            in byEvalSystem.${final.pkgsBuildBuild.stdenv.hostPlatform.system}
+               // { evalWith = byEvalSystem; }) final.haskell-nix.compiler;
 
           ghc-pre-existing = ghc: [
             "Cabal"
@@ -1415,6 +1427,6 @@ final: prev: {
             && !final.stdenv.hostPlatform.isGhcjs
             && !final.stdenv.hostPlatform.isWasm
             && final.haskell-nix.iserv-proxy-exes ? ${compiler-nix-name})
-              final.haskell-nix.iserv-proxy-exes.${compiler-nix-name});
+              final.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.evalWith.${evalSystem});
     };
 }

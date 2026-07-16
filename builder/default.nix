@@ -78,6 +78,10 @@ let
   v2CabalInstall = pkgsBuildBuild.haskell-nix.tool v2CabalInstallCompiler "cabal" {
     version = "3.17.0.1";
     builderVersion = 1;
+    # Run this tool project's plan-to-nix on the outer project's eval
+    # platform.  Without this it defaults to the pkgsBuildBuild system,
+    # forcing IFD on (e.g.) x86_64-linux when the eval host is darwin.
+    evalSystem = evalPackages.stdenv.hostPlatform.system;
     compilerSelection = p: p.haskell.compiler;
     cabalProjectLocal = ''
       source-repository-package
@@ -151,7 +155,13 @@ let
   # wrapped ghc's inputs.
   templateHaskell =
     if !crossTemplateHaskellSupport then null
-    else pkgs.haskell-nix.templateHaskell.${compiler-nix-name} or null;
+    else
+      let th = pkgs.haskell-nix.templateHaskell.${compiler-nix-name} or null;
+      # Select the variant for this project's eval platform so forcing
+      # the iserv exes doesn't run their plan-to-nix IFD on the default
+      # (pkgsBuildBuild) system.
+      in if th == null then null
+         else th.evalWith.${evalPackages.stdenv.hostPlatform.system} or th;
 
   comp-v2-builder = haskellLib.weakCallPackage pkgs ./comp-v2-builder.nix {
     inherit ghc hsPkgs buildCabalStoreSlice templateHaskell haskellLib composeStore;
