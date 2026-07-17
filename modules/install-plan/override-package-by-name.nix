@@ -68,6 +68,15 @@
     planJson = config.plan-json.install-plan;
     isWasm = pkgs.stdenv.hostPlatform.isWasm;
     ghcVersion = config.compiler.version;
+    # Assembled project text for the `documentation:` scan; null (=
+    # unknown) when neither piece was threaded into this pkg-set
+    # (stack / legacy instantiations).
+    rawCabalProject =
+      if config.cabalProject or null == null && config.cabalProjectLocal or null == null
+      then null
+      else (if config.cabalProject or null == null then "" else config.cabalProject)
+         + "\n"
+         + (if config.cabalProjectLocal or null == null then "" else config.cabalProjectLocal);
   };
   packages = pkgs.lib.listToAttrs (map (p: {
       name = p.id;

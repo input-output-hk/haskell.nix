@@ -1916,11 +1916,17 @@ let
   # for that package in the slice's cabal.project (see
   # `documentationBlockFor` below) so the slice's elaboration sets
   # the same haddock booleans plan-nix did and the UnitIds match.
+  # The marker alone is ambiguous (a plain `ghc-options: -haddock`
+  # leaves the same arg without setting the haddock booleans), so it
+  # is additionally gated on the project-text scan behind
+  # `docEnabledNames` — see `projectSetsDocumentation` in
+  # `builder/v2-project-globals.nix`.
   docEnabled =
     let uid   = package.identifier.unit-id or null;
         entry = if uid == null then null else planJsonByPlanId.${uid} or null;
         args  = if entry == null then [] else (entry.configure-args or []);
-    in lib.elem "--ghc-option=-haddock" args;
+    in lib.elem "--ghc-option=-haddock" args
+       && docEnabledNames ? ${pkgName};
 
   # Sibling slice that runs `cabal v2-haddock` and surfaces
   # haddock html in cabal's native unit-dir layout

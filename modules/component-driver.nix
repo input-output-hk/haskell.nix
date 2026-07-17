@@ -42,6 +42,17 @@ in
     type = lib.types.nullOr lib.types.lines;
     default = null;
   };
+  # Project-level `cabalProject` (the cabal.project text, read from
+  # the project src when not set explicitly), threaded like
+  # `cabalProjectLocal` above.  Only consumed (together with
+  # `cabalProjectLocal`) by `builder/v2-project-globals.nix` to tell a
+  # project-wide `documentation: True` apart from a plain
+  # `ghc-options: -haddock`; null means "text unknown" there, not
+  # "empty project".
+  options.cabalProject = lib.mkOption {
+    type = lib.types.nullOr lib.types.lines;
+    default = null;
+  };
   # Packages in that are `pre-existing` in the cabal plan
   options.preExistingPkgs = lib.mkOption {
     type = lib.types.listOf lib.types.str;

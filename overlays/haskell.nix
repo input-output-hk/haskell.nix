@@ -772,7 +772,7 @@ final: prev: {
                         in if ghc.isHaskellNixCompiler or false then (ghc.evalWith.${evalSystem} or (ghc.override { evalSystem = evalSystem; })) else ghc;
                       compiler.nix-name = final.lib.mkForce config.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
-                      inherit (config) prebuilt-depends builderVersion v2LocalPackageSlices cabalProjectLocal;
+                      inherit (config) prebuilt-depends builderVersion v2LocalPackageSlices cabalProjectLocal cabalProject;
                     } ];
                   extra-hackages = config.extra-hackages or [] ++ callProjectResults.extra-hackages;
                 };
