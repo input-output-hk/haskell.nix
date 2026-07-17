@@ -1653,12 +1653,49 @@ stdenv.mkDerivation ({
       # dir, so the walks above capture them.  Record their bare ids
       # so the unit-id checks below can tolerate them.
       : > $buildRoot/build-stage-unit-ids
+      : > $buildRoot/host-stage-unit-ids
       if [ -f "$distDir/cache/plan.json" ]; then
         jq -r '.["install-plan"][]
                | select(.stage == "build")
                | .id | sub("^(host|build):"; "")' \
           "$distDir/cache/plan.json" 2>/dev/null | sort -u \
           > $buildRoot/build-stage-unit-ids || true
+        jq -r '.["install-plan"][]
+               | select((.stage // "host") == "host")
+               | .id | sub("^(host|build):"; "")' \
+          "$distDir/cache/plan.json" 2>/dev/null | sort -u \
+          > $buildRoot/host-stage-unit-ids || true
+      fi
+
+      # ---- Evict BUILD-stage byproducts from $out ----------------
+      # They exist so THIS slice's setup / build tools could run;
+      # SHIPPING them poisons downstream slices: a consumer's fork
+      # sees the plan-id conf already installed and skips its own
+      # in-slice build-stage build, but byproducts don't reliably
+      # carry their files through consumer-of-consumer composition
+      # (leksah: haskell-gi's setup compile found a stale
+      # cabal-doctest conf with no files behind it).  Consuming
+      # slices rebuild build-stage goals from the composed repo
+      # source instead — exactly what two-stage cross plans do.
+      # Deterministic-id packages can appear in BOTH stages of the
+      # slice's plan under one bare id — never evict those (the
+      # host unit owns the id in the store).
+      if [ -s $buildRoot/build-stage-unit-ids ]; then
+        while IFS= read -r uid; do
+          [ -n "$uid" ] || continue
+          grep -qx -- "$uid" $buildRoot/host-stage-unit-ids && continue
+          grep -qx -- "$uid" $buildRoot/captured-unit-ids || continue
+          echo "evicting build-stage byproduct: $uid"
+          rm -f "$ghcDir/$storePkgDb/$uid.conf"
+          rm -f "$ghcDir/units/$uid"
+          if [ -d "$ghcDir/$uid" ]; then
+            chmod -R u+w "$ghcDir/$uid" 2>/dev/null || true
+            rm -rf "$ghcDir/$uid"
+          fi
+          grep -vx -- "$uid" $buildRoot/captured-unit-ids \
+            > $buildRoot/captured-unit-ids.tmp || true
+          mv $buildRoot/captured-unit-ids.tmp $buildRoot/captured-unit-ids
+        done < $buildRoot/build-stage-unit-ids
       fi
 
       # ---- Drop cabal's `incoming/` staging area ---------------

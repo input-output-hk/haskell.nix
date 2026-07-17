@@ -45,9 +45,38 @@ let
   # only arises when a boot lib is rebuilt at its bundled version under the
   # stable-haskell `-inplace` ipid scheme; ordinary projects never produce that
   # pairing, so this is a no-op for them.
+  # The fork stage-qualifies every goal, and make-install-plan emits the
+  # bare (unqualified) ids — so a package needed by BOTH stages appears
+  # twice under ONE id: a HOST twin and a BUILD twin (setup scopes and
+  # build tools are build-stage).  For hash-id packages the twins differ
+  # only in their staged paths, but deterministic-id local/inplace
+  # packages can differ MATERIALLY (leksah: host gi-glib depends on
+  # haskell-gi-overloading-0.0 per the project constraint, while the
+  # build twin — consumed by downstream gi-* setups — took the default
+  # 1.0).  Everything here keys by id, so exactly one twin can own the
+  # key: the HOST one (hsPkgs components are host artifacts).  Dropped
+  # BUILD twins need no package definition or slice — a consuming
+  # slice's cabal re-plans and builds build-stage goals in-slice (the
+  # unit-id checks tolerate them), and the host twin's repo fragment
+  # carries the same name+version+source.  Their DEP SETS remain
+  # available to the setup-constraint machinery via the raw
+  # `plan-json-by-id-build` index (modules/install-plan/
+  # override-package-by-name.nix).
+  hostConfiguredIds = pkgs.lib.listToAttrs (pkgs.lib.concatMap
+    (p: pkgs.lib.optional
+          (p.type == "configured" && haskellLib.planUnitStage p == "host")
+          { name = p.id; value = null; })
+    plan-json.install-plan);
+  buildTwinOfHost = p:
+    p.type == "configured"
+    && haskellLib.planUnitStage p == "build"
+    && hostConfiguredIds ? ${p.id};
+  install-plan-staged =
+    builtins.filter (p: !(buildTwinOfHost p)) plan-json.install-plan;
+
   configuredById = pkgs.lib.listToAttrs (pkgs.lib.concatMap
     (p: pkgs.lib.optional (p.type == "configured") { name = p.id; value = p; })
-    plan-json.install-plan);
+    install-plan-staged);
   # Two-stage plans (stable-haskell `-target` cross compilers, whose target
   # global db — and hence the plan-time dump — is EMPTY): every
   # pre-existing unit is a BUILD-stage installed package from the native
@@ -65,7 +94,7 @@ let
     else let bare = pkgs.lib.removeSuffix "-inplace" p.id;
          in if bare != p.id && configuredById ? ${bare} then bare else null;
   install-plan = builtins.filter (p: shadowedConfiguredId p == null)
-    plan-json.install-plan;
+    install-plan-staged;
 
   # All the units in the plan indexed by unit ID.  On top of the deduped plan,
   # redirect each dropped `-inplace` shadow id to its configured sibling so a

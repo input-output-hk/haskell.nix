@@ -317,6 +317,34 @@ in {
          in { inherit url; name = builtins.elemAt m 0; version = builtins.elemAt m 1; })
        urls;
 
+  # The stable-haskell fork stage a plan.json unit belongs to ("build" =
+  # runs on the build machine: setup scopes, build tools; "host" = the
+  # artifacts' platform).  make-install-plan strips the fork's
+  # `host:`/`build:` id qualifiers (haskell.nix keys everything by the
+  # bare id), which loses the stage as an explicit field — but it
+  # survives in two places on configured units:
+  #   * the staged `--prefix=./dist-newstyle/store/<stage>/<platform>`
+  #     configure-arg (every configured unit);
+  #   * the `dist-dir` (`./dist-newstyle/build/<stage>/<platform>/...`,
+  #     local/inplace units only).
+  # Pre-existing units carry neither; callers treat them per context
+  # (in a two-stage plan they are all build-stage — the target db is
+  # empty).  Defaults to "host": mainline plans are single-stage.
+  planUnitStage = p:
+    let
+      fromArgs =
+        let ms = builtins.concatMap (a:
+              let m = builtins.match "--prefix=[.]/dist-newstyle/store/([a-z]+)/.*" (toString a);
+              in if m == null then [] else m)
+              (p.configure-args or []);
+        in if ms == [] then null else builtins.head ms;
+      fromDist =
+        let m = builtins.match "[.]/dist-newstyle/build/([a-z]+)/.*" (p.dist-dir or "");
+        in if m == null then null else builtins.head m;
+    in if fromArgs != null then fromArgs
+       else if fromDist != null then fromDist
+       else "host";
+
   # This function is like
   #   `src + (if subDir == "" then "" else "/" + subDir)`
   # however when `includeSiblings` is set it maintains

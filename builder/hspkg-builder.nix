@@ -97,10 +97,19 @@ let
           let
             plan     = config.plan-json.install-plan;
             byId     = config.plan-json-by-id;
-            sibs     = lib.filter
+            # HOST-stage entries only: the fork's build twins share the
+            # bare id/name/version but carry the BUILD-stage dep set
+            # (setup universes), which must not union into the host
+            # slices' dep/constraint scopes.  Falls back to every entry
+            # for build-stage-only packages (their slices still build,
+            # natively with the same compiler).
+            sibsOf = stagePred: lib.filter
               (p: (p.pkg-name or null) == package.identifier.name
-                  && (p.pkg-version or null) == package.identifier.version)
+                  && (p.pkg-version or null) == package.identifier.version
+                  && stagePred p)
               plan;
+            hostSibs = sibsOf (p: pkgs.haskell-nix.haskellLib.planUnitStage p == "host");
+            sibs = if hostSibs != [] then hostSibs else sibsOf (_: true);
             # NOT the `setup` component: setup deps are a separate
             # solver universe (`<pkg>:setup.<dep>` qualifiers,
             # BUILD-stage under the fork).  Folding them in here sends
@@ -160,6 +169,9 @@ let
           # and shared across all slices so the v2 builder doesn't
           # rebuild the same N-entry attrset per component.
           planJsonByPlanId = config.plan-json-by-id;
+          # The BUILD-twin-preferring variant, for the custom-setup
+          # machinery (setup scopes are build-stage under the fork).
+          planJsonByPlanIdBuild = config.plan-json-by-id-build;
           # Project-global pragma / doc / flag data, computed once from
           # the plan (see `builder/v2-project-globals.nix`) and shared
           # across every slice instead of recomputed per component.

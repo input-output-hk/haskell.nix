@@ -39,6 +39,13 @@
                          # cabal.project `constraints:` block.
 , planJsonByPlanId ? {}  # `planJson` indexed by `id` — pre-built once
                          # at the project level, shared across slices.
+                         # HOST twins win id collisions.
+, planJsonByPlanIdBuild ? null
+                         # the BUILD-twin-preferring variant, used by
+                         # the custom-setup machinery (setup scopes are
+                         # build-stage under the fork).  Defaults to
+                         # `planJsonByPlanId` when the project doesn't
+                         # provide it.
 , planV2Globals ? {}     # { projectConfigPragmas; docEnabledNames; flagsByName; }
                          # derived once from the plan (see
                          # `builder/v2-project-globals.nix`), shared across slices.
@@ -814,12 +821,22 @@ let
   # the plan-`targets` name redirects, which for a package that ALSO has
   # a pre-existing boot unit (Cabal!) point at that other, unbuildable
   # unit — the id is exact.
+  #
+  # The whole setup CLOSURE (`setupDepClosureIds`, walked on the
+  # BUILD-twin index), not just the direct `setup-depends`: the setup
+  # solve needs every transitive setup dep's source in the slicing repo
+  # and its unit composable, including build-stage-only units no lib
+  # edge reaches (the gi-* codegen setups' haskell-gi-overloading-1.0,
+  # while the host libs use 0.0).  For ids whose slice is the HOST twin
+  # that's still the right compose — same name+version+source; the
+  # setup scope re-solves and builds its build-stage copy in-slice
+  # (tolerated by the unit-id checks) with the source it needs.
   setupDepSlices = lib.filter (s: s != null) (map (id:
-    let q = planJsonByPlanId.${id} or null;
+    let q = planJsonByPlanIdBuild'.${id} or null;
     in if q == null || (q.type or "") != "configured" || !(q ? pkg-name)
        then null
        else sliceOfPkgRecord (hsPkgs.${id} or null)
-  ) (lib.concatMap (u: u.components.setup.depends or []) thisPkgUnits));
+  ) setupDepClosureIds);
 
   # The slice's *direct* dep slices.  Transitive closure is
   # reconstructed at build time from each slice's
@@ -1493,11 +1510,18 @@ let
   # qualifier scope, so pinning the closure reproduces plan-nix's
   # setup resolution exactly; pins for packages that never become
   # setup-scope goals (rts etc.) are ignored by the solver.
+  # Walked on the BUILD-twin-preferring index: setup scopes are
+  # build-stage under the fork, so where a package has host+build twins
+  # under one bare id the BUILD twin's dep set is the plan's real setup
+  # resolution (the haskell-gi codegen setups run against
+  # haskell-gi-overloading-1.0 while the host libs use 0.0).
+  planJsonByPlanIdBuild' =
+    if planJsonByPlanIdBuild == null then planJsonByPlanId else planJsonByPlanIdBuild;
   setupDepClosureIds = map (x: x.key) (builtins.genericClosure {
     startSet = map (id: { key = id; })
       (lib.concatMap (u: u.components.setup.depends or []) thisPkgUnits);
     operator = item:
-      let q = planJsonByPlanId.${item.key} or null;
+      let q = planJsonByPlanIdBuild'.${item.key} or null;
           deps = if q == null then []
                  else (q.depends or [])
                       ++ lib.concatMap (c: c.depends or [])
@@ -1506,7 +1530,7 @@ let
   });
   ownSetupConstraints =
     lib.unique (lib.filter (x: x != null) (map (id:
-      let q = planJsonByPlanId.${id} or null;
+      let q = planJsonByPlanIdBuild'.${id} or null;
       in if q == null || !(q ? pkg-name) then null
          else "${pkgName}:setup.${q.pkg-name} ==${q.pkg-version}"
     ) setupDepClosureIds));
