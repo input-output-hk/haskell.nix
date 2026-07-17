@@ -362,6 +362,17 @@ in {
       };
     }
     ))
+    # Projects using a stable-haskell compiler (`passthru.isStableHaskell`,
+    # e.g. ghc914-sh) default to the v2 (cabal v2-build slicing) builder.
+    # v1 cannot work with the fork's boot packages: its
+    # `cabal-install-plan-to-nix` requires `Cabal ^>=3.16` while the boot
+    # Cabal is 3.17.x, and the boot libs register `-inplace` unit-ids
+    # that v1's Setup.hs-based machinery never learns about.  `mkDefault`
+    # so a project can still opt out explicitly; empty-global-db
+    # (two-stage `-target` cross) projects hard-set 2 below regardless.
+    (lib.mkIf
+      ((config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name}.isStableHaskell or false)
+      { builderVersion = lib.mkDefault 2; })
     # stable-haskell `-target` cross compilers (ghc914-sh for a cross
     # target) ship NO boot libraries: the compiler's target package db is
     # empty and the plan-time dummy `ghc-pkg dump` is empty too (see

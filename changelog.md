@@ -1,6 +1,35 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## July 16, 2026
+
+Breaking changes around the eval platform (the platform `cabal` /
+`nix-tools` run on during plan construction):
+
+  * The project option `evalPackages` is now **read-only** — it is derived
+    from the new single knob `evalSystem` (a system string, e.g.
+    `"aarch64-darwin"`) via a shared, memoised nixpkgs instance per
+    system.  Projects that passed `evalPackages = ...` should pass
+    `evalSystem = "<system>"` instead; setting `evalPackages` now fails
+    evaluation with a module-system read-only error.
+  * The compiler override argument `ghcEvalPackages` is gone.  Compilers
+    now carry memoised per-eval-system variants: select
+    `ghc.evalWith.${evalSystem}` (or `ghc.override { evalSystem = ...; }`).
+  * `haskellLib.isNativeMusl` no longer classifies darwin → linux-musl
+    (same CPU architecture) as *native* musl; it now additionally requires
+    the build platform to be Linux, so those darwin-hosted builds take the
+    cross-compilation path (correcting misclassification).
+
+`haskell-nix.roots` (and `p.roots`) now also link the plan-nix
+derivations behind the compiler (hadrian, or stage1/stage2 for the
+stable-haskell GHCs), the iserv-proxy projects, the from-source
+`nix-tools`, the v2 builder's `cabal-install` fork, and the eval-time
+dummy ghc/ghc-pkg pair — each for the build system and, when
+`evalSystem` differs, an `-eval` twin.  Building `roots` in CI therefore
+caches everything a later evaluation needs to realise via IFD, so
+evaluators (e.g. hydra's) substitute the plans instead of building them
+mid-eval.
+
 ## June 12, 2026
 
 `builderVersion = 2`: test `checks` now run with more of the environment

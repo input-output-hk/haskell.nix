@@ -772,7 +772,7 @@ final: prev: {
                         in if ghc.isHaskellNixCompiler or false then (ghc.evalWith.${evalSystem} or (ghc.override { evalSystem = evalSystem; })) else ghc;
                       compiler.nix-name = final.lib.mkForce config.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
-                      inherit (config) prebuilt-depends builderVersion cabalProjectLocal;
+                      inherit (config) prebuilt-depends builderVersion v2LocalPackageSlices cabalProjectLocal;
                     } ];
                   extra-hackages = config.extra-hackages or [] ++ callProjectResults.extra-hackages;
                 };
@@ -1147,6 +1147,111 @@ final: prev: {
         #   testProjectPlan = withInputs project.plan-nix;
         withInputs = final.lib.recurseIntoAttrs;
 
+        # The v2 builder's `cabal-install`, built via `haskell-nix.tool`:
+        # the stable-haskell cabal fork (3.17, branch stable-haskell/master)
+        # pulled via source-repository-package — the same sources
+        # make-install-plan links (see nix-tools/cabal.project).  This
+        # gives the per-slice `cabal v2-build` the cross-compilation
+        # "stage" system (--with-build-compiler / build:/host: constraints)
+        # so build-time tool deps resolve in the build scope.
+        # Branch `hkm/installed-sublibs` (2 commits on top of
+        # stable-haskell/master 01d053ac): lets installed instances satisfy
+        # named sub-library deps — required by the ghc-bin slice, whose
+        # +threaded/+debug flags depend on the composed installed rts's
+        # flavour sublibs (rts:threaded-nodebug etc.).
+        #
+        # Two pins here:
+        #
+        #   * `builderVersion = 1` — cabal-install stays a v1 derivation.
+        #     Every v2 slice lists the v2 cabal-install as a
+        #     nativeBuildInput, so producing it as a v2 slice would cycle
+        #     on itself.
+        #
+        #   * `compilerSelection = p: p.haskell.compiler` — use nixpkgs's
+        #     pre-built GHC rather than haskell.nix's own (which would be
+        #     built by hadrian, itself a haskell.nix project whose hackage
+        #     deps become v2 slices needing the v2 cabal-install).
+        #     Pre-built nixpkgs GHC sidesteps the entire hadrian subtree.
+        #
+        # We go through `tool` (rather than nix-tools' pre-built cabal) so
+        # we can apply our own cabal-install patches.
+        #
+        # Defined here — one memoised definition per eval system (same
+        # pattern as `iserv-proxy-exes`) instead of a re-instantiation per
+        # project (builder/default.nix), and `roots` links its
+        # `.project.plan-nix`.  Always access it via
+        # `pkgsBuildBuild.haskell-nix.v2-cabal-install` (it is a build-host
+        # tool; going through pkgsBuildBuild shares the instance across
+        # cross pkgs).
+        v2-cabal-install =
+          let
+            # Pick the first GHC in this list that nixpkgs ships pre-built
+            # (under `haskell.compiler.<name>`).  `ghc9141` is the
+            # preference; `ghc9124` / `ghc9123` / `ghc9122` are kept as
+            # fallbacks for nixpkgs pins that don't carry 9.14 yet — going
+            # back further than 9.12 hasn't been needed in practice.  The
+            # exact GHC doesn't show up in any UnitId hash (this just
+            # builds the patched cabal-install binary), so any of these
+            # produces an equivalent v2 builder.
+            compiler-nix-name =
+              let candidates  = [ "ghc9141" "ghc9124" "ghc9123" "ghc9122" ];
+                  compilerSet = final.pkgsBuildBuild.haskell.compiler or {};
+                  picked      = final.lib.findFirst (n: compilerSet ? ${n}) null candidates;
+              in if picked == null
+                 then throw ("v2-cabal-install: none of [${final.lib.concatStringsSep ", " candidates}] "
+                          + "is present in `pkgs.haskell.compiler`; bump the candidates list "
+                          + "in `overlays/haskell.nix`.")
+                 else picked;
+            mkTool = evalSystem: final.pkgsBuildBuild.haskell-nix.tool compiler-nix-name "cabal" {
+              version = "3.17.0.1";
+              builderVersion = 1;
+              # Run the tool project's plan-to-nix on the consumer's eval
+              # platform.  Without this it defaults to the pkgsBuildBuild
+              # system, forcing IFD on (e.g.) x86_64-linux when the eval
+              # host is darwin.
+              inherit evalSystem;
+              compilerSelection = p: p.haskell.compiler;
+              cabalProjectLocal = ''
+                source-repository-package
+                    type: git
+                    location: https://github.com/stable-haskell/Cabal.git
+                    tag: 74047a6c520fb8e05882416ce9cfe9c8391b23c6
+                    --sha256: sha256-19WHVPEDSagAl3HuiO8vxc48FYCeXf5mdVlhLhRi4rY=
+                    subdir: Cabal
+                            Cabal-syntax
+                            cabal-install
+                            cabal-install-solver
+                            hooks-exe
+
+                source-repository-package
+                    type: git
+                    location: https://github.com/stable-haskell/hackage-security.git
+                    tag: baaad2e189a8203966f7d3f752a348f02eefd1b2
+                    --sha256: sha256-mVWZCWGJKsSjQSqb5iw0Q8fmV+4aFZVL4zOmMaNnEhA=
+                    subdir: hackage-security
+              '';
+              modules = [{
+                # TODO(cabal-fork): the prune-unreachable-sublibs patches
+                # (solver + installplan companion) are temporarily dropped for
+                # the 3.17 fork.  Their `reachableSubLibs`/`reachablePDSubLibs`
+                # helpers walk `CondNode _ ds branches` to collect the per-node
+                # `[Dependency]` constraints, but Cabal-syntax 3.17 removed the
+                # constraint field from CondNode (deps now come from each
+                # component's BuildInfo) — so they need a data-model rewrite, not
+                # just an arity fix.  They only matter for sublib-heavy hackage
+                # packages (e.g. vector's benchmarks-O2 sublib needing tasty);
+                # the cabal tool and the stable-haskell boot libs don't hit that.
+                packages.cabal-install.patches = [
+                  ../builder/cabal-install-patches/skip-installed-revdeps-in-completed.patch
+                  ../builder/cabal-install-patches/setup-build-num-jobs-env.patch
+                ];
+              }];
+            };
+            byEvalSystem = final.lib.mapAttrs (evalSystem: _evalPackages:
+              mkTool evalSystem) final.haskell-nix.evalPackages;
+          in byEvalSystem.${final.pkgsBuildBuild.stdenv.hostPlatform.system}
+             // { evalWith = byEvalSystem; };
+
         iserv-proxy-exes = __mapAttrs (compiler-nix-name: _ghc:
             let
               # `profiled` controls whether the iserv-proxy project's
@@ -1156,7 +1261,7 @@ final: prev: {
               # `comp-v2-builder` reads configure-args from plan-nix
               # instead, so the toggle has to live in cabal.project
               # to make it through plan-nix into the v2 slice.
-              exes = evalSystem: profiled: pkgs: (pkgs.haskell-nix.cabalProject' ({pkgs, ...}: {
+              proj = evalSystem: profiled: pkgs: pkgs.haskell-nix.cabalProject' ({pkgs, ...}: {
                 name = "iserv-proxy";
                 inherit compiler-nix-name evalSystem;
 
@@ -1270,7 +1375,9 @@ final: prev: {
                     package iserv-proxy
                       profiling: True
                   '';
-              })).hsPkgs.iserv-proxy.components.exes;
+              });
+              exes = evalSystem: profiled: pkgs:
+                (proj evalSystem profiled pkgs).hsPkgs.iserv-proxy.components.exes;
               exesFor = evalSystem: rec {
               # We need the proxy for the build system and the interpreter for the target.
               # `iserv-proxy` is invoked on the build platform — it doesn't
@@ -1298,6 +1405,18 @@ final: prev: {
                    setupBuildFlags = ["--ghc-option=-optl-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000" ];
                    enableDebugRTS = true;
                  });
+              # The plan-nix derivations behind the three exes above (the
+              # build-platform proxy and the host-platform interpreter share
+              # a plan only when build == host; the profiled interpreter's
+              # cabal.project differs, so its plan is always distinct).
+              # `haskell-nix.roots` links them so CI pushes them to the
+              # binary cache and later evaluations substitute the plans
+              # instead of building them mid-eval.
+              plan-nixes = {
+                iserv-proxy = (proj evalSystem false final.pkgsBuildBuild).plan-nix;
+                iserv-proxy-interpreter = (proj evalSystem false final).plan-nix;
+                iserv-proxy-interpreter-prof = (proj evalSystem true final).plan-nix;
+              };
               };
               # Memoised per-eval-system variants (same pattern as the
               # compiler's `evalWith`, overlays/stable-haskell.nix): the
@@ -1388,8 +1507,26 @@ final: prev: {
         roots' = { compiler-nix-name, evalSystem ? final.pkgsBuildBuild.stdenv.hostPlatform.system }: ifdLevel:
           let
             evalPackages = final.haskell-nix.evalPackages.${evalSystem};
-            ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.evalWith.${evalSystem}
-              or (final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.override { evalSystem = evalSystem; });
+            # The default (build-system) compiler variant and the variant for
+            # `evalSystem`.  Their final build derivations are identical; they
+            # differ only in where eval-time work (plan-to-nix IFD, dummy
+            # ghc/ghc-pkg) runs.
+            ghcBuild = final.buildPackages.haskell-nix.compiler.${compiler-nix-name};
+            ghc = ghcBuild.evalWith.${evalSystem}
+              or (ghcBuild.override { evalSystem = evalSystem; });
+            evalDiffers = evalSystem != final.pkgsBuildBuild.stdenv.hostPlatform.system;
+            # Link each attr `n` of `defaultAttrs` (the build-system drv —
+            # buildable by CI without IFD and substituted by native
+            # evaluators later) and, when the eval system differs from the
+            # build system, its eval-system twin as `n-eval` (realised
+            # during THIS evaluation anyway; linking it gets it pushed to
+            # the cache for other eval hosts of the same system).
+            withEvalVariants = defaultAttrs: evalAttrs:
+              defaultAttrs
+              // final.lib.optionalAttrs evalDiffers
+                   (final.lib.mapAttrs' (n: _: { name = "${n}-eval"; value = evalAttrs.${n}; }) defaultAttrs);
+            planNames = final.lib.mapAttrs' (n: v: { name = "plan-${n}"; value = v; });
+            v2ci = final.pkgsBuildBuild.haskell-nix.v2-cabal-install;
           in
             final.lib.recurseIntoAttrs ({
             # Things that require no IFD to build
@@ -1399,13 +1536,36 @@ final: prev: {
             inherit (evalPackages) nix gitMinimal nix-prefetch-git;
           } // final.lib.optionalAttrs (final.stdenv.hostPlatform.libc == "glibc") {
             inherit (final) glibcLocales;
-          } // final.lib.optionalAttrs (builtins.compareVersions ghc.version "9.4" >= 0
-              && ghc ? hadrianProject) {
-            # Make sure the plan for hadrian is cached (we need it to instanciate ghc).
-            hadrian-plan = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.hadrianProject.plan-nix;
-            # Also include the same plan evaluated on the eval system.
-            hadrian-plan-eval = ghc.hadrianProject.plan-nix;
-          } // final.lib.optionalAttrs (ifdLevel > 0) {
+          }
+            # Cache every plan-nix needed to evaluate the compiler (hadrian
+            # for hadrian-built GHCs; stage1/stage2 for the stable-haskell
+            # ones).  A plan-nix that is not cached must be BUILT (via IFD)
+            # by whoever evaluates a project using the compiler — for
+            # hydra's evaluator that is the nix-eval-jobs hang class.
+            // withEvalVariants (planNames (ghcBuild.plan-nixes or {}))
+                                (planNames (ghc.plan-nixes or {}))
+            # The from-source nix-tools' own plan (built by the pinned
+            # haskell.nix; its IFD is forced by every plan-to-nix).
+            // final.lib.optionalAttrs (final.pkgsBuildBuild.haskell-nix.nix-tools-unchecked ? project)
+                 (withEvalVariants
+                   { plan-nix-tools = final.pkgsBuildBuild.haskell-nix.nix-tools-unchecked.project.plan-nix; }
+                   { plan-nix-tools = evalPackages.haskell-nix.nix-tools-unchecked.project.plan-nix; })
+            # The v2 builder's patched cabal-install plan; only
+            # stable-haskell compilers use the v2 builder today, so gate on
+            # that rather than building the cabal fork for every compiler's
+            # roots.
+            // final.lib.optionalAttrs (ghcBuild.isStableHaskell or false)
+                 (withEvalVariants
+                   { plan-v2-cabal-install = v2ci.project.plan-nix; }
+                   { plan-v2-cabal-install = (v2ci.evalWith.${evalSystem} or v2ci).project.plan-nix; })
+            # The eval-time dummy ghc/ghc-pkg pair (and, through it, the
+            # eval-platform source trees it embeds) — realised during every
+            # project evaluation for compilers that carry it.
+            // final.lib.optionalAttrs (ghcBuild ? dummyGhcPkgs)
+                 (withEvalVariants
+                   { inherit (ghcBuild.dummyGhcPkgs) dummy-ghc dummy-ghc-pkg; }
+                   { inherit (ghc.dummyGhcPkgs) dummy-ghc dummy-ghc-pkg; })
+            // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
             inherit ghc;
             ghc-boot-packages-nix = final.ghc-boot-packages-nix.${compiler-nix-name};
@@ -1427,6 +1587,14 @@ final: prev: {
             && !final.stdenv.hostPlatform.isGhcjs
             && !final.stdenv.hostPlatform.isWasm
             && final.haskell-nix.iserv-proxy-exes ? ${compiler-nix-name})
-              final.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.evalWith.${evalSystem});
+              (let
+                iservDefault = final.haskell-nix.iserv-proxy-exes.${compiler-nix-name};
+                iservEval = iservDefault.evalWith.${evalSystem};
+              in builtins.removeAttrs iservEval [ "plan-nixes" ]
+                 # The plans behind the exes above, both variants (see
+                 # `withEvalVariants`) — cached so evaluating the exes
+                 # substitutes the plans instead of building them.
+                 // withEvalVariants (planNames iservDefault.plan-nixes)
+                                     (planNames iservEval.plan-nixes)));
     };
 }

@@ -11,7 +11,7 @@
 
 ```nix
 pkgs.haskell-nix.tool "ghc9103" "cabal" "3.12.1.0"
-pkgs.haskell-nix.tool "ghc9103" "hlint" { version = "3.8"; inherit evalPackages; }
+pkgs.haskell-nix.tool "ghc9103" "hlint" { version = "3.8"; inherit evalSystem; }
 pkgs.haskell-nix.tool "ghc9103" "my-tool" { src = ./path/to/my-tool; }
 ```
 
@@ -65,7 +65,8 @@ Expect to redo this periodically; it is inherent to pinning a rolling repo.
 ## Notes
 
 - `"cabal"` is aliased to package `cabal-install`; other aliases in `overlays/tools.nix`.
-- Pass `evalPackages` whenever possible.
+- Pass `evalSystem` (a system string) whenever possible; the project's
+  `evalPackages` option is read-only and derived from it.
 - Compilers built with `cabalProject` instead of hadrian (e.g. `ghc914-sh`, the
   stable-haskell GHCs) set `passthru.isStableHaskell = true`. Their boot packages
   are **not** in the GHC source tree, so the `ghc-boot-packages` /

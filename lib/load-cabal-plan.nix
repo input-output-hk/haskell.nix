@@ -225,10 +225,21 @@ in {
   pkgs = (hackage: {
     packages = pkgs.lib.listToAttrs (
       # Include entries for the `pre-existing` packages, but leave them as `null`
+      #
+      # Two-stage plans skip the shadow dedup above, so a BUILD-stage
+      # installed unit can share its id with a HOST configured one (the
+      # stable-haskell dummy dumps now report the same deterministic
+      # bare ids the plan elaborates for local boot libs —
+      # `Cabal-3.17.0.1` both as build-stage installed and as the local
+      # host unit).  `listToAttrs` is first-wins, so the null revision
+      # would swallow the configured entry's real definition and every
+      # consumer crashes on `src = null`.  The configured entry must
+      # own the key; the build-stage installed unit needs no package
+      # definition (it is compiler-provided).
       map (p: {
           name = p.id;
           value.revision = null;
-        }) partitioned.preExisting
+        }) (pkgs.lib.filter (p: !(configuredById ? ${p.id})) partitioned.preExisting)
       # The other packages that are not part of the project itself.
       ++ map (p: {
           name = p.id;

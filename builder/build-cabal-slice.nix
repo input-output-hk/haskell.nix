@@ -142,6 +142,30 @@ let outerGhc = ghc; in
                              # downstream consumers compose, so a
                              # second copy with a different unit-id
                              # would silently fork dep hashes.
+, solverIncludesGlobalDb ? false
+                             # keep the compiler's real global package db
+                             # in the slice solver's installed index
+                             # alongside the composed store units (see
+                             # the merged-snapshot block in the solver-
+                             # visibility section).  Set by
+                             # comp-v2-builder for consumer-style slices
+                             # (any slice whose component has
+                             # `pre-existing` deps, or any slice of a
+                             # project without `v2LocalPackageSlices`).
+, allowedSiblingUnitPrefix ? null
+                             # if non-null (local-`packages:` mode
+                             # slices, see comp-v2-builder.nix
+                             # `isLocalPackageSlice`), the target
+                             # package's `<name>-<version>`: captured
+                             # units `<prefix>` / `<prefix>-<comp>` are
+                             # tolerated alongside `expectedUnitId`.
+                             # cabal never satisfies an INTRA-package
+                             # dep from an installed unit, so a local
+                             # target's required sibling components
+                             # (rts's way sublibs depend on lib:rts)
+                             # are necessarily built in-slice — under
+                             # the fork's deterministic local ids they
+                             # can't fork dep hashes.
 , expectedPlanEntries ? null # if non-null, an attr set { <unit-id> =
                              # <plan-json entry>; } restricted to the
                              # entries this slice expects to produce
@@ -604,15 +628,24 @@ stdenv.mkDerivation ({
         storePkgDb=package.conf.d
       fi
       if [ -z "$ghcDir" ]; then
-        # No dir matches the compiler's platform (or --info gave none):
-        # fall back to the first platform dir.  Natively there is
-        # exactly one.
+        # No dir matches the compiler's platform (or --info gave none).
+        # Natively there is exactly one platform dir — take it.  On cross
+        # the composed store also holds the build-stage (native) platform
+        # dir reached through the `build` → `host` link, so guessing by
+        # glob order could silently pick the wrong platform: fail instead.
+        local candidates=()
         for d in $storeDir/host/*/; do
           [ -d "$d" ] || continue
-          ghcDir=''${d%/}
-          storePkgDb=package.conf.d
-          break
+          candidates+=("''${d%/}")
         done
+        if [ "''${#candidates[@]}" -eq 1 ]; then
+          ghcDir=''${candidates[0]}
+          storePkgDb=package.conf.d
+        elif [ "''${#candidates[@]}" -gt 1 ]; then
+          echo "discoverStore: cannot identify the host platform dir in $storeDir/host" >&2
+          echo "  (ghc --info Target platform: '$hostPlatformDir'; candidates: ''${candidates[*]})" >&2
+          exit 1
+        fi
       fi
     }
     # `package.db` needs to be a writable directory (cabal/ghc-pkg
@@ -649,7 +682,36 @@ stdenv.mkDerivation ({
         shopt -u nullglob
       '') buildToolBinOverlays}
     ''
-    }# Snapshot existing unit filenames so we can identify new ones later.
+    }${lib.optionalString (allowedSiblingUnitPrefix != null) ''
+      # Local-`packages:` slice: evict composed units of the TARGET
+      # package itself.  cabal never satisfies an intra-package dep
+      # from an installed unit — a local target's sibling components
+      # always build in-slice — so the composed twins are unusable,
+      # and the fork's staged install would collide with their
+      # read-only conf / `units/` receipt symlinks when it registers
+      # the in-slice rebuilds under the same deterministic ids
+      # (`withFile: permission denied` on `units/<pkgid>-<comp>`).
+      # The sibling SLICES stay composed for everything else they
+      # carry (their transitive dep closure, repo fragments).
+      discoverStore
+      if [ -n "$ghcDir" ] && [ -d "$ghcDir/$storePkgDb" ]; then
+        sibling_pkgid=${lib.escapeShellArg allowedSiblingUnitPrefix}
+        shopt -s nullglob
+        for conf in "$ghcDir/$storePkgDb/$sibling_pkgid.conf" \
+                    "$ghcDir/$storePkgDb/$sibling_pkgid"-*.conf; do
+          [ -L "$conf" ] || continue      # composed symlink, not ours
+          uid=$(basename "''${conf%.conf}")
+          echo "evicting composed same-package unit: $uid"
+          rm "$conf"
+          rm -f "$ghcDir/units/$uid"
+          if [ -d "$ghcDir/$uid" ]; then
+            chmod -R u+w "$ghcDir/$uid" 2>/dev/null || true
+            rm -rf "$ghcDir/$uid"
+          fi
+        done
+        shopt -u nullglob
+      fi
+    ''}# Snapshot existing unit filenames so we can identify new ones later.
     discoverStore
     if [ -n "$ghcDir" ] && [ -d "$ghcDir/$storePkgDb" ]; then
       # No chmod needed — the db dir is a real dir from lndir,
@@ -720,6 +782,55 @@ stdenv.mkDerivation ({
     composedDb=""
     if [ -n "$ghcDir" ] && [ "$storePkgDb" = package.conf.d ]; then
       composedDb=$ghcDir/$storePkgDb
+      ${lib.optionalString solverIncludesGlobalDb ''
+        # Consumer-style slice (it has `pre-existing` deps): the real
+        # global db must STAY in the solver's installed index alongside
+        # the composed units — the composed-db override below would
+        # otherwise make every boot lib unknown to the solver
+        # ("unknown package: base").  Inject each global conf into the
+        # composed db as a SYMLINK to a `''${pkgroot}`-resolved copy
+        # under $buildRoot: symlinked confs are invisible to the
+        # slice's unit capture (which keys on real files), and the
+        # installPhase drops them again so nothing dangling ships in
+        # $out.  Snapshot-only is fine — the solver's installed index
+        # is read once, up front.  (Stage-style slices —
+        # `v2LocalPackageSlices`, no pre-existing deps — keep the
+        # composed-only view: the previous stage compiler's global db
+        # carries unrelated registrations the solver must not see.)
+        libdir=$(${ghcBin} --print-libdir)
+        globalSnap=$buildRoot/global-conf-snapshot
+        mkdir -p $globalSnap
+        shopt -s nullglob
+        # name-version index of the composed units: a composed instance
+        # means plan-nix chose a REINSTALLED unit for that package
+        # version, so the boot instance of the SAME name+version must
+        # not become a second installed candidate — the solver could
+        # satisfy an `installed` pin with the boot copy and fork every
+        # dependent's unit-id (leksah: composed haddock-library-1.11.0
+        # reinstall vs the compiler's boot haddock-library-1.11.0).
+        # Different VERSIONS stay visible: `==` pins steer those (e.g.
+        # a composed setup-scope Cabal-3.16 alongside boot Cabal-3.17).
+        composedNV=$buildRoot/composed-name-versions
+        : > $composedNV
+        for conf in "$composedDb"/*.conf; do
+          [ -e "$conf" ] || continue
+          awk '/^name:/{n=$2} /^version:/{v=$2} END{if(n!="")print n"-"v}' \
+            "$conf" >> $composedNV
+        done
+        for conf in "$libdir/package.conf.d"/*.conf; do
+          confBase=$(basename "$conf")
+          [ -e "$composedDb/$confBase" ] && continue
+          nv=$(awk '/^name:/{n=$2} /^version:/{v=$2} END{if(n!="")print n"-"v}' "$conf")
+          if [ -n "$nv" ] && grep -qx -- "$nv" $composedNV; then
+            echo "skipping boot conf shadowed by composed reinstall: $confBase"
+            continue
+          fi
+          sed "s|\''${pkgroot}|$libdir|g" "$conf" > "$globalSnap/$confBase"
+          ln -s "$globalSnap/$confBase" "$composedDb/$confBase"
+        done
+        shopt -u nullglob
+        ${ghcPkgBin} --package-db=$composedDb recache
+      ''}
       wrapBin=$buildRoot/solver-tools
       mkdir -p $wrapBin
       realGhcBinDir=$(dirname "$(type -P ${ghcBin})")
@@ -1445,6 +1556,20 @@ stdenv.mkDerivation ({
       rm -rf $out/store
       mkdir -p $out
     else
+      ${lib.optionalString solverIncludesGlobalDb ''
+        # Drop the solver-visibility global-conf symlinks injected at
+        # the start of the buildPhase (see the block above the
+        # solver-tools wrapper) — they point into $buildRoot and would
+        # ship dangling.  Symlinks only; real confs are the slice's own.
+        shopt -s nullglob
+        for conf in $ghcDir/$storePkgDb/*.conf; do
+          [ -L "$conf" ] || continue
+          case "$(readlink "$conf")" in
+            "$buildRoot"/global-conf-snapshot/*) rm "$conf" ;;
+          esac
+        done
+        shopt -u nullglob
+      ''}
       : > $buildRoot/captured-unit-ids
 
       # ---- Walk new confs --------------------------------------
@@ -1481,6 +1606,38 @@ stdenv.mkDerivation ({
           echo "captured store unit: $unitId (bin-only)"
         fi
       done
+
+      # ---- Walk new flat-bin executables -----------------------
+      # The stable-haskell fork's staged layout installs exe units
+      # into the FLAT `<ghcDir>/bin/` (`bindir = pkgroot </> "bin"`),
+      # not a per-unit dir — so an exe the slice built is invisible
+      # to both walks above (no `.conf`, no new unit dir).  Identify
+      # new entries by diff against the `bin-before` snapshot and map
+      # each to its unit id through the slice's own elaborated plan.
+      if [ -d "$ghcDir/bin" ] && [ -f "$distDir/cache/plan.json" ]; then
+        ( cd $ghcDir/bin && ls 2>/dev/null ) > $buildRoot/bin-after || true
+        while IFS= read -r newBin; do
+          [ -n "$newBin" ] || continue
+          # HOST-stage entries only: the dir we diffed is the HOST
+          # staged store, and in a two-stage plan the same exe name can
+          # exist in both stages under different unit ids.
+          uid=$(jq -r --arg exe "exe:$newBin" \
+            '.["install-plan"][]
+             | select(.["component-name"] == $exe and ((.stage // "host") == "host"))
+             | .id' \
+            "$distDir/cache/plan.json" 2>/dev/null | head -n1)
+          # The fork's elaborated plan carries a stage prefix on unit
+          # ids (`host:alex-…`); store paths, confs, and plan-nix all
+          # use the bare id — strip it.
+          uid=''${uid#host:}
+          uid=''${uid#build:}
+          if [ -n "$uid" ] && [ "$uid" != "null" ] \
+             && ! grep -qx -- "$uid" $buildRoot/captured-unit-ids; then
+            echo "$uid" >> $buildRoot/captured-unit-ids
+            echo "captured store unit: $uid (flat bin)"
+          fi
+        done < <(comm -13 <(sort $buildRoot/bin-before) <(sort $buildRoot/bin-after))
+      fi
 
       # ---- Drop cabal's `incoming/` staging area ---------------
       # `incoming/` is cabal's per-build install staging dir and
@@ -2162,6 +2319,15 @@ stdenv.mkDerivation ({
       unexpected=$(comm -13 \
         <(printf '%s\n' "$expected_uid") \
         <(printf '%s\n' "$actual_uids"))
+      ${lib.optionalString (allowedSiblingUnitPrefix != null) ''
+        # Local-`packages:` slice: drop same-package sibling units
+        # (`<pkgid>` and `<pkgid>-<component>`) from the extras — see
+        # the `allowedSiblingUnitPrefix` argument comment.
+        sibling_pkgid=${lib.escapeShellArg allowedSiblingUnitPrefix}
+        unexpected=$(printf '%s\n' "$unexpected" \
+          | awk -v p="$sibling_pkgid" \
+              'NF && $0 != p && index($0, p "-") != 1')
+      ''}
       if [ -n "$missing" ] || [ -n "$unexpected" ]; then
         echo "" >&2
         echo "ERROR: slice produced unit-ids that don't match plan-nix.json:" >&2

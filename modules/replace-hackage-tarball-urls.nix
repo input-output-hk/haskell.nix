@@ -32,9 +32,18 @@ let
   # any commented URL into a store path in the comment), these overrides drive
   # real `packages.<name>.src` definitions, so we skip commented-out URLs — a
   # commented URL is not a `packages:` entry and has no package in the plan.
+  # Scan the same text `rewrite` is applied to — the assembled cabal.project
+  # (`cabalProject` + `cabalProjectLocal`, see `rawCabalProject` in
+  # lib/call-cabal-project-to-nix.nix).  A URL that only appears in
+  # `cabalProjectLocal` would otherwise get the eval-platform rewrite in the
+  # plan but no build-platform `src` override, leaking the eval platform
+  # into the built derivation.
   found = lib.concatMap
     (line: lib.optionals (builtins.match "[[:space:]]*--.*" line == null) (urlsIn line))
-    (lib.splitString "\n" (if config.cabalProject == null then "" else config.cabalProject));
+    (lib.splitString "\n"
+      ((if config.cabalProject == null then "" else config.cabalProject)
+       + "\n"
+       + (if config.cabalProjectLocal == null then "" else config.cabalProjectLocal)));
 in {
   _file = "haskell.nix/modules/replace-hackage-tarball-urls.nix";
   options = {

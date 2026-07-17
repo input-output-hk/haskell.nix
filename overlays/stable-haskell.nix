@@ -882,6 +882,13 @@ ENDSCRIPT
     # matching the stable-ghc-9.14 Makefile's `cabal build`.  v1's standalone
     # Setup.hs links the boot GHC's Cabal 3.12, which drops those options.
     builderVersion       = 2;
+    # Build each local plan unit's slice in cabal `packages:` mode so it
+    # registers the plan's deterministic unit id (`base-4.22.0.0`, ...)
+    # — these registrations become the compiler's global package db,
+    # which consumer plan-time dummy dumps must be able to predict.
+    # See the option in modules/project-common.nix and the module-list
+    # comment at the end of this project.
+    v2LocalPackageSlices = true;
     inputMap             = srpInputMap;
     # Boot-lib deps are pinned via direct hackage tarball URLs in the source's
     # cabal.project; rewrite them to local store paths (fetched via hackage.nix)
@@ -1296,53 +1303,23 @@ ENDSCRIPT
       # here (it's not covered by the cabal.project files).
       packages.unlit.ghcOptions = ["-no-rts"];
     }
-    # Register the boot libraries under deterministic, hadrian-style unit
-    # ids (`<pkg>-<version>-inplace`; the rts family and system-cxx-std-lib
-    # keep plain `<pkg>-<version>`, mirroring the exceptions GHC's own
-    # bindists make).  Cabal's default component id
-    # (Distribution.Backpack.Id.computeComponentId) appends a base62 hash
-    # of the dep unit-ids + flag assignment, which nothing at Nix eval time
-    # can predict.  The dummy `ghc-pkg dump` synthesised for plan-time
-    # (call-cabal-project-to-nix.nix) must present the same installed ids
-    # cabal later sees against the real DB: a direct dep's id enters the
-    # depending package's `--dependency=<dep>=<id>` configure arg and
-    # therefore its UnitId hash, so with unpredictable boot-lib ids the v2
-    # slice builder's plan-nix/slice unit-id equality can never hold for
-    # projects built with this compiler.
-    ({ config, lib, ... }: let
-      # `$pkgid` is a Cabal path-template (substituted with `<name>-<version>`
-      # by computeComponentId via packageTemplateEnv), NOT a shell variable —
-      # comp-builder.nix interpolates configure flags unquoted into the
-      # configurePhase script, so the `$` is backslash-escaped from bash.
-      # Using the template avoids reading package versions back out of
-      # `config.packages` (in-tree units like rts are plan-keyed by unit id,
-      # and the name alias doesn't expose `package.identifier`).
-      ipid = suffix: [ "--ipid=\\$pkgid${suffix}" ];
-    in {
-      packages =
-        lib.genAttrs
-          (lib.filter (name: config.packages ? ${name})
-            (lib.subtractLists [ "rts" "system-cxx-std-lib" ] bootLibraries))
-          (name: { components.library.configureFlags = ipid "-inplace"; })
-        # rts: the same --ipid goes to the main library and every way
-        # sublib — computeComponentId itself appends `-<sublib>`, giving
-        # `rts-1.0.3`, `rts-1.0.3-threaded-nodebug`, etc.  The sublib
-        # names are static because this native stage2 always builds all
-        # four ways (the JS/wasm single-way case only arises in cross
-        # project plans, which don't use this module).
-        // lib.optionalAttrs (config.packages ? rts) {
-          rts.components = {
-            library.configureFlags = ipid "";
-            sublibs = lib.genAttrs [
-              "nonthreaded-nodebug" "nonthreaded-debug"
-              "threaded-nodebug"    "threaded-debug"
-            ] (_: { configureFlags = ipid ""; });
-          };
-        }
-        // lib.optionalAttrs (config.packages ? system-cxx-std-lib) {
-          system-cxx-std-lib.components.library.configureFlags = ipid "";
-        };
-    })];
+    # Boot-library unit ids MUST be deterministic: a consumer project's
+    # plan-time dummy `ghc-pkg dump` (lib/dummy-ghc.nix) has to present
+    # the same installed ids cabal later sees against the real global db
+    # — a dep's id enters the depending unit's `--dependency=<dep>=<id>`
+    # configure arg and therefore its UnitId hash, so with unpredictable
+    # boot-lib ids the v2 slice builder's plan-nix/slice unit-id equality
+    # can never hold for projects built with this compiler.  The fork
+    # elaborates `packages:`-local units to deterministic ids
+    # (`base-4.22.0.0`, `rts-1.0.3-threaded-nodebug`, ...), and
+    # `v2LocalPackageSlices = true` (set above) makes each slice build
+    # its target the same local way, so the ids each slice REGISTERS
+    # equal the plan's — enforced per slice by the unit-id check.
+    # (A previous `--ipid=\$pkgid-inplace` `configureFlags` module here
+    # became a silent no-op when stage2 moved to the v2 builder — v2
+    # only applies configure options recorded in plan-nix — leaving the
+    # global db with unpredictable hashed ids.)
+  ];
   };
 
   s2 = stage2Project.hsPkgs;
@@ -1435,12 +1412,13 @@ ENDSCRIPT
         # dump synthesis reads this to add that depends edge (the flag
         # conditional in text.cabal is invisible to it).
         enableTextSimdutf    = true;
-        # Real `ghc --info` "Project Unit Id" — the ghc library's unit id,
-        # registered under the MUNGED version plus the deterministic
-        # `-inplace` suffix (see the stage2 --ipid module).  dummy-ghc.nix
-        # emits this value so cabal's plan-time view matches the real
-        # compiler (it defaults to ghc-<full-version>-inplace otherwise).
-        projectUnitId        = "ghc-${ghcVersion}-inplace";
+        # Real `ghc --info` "Project Unit Id" — the ghc library's unit id.
+        # The stage2 plan elaborates the local `ghc` unit to the plain
+        # MUNGED `ghc-<version>` id and its local-mode slice registers the
+        # same (v2LocalPackageSlices).  dummy-ghc.nix emits this value so
+        # cabal's plan-time view matches the real compiler (it defaults to
+        # ghc-<full-version>-inplace otherwise).
+        projectUnitId        = "ghc-${ghcVersion}";
         # call-cabal-project-to-nix.nix:297 reads raw-src to synthesise the
         # dummy ghc-pkg dump for plan-time.  Use the dump tree (configuredSrc +
         # the hackage-pinned boot libraries' .cabal files) so user-project plans
@@ -1457,6 +1435,17 @@ ENDSCRIPT
         # (e.g. `…compiler.ghc914-sh.stage2Project.hsPkgs.rts.components
         # .sublibs.nonthreaded-nodebug`) without assembling the compiler.
         inherit stage2Project;
+        # The stage1 project (ghc-bin and friends, built with the boot GHC).
+        inherit stage1Project;
+        # The plan-nix derivations that must be realised (via IFD) to
+        # evaluate this compiler.  `haskell-nix.roots` links them (and the
+        # `evalWith` variant's when the eval system differs from the build
+        # system) so CI pushes them to the binary cache and later
+        # evaluations substitute the plans instead of building them mid-eval.
+        plan-nixes           = {
+          stage1 = stage1Project.plan-nix;
+          stage2 = stage2Project.plan-nix;
+        };
         # The bare configured tree on the BUILD platform, for consumers that
         # want the source (e.g. the cross section's nativeConfiguredSrc), not
         # the dump view.
@@ -1754,12 +1743,10 @@ ENDSCRIPT
         # boot package (rts, base, …) from source.
         emptyGlobalPackageDb = true;
         # `--info` "Project Unit Id" is compiled into the native binaries —
-        # it does not vary with -target, so mirror the native passthru.
-        # (The real binaries report a HASHED id, `ghc-9.14-<sha256>`; the
-        # dummy has always reported this `-inplace` value instead, with
-        # strict native UnitId checks green — cabal does not feed the
-        # field into anything plan-relevant for us.)
-        projectUnitId        = "ghc-${ghcVersion}-inplace";
+        # it does not vary with -target, so mirror the native passthru
+        # (the plain `ghc-<version>` id the local-mode `ghc` slice
+        # registers; see the native compiler's projectUnitId).
+        projectUnitId        = "ghc-${ghcVersion}";
         # The dump view of the native compiler's source (used only for the
         # BUILD side of plan-time dummies; the target dump is empty, see
         # emptyGlobalPackageDb).  Plain values delegating to the native
@@ -1777,6 +1764,11 @@ ENDSCRIPT
         # boot package sources and .cabal files from these.
         configured-src       = nativeConfiguredSrc;
         configured-src-eval  = nativeConfiguredSrcEval;
+        # Evaluating the cross wrapper forces the NATIVE stage1/stage2
+        # plans (the wrapper links the native stage2 executables); there
+        # are no cross-specific compiler plans — boot packages are planned
+        # inside each user project (see emptyGlobalPackageDb above).
+        plan-nixes           = nativeSghc914.plan-nixes;
         # buildGHC is used by setup-builder.nix and make-config-files.nix
         # to compile Setup.hs natively, and by the v2 builder as the
         # build compiler of two-stage slices (`--with-build-compiler`).

@@ -4,7 +4,7 @@ let
     inherit haskellLib;
     ghc = config.ghc.package;
     compiler-nix-name = config.compiler.nix-name;
-    inherit (config) nonReinstallablePkgs hsPkgs compiler evalPackages builderVersion crossTemplateHaskellSupport cabalProjectLocal;
+    inherit (config) nonReinstallablePkgs hsPkgs compiler evalPackages builderVersion crossTemplateHaskellSupport v2LocalPackageSlices cabalProjectLocal;
   };
 
 in
@@ -24,6 +24,14 @@ in
   options.crossTemplateHaskellSupport = lib.mkOption {
     type = lib.types.bool;
     default = true;
+  };
+  # Propagated from the project-level `v2LocalPackageSlices`: build v2
+  # slices for `style: "local"` plan units in cabal `packages:` mode so
+  # each slice registers the plan's deterministic local unit id (see
+  # modules/project-common.nix and builder/comp-v2-builder.nix).
+  options.v2LocalPackageSlices = lib.mkOption {
+    type = lib.types.bool;
+    default = false;
   };
   # Project-level `cabalProjectLocal`, threaded into pkg-set's
   # module config so the v2 shell can write it out as a

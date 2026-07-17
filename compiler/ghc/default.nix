@@ -812,6 +812,13 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
             cp _build/stage1/compiler/build/*.hs-incl $generated/compiler/stage2/build || true
           ''
           # Save generated files for needed when building ghc-boot
+          # NB: the `Version.hss` guard below is a long-standing typo — it
+          # never matches, so this output ships without ghc-boot's
+          # `Version.hs`.  Left un-fixed deliberately: this string is part
+          # of the GHC derivation, so correcting it would rebuild every
+          # hadrian GHC.  All consumers prefer `generated-light` (which
+          # copies `Version.hs` correctly) via
+          # `ghc.generated-light or ghc.generated`.
           + ''
             mkdir -p $generated/libraries/ghc-boot/dist-install/build/GHC/Platform
             if [[ -f _build/stage1/libraries/ghc-boot/build/GHC/Version.hss ]]; then
@@ -885,6 +892,13 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
 
   passthru = {
     inherit bootPkgs targetPrefix libDir llvmPackages enableShared enableTerminfo useLLVM useLdLld hadrian hadrianProject;
+
+    # The plan-nix derivations that must be realised (via IFD) to evaluate
+    # this compiler.  `haskell-nix.roots` links them (and, when the eval
+    # system differs from the build system, the `evalWith` variant's) so CI
+    # pushes them to the binary cache and later evaluations substitute the
+    # plans instead of building them mid-eval.
+    plan-nixes = lib.optionalAttrs useHadrian { hadrian = hadrianProject.plan-nix; };
 
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";
@@ -1010,8 +1024,6 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
       '';
       buildPhase = ''
         runHook preBuild
-        # Only the generated-source targets — hadrian builds their prerequisites
-        # (genprimopcode / deriveConstants, both stage0Boot) but NOT lib:ghc.
         # Only the generated-source targets — hadrian builds their prerequisites
         # (genprimopcode / deriveConstants, both stage0Boot) but NOT lib:ghc.
         #

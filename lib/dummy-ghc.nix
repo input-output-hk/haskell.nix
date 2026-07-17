@@ -577,7 +577,14 @@ let
             # the real GHC.
             ""
           }suffix() {
-            ${if pkgs.lib.versionAtLeast ghc.version "9.8" then ''
+            ${if ghc.isStableHaskell or false then ''
+              # stable-haskell compilers: the stage2 boot-lib slices are
+              # built in local-`packages:` mode (v2LocalPackageSlices,
+              # overlays/stable-haskell.nix), and the fork elaborates
+              # local units to plain `<name>-<version>` ids — no
+              # `-inplace` suffix for ANY package.
+              echo ""
+            '' else if pkgs.lib.versionAtLeast ghc.version "9.8" then ''
               case "$1" in
                 rts|system-cxx-std-lib) echo "" ;;
                 *) echo "-inplace" ;;

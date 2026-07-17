@@ -205,6 +205,7 @@ let
     stack-remote-resolver = callTest ./stack-remote-resolver {};
     shell-for-setup-deps = callTest ./shell-for-setup-deps {};
     setup-deps = import ./setup-deps { inherit pkgs evalPackages compiler-nix-name; };
+    setup-deps-boot-cabal = callTest ./setup-deps-boot-cabal {};
     callStackToNix = callTest ./call-stack-to-nix {};
     callCabalProjectToNix = callTest ./call-cabal-project-to-nix { inherit evalPackages; };
     cabal-source-repo = callTest ./cabal-source-repo {};

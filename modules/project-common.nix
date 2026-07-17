@@ -121,6 +121,25 @@ with lib.types;
         builders; there is no per-component opt-in.
       '';
     };
+    v2LocalPackageSlices = mkOption {
+      type = bool;
+      default = false;
+      description = ''
+        Build v2 slices for `style: "local"` plan units in cabal
+        `packages:` mode instead of `extra-packages:` mode, so each
+        slice's cabal elaborates — and REGISTERS — the same
+        deterministic local unit id the project plan records
+        (`base-4.22.0.0`, `rts-1.0.3-threaded-nodebug`, ...), and the
+        slice/plan unit-id equality check is enforced for them.
+
+        Set by the stable-haskell stage2 boot-library project: its
+        slices' registered ids become the compiler's global package db,
+        which consumer projects' plan-time dummy `ghc-pkg dump` must be
+        able to predict (an `extra-packages:` slice registers an
+        unpredictable hashed id instead).  Only meaningful with
+        `builderVersion = 2`.
+      '';
+    };
     useLocalGhcLib = mkOption {
       type = bool;
       default = false;

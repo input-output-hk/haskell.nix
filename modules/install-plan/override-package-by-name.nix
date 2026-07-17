@@ -17,8 +17,22 @@
   # `plan-json.install-plan` for O(log N) lookup of a specific
   # plan entry by its haskell.nix per-instance UnitID instead of
   # the linear scan a `lib.findFirst` over the list would do.
+  #
+  # A `pre-existing` unit can SHADOW a configured one under the same
+  # id: the stable-haskell plan-time dummy dump reports a boot lib
+  # installed as `base-4.22.0.0` while the project also builds it as
+  # a local package under that same deterministic id (see the shadow
+  # dedup in lib/load-cabal-plan.nix).  `listToAttrs` keeps the FIRST
+  # occurrence and plan.json lists pre-existing units first, so
+  # without reordering every shadowed boot lib resolves to the
+  # pre-existing entry — which has no `style` / `component-name`,
+  # silently disabling the v2 builder's local-`packages:` mode and
+  # unit-id checks (`thisPlanEntry`, `isCustomBuild`,
+  # `expectedUnitId`).  Configured entries must win.
   plan-json-by-id = pkgs.lib.listToAttrs
-    (map (p: { name = p.id; value = p; }) config.plan-json.install-plan);
+    (map (p: { name = p.id; value = p; })
+      (pkgs.lib.filter (p: p.type != "pre-existing") config.plan-json.install-plan
+       ++ pkgs.lib.filter (p: p.type == "pre-existing") config.plan-json.install-plan));
   # Project-global v2-builder data derived once from the plan (see
   # `builder/v2-project-globals.nix`).  Lazy: only forced by the v2
   # builder, so v1 / non-plan projects never pay for it.
