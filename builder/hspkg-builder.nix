@@ -101,10 +101,21 @@ let
               (p: (p.pkg-name or null) == package.identifier.name
                   && (p.pkg-version or null) == package.identifier.version)
               plan;
+            # NOT the `setup` component: setup deps are a separate
+            # solver universe (`<pkg>:setup.<dep>` qualifiers,
+            # BUILD-stage under the fork).  Folding them in here sends
+            # them through `homeLibDepSlices` into `dependsSlices` —
+            # the lib-scope CONSTRAINTS — where their version pins
+            # clash with the library closure (leksah: gi-gobject's
+            # setup wants haskell-gi-overloading 1.0 while its lib
+            # closure needs 0.0; the `==1.0` pin made the lib goal
+            # unsatisfiable).  Setup deps reach the slice through
+            # `setupDepSlices` (store + repo, no constraints) and the
+            # per-package `<pkg>:setup.<dep> ==<ver>` pins instead.
             libDepsOf = p:
               (p.depends or [])
               ++ lib.concatMap (c: c.depends or [])
-                   (lib.attrValues (p.components or {}));
+                   (lib.attrValues (builtins.removeAttrs (p.components or {}) ["setup"]));
             exeDepsOf = p:
               (p.exe-depends or [])
               ++ lib.concatMap (c: c.exe-depends or [])

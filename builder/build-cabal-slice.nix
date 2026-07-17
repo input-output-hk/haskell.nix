@@ -1639,6 +1639,28 @@ stdenv.mkDerivation ({
         done < <(comm -13 <(sort $buildRoot/bin-before) <(sort $buildRoot/bin-after))
       fi
 
+      # ---- BUILD-stage units captured this build ----------------
+      # The fork stage-qualifies every goal; SETUP scopes (and build
+      # tools) are BUILD-stage.  A custom setup that `setup-depends`
+      # on a local/inplace-style package — the haskell-gi family,
+      # where gi-gmodule's Setup imports gi-glib — makes cabal plan
+      # and build a BUILD-stage copy of that dep in-slice, by design
+      # (the same in-slice tool building the two-stage cross plans
+      # do; plan-nix's make-install-plan elaborates the same way, so
+      # the slice's own unit id is unaffected — its HOST lib deps
+      # still resolve to the composed units).  On native the stage-
+      # unifying store link makes those units land in the host store
+      # dir, so the walks above capture them.  Record their bare ids
+      # so the unit-id checks below can tolerate them.
+      : > $buildRoot/build-stage-unit-ids
+      if [ -f "$distDir/cache/plan.json" ]; then
+        jq -r '.["install-plan"][]
+               | select(.stage == "build")
+               | .id | sub("^(host|build):"; "")' \
+          "$distDir/cache/plan.json" 2>/dev/null | sort -u \
+          > $buildRoot/build-stage-unit-ids || true
+      fi
+
       # ---- Drop cabal's `incoming/` staging area ---------------
       # `incoming/` is cabal's per-build install staging dir and
       # has nothing useful for downstream consumers.  Leaving it in
@@ -2245,6 +2267,13 @@ stdenv.mkDerivation ({
             }
             $1 != expected && !($1 in allowed_set) { print $2 }
           ')
+      # BUILD-stage units the fork planned in-slice (setup scopes /
+      # build tools) are by-design byproducts, not divergence — see
+      # the build-stage-unit-ids capture above.
+      if [ -s $buildRoot/build-stage-unit-ids ] && [ -n "$unexpected" ]; then
+        unexpected=$(printf '%s\n' "$unexpected" \
+          | grep -vxF -f $buildRoot/build-stage-unit-ids || true)
+      fi
 
       # `target_count > 1` used to indicate cabal split the target
       # into multiple installed units within a single slice.  With
@@ -2328,6 +2357,13 @@ stdenv.mkDerivation ({
           | awk -v p="$sibling_pkgid" \
               'NF && $0 != p && index($0, p "-") != 1')
       ''}
+      # BUILD-stage units the fork planned in-slice (setup scopes /
+      # build tools) are by-design byproducts, not divergence — see
+      # the build-stage-unit-ids capture above.
+      if [ -s $buildRoot/build-stage-unit-ids ] && [ -n "$unexpected" ]; then
+        unexpected=$(printf '%s\n' "$unexpected" \
+          | grep -vxF -f $buildRoot/build-stage-unit-ids || true)
+      fi
       if [ -n "$missing" ] || [ -n "$unexpected" ]; then
         echo "" >&2
         echo "ERROR: slice produced unit-ids that don't match plan-nix.json:" >&2
