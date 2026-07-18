@@ -1818,7 +1818,17 @@ ENDSCRIPT
       --triple ${targetTriple} \
       --cc  ${targetCCPath} \
       --cxx ${targetCXXPath} \
-      --output-settings \
+      ${
+        # ghc-toolchain probes PATH for `<triple>-{ar,ranlib,nm}` / plain
+        # names, but emscripten ships them as em{ar,ranlib} and emnm —
+        # never found, and ar/ranlib/nm discovery is fatal.  Name them
+        # explicitly, mirroring the AR/RANLIB/NM exports the hadrian build
+        # uses for GHC >= 9.12 (compiler/ghc/default.nix).  The empty
+        # non-ghcjs case keeps this script byte-identical to before, so
+        # other targets' wrapper drvs are unchanged.
+        lib.optionalString isGhcjsTarget
+          "--ar ${targetCC}/bin/emar --ranlib ${targetCC}/bin/emranlib --nm ${targetNMPath} "
+      }--output-settings \
       -o $tdir/lib/settings
 
     # ghc-toolchain probes don't know the session is cross (it only sees
