@@ -104,6 +104,13 @@ let
   #     unit-ids legitimately diverge from what cabal computes
   #     against the real cross GHC).
   isCross = (ghc.targetPrefix or "") != "";
+  # The stable-haskell `-target` cross wrapper is morally cross but keeps
+  # `targetPrefix = ""` (it is the native compiler + `-target`), so
+  # `isCross` above is false for it.  Its empty target global db is the
+  # reliable signal that boot libraries are planned from source and that
+  # hashed unit-ids computed against the REAL wrapper legitimately diverge
+  # from the plan-time dummy ghc's — used only by the unit-id check below.
+  isTwoStageCross = ghc.emptyGlobalPackageDb or false;
 
   # Plan-nix entry for this slice's own unit (looked up via the
   # unit-id `modules/install-plan/planned.nix` recorded on the
@@ -1686,6 +1693,7 @@ let
       in if isCross || isCustomBuild then null
          else if isLocalPackageSlice then uid
          else if style == "local" || style == "inplace" then null
+         else if isTwoStageCross then null
          else uid;
     # Local-mode slices necessarily also build required SIBLING
     # components of their (local) package in-slice — tolerated by the
