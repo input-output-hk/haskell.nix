@@ -544,6 +544,29 @@ in {
           flags: +bignum-native
           ghc-options: -no-rts
 
+        -- directory / file-io / process / unix each carry an automatic
+        -- `os-string` flag (default False) that selects, in their .cabal
+        -- and their .hsc/.hs sources, between the modern `os-string`
+        -- package and filepath's pre-1.5 bundled `System.OsString.*`.
+        -- With filepath-1.5.4.0 (which no longer bundles those modules)
+        -- only the `+os-string` branch compiles, but `allow-newer` relaxes
+        -- the `else` branch's `filepath < 1.5.0.0` bound so the solver
+        -- otherwise keeps the default False and the build fails with
+        -- "hidden package os-string" / "could not find module
+        -- System.OsString.…".  Force the flag to match how the compiler's
+        -- own stage2 (cabal.project.stage2) resolves these packages.
+        package directory
+          flags: +os-string
+
+        package file-io
+          flags: +os-string
+
+        package process
+          flags: +os-string
+
+        package unix
+          flags: +os-string
+
         package rts
           ghc-options: -no-rts
           flags: ${if isWasm then "+use-system-libffi -tables-next-to-code" else "+tables-next-to-code"}${rtsWasmExtras}
