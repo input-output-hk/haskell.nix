@@ -463,6 +463,10 @@ in {
       crossLinkFields = lib.optionalString (!isWasm) ("\n"
         + "  shared: ${if shGhc.enableShared or false then "True" else "False"}\n"
         + "  executable-dynamic: False");
+      # Sourced from `pkgs.haskell-nix.haskellLib` (not the file's own
+      # `haskellLib` module argument, which callers of this module don't
+      # actually provide — it was declared but never forced before now).
+      shPlanUnitStage = pkgs.haskell-nix.haskellLib.planUnitStage;
     in {
       # The boot packages resolve in the HOST stage against an empty
       # installed set, while build-tool-depends / setup-depends resolve in
@@ -566,16 +570,54 @@ in {
       # the slice's extraNativeBuildInputs.  The tools come from the
       # compiler's passthru (built natively; nm/objdump handle TARGET
       # objects).
-      modules = [ ({ config, lib, ... }: {
-        packages = lib.optionalAttrs (config.packages ? rts) {
-          rts.components = {
-            library.build-tools = shGhc.bootPkgTools or [];
-            sublibs = lib.genAttrs
-              [ "nonthreaded-nodebug" "threaded-nodebug"
-                "nonthreaded-debug" "threaded-debug" ]
-              (_: { build-tools = shGhc.bootPkgTools or []; });
-          };
-        };
+      modules = [ ({ config, lib, ... }: let
+        # The four rts WAY sub-libraries (built as v2 slices).  Not every
+        # target has all four (the JS backend builds only nonthreaded-nodebug),
+        # so look them up tolerantly.
+        rtsSublibs = lib.filter (x: x != null)
+          (map (n: config.hsPkgs.rts.components.sublibs.${n} or null)
+            [ "nonthreaded-nodebug" "threaded-nodebug"
+              "nonthreaded-debug" "threaded-debug" ]);
+        # rts:nonthreaded-nodebug's own dependency closure — excluded to
+        # avoid a circular additional-prebuilt-depends edge (mirrors the
+        # stage2 boot-lib module in overlays/stable-haskell.nix).
+        rtsClosure = [ "rts" "libffi-clib" "rts-fs" "rts-headers" ];
+        # Every package that transitively links base carries ghc-internal.conf
+        # in its per-component package db, and GHC 9.14's unit wiring then
+        # demands all rts WAY sub-libs be resolvable when GHC runs (mkUnitState
+        # panics "The RTS for rts:nonthreaded-nodebug is missing …" otherwise).
+        # A native compiler satisfies this from its own global db; a two-stage
+        # from-source cross project has an EMPTY target global db, so every
+        # HOST slice must compose the ways itself — including the user's own
+        # packages, not just the boot libs.  Enumerate the plan's HOST-stage
+        # package names from plan-json (a fixed input; reading `config.packages`
+        # for the list would recurse through these very settings).  BUILD-stage
+        # units (alex / happy / genprimopcode / … — build tools run natively
+        # with the build compiler, whose global db already has the rts ways)
+        # are excluded: they have no host package definition here and don't
+        # need the ways.
+        pkgsNeedingRts = lib.filter (n: !(lib.elem n rtsClosure))
+          (lib.unique (map (u: u.pkg-name)
+            (lib.filter (u: u.type == "configured" && u ? pkg-name
+                            && shPlanUnitStage u == "host")
+              config.plan-json.install-plan)));
+      in {
+        packages =
+          (lib.optionalAttrs (config.packages ? rts) {
+            rts.components = {
+              library.build-tools = shGhc.bootPkgTools or [];
+              sublibs = lib.genAttrs
+                [ "nonthreaded-nodebug" "threaded-nodebug"
+                  "nonthreaded-debug" "threaded-debug" ]
+                (_: { build-tools = shGhc.bootPkgTools or []; });
+            };
+          })
+          # Package-level (inherited by all component types) so the rts ways
+          # land in every slice's starting store db.  `rts` is excluded, so
+          # this never collides with the `rts.components` block above.
+          // lib.genAttrs
+               (lib.filter (n: config.packages ? ${n}) pkgsNeedingRts)
+               (_: { additional-prebuilt-depends = rtsSublibs; });
       }) ];
     }))
   ];
