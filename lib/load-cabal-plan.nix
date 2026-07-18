@@ -106,6 +106,22 @@ let
                   { name = p.id; value = configuredById.${s}; })
          plan-json.install-plan));
 
+  # HOST-stage id resolution.  In a two-stage plan (stable-haskell `-target`
+  # cross compiler, whose target global db — and hence the plan-time dummy
+  # dump — is EMPTY) a pre-existing BUILD-stage boot lib and the configured
+  # HOST-stage from-source twin share one bare id (e.g. `base-4.22.0.0`;
+  # the dedup above is skipped for two-stage plans).  `by-id` is first-wins
+  # over the plan and the pre-existing entry comes first — so a HOST
+  # consumer's `depends` edge resolves to the pre-existing stub and
+  # `lookupDependency` drops it as compiler-provided, even though the
+  # target db is actually empty.  cabal then fails to solve the boot dep
+  # ("next goal: host:base … fail (backjumping)").  Prefer the configured
+  # twin for host consumers so the from-source boot slice is composed in.
+  # A pre-existing unit with NO configured twin (genuinely
+  # compiler/system-provided) is left alone, and non-two-stage plans (which
+  # dedup the shadow) are byte-identical to `by-id`.
+  by-id-host = if !isTwoStagePlan then by-id else by-id // configuredById;
+
   # Single-pass categorization via builtins.groupBy (runs in C++, O(n log k)).
   # Replaces three separate concatMap+optional filters over the full plan.
   # The buckets match what the previous filter expressions accepted exactly.
@@ -152,32 +168,55 @@ let
              in pkgs.lib.optional (s != null && s != p.id)
                   { name = p.id; value = pre-existing-depends.${s}; })
          plan-json.install-plan));
-  lookupPreExisting = depends:
-    pkgs.lib.concatMap (d: builtins.attrNames pre-existing-depends.${d}) depends;
-  # Lookup a dependency in `hsPkgs`
-  lookupDependency = let
+
+  # HOST-stage pre-existing closure — the counterpart to `by-id-host`.
+  # A boot lib that has a configured from-source twin is NOT
+  # compiler-provided for a host consumer, so it must stay out of the
+  # consumer's `pre-existing` set (it belongs in `depends`).  Recurse
+  # through the host-preferred unit per id so the whole boot closure
+  # resolves from source (empty pre-existing sets), while a genuinely
+  # pre-existing-only unit keeps its self entry.  Identical to
+  # `pre-existing-depends` for non-two-stage plans.
+  pre-existing-depends-host =
+    if !isTwoStagePlan then pre-existing-depends
+    else pkgs.lib.listToAttrs (map (id:
+      let p = by-id-host.${id};
+          directDeps = p.depends or p.components.lib.depends;
+          selfEntry = pkgs.lib.optionalAttrs (p.type == "pre-existing") { ${p.pkg-name} = null; };
+          transitiveDeps = pkgs.lib.listToAttrs (
+            map (dname: { name = dname; value = null; })
+              (pkgs.lib.concatMap (d: builtins.attrNames pre-existing-depends-host.${d}) directDeps));
+      in { name = id; value = selfEntry // transitiveDeps; })
+      (pkgs.lib.unique (map (p: p.id) install-plan)));
+
+  lookupPreExisting = ped: depends:
+    pkgs.lib.concatMap (d: builtins.attrNames ped.${d}) depends;
+  # Lookup a dependency in `hsPkgs`, resolving ids through `idMap`
+  # (`by-id` for build/setup scope, `by-id-host` for host library/exe
+  # scope — see `lookupDependencies`).
+  lookupDependency = idMap: let
     lookupDependency' = hsPkgs: d: let
-      # `by-id` redirects a dropped `-inplace` shadow id to its configured
+      # `idMap` redirects a dropped `-inplace` shadow id to its configured
       # sibling entry, so index `hsPkgs` by the sibling's real id — indexing by
       # the raw `-inplace` id would auto-vivify an undefined module stub (its
       # plan entry was dropped) and fail on `package.license`.
-      resolvedId = by-id.${d}.id;
-      instantiated-with = by-id.${d}.instantiated-with or {};
+      resolvedId = idMap.${d}.id;
+      instantiated-with = idMap.${d}.instantiated-with or {};
       instantiations = pkgs.lib.mapAttrs (_: value: value // {
         unit = lookupDependency' hsPkgs value.unit-id;
       }) instantiated-with;
-      lib-comp' = hsPkgs.${resolvedId} or hsPkgs."${by-id.${d}.pkg-name}-${by-id.${d}.pkg-version}" or hsPkgs.${by-id.${d}.pkg-name};
+      lib-comp' = hsPkgs.${resolvedId} or hsPkgs."${idMap.${d}.pkg-name}-${idMap.${d}.pkg-version}" or hsPkgs.${idMap.${d}.pkg-name};
       lib-comp = if instantiations == {} then lib-comp' else lib-comp' // {
         inherit instantiations;
       };
-      sublib-comp' = hsPkgs.${resolvedId}.components.sublibs.${pkgs.lib.removePrefix "lib:" by-id.${d}.component-name};
+      sublib-comp' = hsPkgs.${resolvedId}.components.sublibs.${pkgs.lib.removePrefix "lib:" idMap.${d}.component-name};
       sublib-comp = if instantiations == {} then sublib-comp' else sublib-comp'.override { inherit instantiations; };
-      comp = if by-id.${d}.component-name or "lib" == "lib"
+      comp = if idMap.${d}.component-name or "lib" == "lib"
              then lib-comp
              else sublib-comp;
       in comp;
   in hsPkgs: d:
-      pkgs.lib.optional (by-id.${d}.type != "pre-existing") (lookupDependency' hsPkgs d);
+      pkgs.lib.optional (idMap.${d}.type != "pre-existing") (lookupDependency' hsPkgs d);
   # Lookup an executable dependency.
   #
   # Two-stage plans carry their build tools as BUILD-stage units of the
@@ -199,9 +238,16 @@ let
   # separate haskell.nix slice per tool would re-plan the tool
   # single-stage and compute a different (hashed, BuildAndInstall)
   # unit id that no consumer would ever look up.
-  lookupDependencies = hsPkgs: depends: exe-depends: {
-    depends = pkgs.lib.concatMap (lookupDependency hsPkgs) depends;
-    pre-existing = lookupPreExisting depends;
+  # `hostStage` picks the id-resolution scope: host library/exe deps
+  # (`true`) prefer the configured from-source boot twin; setup/build
+  # deps (`false`) keep the pre-existing (build-stage, compiler-provided)
+  # boot lib.  The two differ only for two-stage cross plans — see
+  # `by-id-host` / `pre-existing-depends-host`.
+  lookupDependencies = hostStage: hsPkgs: depends: exe-depends: {
+    depends = pkgs.lib.concatMap
+      (lookupDependency (if hostStage then by-id-host else by-id) hsPkgs) depends;
+    pre-existing = lookupPreExisting
+      (if hostStage then pre-existing-depends-host else pre-existing-depends) depends;
     build-tools =
       pkgs.lib.optionals (!isTwoStagePlan)
         (map (lookupExeDependency hsPkgs) exe-depends);
@@ -219,7 +265,7 @@ let
               name = pkgs.lib.removePrefix "${prefix}:" n;
               value = (if cabal2nixComponents == null then {} else cabal2nixComponents.${collectionName}.${name}) // {
                 buildable = true;
-              } // lookupDependencies hsPkgs (
+              } // lookupDependencies true hsPkgs (
                     c.depends
                     # If plan.json uses a single unit for this package (build-type: Custom),
                     # then it will leave the package itself out of `c.depends` for the
@@ -235,14 +281,17 @@ let
       // pkgs.lib.optionalAttrs (components ? lib) {
         library = (if cabal2nixComponents == null then {} else cabal2nixComponents.library) // {
           buildable = true;
-        } // lookupDependencies hsPkgs components.lib.depends components.lib.exe-depends;
+        } // lookupDependencies true hsPkgs components.lib.depends components.lib.exe-depends;
       } // pkgs.lib.optionalAttrs (components ? setup) {
         setup = {
           buildable = true;
           # Setup deps run on the build machine.  In a two-stage plan they
           # are build-stage units of THIS plan (see lookupExeDependency);
-          # otherwise they come from the pkgsBuildBuild project.
-        } // lookupDependencies
+          # otherwise they come from the pkgsBuildBuild project.  Either way
+          # they resolve in BUILD scope (`hostStage = false`): a boot lib
+          # here is the compiler-provided build-stage one, never the
+          # configured host (cross-target) twin.
+        } // lookupDependencies false
                (if isTwoStagePlan then hsPkgs else hsPkgs.pkgsBuildBuild)
                (components.setup.depends or []) (components.setup.exe-depends or []);
       };
