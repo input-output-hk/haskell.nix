@@ -93,22 +93,17 @@ let
   ghc' =
     if ghcOverride != null
       then ghcOverride
-    # Two-stage plans (the stable-haskell cabal fork's `--with-build-compiler`,
-    # enabled by `withBuildCompiler`) need the HOST `--with-compiler` to report
-    # the TARGET platform so cabal evaluates `os()`/`arch()` conditionals against
-    # it — otherwise host-stage boot libs take the wrong branch (e.g. Windows
-    # cross plans depend on POSIX `unix` and drop `Win32`, which every per-slice
-    # re-solve — run with the real cross GHC — then rejects as "unknown package:
-    # Win32").  `pkgs` here is already `final.buildPackages` (build host, target =
-    # the cross target), so `compilerSelection pkgs` selects the cross-targeting
-    # compiler variant whose dummy `ghc --info` reports the target platform; the
-    # *build* compiler stays native via `dummy-build-ghc` (which uses
-    # `pkgs.buildPackages` = one level further down, targeting the build host).
-    # The Win32 module-definition error the `else` branch guards against no longer
-    # applies to these projects: the boot-package injection provides Win32 as a
-    # local `packages:` entry (see `modules/cabal-project.nix`).
-      else if withBuildCompiler
-        then (compilerSelection pkgs)."${compiler-nix-name}"
+    # NB: the stable-haskell two-stage cross plans (`withBuildCompiler`) do NOT
+    # need a different compiler here.  The plan-to-nix dummy reports the cross
+    # target from `mkDummyGhcPkg`'s `pkgs` (= `final.buildPackages`, whose
+    # `targetPlatform` is the cross target), and the target-OS `os()`/`arch()`
+    # conditionals (e.g. Win32) are handled by the boot-package injection in
+    # `modules/cabal-project.nix` — neither depends on the compiler selected
+    # here.  So the build-hosted compiler below is correct for these plans too.
+    # Reaching for a target-hosted compiler instead (`compilerSelection pkgs`)
+    # forces the compiler's host=target splice, which the ghcjs backend rejects
+    # with a "build ghcjs with ghcjs" throw and which never makes sense for any
+    # cross target.
       else
       # Do note that `pkgs = final.buildPackages` in the `overlays/haskell.nix`
       # call to this file. And thus `pkgs` here is the proper `buildPackages`
