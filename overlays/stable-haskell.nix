@@ -422,7 +422,27 @@ let
   # (modules/cabal-project.nix) — the same nixpkgs-boot pattern already used
   # for v2-cabal-install and the iserv-proxy tools (overlays/haskell.nix,
   # overlays/bootstrap.nix).
-  bootCompilerSelection = p: p.haskell.compiler;
+  #
+  # The eval-time dummy GHC (lib/dummy-ghc.nix) reads `ghc.raw-src` to source
+  # boot-package `.cabal` files during plan-to-nix, and that source derivation
+  # is system-specific.  A haskell.nix compiler carries an
+  # `evalWith.${evalSystem}` variant whose `raw-src` is the *eval* platform's;
+  # a plain nixpkgs compiler has no such variant, so its `raw-src` tracks the
+  # *build* platform.  When Hydra evaluates a foreign-system job on the eval
+  # host (e.g. the x86_64-linux ghc914-sh jobs evaluated on aarch64-darwin),
+  # that would drag a build-platform (x86_64-linux) `raw-src` into the eval-host
+  # plan-to-nix — the exact eval-time cross realisation we must avoid.  The GHC
+  # source is platform-independent, so override `raw-src` to the eval-platform
+  # compiler's copy: plan-to-nix stays on the eval host, while the actual build
+  # compiler (its outPath is untouched by `//`) remains build-platform.  No-op
+  # when evalSystem == build system (native), where the two `raw-src`s coincide.
+  bootCompilerSelection = p:
+    let evalCompilers = evalPackages.haskell.compiler;
+    in builtins.mapAttrs (name: ghc:
+         if ghc ? raw-src && evalCompilers ? ${name}
+         then ghc // { raw-src = evalCompilers.${name}.raw-src; }
+         else ghc
+       ) p.haskell.compiler;
   bootGhc               = pkgs.buildPackages.haskell.compiler.${bootGhcName};
   # (ghcVersion* constants hoisted to the outer `let`.)
 
