@@ -413,6 +413,17 @@ let
   urlBootPkgs       = urlBootPkgsFrom configuredSrcEval;
 
   bootGhcName      = "ghc9103";
+  # Boot from nixpkgs' GHC 9.10.3, not haskell.nix's own ghc9103.  nixpkgs'
+  # aarch64-darwin ghc9103 is fully cached in cache.nixos.org (0 builds),
+  # whereas haskell.nix's must be built from source (~32 derivations on
+  # darwin).  It is the same GHC version, so the stage1 bootstrap is
+  # equivalent.  `p.haskell.compiler` is the nixpkgs compiler set; haskell.nix
+  # routes cabalProject / haskell-nix.tool through the `compilerSelection` hook
+  # (modules/cabal-project.nix) — the same nixpkgs-boot pattern already used
+  # for v2-cabal-install and the iserv-proxy tools (overlays/haskell.nix,
+  # overlays/bootstrap.nix).
+  bootCompilerSelection = p: p.haskell.compiler;
+  bootGhc               = pkgs.buildPackages.haskell.compiler.${bootGhcName};
   # (ghcVersion* constants hoisted to the outer `let`.)
 
   # ── Cross-compilation detection ──────────────────────────────────────────
@@ -458,8 +469,8 @@ let
   # ── External tools (built with boot GHC) ──────────────────────────────────
   # alex and happy are needed by compiler/Setup.hs (via +build-tool-depends)
   # to generate the parser/lexer files for the GHC compiler package.
-  alexTool  = pkgs.haskell-nix.tool bootGhcName "alex"  { version = "3.5.2.0"; inherit evalSystem; };
-  happyTool = pkgs.haskell-nix.tool bootGhcName "happy" { version = "2.1.5";   inherit evalSystem; };
+  alexTool  = pkgs.haskell-nix.tool bootGhcName "alex"  { version = "3.5.2.0"; inherit evalSystem; compilerSelection = bootCompilerSelection; };
+  happyTool = pkgs.haskell-nix.tool bootGhcName "happy" { version = "2.1.5";   inherit evalSystem; compilerSelection = bootCompilerSelection; };
 
   # genprimopcode is built from the GHC 9.14 in-tree source because the boot
   # GHC 9.10.3's copy doesn't understand attributes new in 9.14 (e.g.
@@ -471,6 +482,7 @@ let
     # plan-to-nix does not force a build-platform `configuredSrc` at eval time.
     evalSrc = "${configuredSrcEval}/utils/genprimopcode";
     inherit evalSystem;
+    compilerSelection = bootCompilerSelection;
   };
 
   # deriveConstants is built from the GHC 9.14 in-tree source for the same
@@ -490,6 +502,7 @@ let
     src = "${configuredSrc}/utils/deriveConstants";
     evalSrc = "${configuredSrcEval}/utils/deriveConstants";
     inherit evalSystem;
+    compilerSelection = bootCompilerSelection;
   };
 
   # ── Stage 1 ───────────────────────────────────────────────────────────────
@@ -513,6 +526,7 @@ let
     evalSrc              = configuredSrcEval;
     cabalProjectFileName = "cabal.project.stage1.merged";
     compiler-nix-name    = bootGhcName;
+    compilerSelection    = bootCompilerSelection;
     inherit evalSystem;
     # Stage1 only needs executables.  Disable tests/benchmarks so cabal
     # doesn't try to resolve test-only deps that conflict (e.g. temporary
@@ -744,7 +758,7 @@ let
         # package.setup}-depends so the setup's package DB only contains
         # packages from the boot GHC's nonReinstallablePkgs — avoiding the
         # ghc-internal-9.1400.0 "Invalid platform constants" panic.
-        buildGHC             = pkgs.haskell-nix.compiler.${bootGhcName};
+        buildGHC             = bootGhc;
         # `evalWith` (final block) is built from `override`; consumers select
         # `ghc.evalWith.${evalSystem}` rather than calling `.override` directly.
         # override references the outer stage1Compiler (with cachedDeps) so
@@ -1642,6 +1656,7 @@ ENDSCRIPT
         (pkgs.buildPackages.haskell-nix.tool bootGhcName "libffi-wasm" {
           src = pkgs.buildPackages.haskell-nix.sources.libffi-wasm;
           inherit evalSystem;
+          compilerSelection = bootCompilerSelection;
         })
         pkgs.targetPackages.buildPackages.llvmPackages.clang
         pkgs.targetPackages.buildPackages.llvmPackages.llvm
@@ -1683,6 +1698,7 @@ ENDSCRIPT
     src = "${nativeConfiguredSrc}/utils/deriveConstants";
     evalSrc = "${nativeConfiguredSrcEval}/utils/deriveConstants";
     inherit evalSystem;
+    compilerSelection = bootCompilerSelection;
   };
 
   # rts/configure's AC_PATH_PROG probes look for plain `nm` / `objdump` on
@@ -1953,7 +1969,8 @@ ENDSCRIPT
   #                  `make stage2 STAGE1_PATH=$STAGE1_PATH`.
   ghc914-shShells =
     let
-      bootGhc = pkgs.buildPackages.haskell-nix.compiler.${bootGhcName};
+      # nixpkgs boot GHC — same choice as the ghc914-sh build (see bootGhc above).
+      bootGhc = pkgs.buildPackages.haskell.compiler.${bootGhcName};
       commonTools = [
         # haskell.nix's patched cabal-install understands the project files;
         # the Makefile's `stable-cabal` target can still build the in-repo
