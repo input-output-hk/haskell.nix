@@ -1244,6 +1244,7 @@ final: prev: {
                 packages.cabal-install.patches = [
                   ../builder/cabal-install-patches/skip-installed-revdeps-in-completed.patch
                   ../builder/cabal-install-patches/setup-build-num-jobs-env.patch
+                  ../builder/cabal-install-patches/inlibrary-build-stage-exe-platform.patch
                 ];
               }];
             };
