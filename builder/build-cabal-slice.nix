@@ -65,6 +65,13 @@ let outerGhc = ghc; in
                              # downstream slice can compose the closure at build
                              # time without walking deps in Nix.  STEP 1:
                              # emitted but not yet consumed.
+, buildToolSourceFrags ? []  # list of `{ pkgName; pkgVersion; tarball;
+                             # cabalFile; }` source-only frags (two-stage
+                             # cross): a build-tool's SOURCE staged into the
+                             # slicing repo so the slice's own cabal can
+                             # build it BUILD-stage, without a drv edge to
+                             # the tool's (cyclic) built slice.  See
+                             # comp-v2-builder.nix `buildToolSourceFrags`.
 , preBuild                   # stage sources, write cabal.project, cd into project dir
 , target ? "all"
 , extraSublibSeeds ? []      # list of `{ pkg = ...; sublib = ...; }`
@@ -372,6 +379,24 @@ let
   twoStageFlags = lib.optionalString twoStage (
     " --with-build-compiler=${twoStageBuildGhc}/bin/ghc"
     + " --with-build-hc-pkg=${twoStageBuildGhc}/bin/ghc-pkg");
+
+  # Two-stage build-tool source staging, appended verbatim to the
+  # own-source block of the build-time slicing repo.  Leads with a newline
+  # so it attaches after the own-source `''}` without a standalone line;
+  # empty (zero bytes) unless `buildToolSourceFrags` is non-empty, which
+  # keeps non-two-stage (native / single-stage-cross) slice UnitId hashes
+  # byte-identical.  Each frag becomes an index candidate (tarball +
+  # .cabal) so the slice's own cabal can build the tool BUILD-stage —
+  # no built slice, no store unit, no constraint.
+  extraFragStaging = lib.optionalString (buildToolSourceFrags != [])
+    (lib.concatMapStrings (f: ''
+
+      ln -sf ${f.tarball} $v2repo/package/${f.pkgName}-${f.pkgVersion}.tar.gz
+      mkdir -p $v2idx/${f.pkgName}/${f.pkgVersion}
+      ${if f.cabalFile != null
+        then "cp -f --no-preserve=mode ${f.cabalFile} $v2idx/${f.pkgName}/${f.pkgVersion}/${f.pkgName}.cabal"
+        else "tar -xOzf ${f.tarball} ${f.pkgName}-${f.pkgVersion}/${f.pkgName}.cabal > $v2idx/${f.pkgName}/${f.pkgVersion}/${f.pkgName}.cabal"}''
+    ) buildToolSourceFrags);
 
   crossWithFlags = lib.optionalString (targetPrefix != "") (
     " --with-compiler=${ghcShim}/bin/${ghcBin}"
@@ -923,7 +948,7 @@ stdenv.mkDerivation ({
           tar -xOzf ${v2Fragment.tarball} \
             ${v2Fragment.pkgName}-${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal \
             > $v2idx/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal
-        ''}
+        ''}${extraFragStaging}
       # Dep closure repo-frags (direct + transitive — same walk as store).
       for dep in "''${pkgsHostTarget[@]}"; do
         addRepoFrag "$dep"

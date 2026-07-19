@@ -448,6 +448,25 @@ in {
       ];
       tp = pkgs.stdenv.hostPlatform;
       isWasm = tp.isWasm or false;
+      # Windows target boot libraries `time`, `process` and `directory` gain a
+      # `Win32` build-depends under `if os(windows)`.  The `-target` wrapper
+      # keeps `targetPrefix = ""` (so `isCross` is false), which makes the
+      # plan-time solver evaluate `os()` against the native BUILD platform — it
+      # therefore never adds those Win32 edges and the whole-project plan
+      # contains no Win32 unit.  Each per-slice re-solve, however, runs the real
+      # cross GHC (`--info` reports Windows), so `os(windows)` fires there and
+      # the slice fails with "unknown package: Win32" because Win32 is in no
+      # slice's package universe.  Win32 is not in the GHC source tree
+      # (`libraries/Win32` is absent), so — mirroring the compiler's own
+      # `cabal.project.stage3`, which lists the Win32 hackage tarball — inject
+      # its hackage source as a LOCAL `packages:` entry (a store path, so no
+      # `replace-hackage-tarball-urls` is required) to force Win32 into the plan
+      # for every slice that needs it.  Version matches stage3's pin.  Lazily
+      # bound: only forced when referenced under the `tp.isWindows` guard below,
+      # so non-Windows targets never evaluate `hackageTarball`.
+      win32Src = pkgs.haskell-nix.hackageTarball {
+        name = "Win32"; version = "2.14.2.1";
+      };
       # Extra fields appended inside `package` stanzas below.  Built with
       # explicit "\n  " (two-space) indentation — nix's `''` indentation
       # stripping applies to nested `''` strings separately, which would
@@ -460,8 +479,20 @@ in {
         + "  -- bindists use).\n"
         + "  extra-include-dirs: ${shGhc.libffi-wasm.dev}/include\n"
         + "  extra-lib-dirs: ${shGhc.libffi-wasm.out}/lib");
+      # Whether to build the dynamic/shared way for the TARGET's boot
+      # libraries.  This must key off the target platform (`tp`), NOT
+      # `shGhc.enableShared`: `shGhc` is the BUILD compiler (selected from
+      # `pkgs.buildPackages` — the `-target` wrapper keeps `targetPrefix=""`),
+      # so its `enableShared` reflects the build host (darwin/linux, True) and
+      # would wrongly enable the dyn way for a static-only target.  Windows
+      # GHC is static-only: the dynamic RTS way fails to link (Cmm symbols are
+      # referenced as PE `__imp_` dllimports that the static objects don't
+      # export), so exclude it here as well as the static/musl targets — the
+      # same set the cross compiler's own `enableShared` should cover.
+      targetSupportsShared =
+        !(tp.isStatic or false) && !(tp.isMusl or false) && !(tp.isWindows or false);
       crossLinkFields = lib.optionalString (!isWasm) ("\n"
-        + "  shared: ${if shGhc.enableShared or false then "True" else "False"}\n"
+        + "  shared: ${if targetSupportsShared then "True" else "False"}\n"
         + "  executable-dynamic: False");
       # Sourced from `pkgs.haskell-nix.haskellLib` (not the file's own
       # `haskellLib` module argument, which callers of this module don't
@@ -485,6 +516,7 @@ in {
         -- target boot libraries, so the plan builds them from source.
         packages:
         ${lib.concatMapStrings (d: "  ${shSrc}/${d}\n        ") shSubdirs}
+        ${lib.optionalString (tp.isWindows or false) "  ${win32Src}\n        "}
         -- Forked boot packages that live outside the GHC tree.
         source-repository-package
           type: git
@@ -565,6 +597,16 @@ in {
           flags: +os-string
 
         package unix
+          flags: +os-string
+
+        -- Win32 (windows cross only; ignored where Win32 isn't in the plan)
+        -- carries the same `os-string` flag: its System.Win32.WindowsString.*
+        -- modules import System.OsString.Windows / .Internal.Types from the
+        -- `os-string` package, hidden unless the flag pulls it into
+        -- build-depends.  With filepath-1.5.4.0 the default-False branch fails
+        -- ("hidden package os-string" / "Could not load module
+        -- System.OsString.Windows"), so force it like directory/process/unix.
+        package Win32
           flags: +os-string
 
         package rts

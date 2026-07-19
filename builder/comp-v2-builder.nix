@@ -787,8 +787,27 @@ let
     in if depLib != null then depLib
        else if anySublib != null then anySublib
        else anyExe;
+  # Two-stage (stable-haskell -target cross) plans build their build-tools
+  # as BUILD-stage inplace units inside each consuming slice's own cabal
+  # (load-cabal-plan gives such plans EMPTY `build-tools` — see its
+  # `lookupDependencies`).  Resolving a build-tool exe id here through the
+  # `anyExe` fallback yields the HOST exe slice, which itself lib-depends on
+  # THIS package's host library — e.g. process's `exe-depends: hsc2hs` →
+  # host hsc2hs slice → host process slice → eval-time infinite recursion.
+  # So drop the build-tool-ONLY ids (those that are not also genuine lib
+  # deps) from the store-composition set for two-stage plans; the runnable
+  # tool comes from `homeDepExeSlices` (pkgsBuildBuild) instead.
+  homeLibDepNames =
+    map (d: d.identifier.name) externalDeps
+    ++ map (nv: nv.name) homeDependIds;
+  buildToolOnlyNames = lib.filter (n: !(lib.elem n homeLibDepNames))
+    (map (nv: nv.name) homeBuildToolIds);
+  homeStoreDepIds =
+    if isTwoStagePlan
+    then lib.filter (nv: !(lib.elem nv.name buildToolOnlyNames)) externalDepIds
+    else externalDepIds;
   homeDepSlices = lib.filter (s: s != null)
-    (map homeDepSliceOf externalDepIds);
+    (map homeDepSliceOf homeStoreDepIds);
 
   # Complete set of this component's *direct library* `depends` slices —
   # the constraints scope.  `directDepSlices` alone (from
@@ -1101,6 +1120,44 @@ let
     (t: t != null)
     (resolvedBuildTools ++ homeDepExeSlices));
 
+  # Two-stage plans give consuming slices EMPTY `build-tools` (see
+  # load-cabal-plan): each slice's own cabal builds the build-tool
+  # BUILD-stage, against the BUILD compiler's installed boot libs.  For
+  # that solve to succeed the tool's SOURCE must be a candidate in the
+  # slice's slicing repo — but composing the tool's SLICE would pull its
+  # full drv, whose lib-deps point back at this package (host hsc2hs →
+  # host process → host Win32 → …), an eval-time infinite recursion.  So
+  # contribute only the tool's SOURCE frag (tarball + .cabal): it carries
+  # a drv edge to the tool's source tarball, not to the tool's build, so
+  # there is no cycle.
+  #
+  # The set is the EXE units of `allDepClosure` (which follows
+  # `exe-depends`), i.e. every build-tool this slice's build reaches,
+  # TRANSITIVELY: Cabal-syntax → alex, and alex's own build-tool happy, so
+  # the build-scope `build:Cabal-syntax:alex` (and its `…:alex:happy`)
+  # goals all resolve.  Resolved by PLAN ID (`hsPkgs.${id}`), not by
+  # host name, because these tools are BUILD-stage-only units with no host
+  # twin (alex/happy live only under `dist/build/build/…`) — a host-name
+  # lookup returns null for them (only hsc2hs happens to have a host
+  # twin).  `sliceOfPkgRecord` → the exe slice; reading
+  # `.passthru.v2SourceFrag` forces only the tool's source tarball, never
+  # its `drvPath`/`depSlices`, so no cycle.  Empty on native / single-stage
+  # cross (build tools flow through their normal paths).
+  buildToolSourceFrags =
+    lib.optionals isTwoStagePlan
+      (let
+        exeUnits = lib.filter (e:
+            lib.hasPrefix "exe:" (e.entry.component-name or "")
+            && (e.entry.pkg-name or "") != pkgName)
+          allDepClosure;
+        frags = lib.filter (f: f != null) (map (e:
+            let sl = sliceOfPkgRecord (hsPkgs.${e.key} or null);
+            in if sl == null then null else sl.passthru.v2SourceFrag or null)
+          exeUnits);
+      # Dedup by package name (a tool can be reached via several paths).
+      in lib.attrValues (lib.listToAttrs
+           (map (f: lib.nameValuePair f.pkgName f) frags)));
+
   # ---- componentKindLabel / componentName -----------------------
   # `componentId` is a set with `ctype` (e.g. "lib", "exe", "test",
   # "bench", "sublib") and `cname`.
@@ -1384,6 +1441,26 @@ let
     # it satisfies the check without adding any package (UnitId-neutral).
     else "optional-packages: ./*\n";
 
+  # hsc2hs `--via-asm` for Windows cross.  The default `--cross-compile`
+  # mode (cabal adds it automatically for cross) validates each
+  # `#const`/`#enum` by sizing a C array with the value; Win32's
+  # pointer-cast enums (e.g. `(UINT_PTR)HWND_BOTTOM` = `(UINT_PTR)((HWND)-1)`)
+  # are not integer-constant-expressions, so gcc rejects them ("storage
+  # size of 'test_array' isn't constant").  `--via-asm` validates via a
+  # global `long long` initializer / assembler instead (hsc2hs
+  # CrossCodegen `validConstTestViaAsm`), which accepts pointer casts.
+  # Delivered through a `package *` stanza rather than a `cabal v2-build
+  # --hsc2hs-options` CLI flag: the CLI flag only reaches LOCAL `packages:`
+  # targets, but dependency slices build their target as a REMOTE
+  # extra-package.  Windows-gated (native/hadrian byte-identical); on
+  # native build-stage units hsc2hs ignores --via-asm (DirectCodegen).
+  # Mirrors v1's comp-builder.nix:398 (`--via-asm` for isWindows).
+  hsc2hsViaAsmProject =
+    lib.optionalString (stdenv.hostPlatform.isWindows or false) ''
+      package *
+        hsc2hs-options: --via-asm
+    '';
+
   # The *local / global* part of the cabal.project (everything that
   # doesn't depend on the dependency closure).  build-cabal-slice writes
   # this, then appends the closure-derived sections (source-repo blocks,
@@ -1393,7 +1470,7 @@ let
   localCabalProject = ''
     with-compiler: ${withCompiler}
     active-repositories: hackage.haskell-nix
-    ${packagesLine}${solverRelaxations}${projectConfigPragmas}${extraProject}${extraIncludeAndLibDirs}'';
+    ${packagesLine}${solverRelaxations}${projectConfigPragmas}${hsc2hsViaAsmProject}${extraProject}${extraIncludeAndLibDirs}'';
 
   # X-revised .cabal as a /nix/store path (or null if no override).
   # Staged into this package's repo fragment (build-cabal-slice) so the
@@ -1611,6 +1688,7 @@ let
     version = pkgVersion;
     inherit depSlices;
     inherit v2Fragment;
+    inherit buildToolSourceFrags;
     ghc = sliceGhc;
     twoStage = isTwoStagePlan && !isBuildStageUnit;
     # Repo + cabal.project are composed at build time from `v2Fragment`;
@@ -1713,6 +1791,17 @@ let
          else { ${uid} = planJsonByPlanId.${uid}; };
     passthru = {
       inherit pkgTarball;
+      # Source-only frag (tarball + revised .cabal + name/version).  A
+      # two-stage consumer places a build-tool's SOURCE into its slicing
+      # repo through this WITHOUT composing the tool's full slice — the
+      # latter would form an eval cycle (host tool slice → host lib dep →
+      # back to the consuming package).  It carries no drv edge to the
+      # tool's build, only to the tool's source tarball.
+      v2SourceFrag = {
+        inherit pkgName pkgVersion;
+        tarball = pkgTarball;
+        cabalFile = thisCabalFile;
+      };
       # Mirror v1's `.config` passthru so downstream code that walks
       # the dep graph via flatLibDepends (see shell-for-v2.nix,
       # haskellLib.flatLibDepends) can traverse v2 components the

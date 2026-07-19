@@ -93,6 +93,22 @@ let
   ghc' =
     if ghcOverride != null
       then ghcOverride
+    # Two-stage plans (the stable-haskell cabal fork's `--with-build-compiler`,
+    # enabled by `withBuildCompiler`) need the HOST `--with-compiler` to report
+    # the TARGET platform so cabal evaluates `os()`/`arch()` conditionals against
+    # it — otherwise host-stage boot libs take the wrong branch (e.g. Windows
+    # cross plans depend on POSIX `unix` and drop `Win32`, which every per-slice
+    # re-solve — run with the real cross GHC — then rejects as "unknown package:
+    # Win32").  `pkgs` here is already `final.buildPackages` (build host, target =
+    # the cross target), so `compilerSelection pkgs` selects the cross-targeting
+    # compiler variant whose dummy `ghc --info` reports the target platform; the
+    # *build* compiler stays native via `dummy-build-ghc` (which uses
+    # `pkgs.buildPackages` = one level further down, targeting the build host).
+    # The Win32 module-definition error the `else` branch guards against no longer
+    # applies to these projects: the boot-package injection provides Win32 as a
+    # local `packages:` entry (see `modules/cabal-project.nix`).
+      else if withBuildCompiler
+        then (compilerSelection pkgs)."${compiler-nix-name}"
       else
       # Do note that `pkgs = final.buildPackages` in the `overlays/haskell.nix`
       # call to this file. And thus `pkgs` here is the proper `buildPackages`
