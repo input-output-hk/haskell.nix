@@ -21,7 +21,13 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.targetPlatform.isWasm {
   llvmPackages = final.llvmPackages_21.override {
     patchesFn = p: p // { "llvm/gnu-install-dirs.patch" = [{path = ./patches/wasm;}]; };
     monorepoSrc =
-      final.stdenv.mkDerivation {
+      # A plain source-tree copy (buildPhase = "true"): build it with the
+      # BUILD-platform stdenv, never `final.stdenv`.  `final.stdenv` here is the
+      # wasm *cross* stdenv, whose `cc` is the wasm clang — and that clang is
+      # built FROM this very `monorepoSrc`, so using it closes a bootstrap cycle
+      # (clang → monorepoSrc → final.stdenv → clang → …) that evaluates to an
+      # infinite recursion.  A source copy needs no target compiler.
+      final.buildPackages.stdenv.mkDerivation {
         pname = "llvm-source";
         version = final.llvmPackages_21.llvm.version + "-haskell";
         src = final.llvmPackages_21.llvm.monorepoSrc;
