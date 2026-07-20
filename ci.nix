@@ -17,8 +17,12 @@
     filterAttrsOnlyRecursive;
 
   # short names for nixpkgs versions
+  # x86_64-darwin only gets the 26.05 pin: nixpkgs unstable (26.11) dropped
+  # x86_64-darwin, so importing it for that system throws.  Every other system
+  # gets both the 26.05 stable pin and unstable.
   nixpkgsVersions = {
-    "R2511" = inputs.nixpkgs-2511;
+    "R2605" = inputs.nixpkgs-2605;
+  } // lib.optionalAttrs (system != "x86_64-darwin") {
     "unstable" = inputs.nixpkgs-unstable;
   };
 
@@ -64,7 +68,7 @@
       # cabal-install and nix-tools plans.  When removing a ghc version
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
-      nixpkgs.lib.optionalAttrs (builtins.elem nixpkgsName ["R2411" "R2505" "R2511"]) {
+      nixpkgs.lib.optionalAttrs (builtins.elem nixpkgsName ["R2411" "R2505" "R2511" "R2605"]) {
         ghc96 = false;
         ghc98 = false;
         ghc910 = false;
