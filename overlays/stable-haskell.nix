@@ -1726,11 +1726,32 @@ ENDSCRIPT
   # parses target .o symbols).  Cross bintools ship prefixed names only, so
   # expose unprefixed aliases.
   targetBintoolsUnprefixed = pkgs.buildPackages.runCommand
-    "${tp.config}-bintools-unprefixed" { } ''
+    "${tp.config}-bintools-unprefixed" { } (''
       mkdir -p $out/bin
-      ln -s ${targetNMPath} $out/bin/nm
       ln -s ${targetOBJDUMPPath} $out/bin/objdump
-    '';
+    '' + (if isGhcjsTarget then ''
+      # emscripten's `nm` is the raw python script share/emscripten/tools/emnm.py,
+      # which self-locates via `os.path.abspath(__file__)` to put
+      # share/emscripten on sys.path (`from tools import shared`).  A SYMLINK
+      # makes __file__ resolve to $out/bin/nm → it looks for `tools` under
+      # $out/bin → `ModuleNotFoundError: No module named 'tools'`, and every
+      # deriveConstants / ghc-toolchain `nm` call fails.  nixpkgs' emscripten
+      # ships wrapped `bin/emar`/`bin/emranlib` (env + `exec …/emar.py`) but NO
+      # `bin/emnm`, so derive an nm wrapper from the emar wrapper: same
+      # environment (NODE_PATH / EM_* / locate_cache.sh) but exec emnm.py by its
+      # REAL absolute path so its self-location works.
+      sed 's,${targetCC}/share/emscripten/emar\.py,${targetNMPath},' \
+        ${targetCC}/bin/emar > $out/bin/nm
+      # If the emar wrapper's shape changed and the sed didn't match, the
+      # "nm" would silently exec emar.py — fail here instead.
+      grep -qF '${targetNMPath}' $out/bin/nm || {
+        echo "emnm wrapper: sed pattern did not match ${targetCC}/bin/emar" >&2
+        exit 1
+      }
+      chmod +x $out/bin/nm
+    '' else ''
+      ln -s ${targetNMPath} $out/bin/nm
+    ''));
 
 
   # ── Cross compiler: per-target wrapper around the native ghc914-sh ────────
@@ -1761,7 +1782,15 @@ ENDSCRIPT
       # "Relative Global Package DB" under the -target topdir instead.
       nativeS2exe = pkg: exe:
         nativeSghc914.stage2Project.hsPkgs.${pkg}.components.exes.${exe}.exePath;
-      rawDrv = pkgs.buildPackages.runCommand "ghc914-sh-cross-${targetTriple}" {
+      # `populatedDb`: null → empty target global db (the two-stage
+      # "boot-from-source" wrapper, `crossCompilerBoot`); a derivation of
+      # `*.conf` files → register them into the target global db, turning this
+      # into a bindist-style wrapper that ships target boot libraries (the
+      # ghcjs `crossCompilerFull`, needed so GHC's JS external interpreter can
+      # find the `ghci` package for Template Haskell).
+      # `self`: the makeCompilerDeps-wrapped variant itself, so the plan-time
+      # dummy (dummyGhcPkgs) reflects THIS variant's emptyGlobalPackageDb.
+      mkRawDrv = { populatedDb ? null, self }: pkgs.buildPackages.runCommand "ghc914-sh-cross-${targetTriple}" {
       passthru = {
         version              = ghcVersion;
         targetPrefix         = "";
@@ -1772,11 +1801,25 @@ ENDSCRIPT
         # machinery (see the comment there).
         isStableHaskell      = true;
         libDir               = "lib/ghc-${ghcVersion}";
-        enableShared         = !(tp.isStatic or false) && !(tp.isMusl or false);
+        # The GHC JavaScript backend is static-only: emscripten's wasm-ld
+        # rejects GHC's ELF shared-lib link flags (e.g. `-h <soname>`), so a
+        # `--enable-shared` build of any lib (rts-fs, …) fails.  Never build
+        # shared libraries for ghcjs (nor for static/musl).
+        enableShared         = !(tp.isStatic or false) && !(tp.isMusl or false)
+                            && !(tp.isGhcjs or false);
         # The target registration ships NO boot libraries (see the comment
         # above).  lib/call-cabal-project-to-nix.nix keys off this to make
         # the plan-time dummy `ghc-pkg dump` empty, so cabal plans every
         # boot package (rts, base, …) from source.
+        # ALWAYS true, even for the populated (ghcjs bindist) variant: the flag
+        # governs PLAN resolution (empty plan-time dummy → the fork's two-stage
+        # from-source boot-lib build, which is the tested path leksah relies on).
+        # Populating the real wrapper's global db with ghci+closure is
+        # INDEPENDENT — it only affects what GHC sees at compile time, so TH's JS
+        # interpreter can resolve `ghci`.  Flipping this to false dropped leksah
+        # onto haskell.nix's single-stage cross path (load-cabal-plan.nix
+        # lookupExeDependency), which is under-tested here and broke on e.g.
+        # old-time's build-tool resolution.
         emptyGlobalPackageDb = true;
         # `--info` "Project Unit Id" is compiled into the native binaries —
         # it does not vary with -target, so mirror the native passthru
@@ -1793,7 +1836,7 @@ ENDSCRIPT
         # The target dump is empty (emptyGlobalPackageDb); the build-side dummy
         # comes from buildGHC = nativeSghc914.
         dummyGhcPkgs         = import ../lib/dummy-ghc.nix {
-          pkgs = final; ghc = crossCompiler; inherit evalPackages;
+          pkgs = final; ghc = self; inherit evalPackages;
         };
         # The bare configured GHC source tree (build platform) and its
         # eval-platform builder — the boot-package injection module reads
@@ -1875,6 +1918,43 @@ ENDSCRIPT
     sed -i 's|("cross compiling","NO")|("cross compiling","YES")|' \
       $tdir/lib/settings
 
+    ${lib.optionalString isGhcjsTarget ''
+    # ghc-toolchain-bin resolves every tool command to an absolute path from
+    # `--cc` EXCEPT "JavaScript CPP command", which it leaves as the bare
+    # `emcc` (it isn't derived from --cc the way the C/Haskell/C-- CPP
+    # commands are).  GHC's JS backend then execvp's bare `emcc` to
+    # preprocess the rts `.js` sources and fails with
+    #   ghc: JavaScript C pre-processor: could not execute: `emcc'
+    # because emscripten isn't on the slice build's PATH.  Point it at the
+    # same absolute emcc every other command already uses.
+    sed -i 's|("JavaScript CPP command","emcc")|("JavaScript CPP command","${targetCCPath}")|' \
+      $tdir/lib/settings
+
+    # `ar command` must produce GNU-format archives.  emar is llvm-ar, whose
+    # DEFAULT format on a macOS build host is darwin: member data 8-aligned
+    # with '\n' padding COUNTED IN the ar size field.  Mach-O readers
+    # tolerate the inline pad, wasm ones don't — a cbits wasm `.o` (time's
+    # HsTime.o) archived that way reads back as <valid wasm>+pad, and
+    # wasm-ld / llvm-nm fail "section too large" at the TH-interpreter and
+    # final links.  Cabal takes its `ar` from this settings entry too (the
+    # "Using ar found on system at" configure line), so this one swap covers
+    # both GHC-internal and cabal archive creation.  (The ghcjsArWrapper /
+    # ghc-shim settings-swap in the builders is DEAD CODE here — it engages
+    # only for targetPrefix != "", and this wrapper's prefix is "".)
+    mkdir -p $out/libexec
+    printf '%s\n' \
+      '#!${pkgs.buildPackages.runtimeShell}' \
+      'exec ${targetCC}/bin/emar --format=gnu "$@"' \
+      > $out/libexec/emar-gnu
+    chmod +x $out/libexec/emar-gnu
+    sed -i "s|(\"ar command\",\"[^\"]*\")|(\"ar command\",\"$out/libexec/emar-gnu\")|" \
+      $tdir/lib/settings
+    grep -qF "$out/libexec/emar-gnu" $tdir/lib/settings || {
+      echo "ghcjs settings: ar command swap did not match" >&2
+      exit 1
+    }
+    ''}
+
     ${lib.optionalString (tp.isWasm or false) ''
     # Patch settings to match the Hadrian-built WASM cross compiler:
     # - Tables next to code = NO (WASM separates code/data address spaces;
@@ -1903,6 +1983,25 @@ ENDSCRIPT
     # in the generated settings is `package.conf.d`, relative to the target
     # libdir).  Boot libraries are built by each project's own plan.
     ${nativeS2exe "ghc-pkg" "ghc-pkg"} init $tdir/lib/package.conf.d
+    ${lib.optionalString (populatedDb != null) ''
+    # Bindist mode (ghcjs): register the prebuilt target boot-library closure
+    # (ghci + the boot libs the project uses) into the target global db, so
+    # GHC's JS external interpreter can resolve the "ghci" package + its unit
+    # closure at Template-Haskell time (GHC/Runtime/Interpreter/JS.hs:171).
+    # The .conf files embed absolute /nix/store lib paths (the harvest rewrote
+    # their ''${pkgroot}-relative dirs to the source slices' absolute paths),
+    # so each slice's libs are retained in this wrapper's runtime closure.
+    cp ${populatedDb}/*.conf $tdir/lib/package.conf.d/
+    # `--no-user-package-db --global-package-db` (the native wrapper's proven
+    # recache form, see the stage2 assembly above) — NOT `--package-db`: that
+    # keeps the default global db in ghc-pkg's stack, forcing topdir discovery
+    # from the exe's own location, and the v2-slice-built ghc-pkg exe carries
+    # no lib/settings there ("Settings file doesn't exist" → "Fallback: Can't
+    # find package database" → exit 1).
+    ${nativeS2exe "ghc-pkg" "ghc-pkg"} recache \
+      --no-user-package-db \
+      --global-package-db $tdir/lib/package.conf.d
+    ''}
 
     # $topdir support files for the target session (topdir = $tdir/lib).
     cp ${nativeConfiguredSrc}/driver/ghc-usage.txt  $tdir/lib/
@@ -1922,6 +2021,15 @@ ENDSCRIPT
     for f in ${nativeConfiguredSrc}/utils/jsffi/*.mjs; do
       [ -e "$f" ] && cp "$f" $tdir/lib/
     done
+    ''}
+    ${lib.optionalString isGhcjsTarget ''
+    # Template Haskell on the JS backend runs each splice by executing it with
+    # node against the prebuilt interpreter script; GHC resolves it at
+    # `$topdir/ghc-interp.js` (the target libdir).  A hadrian-built ghcjs GHC
+    # ships it, but this runCommand wrapper must place it under the target
+    # registration itself, else TH-using packages fail with
+    # `Cannot find module .../ghc-interp.js`.
+    cp ${nativeConfiguredSrc}/ghc-interp.js $tdir/lib/ghc-interp.js
     ''}
 
     # ── ghc wrapper ──────────────────────────────────────────────────────
@@ -1974,7 +2082,19 @@ ENDSCRIPT
     ln -sf ${nativeSghc914}/bin/unlit   $out/lib/bin/unlit
     ln -sf ${nativeSghc914}/bin/hsc2hs  $out/lib/bin/hsc2hs
     '';
-    in pkgs.haskell-nix.haskellLib.makeCompilerDeps rawDrv;
+    in
+    let
+      # TH-on-JS is handled at the PROJECT level (the boot-package injection
+      # composes the project's own ghci slice into every host package's dep
+      # db via additional-prebuilt-depends — see modules/cabal-project.nix).
+      # An earlier "bootstrap tier" instead baked a separately-built ghci
+      # closure into this wrapper's target global db; that can never share
+      # unit-ids with the project's own boot libs, so the JS interpreter
+      # loaded ghc-internal's jsbits twice and died
+      # ("Identifier 'h$base_o_rdonly' has already been declared").
+      crossCompilerBoot = makeCompilerDeps' (mkRawDrv { self = crossCompilerBoot; });
+      makeCompilerDeps' = pkgs.haskell-nix.haskellLib.makeCompilerDeps;
+    in crossCompilerBoot;
 
   # ── Dev shells for hacking on the stable-haskell GHC tree ─────────────────
   # Consumed by a flake.nix in the GHC checkout.  The user drives the build
