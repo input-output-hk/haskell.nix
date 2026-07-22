@@ -489,8 +489,13 @@ in {
       # referenced as PE `__imp_` dllimports that the static objects don't
       # export), so exclude it here as well as the static/musl targets — the
       # same set the cross compiler's own `enableShared` should cover.
+      # The JS (ghcjs) backend is likewise static-only: emscripten's
+      # `wasm-ld` rejects the ELF soname flag (`-h <soname>`) GHC emits
+      # when linking a boot lib's shared `.so`, so a `shared: True` rts-fs
+      # slice fails with `wasm-ld: error: unknown argument: -h`.  Exclude it.
       targetSupportsShared =
-        !(tp.isStatic or false) && !(tp.isMusl or false) && !(tp.isWindows or false);
+        !(tp.isStatic or false) && !(tp.isMusl or false) && !(tp.isWindows or false)
+        && !(tp.isGhcjs or false);
       crossLinkFields = lib.optionalString (!isWasm) ("\n"
         + "  shared: ${if targetSupportsShared then "True" else "False"}\n"
         + "  executable-dynamic: False");
@@ -666,6 +671,41 @@ in {
             (lib.filter (u: u.type == "configured" && u ? pkg-name
                             && shPlanUnitStage u == "host")
               config.plan-json.install-plan)));
+        # ── TH on the JS backend: ghci in every consumer's dep db ─────────
+        # GHC's JS external interpreter resolves the `ghci` package BY NAME
+        # in the home unit state at Template-Haskell time
+        # (GHC/Runtime/Interpreter/JS.hs lookupPackageName) and links
+        # GHCi.Server.defaultServer from its unit closure.  `ghci` is never
+        # a build-depends, so no slice's dep db contains it, and the
+        # two-stage wrapper's target global db is EMPTY — the lookup fails
+        # ("couldn't find \"ghci\" package").  Populating the compiler's
+        # GLOBAL db with a separately-built ghci closure does NOT work:
+        # its unit-ids can never match the project's own boot-lib builds,
+        # so the interpreter session loads ghc-internal's jsbits twice
+        # (server closure + splice deps) and node dies
+        # "Identifier 'h$base_o_rdonly' has already been declared".
+        # Instead, compose THE PROJECT'S OWN ghci slice (its closure — the
+        # very units the splice code links — propagates with it) into every
+        # host package's starting store db, exactly like the rts ways
+        # above.  Unit-ids agree by construction; nothing loads twice.
+        ghciPrebuilt = lib.optionals (tp.isGhcjs or false)
+          (lib.filter (x: x != null)
+            [ (config.hsPkgs.ghci.components.library or null) ]);
+        # ghci's own dependency closure (by package name, a verified
+        # superset — see the registered confs' depends) must NOT receive
+        # the prebuilt, else additional-prebuilt-depends edges form a drv
+        # cycle (ghci's slice depends on these very slices).  None of them
+        # run TH splices — they all build before ghci exists.
+        ghciClosure = [
+          "ghci" "rts" "rts-fs" "rts-headers" "libffi-clib"
+          "ghc-prim" "ghc-bignum" "integer-gmp" "ghc-internal" "base"
+          "ghc-boot-th" "ghc-heap" "ghc-platform" "ghc-boot" "ghc-compact"
+          "ghc-experimental" "template-haskell" "Cabal-syntax" "Cabal"
+          "array" "binary" "bytestring" "containers" "deepseq" "directory"
+          "exceptions" "file-io" "filepath" "hpc" "mtl" "os-string"
+          "parsec" "pretty" "process" "semaphore-compat" "stm" "text"
+          "time" "transformers" "unix"
+        ];
       in {
         packages =
           (lib.optionalAttrs (config.packages ? rts) {
@@ -680,9 +720,32 @@ in {
           # Package-level (inherited by all component types) so the rts ways
           # land in every slice's starting store db.  `rts` is excluded, so
           # this never collides with the `rts.components` block above.
+          # One genAttrs computing BOTH contributions (`//` between two
+          # genAttrs would drop the rts ways for ghci recipients): every
+          # host package gets the rts ways; packages outside ghci's closure
+          # additionally get the ghci slice (ghcjs only).
           // lib.genAttrs
                (lib.filter (n: config.packages ? ${n}) pkgsNeedingRts)
-               (_: { additional-prebuilt-depends = rtsSublibs; });
+               (n: { additional-prebuilt-depends =
+                       rtsSublibs
+                       ++ lib.optionals (!(lib.elem n ghciClosure)) ghciPrebuilt; }
+                   # ghc-internal's configure guards its JS-specific
+                   # sizeof/offset checks with `test "$host" =
+                   # "javascript-ghcjs"`, but cabal's runConfigureScript
+                   # passes --host=javascript-unknown-ghcjs (the full
+                   # triple), so the whole block silently skips and
+                   # HsBaseConfig.h ships `#undef SIZEOF_STRUCT_STAT` etc.
+                   # The jsbits then die at Template-Haskell time with
+                   # "ReferenceError: SIZEOF_STRUCT_STAT is not defined"
+                   # (h$base_sizeof_stat, first splice ever run).  Accept
+                   # both spellings.  Upstream fix belongs in
+                   # stable-haskell/ghc libraries/ghc-internal/configure.ac.
+                   // lib.optionalAttrs (n == "ghc-internal" && (tp.isGhcjs or false)) {
+                     prePatch = ''
+                       sed -i 's|test "$host" = "javascript-ghcjs"|test "$host" = "javascript-ghcjs" -o "$host" = "javascript-unknown-ghcjs"|' \
+                         configure
+                     '';
+                   });
       }) ];
     }))
   ];
