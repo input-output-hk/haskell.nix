@@ -69,14 +69,19 @@ let
           { name = p.id; value = null; })
     config.plan-json.install-plan);
   buildableTargets = lib.filter (x: x.available != []) (
-    # Targets the user disabled (e.g. via --disable-tests) are not buildable
-    # either; without this filter a package whose only target is disabled
-    # (unix on Windows) makes `defaultTargetId` below force
-    # `(builtins.head available).id` on the reason string and eval fails
-    # with "expected a set but found a string".
+    # A target that isn't buildable for the current environment is emitted by
+    # make-install-plan as a bare status STRING in `available` (see
+    # ProjectPlanOutput.hs `availableTargetToJ`): TargetNotBuildable /
+    # TargetDisabledByUser (--disable-tests) / TargetDisabledBySolver /
+    # TargetNotLocal (e.g. a package a cross plan resolves for another stage,
+    # or one marked `buildable: False` for this target — arch(javascript) here).
+    # Drop all of them; otherwise `defaultTargetId` below forces
+    # `(builtins.head available).id` on the reason string and eval fails with
+    # "expected a set but found a string".
     lib.map (x: x // { available = lib.filter (n:
         if builtins.isString n
-        then !builtins.elem n ["TargetNotBuildable" "TargetDisabledByUser"]
+        then !builtins.elem n [ "TargetNotBuildable" "TargetDisabledByUser"
+                                "TargetDisabledBySolver" "TargetNotLocal" ]
         else !(deadPreExistingIds ? ${n.id})) x.available; })
       config.plan-json.targets);
   # Package names whose every available target unit is a dead pre-existing

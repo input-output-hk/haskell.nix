@@ -136,6 +136,17 @@ let
           if pkgs.stdenv.buildPlatform.parsed.cpu.name != pkgs.stdenv.targetPlatform.parsed.cpu.name
           || pkgs.stdenv.buildPlatform.parsed.kernel.name != pkgs.stdenv.targetPlatform.parsed.kernel.name
             then "YES" else "NO"}")'
+        # The stable-haskell fork brands its --info with `Edition` (hardcoded
+        # in compiler/GHC/Driver/Session.hs), emitted by every ghc914-sh
+        # (native and cross).  Match it so the dummy --info equals the real
+        # ghc914-sh --info (tests.dummy-ghc-info); gated on the fork so other
+        # compilers (whose real --info omits it) stay byte-equivalent.
+        # (`ld supports verbatim namespace` — a per-target linker capability
+        # cabal doesn't consult for elaboration — is handled via the test's
+        # ignoredFields rather than reproduced here.)
+        ${pkgs.lib.optionalString (ghc.isStableHaskell or false) ''
+        echo ',("Edition","Stable Haskell")'
+        ''}
         ${
           # GHC < 9.8 doesn't emit a `Project Unit Id` field in
           # `ghc --info` and registers its boot packages without
@@ -151,7 +162,15 @@ let
             then ''echo ',("Project Unit Id","${ghc.projectUnitId or "ghc-${ghc.version}-inplace"}")' ''
             else ""
         }
-        ${
+        ${ let
+          # Every stable-haskell (ghc914-sh) compiler — native AND every cross
+          # — is the SAME stage-2 `ghc-bin` binary (each cross "compiler" is a
+          # thin `-target` wrapper around it), so the baked-in `Stage` (2) and
+          # `RTS ways` (v thr debug thr_debug) are identical across all of them;
+          # only the settings-derived fields vary with `-target`.  Mainline
+          # compilers keep their per-target values (isSH = false).
+          isSH = ghc.isStableHaskell or false;
+        in
           # Capability fields cabal-install reads to decide what
           # configure-args to record in plan.json's per-pkg
           # `configure-args` entries.  Without these, cabal assumes
@@ -217,8 +236,8 @@ let
               then ''echo ',("target RTS linker only supports shared libraries","${if newWasm then "YES" else "NO"}")' ''
               else ""}
             echo ',("GHC Dynamic","NO")'
-            echo ',("RTS ways","${if newWasm then "v debug debug_dyn dyn" else "v debug"}")'
-            echo ',("Stage","1")'
+            echo ',("RTS ways","${if isSH then "v thr debug thr_debug" else if newWasm then "v debug debug_dyn dyn" else "v debug"}")'
+            echo ',("Stage","${if isSH then "2" else "1"}")'
           ''
           else if pkgs.stdenv.targetPlatform.isWindows
           then ''
@@ -236,8 +255,8 @@ let
               then ''echo ',("target RTS linker only supports shared libraries","NO")' ''
               else ""}
             echo ',("GHC Dynamic","NO")'
-            echo ',("RTS ways","v thr thr_debug thr_debug_p thr_p debug debug_p p")'
-            echo ',("Stage","1")'
+            echo ',("RTS ways","${if isSH then "v thr debug thr_debug" else "v thr thr_debug thr_debug_p thr_p debug debug_p p"}")'
+            echo ',("Stage","${if isSH then "2" else "1"}")'
           ''
           else if pkgs.stdenv.targetPlatform.isAndroid
                || pkgs.stdenv.targetPlatform.isStatic
@@ -277,8 +296,8 @@ let
               then ''echo ',("target RTS linker only supports shared libraries","NO")' ''
               else ""}
             echo ',("GHC Dynamic","NO")'
-            echo ',("RTS ways","v thr thr_debug thr_debug_p thr_p debug debug_p p")'
-            echo ',("Stage","${if pkgs.stdenv.buildPlatform.parsed.cpu.name != pkgs.stdenv.targetPlatform.parsed.cpu.name then "1" else "2"}")'
+            echo ',("RTS ways","${if isSH then "v thr debug thr_debug" else "v thr thr_debug thr_debug_p thr_p debug debug_p p"}")'
+            echo ',("Stage","${if isSH then "2" else (if pkgs.stdenv.buildPlatform.parsed.cpu.name != pkgs.stdenv.targetPlatform.parsed.cpu.name then "1" else "2")}")'
           ''
           else let
             # stable-haskell (cabalProject-built) native compilers: the ghc

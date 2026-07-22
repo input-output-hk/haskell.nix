@@ -48,6 +48,7 @@ let
     "JavaScript CPP command" "JavaScript CPP flags"
     "C-- CPP command" "C-- CPP flags" "C-- CPP supports -g0"
     "ld supports compact unwind" "ld supports filelist" "ld supports single module"
+    "ld supports verbatim namespace"
     "ld is GNU ld"
     "Merge objects command" "Merge objects flags" "Merge objects supports response files"
     "ar command" "ar flags" "ar supports at file" "ar supports -L"

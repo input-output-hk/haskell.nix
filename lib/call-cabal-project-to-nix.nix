@@ -341,9 +341,41 @@ let
   # construction when the compiler carries none (e.g. a custom ghc) or the
   # project adds `prebuilt-depends` (which the memoised, prebuilt-depends-free
   # dummy deliberately omits).
+  # The `-w` dummy shapes how cabal resolves the plan's `arch()`/`os()`
+  # conditionals and which boot packages it treats as pre-installed.
+  #
+  # `ghc` above is `compilerSelection pkgs.buildPackages`, i.e.
+  # `final.buildPackages.buildPackages`, whose targetPlatform collapses back to
+  # the native BUILD platform — so `ghc.dummyGhcPkgs` reports the build host.
+  # For a NATIVE plan that's correct.  But for a STABLE-HASKELL CROSS plan the
+  # `-w` dummy must report the TARGET platform (else cabal resolves every
+  # conditional for the build host — e.g. ghcjs `rts` pulling in the
+  # darwin-only `libffi-clib`, every `arch(javascript)`/`os(ghcjs)` guard
+  # silently false) and present an EMPTY global package db (so the plan builds
+  # rts/base/… from source, as the fork's boot-package injection expects).
+  #
+  # `pkgs` here IS `final.buildPackages`, whose targetPlatform is the cross
+  # target, so a dummy built from it reports the right platform.  We can't take
+  # the real cross compiler (accessing `pkgs.haskell-nix.compiler` target-hosted
+  # throws "build ghcjs with ghcjs"), and don't need to: only its
+  # `emptyGlobalPackageDb` flag matters to the dummy's `ghc-pkg dump`, so reuse
+  # the build compiler `ghc` with that flag set.
+  #
+  # Gated on the fork: a MAINLINE compiler's cross plan needs the OPPOSITE — a
+  # NON-empty dump so boot libs stay pre-existing (single-stage cross can't
+  # build rts/base from source).  Mainline compilers carry no `dummyGhcPkgs`
+  # memoisation (fork-only passthru), so they fall through to the fresh
+  # `mkDummyGhcPkg { inherit pkgs ghc; }` — target platform, non-empty dump —
+  # exactly the pre-fork behaviour.
   inherit (
     let memoised = ghc.dummyGhcPkgs or null;
-    in if prebuilt-depends == [] && memoised != null
+    in if (ghc.isStableHaskell or false)
+          && pkgs.stdenv.targetPlatform != pkgs.stdenv.hostPlatform
+       then mkDummyGhcPkg {
+              inherit pkgs;
+              ghc = ghc // { emptyGlobalPackageDb = true; };
+            }
+       else if prebuilt-depends == [] && memoised != null
        then memoised
        else mkDummyGhcPkg { inherit pkgs ghc; }
   ) dummy-ghc dummy-ghc-pkg;
