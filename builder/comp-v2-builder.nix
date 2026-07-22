@@ -51,6 +51,11 @@
                          # `builder/v2-project-globals.nix`), shared across slices.
 , homeDependIds    ? []  # [{ name; version; }] — sibling-component LIB deps from plan-json
 , homeBuildToolIds ? []  # [{ name; version; }] — sibling-component EXE deps from plan-json
+, nonReinstallablePkgs ? []
+                         # `config.nonReinstallablePkgs` — the packages the
+                         # compiler provides (rts, base, array, …).  Used to
+                         # keep boot libs out of two-stage build-tool source
+                         # staging (they have no real hackage src).
 , prePatch ? null, postPatch ? null, ... }@allArgs:
 
 let
@@ -403,8 +408,35 @@ let
   # the same `pkgHashSourceHash` here as it would against real
   # hackage.  Patches and pre/postPatch hooks still go through the
   # repack path because they actually change source bytes.
+  pkgUntouched =
+    !package.isLocal && resolvedPatches == [] && prePatch == null && postPatch == null;
   pkgTarball =
-    if !package.isLocal && resolvedPatches == [] && prePatch == null && postPatch == null then src
+    if pkgUntouched && lib.hasSuffix ".tar.gz" (src.name or "") then src
+    else if pkgUntouched then
+      # Non-local src that is not provably a tarball — e.g. a
+      # source-repository-package SUBDIR (Cabal-syntax inside the
+      # stable-haskell Cabal SRP), which is a DIRECTORY.  The slicing
+      # repo symlinks pkgTarball as `<name>-<ver>.tar.gz` and runs
+      # `tar -xOzf` on it, so passing the directory through fails
+      # "Cannot read: Is a directory".  Normalize: pack a directory
+      # into a real tarball (deterministic flags, `<name>-<ver>/`
+      # top-level dir per the tarball convention); pass a file through
+      # unchanged.  Hackage fetches keep the direct `src` path above
+      # (their .name ends in .tar.gz), so their slice hashes don't move.
+      runCommand "v2-tar-${pkgName}-${pkgVersion}"
+        { preferLocalBuild = true; }
+        ''
+          if [ -d ${src} ]; then
+            workDir=$(mktemp -d)
+            mkdir -p $workDir/${pkgName}-${pkgVersion}
+            cp -rL ${src}/. $workDir/${pkgName}-${pkgVersion}/
+            chmod -R u+w $workDir
+            tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
+                -czf $out -C $workDir ${pkgName}-${pkgVersion}
+          else
+            cp ${src} $out
+          fi
+        ''
     else runCommand "v2-tar-${pkgName}-${pkgVersion}"
            { preferLocalBuild = true; }
            # `cp -L` resolves symlinks against `${src}` at copy time.
@@ -906,10 +938,17 @@ let
      ++ setupDepSlices);
 
 
-  # native-build inputs from the target component's config
-  libs       = lib.flatten (component.libs or []);
-  frameworks = component.frameworks or [];
-  pkgconfig  = map pkgs.lib.getDev (builtins.concatLists (component.pkgconfig or []));
+  # native-build inputs from the target component's config.  The GHC
+  # JavaScript backend links no host C libraries (its cbits/RTS go through
+  # emscripten inside the toolchain) and nixpkgs gives the ghcjs platform no
+  # `stdenv.cc`, so *referencing* any of these from the target pkg-set throws
+  # "no C compiler provided for this platform".  Empty them for ghcjs at the
+  # source, so every downstream use (extraBuildInputs, the propagatedBuildInputs
+  # `propagated`, the cabal.project extra-lib-dirs emission) is native-free.
+  isJsTarget = stdenv.hostPlatform.isGhcjs;
+  libs       = lib.optionals (!isJsTarget) (lib.flatten (component.libs or []));
+  frameworks = lib.optionals (!isJsTarget) (component.frameworks or []);
+  pkgconfig  = lib.optionals (!isJsTarget) (map pkgs.lib.getDev (builtins.concatLists (component.pkgconfig or [])));
 
   # Paths post-injected into this lib slice's registered `.conf` so
   # GHC's runtime linker can dlopen each `extra-libraries:` entry
@@ -963,6 +1002,19 @@ let
   # (e.g. a sublib's pkgconfig dep that the main lib's slice
   # doesn't propagate).
   transitiveDepLibs =
+    # The GHC JavaScript backend (javascript-unknown-ghcjs) has no C toolchain
+    # — nixpkgs gives that platform no `stdenv.cc` — so merely *realizing* a
+    # native C lib / framework / pkgconfig dep from the target pkg-set throws
+    # "no C compiler provided for this platform".  When cross-compiling to JS
+    # from a darwin build host this walk would drag every native C dep in the
+    # flattened plan closure (glib/gtk via gi-*, ncurses via terminfo,
+    # hfsevents via fsnotify, …) into the slice's `__impureHostDeps`, failing
+    # the whole eval.  A JS slice never links native C libs, and this walk is a
+    # redundant belt-and-braces backup anyway (see the note above), so skip it
+    # for ghcjs; the `depSlices` propagatedBuildInputs chain still covers the
+    # native platforms.  (`stdenv` here is the component's *target* stdenv —
+    # `pkgs.stdenv` would be the darwin build host and never match.)
+    if stdenv.hostPlatform.isGhcjs then [] else
     let
       go = acc: deps:
         lib.foldl' (acc: d:
@@ -1063,8 +1115,12 @@ let
   # layout the cc wrapper expects, so cabal really does need
   # `extra-framework-dirs:` to find them.  The unit-id divergence
   # only affects Darwin host builds.
+  # Reads a *dependency's* frameworks straight from its component config, so
+  # (like the transitiveDepLibs walk) it must be skipped for ghcjs — the ghcjs
+  # pkg-set can't realize a darwin framework (e.g. hfsevents' Cocoa), and a JS
+  # build emits no `extra-framework-dirs:` anyway.
   pkgcfglessSysLibs = c:
-    (c.frameworks or []);
+    lib.optionals (!stdenv.hostPlatform.isGhcjs) (c.frameworks or []);
   perPkgForeignLibs =
     let
       go = acc: deps:
@@ -1150,11 +1206,84 @@ let
             lib.hasPrefix "exe:" (e.entry.component-name or "")
             && (e.entry.pkg-name or "") != pkgName)
           allDepClosure;
-        frags = lib.filter (f: f != null) (map (e:
-            let sl = sliceOfPkgRecord (hsPkgs.${e.key} or null);
-            in if sl == null then null else sl.passthru.v2SourceFrag or null)
-          exeUnits);
-      # Dedup by package name (a tool can be reached via several paths).
+        exeFrag = e:
+          let sl = sliceOfPkgRecord (hsPkgs.${e.key} or null);
+          in if sl == null then null else sl.passthru.v2SourceFrag or null;
+        # A build-tool exe built BUILD-stage from source inside this slice
+        # needs its own library deps in the slice index too — e.g. happy 2.x
+        # exe:happy `build-depends: happy-lib`, so staging only happy's own
+        # source leaves the solver with "unknown package happy-lib".  Walk
+        # each tool exe's dep closure and source-stage the CONFIGURED units.
+        #
+        # Crucially, walk it on the BUILD-twin-preferring index
+        # (`planJsonByPlanIdBuild'`): build tools are build-stage, and a boot
+        # library (array, base, containers, …) shows up in that stage as a
+        # `pre-existing` unit (installed from the build compiler), which the
+        # `type == "configured"` test drops.  Walking the default
+        # (HOST-twin-preferring) index would instead resolve the HOST array —
+        # `configured` and source-built for the JS target, but with a
+        # null-hash boot fetchurl for `src`; staging it makes
+        # `extraFragStaging` coerce null→string.  So the build index both
+        # picks the right stage AND keeps unrealizable boot sources out.
+        # What remains are genuine reinstallable source deps of the tool
+        # (happy-lib, …).  `nonReinstallablePkgs` is a cheap extra guard.
+        toolDepClosure = builtins.genericClosure {
+          startSet = lib.concatMap (e:
+            lib.concatMap (id:
+              let q = planJsonByPlanIdBuild'.${id} or null;
+              in if q == null then [] else [ { key = id; entry = q; } ]
+            ) (allDepsOf e.entry)) exeUnits;
+          operator = e:
+            lib.concatMap (id:
+              let q = planJsonByPlanIdBuild'.${id} or null;
+              in if q == null then [] else [ { key = id; entry = q; } ]
+            ) (allDepsOf e.entry);
+        };
+        # GHC boot libraries.  The stable-haskell two-stage plan lists them as
+        # `configured` (reinstalled from source) in BOTH stages, and
+        # `nonReinstallablePkgs` here is only the short builderVersion=2 list,
+        # so neither `type` nor that list tells them apart from a genuine
+        # source dep.  But the compiler provides them: their build-stage unit
+        # resolves to a null-hash boot `src` fetchurl that can't be realized,
+        # so staging one coerces null→string in `extraFragStaging`.  A build
+        # tool never needs them source-staged — it resolves them from the build
+        # compiler's installed db — so exclude the whole set by name.  What
+        # remains is the tool's genuine reinstallable lib deps (happy-lib, …).
+        ghcBootLibs = [
+          "rts" "ghc-prim" "integer-gmp" "integer-simple" "base" "ghc-bignum"
+          "system-cxx-std-lib" "ghc-internal" "ghc-boot" "ghc-boot-th" "ghc"
+          "ghci" "Cabal" "Cabal-syntax" "array" "binary" "bytestring"
+          "containers" "deepseq" "directory" "exceptions" "file-io" "filepath"
+          "ghc-compact" "ghc-heap" "ghc-platform" "ghc-experimental" "hpc"
+          "mtl" "os-string" "parsec" "pretty" "process" "semaphore-compat"
+          "stm" "template-haskell" "terminfo" "text" "time" "transformers"
+          "unix" "xhtml" "rts-fs" "rts-headers" "libffi-clib" "Win32"
+        ];
+        toolLibExclude = ghcBootLibs ++ nonReinstallablePkgs;
+        toolLibUnits = lib.filter
+          (e: (e.entry.type or "") == "configured"
+              && !(builtins.elem (e.entry.pkg-name or "") toolLibExclude))
+          toolDepClosure;
+        # Resolve on the HOST `hsPkgs` keyed by NAME-VERSION.  A multi-sublib
+        # lib (happy-lib) reaches the closure only through its SUBLIB unit ids
+        # (frontend, backend-lalr, …), which are not top-level keys; its bare
+        # `hsPkgs.happy-lib` / `pkgsBuildBuild.happy-lib` attrs are present but
+        # null, and the versioned key exists only on the host set
+        # (`hsPkgs."happy-lib-2.1.7"`).  So `lookupDepPkg hsPkgs name version`
+        # hits the `byNV` path and returns the real package; its `v2SourceFrag`
+        # is the one shared SOURCE tarball for every sublib (stage-independent,
+        # so the host set is fine for build-stage staging).  Boot libs — the
+        # only packages whose host record has an unrealizable null-hash `src` —
+        # are already dropped by `toolLibExclude` above, so they never reach
+        # here.
+        libFrag = e:
+          let sl = sliceOfPkgRecord (lookupDepPkg hsPkgs
+                     (e.entry.pkg-name or "") (e.entry.pkg-version or null));
+          in if sl == null then null else sl.passthru.v2SourceFrag or null;
+        frags = lib.filter (f: f != null)
+          (map exeFrag exeUnits ++ map libFrag toolLibUnits);
+      # Dedup by package name (a tool/lib can be reached via several paths;
+      # a multi-sublib lib like happy-lib contributes one shared source).
       in lib.attrValues (lib.listToAttrs
            (map (f: lib.nameValuePair f.pkgName f) frags)));
 

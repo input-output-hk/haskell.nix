@@ -157,6 +157,10 @@ let
           inherit componentId component package name src flags patches cabalFile cabal-generator;
           inherit (pkg) prePatch postPatch;
           inherit (homeIds) homeDependIds homeBuildToolIds;
+          # Boot packages the compiler provides — comp-v2-builder keeps these
+          # out of two-stage build-tool source staging (they have no real
+          # hackage src, so staging them would coerce a null fetchurl hash).
+          inherit (config) nonReinstallablePkgs;
           pkgSet = config.packages;
           packageIdsByName = config.package-ids-by-name;
           # Raw plan.json `install-plan` array — comp-v2-builder

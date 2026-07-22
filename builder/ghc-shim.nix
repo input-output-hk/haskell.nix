@@ -79,7 +79,16 @@ pkgsBuildBuild.runCommand "${ghc.name}-shim" {
       cp --remove-destination "$(readlink -f "$settingsFile")" "$settingsFile"
     fi
     ${lib.optionalString (ghcjsArWrapper != null) ''
-      sed -i 's|("ar command", "[^"]*")|("ar command", "${ghcjsArWrapper}")|' "$settingsFile"
+      # NB no space after the comma in the generated settings file —
+      # `("ar command","…")` — so match optional whitespace.  With the old
+      # `", "` pattern the sed silently never matched and both GHC and
+      # cabal (which takes its `ar` hint from ghc's settings — the
+      # "Using ar found on system at" line) kept the RAW emar.
+      sed -i 's|("ar command", *"[^"]*")|("ar command","${ghcjsArWrapper}")|' "$settingsFile"
+      grep -qF '${ghcjsArWrapper}' "$settingsFile" || {
+        echo "ghc-shim: ar command swap did not match settings" >&2
+        exit 1
+      }
     ''}
     for f in ${ghc}/bin/*; do
       base=$(basename "$f")

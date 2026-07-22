@@ -347,7 +347,15 @@ let
         args+=("$arg")
       fi
     done
-    exec "$REAL_AR" "''${args[@]}"
+    # `--format=gnu`: emar is llvm-ar, whose DEFAULT format on a macOS build
+    # host is darwin — member data 8-aligned with '\n' padding that is
+    # COUNTED IN the member size field.  Mach-O readers tolerate the trailing
+    # pad, but wasm ones don't: a cbits `.o` (e.g. time's HsTime.o) archived
+    # that way reads back as <valid wasm> + pad, and every consumer that
+    # parses it to entry end — `wasm-ld` at the TH interpreter / final link,
+    # `llvm-nm` — fails with "section too large".  GNU format records exact
+    # member sizes, matching what the JS linker's archive walk expects.
+    exec "$REAL_AR" --format=gnu "''${args[@]}"
   '';
 
   ghcShim = makeGhcShim {
@@ -439,6 +447,15 @@ stdenv.mkDerivation ({
   # `comp-v2-builder.nix` for slices whose `target` is itself a sublib.
   HASKELLNIX_EXTRA_SUBLIB_SEEDS =
     lib.concatMapStringsSep "," (s: "${s.pkg}/${s.sublib}") extraSublibSeeds;
+} // lib.optionalAttrs (buildToolSourceFrags != [] && stdenv.buildPlatform.isDarwin) {
+  # A build-stage build-tool (happy/hsc2hs) compiled from source inside a
+  # ghcjs-target slice links `-static -liconv` with the NATIVE build compiler,
+  # but the compiler's fixed clang-wrapper reads a `NIX_LDFLAGS_<salt>` this
+  # cross slice never populates, so `-liconv` can't be found.  clang also
+  # honours the `LIBRARY_PATH` env var for `-l` search (salt-independent), so
+  # point it at the build-platform libiconv.  Darwin only — the flag/lib layout
+  # is macOS-specific and other build hosts don't hit the ghcjs-slice case.
+  LIBRARY_PATH = "${pkgsBuildBuild.libiconv}/lib";
 } // {
   # GHCJS runs Template Haskell splices by linking the splice as a
   # JS module and executing it via node at compile-time, so node has
@@ -489,6 +506,24 @@ stdenv.mkDerivation ({
                          then pkgs.pkgsHostHost.gitReallyMinimal
                          else pkgsBuildBuild.gitReallyMinimal) ]
     ++ lib.optional stdenv.hostPlatform.isGhcjs pkgsBuildBuild.nodejs
+    # Two-stage build-tool source builds (e.g. happy + happy-lib, hsc2hs,
+    # staged via `buildToolSourceFrags`) compile with the native BUILD
+    # compiler, whose settings invoke bare `ar` and a wrapped `cc`/`ld`.  On a
+    # target whose stdenv ships no C toolchain (ghcjs), nothing else provides
+    # them, so a build-stage `.a` archive step fails ([Cabal-6666] "'ar' …
+    # could not be found") and a build-stage exe link fails ("ld: library not
+    # found for -liconv").  Add the full native (build-platform) cc wrapper: it
+    # puts `ar`/`ld`/`nm` on PATH (via its propagated bintools) AND wires the
+    # darwin default libs (libiconv, …) into the wrapper's search flags.  Only
+    # for build-tool slices; others are unchanged (empty list → byte-identical).
+    # `libiconv` too: `ghc-internal`/`base` list `extra-libraries: iconv` on
+    # darwin, so every build-stage exe link passes `-liconv`; a proper exe
+    # slice finds `libiconv.dylib` via its darwin stdenv, but a build-stage
+    # sub-build inside a ghcjs-target slice gets no native `-L` for it
+    # ("ld: library not found for -liconv").  Adding it as a build-platform
+    # native input puts `-L<libiconv>/lib` into the build wrapper's search.
+    ++ lib.optionals (buildToolSourceFrags != [])
+         [ pkgsBuildBuild.stdenv.cc pkgsBuildBuild.libiconv ]
     ++ extraNativeBuildInputs;
   # `depSlices` go in `propagatedBuildInputs` so stdenv chains each
   # slice's `nix-support/propagated-build-inputs` transitively.
@@ -689,6 +724,22 @@ stdenv.mkDerivation ({
         fi
       done
     fi
+    ${lib.optionalString (buildToolSourceFrags != []) ''
+    # Build-stage tools built from source in-slice (happy/happy-lib, staged
+    # via `buildToolSourceFrags`) get registered by `ghc-pkg recache` into the
+    # BUILD-platform db (`store/host/<build-platform>`, reached through the
+    # `build`→`host` link) — a DIFFERENT platform dir than the cross target's
+    # that `discoverStore` fixes above.  Its `package.cache{,.lock}` are still
+    # composed as read-only symlinks into /nix/store, so the recache `flock()`
+    # fails with `hLock: invalid argument (Bad file descriptor)`.  Make EVERY
+    # composed platform db writable so build-stage registration can proceed.
+    for db in $storeDir/host/*/package.conf.d; do
+      [ -d "$db" ] || continue
+      for f in package.cache package.cache.lock; do
+        [ -L "$db/$f" ] && rm "$db/$f" || true
+      done
+    done
+    ''}
 
     ${lib.optionalString (buildToolBinOverlays != []) ''
       # Overlay each cross-target build-tool's `bin/<name>` in the
