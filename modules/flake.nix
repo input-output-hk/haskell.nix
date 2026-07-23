@@ -43,5 +43,15 @@
         turned on by default.
       '';
     };
+    doHaddock = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Specifies if the flake `ciJobs` and `hydraJobs` should include a
+        `haddock` group building the documentation (`.doc`) of each
+        library/test component that has haddock enabled, so that broken
+        documentation is caught by CI (see #1932).
+      '';
+    };
   };
 }
