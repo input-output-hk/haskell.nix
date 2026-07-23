@@ -22,6 +22,7 @@ import Data.Char (isDigit)
 import Data.List (isSuffixOf)
 import qualified Data.Text as T
 import Data.Aeson
+import Data.Aeson.Types (Parser, typeMismatch)
 import Control.Applicative ((<|>))
 import Data.Monoid (mempty)
 
@@ -188,10 +189,23 @@ instance FromJSON Location where
       gitHubUrl ownerRepo =
         "https://github.com/" <> ownerRepo <> ".git"
 
+-- | Parse the @resolver@ (or its modern synonym @snapshot@) field.  Stack
+-- accepts either the plain string form (@lts-20.11@, a URL, or a @.yaml@ path)
+-- or the pantry object form (@{ url, sha256, size }@); the latter used to fail
+-- with @expected String, but encountered Object@ (see #1677).  We reduce the
+-- object form to its @url@, which is all the downstream resolve path needs
+-- (the @sha256@/@size@ are pantry integrity fields we do not use).
+parseResolver :: Object -> Parser Resolver
+parseResolver s = (s .: "resolver" <|> s .: "snapshot") >>= go
+  where
+    go (String t) = pure (T.unpack t)
+    go (Object o) = o .: "url"
+    go v          = typeMismatch "resolver (a string or a { url: ... } object)" v
+
 instance FromJSON Stack where
   parseJSON = withObject "Stack" $ \s -> Stack
     -- `snapshot` is the modern synonym for `resolver` (stack >= 2.15.1).
-    <$> (s .: "resolver" <|> s .: "snapshot")
+    <$> parseResolver s
     <*> s .:? "compiler" .!= Nothing
     <*> ((<>) <$> s .:? "packages"   .!= [LocalPath "."]
               <*> s .:? "extra-deps" .!= [])
@@ -200,7 +214,7 @@ instance FromJSON Stack where
 
 instance FromJSON StackSnapshot where
   parseJSON = withObject "Snapshot" $ \s -> Snapshot
-    <$> (s .: "resolver" <|> s .: "snapshot")
+    <$> parseResolver s
     <*> s .:? "compiler" .!= Nothing
     <*> s .: "name"
     <*> s .:? "packages" .!= []
