@@ -14,16 +14,15 @@ let
   # override is silently discarded and the build later fails with an opaque
   # `installed package ... is broken due to missing package <pkg>-<ver>` error.
   # Warn about that here rather than leaving the user to debug the broken
-  # package-db (see #1657).  We only iterate `nonReinstallablePkgs`, and only
-  # fire when the planned version differs from the compiler-shipped one, so a
-  # normal project (planned version == shipped version) never triggers this.
-  shadowedNonReinstallable = lib.filter (name:
-       config.packages ? ${name}
-    && config.packages.${name} != null
-    && config.compiler.packages ? ${name}
-    && (config.packages.${name}.package.identifier.version or null) != null
-    && config.packages.${name}.package.identifier.version != config.compiler.packages.${name}
-  ) config.nonReinstallablePkgs;
+  # package-db (see #1657).  The detection lives in `haskellLib` (and is unit
+  # tested); it only considers `nonReinstallablePkgs`, and only fires when the
+  # planned version differs from the compiler-shipped one, so a normal project
+  # (planned version == shipped version) never triggers this.
+  shadowedNonReinstallable = haskellLib.shadowedNonReinstallablePkgs {
+    inherit (config) nonReinstallablePkgs;
+    packages = config.packages;
+    compilerPackages = config.compiler.packages;
+  };
 
   warnShadowedNonReinstallable = value: lib.foldr (name: acc:
     lib.warn ''
