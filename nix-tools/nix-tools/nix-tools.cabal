@@ -281,3 +281,18 @@ test-suite tests
                      , cabal-install:cabal
   hs-source-dirs:      tests
   default-language:    Haskell2010
+
+-- Pure unit tests for the stack.yaml/snapshot dependency merge precedence
+-- (haskell.nix issue #1690). Unlike the golden `tests` suite these need no
+-- network access or external tools.
+test-suite unit-tests
+  import:              warnings
+                     , cabal-deps
+  type:                exitcode-stdio-1.0
+  main-is:             Unit.hs
+  build-depends:       base
+                     , nix-tools
+                     , tasty
+                     , tasty-hunit
+  hs-source-dirs:      tests
+  default-language:    Haskell2010
