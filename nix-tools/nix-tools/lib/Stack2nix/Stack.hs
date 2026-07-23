@@ -15,6 +15,7 @@ module Stack2nix.Stack
   , StackSnapshot(..)
   , PackageFlags
   , GhcOptions
+  , GhcOptionsValue(..)
   , parsePackageIdentifier
   ) where
 
@@ -124,7 +125,23 @@ data Dependency
 -- flags are { pkg -> { flag -> bool } }
 type PackageFlags = HM.HashMap T.Text (HM.HashMap T.Text Bool)
 
-type GhcOptions = HM.HashMap T.Text T.Text
+-- | A package's @ghc-options@ value.  In @stack.yaml@ this is written as a
+-- single string (@"-O2 -Wall"@), but in snapshot/resolver definitions stack
+-- writes it as an array of strings (@["-O2", "-Wall"]@).  We accept both and
+-- normalise to a list of individual option tokens (see #1676).
+newtype GhcOptionsValue = GhcOptionsValue { ghcOptionsTokens :: [T.Text] }
+  deriving (Show)
+
+instance FromJSON GhcOptionsValue where
+  parseJSON v = GhcOptionsValue <$> (asList <|> asScalar)
+    where
+      -- array form: [String] (each element further split on whitespace so an
+      -- element like "-O2 -Wall" is still handled)
+      asList   = concatMap T.words <$> parseJSON v
+      -- scalar form: a single whitespace-separated String
+      asScalar = T.words <$> parseJSON v
+
+type GhcOptions = HM.HashMap T.Text GhcOptionsValue
 
 data Stack
   = Stack Resolver (Maybe Compiler) [Dependency] PackageFlags GhcOptions

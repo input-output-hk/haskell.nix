@@ -38,7 +38,7 @@ import Cabal2Nix.Util
 import Stack2nix.Cache (appendCache, cacheHits)
 import Stack2nix.CLI (Args(..))
 import Stack2nix.Project
-import Stack2nix.Stack (Stack(..), Dependency(..), Location(..), PackageFlags, GhcOptions)
+import Stack2nix.Stack (Stack(..), Dependency(..), Location(..), PackageFlags, GhcOptions, GhcOptionsValue(..))
 import Stack2nix.External.Resolve
 
 import qualified Data.HashMap.Strict as HM
@@ -131,11 +131,13 @@ flags2nix pkgFlags =
   | (pkgName, flags) <- HM.toList pkgFlags
   ]
 
--- | Converts 'GhcOptions' into @{ packageName = { ghcOptions = "..."; }; }@
+-- | Converts 'GhcOptions' into @{ packageName = { ghcOptions = [ "..." ]; }; }@
+-- Each option token becomes its own list element (previously a multi-word
+-- string was emitted as a single element; see #1676).
 ghcOptions2nix :: GhcOptions -> [Binding NExpr]
 ghcOptions2nix ghcOptions =
   [ quoted pkgName $= mkNonRecSet
-    [ "ghcOptions" $= mkList [ mkStr opts ] ]
+    [ "ghcOptions" $= mkList (map mkStr (ghcOptionsTokens opts)) ]
   | (pkgName, opts) <- HM.toList ghcOptions
   ]
 
