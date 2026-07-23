@@ -281,3 +281,17 @@ test-suite tests
                      , cabal-install:cabal
   hs-source-dirs:      tests
   default-language:    Haskell2010
+
+-- Self-contained unit tests for the stack path's cabal-file discovery.  Unlike
+-- the golden `tests` suite above these need no external tools or network, so
+-- they can run in a plain build.
+test-suite stack-project-tests
+  import:              warnings
+  type:                exitcode-stdio-1.0
+  main-is:             StackProjectTests.hs
+  build-depends:       base
+                     , extra
+                     , filepath
+                     , nix-tools
+  hs-source-dirs:      tests
+  default-language:    Haskell2010
