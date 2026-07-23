@@ -6,6 +6,7 @@ where
 
 import           Cabal2Nix.Util                           ( quoted
                                                           , bindPath
+                                                          , hackageVersion
                                                           )
 import           Data.HashMap.Strict                      ( HashMap )
 import qualified Data.HashMap.Strict           as Map
@@ -44,7 +45,7 @@ plan2nix (Plan { packages, compilerVersion, compilerPackages }) =
   quotedPackages = mapKeys quoted packages
   bind :: Text -> Maybe Package -> [Binding NExpr]
   bind pkg (Just (Package { packageVersion, packageRevision, packageFlags })) =
-    let verExpr      = (mkSym "hackage" @. pkg) @. quoted packageVersion
+    let verExpr      = hackageVersion pkg (quoted packageVersion)
         revExpr      = (verExpr @. "revisions") @. maybe "default" quoted packageRevision
         flagBindings = Map.foldrWithKey
           (\fname val acc -> bindPath (VarName pkg :| ["flags", fname]) (mkBool val) : acc)
