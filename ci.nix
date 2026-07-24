@@ -3,7 +3,7 @@
 { ifdLevel # This is passed in from flake.nix
 , checkMaterialization ? false
 , system ? builtins.currentSystem
-, evalSystem ? builtins.currentSystem or "aarch64-darwin"
+, evalSystem ? "aarch64-darwin"
   # NOTE: we apply checkMaterialization when defining nixpkgsArgs
 , haskellNix ? import ./default.nix { inherit system ; }
 }:
