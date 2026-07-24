@@ -1,10 +1,10 @@
-{ stdenv, lib, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages }:
 
 with lib;
 
 let
   project = cabalProject' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "cabal-source-repo-comments";
     cabalProjectLocal = builtins.readFile ../cabal.project.local
       + lib.optionalString (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64) ''

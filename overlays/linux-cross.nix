@@ -6,6 +6,11 @@
 , makeWrapper
 , qemu
 , qemuSuffix ? (haskellLib.qemuByHostPlatform hostPlatform)
+  # Command used to run host-platform ELF binaries on the build platform.
+  # Defaults to qemu user-mode emulation; darwin build hosts pass
+  # hyper-linux's `hl` instead (qemu user-mode does not exist on macOS).
+  # When set, the `qemu` argument is never forced.
+, pipeCommand ? "${qemu}/bin/qemu-${qemuSuffix}"
 , iserv-proxy
 , iserv-proxy-interpreter
 , iserv-proxy-interpreter-prof
@@ -30,8 +35,8 @@ let
     PROXY_ARGS=''${PROXY_ARGS:-}
     # Unset configure flags as configure should have run already
     unset configureFlags
-    (>&2 echo "---> Starting iserv-proxy with piped ${interpreter.exeName} (qemu: ${qemu}/bin/qemu-${qemuSuffix})")
-    ${iserv-proxy}/bin/iserv-proxy $@ --pipe ${qemu}/bin/qemu-${qemuSuffix} ${interpreter}/bin/${interpreter.exeName} tmp --stdio $ISERV_ARGS
+    (>&2 echo "---> Starting iserv-proxy with piped ${interpreter.exeName} (emulator: ${pipeCommand})")
+    ${iserv-proxy}/bin/iserv-proxy $@ --pipe ${pipeCommand} ${interpreter}/bin/${interpreter.exeName} tmp --stdio $ISERV_ARGS
     '';
   qemuIservWrapper = symlinkJoin { name = "iserv-wrapper"; paths = [ (qemuIservWrapperScript false) (qemuIservWrapperScript true) ]; };
   configureFlags = lib.optional (hostPlatform.isAarch32 || hostPlatform.isAndroid) "--disable-split-sections";
@@ -45,10 +50,10 @@ let
       # -dynamic-system-linker disabled. Link -ldl for android.
       ++ lib.optionals hostPlatform.isAndroid ["-optl-ldl"];
 
-  # Wrapper for qemu testing
+  # Wrapper for running test executables under the emulator
   qemuTestWrapper = writeShellScriptBin "test-wrapper" ''
     set -euo pipefail
-    ${qemu}/bin/qemu-${qemuSuffix} $@*
+    ${pipeCommand} "$@"
   '';
 
   # Choose the appropriate test wrapper

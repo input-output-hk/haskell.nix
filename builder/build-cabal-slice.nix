@@ -12,6 +12,9 @@
 # Output layout:
 #   $out/store/ghc-<ver>[-inplace]/<unit-id>/        -- newly installed unit
 #   $out/store/ghc-<ver>[-inplace]/package.db/<unit-id>.conf
+#   (or, with the stable-haskell cabal fork's staged store layout,
+#   $out/store/host/<platform>/package.conf.d/<unit-id>.conf — see
+#   the "Staged store layout" comment in buildPhase)
 #   $out/plan.json                                   -- recorded slice plan (lifted from cache)
 #
 # Note: `dist-newstyle/` is staged into `$out` during the build
@@ -62,6 +65,13 @@ let outerGhc = ghc; in
                              # downstream slice can compose the closure at build
                              # time without walking deps in Nix.  STEP 1:
                              # emitted but not yet consumed.
+, buildToolSourceFrags ? []  # list of `{ pkgName; pkgVersion; tarball;
+                             # cabalFile; }` source-only frags (two-stage
+                             # cross): a build-tool's SOURCE staged into the
+                             # slicing repo so the slice's own cabal can
+                             # build it BUILD-stage, without a drv edge to
+                             # the tool's (cyclic) built slice.  See
+                             # comp-v2-builder.nix `buildToolSourceFrags`.
 , preBuild                   # stage sources, write cabal.project, cd into project dir
 , target ? "all"
 , extraSublibSeeds ? []      # list of `{ pkg = ...; sublib = ...; }`
@@ -106,6 +116,16 @@ let outerGhc = ghc; in
                              # the cross-target unit-id (so cabal's solver
                              # is happy) but lets the executable actually
                              # run on the build machine.
+, twoStage ? false           # stable-haskell two-stage (cross) plan:
+                             # pass `--with-build-compiler` /
+                             # `--with-build-hc-pkg` (the compiler's
+                             # buildGHC) to every cabal invocation so
+                             # the slice re-plans with the same
+                             # build/host stage split the project plan
+                             # was made with.  Without it cabal
+                             # defaults the build compiler to the host
+                             # path — the TARGET wrapper — and plans
+                             # build-stage goals for the target.
 , expectedPackage ? null     # if non-null, the only package name
                              # cabal's dry-run plan is allowed to
                              # build.  Any other package means cabal
@@ -129,6 +149,30 @@ let outerGhc = ghc; in
                              # downstream consumers compose, so a
                              # second copy with a different unit-id
                              # would silently fork dep hashes.
+, solverIncludesGlobalDb ? false
+                             # keep the compiler's real global package db
+                             # in the slice solver's installed index
+                             # alongside the composed store units (see
+                             # the merged-snapshot block in the solver-
+                             # visibility section).  Set by
+                             # comp-v2-builder for consumer-style slices
+                             # (any slice whose component has
+                             # `pre-existing` deps, or any slice of a
+                             # project without `v2LocalPackageSlices`).
+, allowedSiblingUnitPrefix ? null
+                             # if non-null (local-`packages:` mode
+                             # slices, see comp-v2-builder.nix
+                             # `isLocalPackageSlice`), the target
+                             # package's `<name>-<version>`: captured
+                             # units `<prefix>` / `<prefix>-<comp>` are
+                             # tolerated alongside `expectedUnitId`.
+                             # cabal never satisfies an INTRA-package
+                             # dep from an installed unit, so a local
+                             # target's required sibling components
+                             # (rts's way sublibs depend on lib:rts)
+                             # are necessarily built in-slice — under
+                             # the fork's deterministic local ids they
+                             # can't fork dep hashes.
 , expectedPlanEntries ? null # if non-null, an attr set { <unit-id> =
                              # <plan-json entry>; } restricted to the
                              # entries this slice expects to produce
@@ -303,7 +347,15 @@ let
         args+=("$arg")
       fi
     done
-    exec "$REAL_AR" "''${args[@]}"
+    # `--format=gnu`: emar is llvm-ar, whose DEFAULT format on a macOS build
+    # host is darwin — member data 8-aligned with '\n' padding that is
+    # COUNTED IN the member size field.  Mach-O readers tolerate the trailing
+    # pad, but wasm ones don't: a cbits `.o` (e.g. time's HsTime.o) archived
+    # that way reads back as <valid wasm> + pad, and every consumer that
+    # parses it to entry end — `wasm-ld` at the TH interpreter / final link,
+    # `llvm-nm` — fails with "section too large".  GNU format records exact
+    # member sizes, matching what the JS linker's archive walk expects.
+    exec "$REAL_AR" --format=gnu "''${args[@]}"
   '';
 
   ghcShim = makeGhcShim {
@@ -322,6 +374,37 @@ let
       haskellLib.isNativeMusl
       "${buildPackages.gcc-unwrapped.lib}/${stdenv.hostPlatform.config}/lib";
   };
+
+  # Two-stage (stable-haskell -target cross) plan: thread the build
+  # compiler through to cabal.  The real build compiler here vs the
+  # dummy pair at plan time is fine — compiler PATHS don't enter
+  # cabal's unit hashes (only the probed compiler id / platform do,
+  # and the dummies report the same values as the real compilers).
+  # `ghc` may be a TH-wrapping of the project compiler (wrapGhc) whose
+  # passthru doesn't carry buildGHC — fall back to the unwrapped outer
+  # compiler.
+  twoStageBuildGhc = ghc.buildGHC or outerGhc.buildGHC;
+  twoStageFlags = lib.optionalString twoStage (
+    " --with-build-compiler=${twoStageBuildGhc}/bin/ghc"
+    + " --with-build-hc-pkg=${twoStageBuildGhc}/bin/ghc-pkg");
+
+  # Two-stage build-tool source staging, appended verbatim to the
+  # own-source block of the build-time slicing repo.  Leads with a newline
+  # so it attaches after the own-source `''}` without a standalone line;
+  # empty (zero bytes) unless `buildToolSourceFrags` is non-empty, which
+  # keeps non-two-stage (native / single-stage-cross) slice UnitId hashes
+  # byte-identical.  Each frag becomes an index candidate (tarball +
+  # .cabal) so the slice's own cabal can build the tool BUILD-stage —
+  # no built slice, no store unit, no constraint.
+  extraFragStaging = lib.optionalString (buildToolSourceFrags != [])
+    (lib.concatMapStrings (f: ''
+
+      ln -sf ${f.tarball} $v2repo/package/${f.pkgName}-${f.pkgVersion}.tar.gz
+      mkdir -p $v2idx/${f.pkgName}/${f.pkgVersion}
+      ${if f.cabalFile != null
+        then "cp -f --no-preserve=mode ${f.cabalFile} $v2idx/${f.pkgName}/${f.pkgVersion}/${f.pkgName}.cabal"
+        else "tar -xOzf ${f.tarball} ${f.pkgName}-${f.pkgVersion}/${f.pkgName}.cabal > $v2idx/${f.pkgName}/${f.pkgVersion}/${f.pkgName}.cabal"}''
+    ) buildToolSourceFrags);
 
   crossWithFlags = lib.optionalString (targetPrefix != "") (
     " --with-compiler=${ghcShim}/bin/${ghcBin}"
@@ -364,6 +447,15 @@ stdenv.mkDerivation ({
   # `comp-v2-builder.nix` for slices whose `target` is itself a sublib.
   HASKELLNIX_EXTRA_SUBLIB_SEEDS =
     lib.concatMapStringsSep "," (s: "${s.pkg}/${s.sublib}") extraSublibSeeds;
+} // lib.optionalAttrs (buildToolSourceFrags != [] && stdenv.buildPlatform.isDarwin) {
+  # A build-stage build-tool (happy/hsc2hs) compiled from source inside a
+  # ghcjs-target slice links `-static -liconv` with the NATIVE build compiler,
+  # but the compiler's fixed clang-wrapper reads a `NIX_LDFLAGS_<salt>` this
+  # cross slice never populates, so `-liconv` can't be found.  clang also
+  # honours the `LIBRARY_PATH` env var for `-l` search (salt-independent), so
+  # point it at the build-platform libiconv.  Darwin only — the flag/lib layout
+  # is macOS-specific and other build hosts don't hit the ghcjs-slice case.
+  LIBRARY_PATH = "${pkgsBuildBuild.libiconv}/lib";
 } // {
   # GHCJS runs Template Haskell splices by linking the splice as a
   # JS module and executing it via node at compile-time, so node has
@@ -414,6 +506,24 @@ stdenv.mkDerivation ({
                          then pkgs.pkgsHostHost.gitReallyMinimal
                          else pkgsBuildBuild.gitReallyMinimal) ]
     ++ lib.optional stdenv.hostPlatform.isGhcjs pkgsBuildBuild.nodejs
+    # Two-stage build-tool source builds (e.g. happy + happy-lib, hsc2hs,
+    # staged via `buildToolSourceFrags`) compile with the native BUILD
+    # compiler, whose settings invoke bare `ar` and a wrapped `cc`/`ld`.  On a
+    # target whose stdenv ships no C toolchain (ghcjs), nothing else provides
+    # them, so a build-stage `.a` archive step fails ([Cabal-6666] "'ar' …
+    # could not be found") and a build-stage exe link fails ("ld: library not
+    # found for -liconv").  Add the full native (build-platform) cc wrapper: it
+    # puts `ar`/`ld`/`nm` on PATH (via its propagated bintools) AND wires the
+    # darwin default libs (libiconv, …) into the wrapper's search flags.  Only
+    # for build-tool slices; others are unchanged (empty list → byte-identical).
+    # `libiconv` too: `ghc-internal`/`base` list `extra-libraries: iconv` on
+    # darwin, so every build-stage exe link passes `-liconv`; a proper exe
+    # slice finds `libiconv.dylib` via its darwin stdenv, but a build-stage
+    # sub-build inside a ghcjs-target slice gets no native `-L` for it
+    # ("ld: library not found for -liconv").  Adding it as a build-platform
+    # native input puts `-L<libiconv>/lib` into the build wrapper's search.
+    ++ lib.optionals (buildToolSourceFrags != [])
+         [ pkgsBuildBuild.stdenv.cc pkgsBuildBuild.libiconv ]
     ++ extraNativeBuildInputs;
   # `depSlices` go in `propagatedBuildInputs` so stdenv chains each
   # slice's `nix-support/propagated-build-inputs` transitively.
@@ -504,6 +614,100 @@ stdenv.mkDerivation ({
         done < "$dep/nix-support/transitive-deps"
       fi
     done
+
+    # --- Staged store layout (stable-haskell cabal fork) --------------
+    # The fork's `v2-build` takes its install dirs and store package dbs
+    # from `distStoreDirLayout` — `<dist>/store/<stage>/<platform>/` with
+    # the db at `package.conf.d` — and its `--store-dir` flag no longer
+    # reaches project builds at all (DistDirLayout.hs
+    # `defaultStoreDirLayout`, ProjectPlanning.hs `computeInstallDirs` /
+    # `corePackageDbs`).  Mainline cabal instead installs under
+    # `--store-dir`'s `ghc-<ver>/` with the db at `package.db`.  Support
+    # both:
+    #
+    #  * The slice's dist dir is moved INTO `$out` (`--builddir=$distDir`
+    #    below) with its `store/` a relative symlink back to `$storeDir`
+    #    — so every path the fork bakes into artifacts (a Paths_ module's
+    #    datadir, .conf fields, RPATHs: all spelled
+    #    `$out/dist-newstyle/store/...`) resolves through a symlink that
+    #    lives in `$out` forever, and the store files themselves land in
+    #    `$storeDir` where the compose/capture protocol expects them.
+    #  * The fork plans every unit in a stage — `build` (runs on the
+    #    build machine: setup scripts, build tools) or `host` — and each
+    #    stage gets its own store dir.  Natively both stages are the
+    #    same toolchain and a unit's id is the same hash in either
+    #    stage, so symlink `build` → `host`: a unit captured once (from
+    #    its own slice, host stage) satisfies downstream build-stage
+    #    lookups (e.g. `Cabal` for a dep's setup script) without a
+    #    rebuild.  Cross stages differ by platform, so they still land
+    #    in separate `<platform>/` subdirs below the shared link.
+    #    (Both symlinks are inert for mainline cabal, which never looks
+    #    at `<dist>/store/`.)
+    distDir=$out/dist-newstyle
+    mkdir -p $distDir
+    ln -sfn ../store $distDir/store
+    mkdir -p $storeDir/host
+    if [ ! -e $storeDir/build ]; then
+      ln -sn host $storeDir/build
+    fi
+
+    # Locate the store dir cabal reads/writes package dbs in, for
+    # whichever of the two layouts is in play, setting:
+    #   ghcDir     — `<store>/ghc-<ver>` (mainline) or
+    #                `<store>/host/<platform>` (fork), "" if neither
+    #                exists yet (first slice, nothing composed)
+    #   storePkgDb — the db dir name under $ghcDir (`package.db` /
+    #                `package.conf.d`)
+    # Glob with `for` + `-d` tests, not `ls -d <glob> | head`: stdenv's
+    # setup.sh sets `shopt -s nullglob` globally, so an unmatched glob
+    # would leave `ls -d` with NO arguments — which lists the CURRENT
+    # dir, yielding the bogus `ghcDir="."`.  `for` just skips unmatched
+    # globs under nullglob (and the `-d` test rejects the literal
+    # pattern if nullglob were ever off).
+    # The compiler's platform dir name inside the staged store: the fork
+    # names it after the compiler's `--info` "Target platform"
+    # (DistDirLayout.hs `betterPlatform`).  On cross the composed store
+    # holds a SECOND platform dir — build-stage units (native) reached
+    # through the `build` → `host` link — so the host dir must be picked
+    # by name, not by glob order.
+    hostPlatformDir=$(${ghcBin} --info 2>/dev/null \
+      | sed -n 's/.*("Target platform","\([^"]*\)").*/\1/p' | head -1)
+
+    discoverStore() {
+      local d
+      ghcDir=""
+      storePkgDb=package.db
+      for d in $storeDir/ghc-*; do
+        [ -d "$d" ] || continue
+        ghcDir=$d
+        break
+      done
+      if [ -z "$ghcDir" ] && [ -n "$hostPlatformDir" ] \
+         && [ -d "$storeDir/host/$hostPlatformDir" ]; then
+        ghcDir=$storeDir/host/$hostPlatformDir
+        storePkgDb=package.conf.d
+      fi
+      if [ -z "$ghcDir" ]; then
+        # No dir matches the compiler's platform (or --info gave none).
+        # Natively there is exactly one platform dir — take it.  On cross
+        # the composed store also holds the build-stage (native) platform
+        # dir reached through the `build` → `host` link, so guessing by
+        # glob order could silently pick the wrong platform: fail instead.
+        local candidates=()
+        for d in $storeDir/host/*/; do
+          [ -d "$d" ] || continue
+          candidates+=("''${d%/}")
+        done
+        if [ "''${#candidates[@]}" -eq 1 ]; then
+          ghcDir=''${candidates[0]}
+          storePkgDb=package.conf.d
+        elif [ "''${#candidates[@]}" -gt 1 ]; then
+          echo "discoverStore: cannot identify the host platform dir in $storeDir/host" >&2
+          echo "  (ghc --info Target platform: '$hostPlatformDir'; candidates: ''${candidates[*]})" >&2
+          exit 1
+        fi
+      fi
+    }
     # `package.db` needs to be a writable directory (cabal/ghc-pkg
     # rewrite `package.cache`, recache, etc.).  After lndir it's a
     # dir of symlinks under a real dir — fine for adding files —
@@ -512,14 +716,30 @@ stdenv.mkDerivation ({
     # /nix/store paths (otherwise `ghc-pkg recache`'s `flock()`
     # fails with `hLock: invalid argument`).  Remove the symlinks;
     # ghc-pkg will create real files in their place.
-    ghcDirInitial=$(ls -d $storeDir/ghc-* 2>/dev/null | head -n1 || true)
-    if [ -n "$ghcDirInitial" ]; then
+    discoverStore
+    if [ -n "$ghcDir" ]; then
       for f in package.cache package.cache.lock; do
-        if [ -L "$ghcDirInitial/package.db/$f" ]; then
-          rm "$ghcDirInitial/package.db/$f"
+        if [ -L "$ghcDir/$storePkgDb/$f" ]; then
+          rm "$ghcDir/$storePkgDb/$f"
         fi
       done
     fi
+    ${lib.optionalString (buildToolSourceFrags != []) ''
+    # Build-stage tools built from source in-slice (happy/happy-lib, staged
+    # via `buildToolSourceFrags`) get registered by `ghc-pkg recache` into the
+    # BUILD-platform db (`store/host/<build-platform>`, reached through the
+    # `build`→`host` link) — a DIFFERENT platform dir than the cross target's
+    # that `discoverStore` fixes above.  Its `package.cache{,.lock}` are still
+    # composed as read-only symlinks into /nix/store, so the recache `flock()`
+    # fails with `hLock: invalid argument (Bad file descriptor)`.  Make EVERY
+    # composed platform db writable so build-stage registration can proceed.
+    for db in $storeDir/host/*/package.conf.d; do
+      [ -d "$db" ] || continue
+      for f in package.cache package.cache.lock; do
+        [ -L "$db/$f" ] && rm "$db/$f" || true
+      done
+    done
+    ''}
 
     ${lib.optionalString (buildToolBinOverlays != []) ''
       # Overlay each cross-target build-tool's `bin/<name>` in the
@@ -527,7 +747,9 @@ stdenv.mkDerivation ({
       # `buildToolBinOverlays` arg's doc-string.
       ${lib.concatMapStrings (e: ''
         shopt -s nullglob
-        for binFile in $storeDir/ghc-*/*-e-${e.name}-*/bin/${e.name}; do
+        for binFile in $storeDir/ghc-*/*-e-${e.name}-*/bin/${e.name} \
+                       $storeDir/host/*/*-e-${e.name}-*/bin/${e.name} \
+                       $storeDir/host/*/bin/${e.name}; do
           chmod u+w "$(dirname "$binFile")" 2>/dev/null || true
           rm -f "$binFile"
           cp -L ${e.buildSlice}/bin/${e.name} "$binFile"
@@ -536,16 +758,45 @@ stdenv.mkDerivation ({
         shopt -u nullglob
       '') buildToolBinOverlays}
     ''
-    }# Snapshot existing unit filenames so we can identify new ones later.
-    ghcDir=$(ls -d $storeDir/ghc-* 2>/dev/null | head -n1 || true)
-    if [ -n "$ghcDir" ] && [ -d "$ghcDir/package.db" ]; then
-      # No chmod needed — `package.db` is a real dir from lndir,
+    }${lib.optionalString (allowedSiblingUnitPrefix != null) ''
+      # Local-`packages:` slice: evict composed units of the TARGET
+      # package itself.  cabal never satisfies an intra-package dep
+      # from an installed unit — a local target's sibling components
+      # always build in-slice — so the composed twins are unusable,
+      # and the fork's staged install would collide with their
+      # read-only conf / `units/` receipt symlinks when it registers
+      # the in-slice rebuilds under the same deterministic ids
+      # (`withFile: permission denied` on `units/<pkgid>-<comp>`).
+      # The sibling SLICES stay composed for everything else they
+      # carry (their transitive dep closure, repo fragments).
+      discoverStore
+      if [ -n "$ghcDir" ] && [ -d "$ghcDir/$storePkgDb" ]; then
+        sibling_pkgid=${lib.escapeShellArg allowedSiblingUnitPrefix}
+        shopt -s nullglob
+        for conf in "$ghcDir/$storePkgDb/$sibling_pkgid.conf" \
+                    "$ghcDir/$storePkgDb/$sibling_pkgid"-*.conf; do
+          [ -L "$conf" ] || continue      # composed symlink, not ours
+          uid=$(basename "''${conf%.conf}")
+          echo "evicting composed same-package unit: $uid"
+          rm "$conf"
+          rm -f "$ghcDir/units/$uid"
+          if [ -d "$ghcDir/$uid" ]; then
+            chmod -R u+w "$ghcDir/$uid" 2>/dev/null || true
+            rm -rf "$ghcDir/$uid"
+          fi
+        done
+        shopt -u nullglob
+      fi
+    ''}# Snapshot existing unit filenames so we can identify new ones later.
+    discoverStore
+    if [ -n "$ghcDir" ] && [ -d "$ghcDir/$storePkgDb" ]; then
+      # No chmod needed — the db dir is a real dir from lndir,
       # and the `.conf` entries in it are symlinks pointing at
       # read-only /nix/store paths.  ghc-pkg recache only needs to
       # write `package.cache`, which doesn't exist yet (we removed
       # any symlinked one above).
-      ${ghcPkgBin} --package-db=$ghcDir/package.db recache
-      ( cd $ghcDir/package.db && ls *.conf 2>/dev/null ) > $buildRoot/confs-before || true
+      ${ghcPkgBin} --package-db=$ghcDir/$storePkgDb recache
+      ( cd $ghcDir/$storePkgDb && ls *.conf 2>/dev/null ) > $buildRoot/confs-before || true
 
       # Also snapshot the flat <ghcDir>/lib/ that cabal uses for
       # dylibs.  See installPhase for how this is used to emit only
@@ -554,6 +805,15 @@ stdenv.mkDerivation ({
         ( cd $ghcDir/lib && ls 2>/dev/null ) > $buildRoot/lib-before || true
       else
         : > $buildRoot/lib-before
+      fi
+
+      # And the flat <ghcDir>/bin/ — the staged layout installs every
+      # unit's executables there (`bindir = pkgroot </> "bin"`, flat,
+      # not per-unit), so new entries can only be identified by diff.
+      if [ -d "$ghcDir/bin" ]; then
+        ( cd $ghcDir/bin && ls 2>/dev/null ) > $buildRoot/bin-before || true
+      else
+        : > $buildRoot/bin-before
       fi
 
       # Snapshot all unit directories (not just those with .conf).
@@ -573,7 +833,106 @@ stdenv.mkDerivation ({
     else
       : > $buildRoot/confs-before
       : > $buildRoot/lib-before
+      : > $buildRoot/bin-before
       : > $buildRoot/unitdirs-before
+    fi
+
+    # --- Solver visibility of composed units (staged store layout) ---
+    # The stable-haskell fork dropped cabal's store-entry reuse
+    # (Store.hs is dead code in it): a unit only avoids `(requires
+    # build)` if the SOLVER already sees it as INSTALLED in the
+    # toolchain's package db — the same mechanism the fork's stage
+    # system uses for boot libraries.  GHC itself needs no help
+    # (cabal passes the dist store db — our composed store, through
+    # the `$distDir/store` symlink — on every ghc command line), but
+    # the solver's installed-package index comes from `ghc-pkg dump
+    # --global`.  Prepend a tool dir whose ghc-pkg re-points the
+    # stage-compiler's (empty) global db at the composed db: the
+    # compiler's own ghc-pkg wrapper puts its baked
+    # `--global-package-db` BEFORE "$@", and ghc-pkg's flag handling
+    # is last-wins, so appending ours overrides it.  Every other tool
+    # is symlinked alongside so cabal's near-compiler discovery
+    # (haddock, hsc2hs, ...) keeps working.  Unit-id hashes are
+    # unaffected: `pkgHashPackageDbs` stays `[GlobalPackageDB]` (no
+    # path enters the hash).
+    composedDb=""
+    if [ -n "$ghcDir" ] && [ "$storePkgDb" = package.conf.d ]; then
+      composedDb=$ghcDir/$storePkgDb
+      ${lib.optionalString solverIncludesGlobalDb ''
+        # Consumer-style slice (it has `pre-existing` deps): the real
+        # global db must STAY in the solver's installed index alongside
+        # the composed units — the composed-db override below would
+        # otherwise make every boot lib unknown to the solver
+        # ("unknown package: base").  Inject each global conf into the
+        # composed db as a SYMLINK to a `''${pkgroot}`-resolved copy
+        # under $buildRoot: symlinked confs are invisible to the
+        # slice's unit capture (which keys on real files), and the
+        # installPhase drops them again so nothing dangling ships in
+        # $out.  Snapshot-only is fine — the solver's installed index
+        # is read once, up front.  (Stage-style slices —
+        # `v2LocalPackageSlices`, no pre-existing deps — keep the
+        # composed-only view: the previous stage compiler's global db
+        # carries unrelated registrations the solver must not see.)
+        libdir=$(${ghcBin} --print-libdir)
+        globalSnap=$buildRoot/global-conf-snapshot
+        mkdir -p $globalSnap
+        shopt -s nullglob
+        # name-version index of the composed units: a composed instance
+        # means plan-nix chose a REINSTALLED unit for that package
+        # version, so the boot instance of the SAME name+version must
+        # not become a second installed candidate — the solver could
+        # satisfy an `installed` pin with the boot copy and fork every
+        # dependent's unit-id (leksah: composed haddock-library-1.11.0
+        # reinstall vs the compiler's boot haddock-library-1.11.0).
+        # Different VERSIONS stay visible: `==` pins steer those (e.g.
+        # a composed setup-scope Cabal-3.16 alongside boot Cabal-3.17).
+        composedNV=$buildRoot/composed-name-versions
+        : > $composedNV
+        for conf in "$composedDb"/*.conf; do
+          [ -e "$conf" ] || continue
+          awk '/^name:/{n=$2} /^version:/{v=$2} END{if(n!="")print n"-"v}' \
+            "$conf" >> $composedNV
+        done
+        for conf in "$libdir/package.conf.d"/*.conf; do
+          confBase=$(basename "$conf")
+          [ -e "$composedDb/$confBase" ] && continue
+          nv=$(awk '/^name:/{n=$2} /^version:/{v=$2} END{if(n!="")print n"-"v}' "$conf")
+          if [ -n "$nv" ] && grep -qx -- "$nv" $composedNV; then
+            echo "skipping boot conf shadowed by composed reinstall: $confBase"
+            continue
+          fi
+          sed "s|\''${pkgroot}|$libdir|g" "$conf" > "$globalSnap/$confBase"
+          ln -s "$globalSnap/$confBase" "$composedDb/$confBase"
+        done
+        shopt -u nullglob
+        ${ghcPkgBin} --package-db=$composedDb recache
+      ''}
+      wrapBin=$buildRoot/solver-tools
+      mkdir -p $wrapBin
+      realGhcBinDir=$(dirname "$(type -P ${ghcBin})")
+      for tool in "$realGhcBinDir"/*; do
+        ln -sf "$tool" "$wrapBin/$(basename "$tool")"
+      done
+      # ghc must be a real file, not a symlink: Cabal's
+      # `guessToolFromGhcPath` canonicalizes the configured ghc path
+      # and tries the REAL dir's ghc-pkg first (cabal#7390) — which
+      # would find the compiler's own ghc-pkg and skip our override.
+      for g in "$realGhcBinDir"/${ghcBin} "$realGhcBinDir"/${ghcBin}-[0-9]*; do
+        [ -e "$g" ] || continue
+        gName=$(basename "$g")
+        rm -f "$wrapBin/$gName"
+        printf '#!/bin/sh\nexec %s "$@"\n' "$g" > "$wrapBin/$gName"
+        chmod +x "$wrapBin/$gName"
+      done
+      for gp in "$realGhcBinDir"/${ghcPkgBin}*; do
+        [ -e "$gp" ] || continue
+        gpName=$(basename "$gp")
+        rm -f "$wrapBin/$gpName"
+        printf '#!/bin/sh\nexec %s --global-package-db %s "$@"\n' \
+          "$gp" "$composedDb" > "$wrapBin/$gpName"
+        chmod +x "$wrapBin/$gpName"
+      done
+      export PATH=$wrapBin:$PATH
     fi
 
     # --- CABAL_DIR and optional local-repo ---------------------------
@@ -640,7 +999,7 @@ stdenv.mkDerivation ({
           tar -xOzf ${v2Fragment.tarball} \
             ${v2Fragment.pkgName}-${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal \
             > $v2idx/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal
-        ''}
+        ''}${extraFragStaging}
       # Dep closure repo-frags (direct + transitive — same walk as store).
       for dep in "''${pkgsHostTarget[@]}"; do
         addRepoFrag "$dep"
@@ -746,6 +1105,20 @@ stdenv.mkDerivation ({
       # dedups via `sliceCanonicalNames` / `libConstraintPins` (by name).
       sortedByName() { local f; for f in "$@"; do printf '%s\t%s\n' "$(cat "$f"/nix-support/v2-frag/pkg-name)" "$f"; done | sort -t"$(printf '\t')" -k1,1 -u; }
 
+      # Is `<pkg> ==<ver>` (a fragment's version pin) already composed
+      # into the staged store db?  Used below to route such deps through
+      # the solver's installed-package index instead of the slicing repo
+      # (empty-safe: composedDb is "" outside the staged layout).
+      isComposedDep() {
+        local vpin=$1 pv depConf
+        [ -n "$composedDb" ] || return 1
+        pv=''${vpin/ ==/-}
+        for depConf in "$composedDb/$pv.conf" "$composedDb/$pv-"*.conf; do
+          [ -e "$depConf" ] && return 0
+        done
+        return 1
+      }
+
       {
         # extra-packages: self entry first, then lib-dep pins (name-sorted).
         epline=""; epsep=""
@@ -764,7 +1137,14 @@ stdenv.mkDerivation ({
           # (below), not extra-packages — listing both makes the solver
           # consider the tarball candidate and fork the UnitId.
           [ -s "$f/nix-support/v2-frag/source-repo-block" ] && continue
-          c=$(cat "$f"/nix-support/v2-frag/constraint); epline="$epline$epsep''${c%%,*}"; epsep=", "
+          c=$(cat "$f"/nix-support/v2-frag/constraint)
+          # An `extra-packages:` entry is a BUILD goal — the solver must
+          # produce it from source, so an `installed` pin on it is
+          # unsatisfiable.  Deps already composed into the staged store
+          # db are reused as installed instances (see the constraints
+          # loop below) and must NOT be listed here.
+          isComposedDep "''${c%%,*}" && continue
+          epline="$epline$epsep''${c%%,*}"; epsep=", "
         done < <(sortedByName "''${libFrags[@]}")
         [ -n "$epline" ] && echo "extra-packages: $epline"
 
@@ -781,7 +1161,20 @@ stdenv.mkDerivation ({
           # `packages:` target); don't re-pin it from its `ownLibSlice`
           # fragment.
           [ "$name" = ${lib.escapeShellArg v2Fragment.pkgName} ] && continue
-          echo "constraints: $(cat "$f"/nix-support/v2-frag/constraint)"
+          c=$(cat "$f"/nix-support/v2-frag/constraint)
+          # Fragment pins are `<pkg> ==<ver>, <pkg> source` — the
+          # `source` half made mainline cabal solve the dep from
+          # source with plan-nix's unit-id, and the store-improvement
+          # layer then skipped the actual rebuild.  The stable-haskell
+          # fork has no such layer (see the solver-visibility block
+          # above): when the dep's unit is already composed into the
+          # store db, pin it `installed` instead so the solver reuses
+          # that exact unit (its conf carries plan-nix's unit-id, so
+          # downstream `--dependency=` hashes are unchanged).
+          if isComposedDep "''${c%%,*}"; then
+            c="''${c%%,*}, $name installed"
+          fi
+          echo "constraints: $c"
         done < <(sortedByName "''${libFrags[@]}")
 
         # Per-package custom-setup pins (`<pkg>:setup.<dep> ==<ver>`),
@@ -796,7 +1189,17 @@ stdenv.mkDerivation ({
         # source-repository-package blocks for source-repo packages in
         # the closure (deduped by name) — e.g. lib:ghc via useLocalGhcLib.
         while IFS=$'\t' read -r name f; do
-          [ -s "$f/nix-support/v2-frag/source-repo-block" ] && cat "$f/nix-support/v2-frag/source-repo-block" || true
+          [ -s "$f/nix-support/v2-frag/source-repo-block" ] || continue
+          # A source-repository-package block makes the package LOCAL —
+          # always solved from source — which contradicts the `installed`
+          # pin the constraints loop gives deps already composed into
+          # the staged store db.  Skip the block for those; the slice's
+          # own target keeps its block (it must build from source).
+          if [ "$name" != ${lib.escapeShellArg v2Fragment.pkgName} ]; then
+            c=$(cat "$f"/nix-support/v2-frag/constraint)
+            isComposedDep "''${c%%,*}" && continue
+          fi
+          cat "$f/nix-support/v2-frag/source-repo-block"
         done < <(sortedByName "''${blkFrags[@]}")
       } > cabal.project.closure
 
@@ -851,7 +1254,12 @@ stdenv.mkDerivation ({
     # them and falls back to "near compiler" lookup, which fails for
     # cross GHCs that ship only prefixed binaries).
     cabalGlobalArgs="--store-dir=$storeDir"
-    cabalCmdArgs="${crossWithFlags}${withProgFlags}"
+    # `--builddir=$distDir` puts the dist tree in $out so paths the
+    # stable-haskell fork bakes from `distStoreDirLayout` stay valid
+    # after the build (see the staged-store-layout comment above).
+    # comp-v2-builder's `trimDistNewstyle` clears the bulk out of $out
+    # again, keeping the `store` symlink.
+    cabalCmdArgs="--builddir=$distDir ${crossWithFlags}${twoStageFlags}${withProgFlags}"
     # Match v1's `-j` behaviour: cap GHC's per-module parallelism at
     # 4 even when nix gives us more cores.  Going much wider tends to
     # thrash memory on big modules (cardano-ledger templates,
@@ -902,6 +1310,21 @@ stdenv.mkDerivation ({
         capturing && /^$/ { capturing=0; next }
         capturing && /^ - / {
           pkg_ver = $2
+          # The stable-haskell Cabal fork prints the plan with a per-unit stage
+          # qualifier when a slice runs in two-stage mode (`--with-build-compiler`
+          # present → "Toolchains: build/host"):
+          #   ` - host rts-headers-1.0.3 (lib) (requires build)`
+          # so the `<name>-<version>` token is $3, not $2.  Skip a leading stage
+          # keyword.  (A real package is never named exactly build/host/target.)
+          #
+          # BUILD-stage units are tolerated wholesale: the fork elaborates
+          # build tools (and their setup-style deps, e.g. the Cabal fork
+          # for Custom setups) as inplace units of the consuming plan, so
+          # the first slice that needs one legitimately builds it into the
+          # composed store (where unit receipts let later slices reuse it).
+          # Only HOST-stage extras indicate a real composition failure.
+          if (pkg_ver == "build") next
+          if (pkg_ver == "host" || pkg_ver == "target") pkg_ver = $3
           n = split(pkg_ver, parts, "-")
           for (i = n; i > 0; i--) if (parts[i] ~ /^[0-9]+(\.[0-9]+)*$/) break
           if (i <= 1) { name = pkg_ver }
@@ -980,7 +1403,7 @@ stdenv.mkDerivation ({
           echo "" >&2
           echo "  Pre-installed unit(s) for $pkg in the starting store:" >&2
           found=0
-          for conf in $ghcDir/package.db/*.conf; do
+          for conf in $ghcDir/$storePkgDb/*.conf; do
             [ -L "$conf" ] || continue
             pname=$(awk '$1=="name:"{print $2; exit}' "$conf")
             [ "$pname" = "$pkg" ] || continue
@@ -1058,14 +1481,17 @@ stdenv.mkDerivation ({
         tgt_pkg=$(printf '%s' ${lib.escapeShellArg target} | awk -F: '{print $3}')
         tgt_cname=$(printf '%s' ${lib.escapeShellArg target} | awk -F: '{print $5}')
         if [ "$tgt_cname" != "$tgt_pkg" ]; then
-          sublib_html_src=$(find $buildRoot/project/dist-newstyle/tmp \
+          sublib_html_src=$(find $distDir/tmp \
                               -path "*/dist/doc/html/$tgt_pkg/$tgt_cname" \
                               -type d -print -quit 2>/dev/null || true)
           if [ -n "$sublib_html_src" ]; then
             # The sublib's conf was just written by `cabal v2-build`'s
             # register step before `v2-haddock` ran; find its uid by
-            # the cabal-mangled `z-<pkg>-z-<sublib>` name.
-            for conf in $out/store/ghc-*/package.db/*.conf; do
+            # the cabal-mangled `z-<pkg>-z-<sublib>` name.  Re-discover
+            # first: if the composed starting store was empty, cabal
+            # created the store dir during the build we just ran.
+            discoverStore
+            for conf in $ghcDir/$storePkgDb/*.conf; do
               [ -e "$conf" ] || continue
               if [ "$(awk '/^name:/ {print $2; exit}' "$conf")" \
                    = "z-$tgt_pkg-z-$tgt_cname" ]; then
@@ -1117,7 +1543,7 @@ stdenv.mkDerivation ({
       esac
     done
 
-    actualPlan=$buildRoot/project/dist-newstyle/cache/plan.json
+    actualPlan=$distDir/cache/plan.json
     if [ -f "$actualPlan" ]; then
       cp "$actualPlan" $out/plan.json
     fi
@@ -1185,17 +1611,47 @@ stdenv.mkDerivation ({
     # are ours; symlinks are dep-slice content that we just leave
     # in place so downstream consumers can follow them back to the
     # original dep slices.
-    ghcDir=$(ls -d $out/store/ghc-* 2>/dev/null | head -n1 || true)
+    # Drop the staged-layout compose symlink (`build` → `host`) before
+    # anything walks `$out/store`: it is re-created by every consuming
+    # slice's compose step, and leaving it here would make `lndir`
+    # traverse the store twice downstream (materialising `build/` as a
+    # real directory that then shadows the shared link).
+    if [ -L $out/store/build ]; then
+      rm $out/store/build
+    fi
+    # The fork's staged install leaves `<unit>.lock` files directly in
+    # the store dir (its `storeIncomingDirectory` IS the store dir);
+    # they're staging debris like `incoming/` below.
+    rm -f $out/store/host/*/*.lock 2>/dev/null || true
+    # `host/` was pre-created for the stage-unifying `build` link; with
+    # the mainline (ghc-*) layout it stays empty — drop it (rmdir only
+    # removes empty dirs).
+    rmdir $out/store/host 2>/dev/null || true
+    discoverStore
     if [ -z "$ghcDir" ]; then
       rm -rf $out/store
       mkdir -p $out
     else
+      ${lib.optionalString solverIncludesGlobalDb ''
+        # Drop the solver-visibility global-conf symlinks injected at
+        # the start of the buildPhase (see the block above the
+        # solver-tools wrapper) — they point into $buildRoot and would
+        # ship dangling.  Symlinks only; real confs are the slice's own.
+        shopt -s nullglob
+        for conf in $ghcDir/$storePkgDb/*.conf; do
+          [ -L "$conf" ] || continue
+          case "$(readlink "$conf")" in
+            "$buildRoot"/global-conf-snapshot/*) rm "$conf" ;;
+          esac
+        done
+        shopt -u nullglob
+      ''}
       : > $buildRoot/captured-unit-ids
 
       # ---- Walk new confs --------------------------------------
       # Real files (not symlinks) are units cabal installed in this
       # slice.  Record them as captured.
-      for conf in $ghcDir/package.db/*.conf; do
+      for conf in $ghcDir/$storePkgDb/*.conf; do
         [ -e "$conf" ] || continue
         [ -L "$conf" ] && continue        # dep-slice symlink, not ours
         base=$(basename $conf)
@@ -1209,21 +1665,114 @@ stdenv.mkDerivation ({
       # directories full of symlinked files.  A "new" unit dir is
       # one that didn't exist before cabal ran (recorded in the
       # `unitdirs-before` snapshot).  Record bin-only units (exe /
-      # test / bench, no .conf in package.db) as captured.
+      # test / bench, no .conf in the package db) as captured.
       for unitDir in $ghcDir/*/; do
         [ -d "$unitDir" ] || continue
         unitId=$(basename "$unitDir")
         case "$unitId" in
-          lib|package.db|incoming) continue ;;
+          # `bin` and `etc` are the staged layout's flat bindir /
+          # sysconfdir, not unit dirs.
+          lib|bin|etc|units|package.db|package.conf.d|incoming) continue ;;
         esac
         if grep -qx -- "$unitId" $buildRoot/unitdirs-before 2>/dev/null; then
           continue
         fi
-        if [ ! -f $ghcDir/package.db/$unitId.conf ]; then
+        if [ ! -f $ghcDir/$storePkgDb/$unitId.conf ]; then
           echo "$unitId" >> $buildRoot/captured-unit-ids
           echo "captured store unit: $unitId (bin-only)"
         fi
       done
+
+      # ---- Walk new flat-bin executables -----------------------
+      # The stable-haskell fork's staged layout installs exe units
+      # into the FLAT `<ghcDir>/bin/` (`bindir = pkgroot </> "bin"`),
+      # not a per-unit dir — so an exe the slice built is invisible
+      # to both walks above (no `.conf`, no new unit dir).  Identify
+      # new entries by diff against the `bin-before` snapshot and map
+      # each to its unit id through the slice's own elaborated plan.
+      if [ -d "$ghcDir/bin" ] && [ -f "$distDir/cache/plan.json" ]; then
+        ( cd $ghcDir/bin && ls 2>/dev/null ) > $buildRoot/bin-after || true
+        while IFS= read -r newBin; do
+          [ -n "$newBin" ] || continue
+          # HOST-stage entries only: the dir we diffed is the HOST
+          # staged store, and in a two-stage plan the same exe name can
+          # exist in both stages under different unit ids.
+          uid=$(jq -r --arg exe "exe:$newBin" \
+            '.["install-plan"][]
+             | select(.["component-name"] == $exe and ((.stage // "host") == "host"))
+             | .id' \
+            "$distDir/cache/plan.json" 2>/dev/null | head -n1)
+          # The fork's elaborated plan carries a stage prefix on unit
+          # ids (`host:alex-…`); store paths, confs, and plan-nix all
+          # use the bare id — strip it.
+          uid=''${uid#host:}
+          uid=''${uid#build:}
+          if [ -n "$uid" ] && [ "$uid" != "null" ] \
+             && ! grep -qx -- "$uid" $buildRoot/captured-unit-ids; then
+            echo "$uid" >> $buildRoot/captured-unit-ids
+            echo "captured store unit: $uid (flat bin)"
+          fi
+        done < <(comm -13 <(sort $buildRoot/bin-before) <(sort $buildRoot/bin-after))
+      fi
+
+      # ---- BUILD-stage units captured this build ----------------
+      # The fork stage-qualifies every goal; SETUP scopes (and build
+      # tools) are BUILD-stage.  A custom setup that `setup-depends`
+      # on a local/inplace-style package — the haskell-gi family,
+      # where gi-gmodule's Setup imports gi-glib — makes cabal plan
+      # and build a BUILD-stage copy of that dep in-slice, by design
+      # (the same in-slice tool building the two-stage cross plans
+      # do; plan-nix's make-install-plan elaborates the same way, so
+      # the slice's own unit id is unaffected — its HOST lib deps
+      # still resolve to the composed units).  On native the stage-
+      # unifying store link makes those units land in the host store
+      # dir, so the walks above capture them.  Record their bare ids
+      # so the unit-id checks below can tolerate them.
+      : > $buildRoot/build-stage-unit-ids
+      : > $buildRoot/host-stage-unit-ids
+      if [ -f "$distDir/cache/plan.json" ]; then
+        jq -r '.["install-plan"][]
+               | select(.stage == "build")
+               | .id | sub("^(host|build):"; "")' \
+          "$distDir/cache/plan.json" 2>/dev/null | sort -u \
+          > $buildRoot/build-stage-unit-ids || true
+        jq -r '.["install-plan"][]
+               | select((.stage // "host") == "host")
+               | .id | sub("^(host|build):"; "")' \
+          "$distDir/cache/plan.json" 2>/dev/null | sort -u \
+          > $buildRoot/host-stage-unit-ids || true
+      fi
+
+      # ---- Evict BUILD-stage byproducts from $out ----------------
+      # They exist so THIS slice's setup / build tools could run;
+      # SHIPPING them poisons downstream slices: a consumer's fork
+      # sees the plan-id conf already installed and skips its own
+      # in-slice build-stage build, but byproducts don't reliably
+      # carry their files through consumer-of-consumer composition
+      # (leksah: haskell-gi's setup compile found a stale
+      # cabal-doctest conf with no files behind it).  Consuming
+      # slices rebuild build-stage goals from the composed repo
+      # source instead — exactly what two-stage cross plans do.
+      # Deterministic-id packages can appear in BOTH stages of the
+      # slice's plan under one bare id — never evict those (the
+      # host unit owns the id in the store).
+      if [ -s $buildRoot/build-stage-unit-ids ]; then
+        while IFS= read -r uid; do
+          [ -n "$uid" ] || continue
+          grep -qx -- "$uid" $buildRoot/host-stage-unit-ids && continue
+          grep -qx -- "$uid" $buildRoot/captured-unit-ids || continue
+          echo "evicting build-stage byproduct: $uid"
+          rm -f "$ghcDir/$storePkgDb/$uid.conf"
+          rm -f "$ghcDir/units/$uid"
+          if [ -d "$ghcDir/$uid" ]; then
+            chmod -R u+w "$ghcDir/$uid" 2>/dev/null || true
+            rm -rf "$ghcDir/$uid"
+          fi
+          grep -vx -- "$uid" $buildRoot/captured-unit-ids \
+            > $buildRoot/captured-unit-ids.tmp || true
+          mv $buildRoot/captured-unit-ids.tmp $buildRoot/captured-unit-ids
+        done < $buildRoot/build-stage-unit-ids
+      fi
 
       # ---- Drop cabal's `incoming/` staging area ---------------
       # `incoming/` is cabal's per-build install staging dir and
@@ -1239,7 +1788,7 @@ stdenv.mkDerivation ({
         rm -rf "$ghcDir/incoming"
       fi
 
-      if [ -z "$(ls $ghcDir/package.db/ 2>/dev/null)" ] \
+      if [ -z "$(ls $ghcDir/$storePkgDb/ 2>/dev/null)" ] \
          && [ "$(ls $ghcDir/ 2>/dev/null | wc -l)" -le 1 ]; then
         rm -rf $out/store
       else
@@ -1248,12 +1797,17 @@ stdenv.mkDerivation ({
         # so the conf is relocatable when downstream slices
         # re-compose it.  We only touch real (non-symlink) confs —
         # dep-slice confs were already rewritten by their producing
-        # slice.
-        storePrefix="$out/store/$(basename $ghcDir)"
-        for conf in $ghcDir/package.db/*.conf; do
+        # slice.  Two spellings can appear: the physical `$ghcDir`
+        # (mainline, baked from `--store-dir`) and the dist-store
+        # route through the `$distDir/store` symlink (the fork bakes
+        # everything from `distStoreDirLayout`).
+        storePrefix="$ghcDir"
+        distStorePrefix="$distDir/store/''${ghcDir#$out/store/}"
+        for conf in $ghcDir/$storePkgDb/*.conf; do
           [ -e "$conf" ] || continue
           [ -L "$conf" ] && continue
-          sed -i "s|$storePrefix|\''${pkgroot}|g" $conf
+          sed -i -e "s|$distStorePrefix|\''${pkgroot}|g" \
+                 -e "s|$storePrefix|\''${pkgroot}|g" $conf
           ${lib.optionalString (confLibraryDirs != []) ''
             # Append the slice's foreign-lib paths (from
             # `component.libs` — openssl, libsodium, ...) to the
@@ -1278,14 +1832,14 @@ stdenv.mkDerivation ({
             done
           ''}
         done
-        ${ghcPkgBin} --package-db=$ghcDir/package.db recache
+        ${ghcPkgBin} --package-db=$ghcDir/$storePkgDb recache
       fi
     fi
 
-    # Also expose dist-newstyle so callers can grab exes etc.
-    if [ -d $buildRoot/project/dist-newstyle ]; then
-      cp -r $buildRoot/project/dist-newstyle $out/dist-newstyle
-    fi
+    # dist-newstyle is already in $out — the build ran with
+    # `--builddir=$distDir` — so callers can grab exes etc. from it
+    # directly (comp-v2-builder's `trimDistNewstyle` clears the bulk
+    # later, keeping the `store` symlink and lifting plan.json).
 
     # `cabal v2-haddock` writes html into the haddocked unit's
     # `$out/store/<ghc>/<unit-id>/share/doc/html/` — the same
@@ -1329,7 +1883,7 @@ stdenv.mkDerivation ({
       # own --cid unit, which is exactly where cabal v2-haddock
       # installed them.
       target_uid=
-      for conf in $out/store/ghc-*/package.db/*.conf; do
+      for conf in $ghcDir/$storePkgDb/*.conf; do
         [ -e "$conf" ] || continue
         [ -L "$conf" ] && continue
         name_in_conf=$(awk '/^name:/ {print $2; exit}' "$conf")
@@ -1339,10 +1893,10 @@ stdenv.mkDerivation ({
         fi
       done
       if [ -n "$target_uid" ]; then
-        for unit_dir in $out/store/ghc-*/*/; do
+        for unit_dir in $ghcDir/*/; do
           uid=$(basename "$unit_dir")
           case "$uid" in
-            package.db|incoming|lib) continue ;;
+            package.db|package.conf.d|incoming|lib|bin|etc|units) continue ;;
           esac
           if [ "$uid" != "$target_uid" ] && [ -d "$unit_dir/share/doc" ]; then
             chmod -R u+w "$unit_dir/share/doc" 2>/dev/null || true
@@ -1457,8 +2011,8 @@ stdenv.mkDerivation ({
     # ("Keeping existing link to ..." spam scaling O(deps) per
     # consumer).  Cheaper to delete now and let downstream recreate.
     if [ -n "$ghcDir" ]; then
-      rm -f $ghcDir/package.db/package.cache \
-            $ghcDir/package.db/package.cache.lock
+      rm -f $ghcDir/$storePkgDb/package.cache \
+            $ghcDir/$storePkgDb/package.cache.lock
     fi
 
     # Clear dep-slice content out of $out/store now that this slice's
@@ -1515,6 +2069,12 @@ stdenv.mkDerivation ({
             local IFS=':'
             for entry in $old; do
               [ -n "$entry" ] || continue
+              # Normalise the fork's dist-store spelling (baked via
+              # the `$distDir/store` symlink) to the physical store
+              # path before matching.
+              if [[ "$entry" == "$distDir/store/"* ]]; then
+                entry="$out/store/''${entry#$distDir/store/}"
+              fi
               if [[ "$entry" == "$out/store/"* ]]; then
                 resolved=""
                 local found=0
@@ -1555,14 +2115,21 @@ stdenv.mkDerivation ({
                   in_rpath && /path / { print $2 }
                 ') || return 0
             [ -n "$rpaths" ] || return 0
-            local old new resolved child tgt
+            local old phys new resolved child tgt
             while IFS= read -r old; do
               [ -n "$old" ] || continue
-              if [[ "$old" == "$out/store/"* ]]; then
+              # Normalise the fork's dist-store spelling for matching /
+              # resolution; keep `$old` verbatim — install_name_tool
+              # needs the exact recorded string as its OLD argument.
+              phys="$old"
+              if [[ "$phys" == "$distDir/store/"* ]]; then
+                phys="$out/store/''${phys#$distDir/store/}"
+              fi
+              if [[ "$phys" == "$out/store/"* ]]; then
                 resolved=""
                 local found=0
                 shopt -s nullglob
-                for child in "$old"/*; do
+                for child in "$phys"/*; do
                   [ -L "$child" ] || continue
                   tgt=$(readlink -f "$child" 2>/dev/null) || continue
                   [ -n "$tgt" ] || continue
@@ -1601,11 +2168,14 @@ stdenv.mkDerivation ({
       )
       for own_uid in "''${own_uids[@]}"; do
         [ -n "$own_uid" ] || continue
-        unit_dir="$ghcDir/$own_uid"
-        [ -d "$unit_dir" ] || continue
-        while IFS= read -r -d "" f; do
-          rewrite_file_rpaths "$f"
-        done < <(find "$unit_dir" -type f "''${rpath_candidates[@]}" -print0)
+        # Per-unit content lives at `<ghcDir>/<uid>/` (mainline) or
+        # `<ghcDir>/lib/<uid>/` (staged layout).
+        for unit_dir in "$ghcDir/$own_uid" "$ghcDir/lib/$own_uid"; do
+          [ -d "$unit_dir" ] || continue
+          while IFS= read -r -d "" f; do
+            rewrite_file_rpaths "$f"
+          done < <(find "$unit_dir" -type f "''${rpath_candidates[@]}" -print0)
+        done
       done
       if [ -d "$ghcDir/lib" ]; then
         while IFS= read -r -d "" f; do
@@ -1617,39 +2187,74 @@ stdenv.mkDerivation ({
       # restore them.  Cheaper than walking the tree.  Keepers per
       # captured unit:
       #   * `$ghcDir/<uid>/`             — per-unit lib/share/etc.
-      #   * `$ghcDir/package.db/<uid>.conf` — pkg-db entry
+      #     (mainline layout)
+      #   * `$ghcDir/lib/<uid>/`         — per-unit content in the
+      #     staged layout (`libdir = pkgroot </> "lib" </> uid`,
+      #     with include/, share/, the static .a etc. inside)
+      #   * `$ghcDir/<pkg-db>/<uid>.conf` — pkg-db entry
       #   * `$ghcDir/lib/libHS<uid>-*.{dylib,so,a}` — the flat
       #     shared lib cabal puts in `$ghcDir/lib/` alongside the
-      #     per-unit dir.  Without this, downstream consumers
-      #     can't find the dylib at link time.
+      #     per-unit dir (both layouts).  Without this, downstream
+      #     consumers can't find the dylib at link time.
+      # Plus (staged layout, not per-uid): every NEW file in the flat
+      # `$ghcDir/bin/` (`bindir = pkgroot </> "bin"`, shared across
+      # units) — identified by diff against the `bin-before`
+      # snapshot, since flat bin entries can't be attributed to a
+      # unit by name.
       if [ ''${#own_uids[@]} -gt 0 ] \
          && ! { [ ''${#own_uids[@]} -eq 1 ] && [ -z "''${own_uids[0]}" ]; }; then
         side=$buildRoot/keep
-        mkdir -p "$side/package.db" "$side/lib"
+        mkdir -p "$side/$storePkgDb" "$side/lib" "$side/bin" "$side/units"
         shopt -s nullglob
         for keep in "''${own_uids[@]}"; do
           [ -n "$keep" ] || continue
           if [ -e "$ghcDir/$keep" ]; then
             mv "$ghcDir/$keep" "$side/$keep"
           fi
-          if [ -e "$ghcDir/package.db/$keep.conf" ]; then
-            mv "$ghcDir/package.db/$keep.conf" "$side/package.db/$keep.conf"
+          if [ -e "$ghcDir/lib/$keep" ]; then
+            mv "$ghcDir/lib/$keep" "$side/lib/$keep"
+          fi
+          if [ -e "$ghcDir/$storePkgDb/$keep.conf" ]; then
+            mv "$ghcDir/$storePkgDb/$keep.conf" "$side/$storePkgDb/$keep.conf"
+          fi
+          # Unit receipt (fork layout): must be kept for exactly the
+          # units whose content the slice keeps — a receipt without its
+          # unit would make a downstream improvement pass mark a
+          # missing unit Installed.
+          if [ -e "$ghcDir/units/$keep" ]; then
+            mv "$ghcDir/units/$keep" "$side/units/$keep"
           fi
           for f in "$ghcDir/lib/libHS$keep"-*; do
             mv "$f" "$side/lib/$(basename "$f")"
           done
         done
+        if [ -d "$ghcDir/bin" ]; then
+          for b in "$ghcDir/bin"/*; do
+            bn=$(basename "$b")
+            if ! grep -qx -- "$bn" $buildRoot/bin-before 2>/dev/null; then
+              mv "$b" "$side/bin/$bn"
+            fi
+          done
+        fi
         shopt -u nullglob
         rm -rf "$ghcDir"
-        mkdir -p "$ghcDir/package.db"
+        mkdir -p "$ghcDir/$storePkgDb"
         shopt -s nullglob
         for keep in "''${own_uids[@]}"; do
           [ -n "$keep" ] || continue
           if [ -e "$side/$keep" ]; then
             mv "$side/$keep" "$ghcDir/$keep"
           fi
-          if [ -e "$side/package.db/$keep.conf" ]; then
-            mv "$side/package.db/$keep.conf" "$ghcDir/package.db/$keep.conf"
+          if [ -e "$side/lib/$keep" ]; then
+            mkdir -p "$ghcDir/lib"
+            mv "$side/lib/$keep" "$ghcDir/lib/$keep"
+          fi
+          if [ -e "$side/$storePkgDb/$keep.conf" ]; then
+            mv "$side/$storePkgDb/$keep.conf" "$ghcDir/$storePkgDb/$keep.conf"
+          fi
+          if [ -e "$side/units/$keep" ]; then
+            mkdir -p "$ghcDir/units"
+            mv "$side/units/$keep" "$ghcDir/units/$keep"
           fi
         done
         kept_libs=("$side/lib/libHS"*)
@@ -1657,6 +2262,13 @@ stdenv.mkDerivation ({
           mkdir -p "$ghcDir/lib"
           for f in "''${kept_libs[@]}"; do
             mv "$f" "$ghcDir/lib/$(basename "$f")"
+          done
+        fi
+        kept_bins=("$side/bin"/*)
+        if [ ''${#kept_bins[@]} -gt 0 ]; then
+          mkdir -p "$ghcDir/bin"
+          for f in "''${kept_bins[@]}"; do
+            mv "$f" "$ghcDir/bin/$(basename "$f")"
           done
         fi
         shopt -u nullglob
@@ -1702,10 +2314,10 @@ stdenv.mkDerivation ({
       # — prefer `package-name:` so a sublib slice matches the real
       # package, not the z-encoded one.  Fall back to uid parsing
       # for bin-only units (exe / test / bench — no .conf).
-      planJson="$buildRoot/project/dist-newstyle/cache/plan.json"
+      planJson="$distDir/cache/plan.json"
       uid_to_pkg() {
         while IFS= read -r uid; do
-          conf="$ghcDir/package.db/$uid.conf"
+          conf="$ghcDir/$storePkgDb/$uid.conf"
           if [ -f "$conf" ]; then
             name=$(awk '/^package-name:/ {print $2; exit}' "$conf")
             if [ -z "$name" ]; then
@@ -1768,22 +2380,48 @@ stdenv.mkDerivation ({
             }
             $1 != expected && !($1 in allowed_set) { print $2 }
           ')
+      # BUILD-stage units the fork planned in-slice (setup scopes /
+      # build tools) are by-design byproducts, not divergence — see
+      # the build-stage-unit-ids capture above.
+      if [ -s $buildRoot/build-stage-unit-ids ] && [ -n "$unexpected" ]; then
+        unexpected=$(printf '%s\n' "$unexpected" \
+          | grep -vxF -f $buildRoot/build-stage-unit-ids || true)
+      fi
 
-      # `target_count > 1` indicates cabal split the target into
-      # multiple installed units within a single slice — that's
-      # the breakage we want to catch.  `target_count == 0` is OK:
-      # cabal silently produces no `.conf` for indefinite backpack
-      # libraries (the slice's target is a sublib with unfilled
-      # `signatures:` — no compiled artifacts to install until
-      # something instantiates it), so an empty $out is the
-      # correct outcome for that case.
+      # `target_count > 1` used to indicate cabal split the target
+      # into multiple installed units within a single slice.  With
+      # the stable-haskell fork that's legitimate for multi-component
+      # packages: build-type Configure/Custom packages are elaborated
+      # per PACKAGE, so e.g. `rts` produces its main lib and each
+      # flavour sublib in the one slice.  Distinct components
+      # register distinct conf `name:`s (`z-<pkg>-z-<sublib>`), so
+      # only a REPEATED name — the same component built twice under
+      # two unit-ids — is the divergence this check exists to catch.
+      # `target_count == 0` is OK: cabal silently produces no `.conf`
+      # for indefinite backpack libraries (the slice's target is a
+      # sublib with unfilled `signatures:` — no compiled artifacts to
+      # install until something instantiates it), so an empty $out is
+      # the correct outcome for that case.
       if [ "$target_count" -gt 1 ]; then
-        echo "" >&2
-        echo "ERROR: slice captured $target_count non-instantiated units for the target package '$expected_pkg'; expected 0 or 1." >&2
-        echo "" >&2
-        echo "  Captured unit-ids:" >&2
-        printf '%s\n' "$actual_uids" | sed 's/^/    /' >&2
-        exit 1
+        dup_names=$(printf '%s\n' "$pairs" \
+          | awk -v e="$expected_pkg" '$1 == e && $2 !~ /\+/ { print $2 }' \
+          | while IFS= read -r uid; do
+              conf="$ghcDir/$storePkgDb/$uid.conf"
+              if [ -f "$conf" ]; then
+                awk '/^name:/{print $2; exit}' "$conf"
+              else
+                echo "(bin-only)"
+              fi
+            done | sort | uniq -d)
+        if [ -n "$dup_names" ]; then
+          echo "" >&2
+          echo "ERROR: slice captured $target_count non-instantiated units for the target package '$expected_pkg' with repeated component name(s):" >&2
+          printf '%s\n' "$dup_names" | sed 's/^/    /' >&2
+          echo "" >&2
+          echo "  Captured unit-ids:" >&2
+          printf '%s\n' "$actual_uids" | sed 's/^/    /' >&2
+          exit 1
+        fi
       fi
       if [ -n "$unexpected" ]; then
         echo "" >&2
@@ -1823,6 +2461,22 @@ stdenv.mkDerivation ({
       unexpected=$(comm -13 \
         <(printf '%s\n' "$expected_uid") \
         <(printf '%s\n' "$actual_uids"))
+      ${lib.optionalString (allowedSiblingUnitPrefix != null) ''
+        # Local-`packages:` slice: drop same-package sibling units
+        # (`<pkgid>` and `<pkgid>-<component>`) from the extras — see
+        # the `allowedSiblingUnitPrefix` argument comment.
+        sibling_pkgid=${lib.escapeShellArg allowedSiblingUnitPrefix}
+        unexpected=$(printf '%s\n' "$unexpected" \
+          | awk -v p="$sibling_pkgid" \
+              'NF && $0 != p && index($0, p "-") != 1')
+      ''}
+      # BUILD-stage units the fork planned in-slice (setup scopes /
+      # build tools) are by-design byproducts, not divergence — see
+      # the build-stage-unit-ids capture above.
+      if [ -s $buildRoot/build-stage-unit-ids ] && [ -n "$unexpected" ]; then
+        unexpected=$(printf '%s\n' "$unexpected" \
+          | grep -vxF -f $buildRoot/build-stage-unit-ids || true)
+      fi
       if [ -n "$missing" ] || [ -n "$unexpected" ]; then
         echo "" >&2
         echo "ERROR: slice produced unit-ids that don't match plan-nix.json:" >&2
@@ -1851,7 +2505,7 @@ stdenv.mkDerivation ({
           # with `jq -S` and diffed with full-file context so the
           # diverging field (compiler-id, flags, dep unit-ids, ...) is
           # visible against the rest of the entry.
-          actualPlan=$buildRoot/project/dist-newstyle/cache/plan.json
+          actualPlan=$distDir/cache/plan.json
           expectedPlanFile=${pkgsBuildBuild.writeText "expected-plan-entries.json"
                               (builtins.toJSON expectedPlanEntries)}
           if [ -n "$unexpected" ] && [ -f "$actualPlan" ]; then

@@ -19,6 +19,12 @@
 { planJson      # plan.json's `install-plan` array
 , isWasm        # stdenv.hostPlatform.isWasm
 , ghcVersion    # ghc.version
+, rawCabalProject ? null
+                # assembled cabal.project + cabalProjectLocal text the
+                # plan was made from, or null when the caller can't
+                # provide it (legacy pkg-set instantiations).  Used to
+                # disambiguate the `-haddock` configure-arg marker —
+                # see `projectSetsDocumentation` below.
 }:
 let
   # ---- per-package source-repo flags (was `planFlagsFor`) ----------
@@ -43,12 +49,37 @@ let
   # ---- documentation-enabled package names (was `pkgDocEnabled`) ----
   # `documentation: True` adds `--ghc-option=-haddock` to a unit's
   # configure-args; a name is "doc-enabled" if any of its units carry it.
-  docEnabledNames = lib.listToAttrs (lib.concatMap
-    (e:
-      if lib.elem "--ghc-option=-haddock" (e.configure-args or [])
-      then [ { name = e.pkg-name or ""; value = true; } ]
-      else [])
-    planJson);
+  #
+  # The marker is ambiguous: a plain `ghc-options: -haddock` in the
+  # project (e.g. haskell-language-server's `package *` stanza) leaves
+  # the IDENTICAL configure-arg, but its elaborated units hash with
+  # `pkgHashDocumentation = False` — emitting `documentation: True` for
+  # them forks the slice's UnitId from plan-nix AND makes `cabal
+  # v2-build` run the haddock program (which stable-haskell compilers
+  # don't ship).  plan.json has no truthful per-unit documentation
+  # field (`haddock-args` is always the bare verb), so disambiguate
+  # with the project text: only treat `-haddock` as documentation when
+  # some line of the assembled cabal.project actually turns
+  # `documentation:` on.  Coarse (a doc-True project that ALSO gives
+  # some package plain `ghc-options: -haddock` still misclassifies
+  # that package, and `import:`ed files are not scanned) — the real
+  # fix is make-install-plan emitting `elabBuildHaddocks`, at the cost
+  # of a nix-tools (world-rebuild) change.  With rawCabalProject
+  # unknown (null) keep the old marker-only behaviour.
+  projectSetsDocumentation =
+    rawCabalProject == null
+    || lib.any
+         (l: builtins.isString l
+             && builtins.match "[ \t]*documentation[ \t]*:[ \t]*[Tt]rue[ \t\r]*" l != null)
+         (builtins.split "\n" rawCabalProject);
+  docEnabledNames =
+    if !projectSetsDocumentation then {}
+    else lib.listToAttrs (lib.concatMap
+      (e:
+        if lib.elem "--ghc-option=-haddock" (e.configure-args or [])
+        then [ { name = e.pkg-name or ""; value = true; } ]
+        else [])
+      planJson);
 
   # ---- projectConfigPragmas (was the inline `let` in comp-v2) ------
   # Each plan entry's `configure-args` is per-unit; we group by pkg-name
@@ -82,6 +113,15 @@ let
       kv = builtins.match "--([a-z0-9-]+)=(.+)" arg;
     in
       if forceShared && arg == "--disable-shared" then "shared: True"
+      # `debug-info` is a LEVEL (0..3), not a boolean: its cabal.project value is
+      # parsed by `flagToDebugInfoLevel`, which rejects True/False ("Can't parse
+      # debug info level False").  This matters with the stable-haskell Cabal
+      # fork (3.17); older Cabal accepted the boolean form.  Map the enable/
+      # disable Setup flags to the equivalent level (disable → 0 = NoDebugInfo,
+      # matching `--disable-debug-info`; enable → 2 = NormalDebugInfo, the
+      # no-arg default) so `pkgHashConfigInputs` stays aligned with plan-nix.
+      else if di != null && builtins.head di == "debug-info" then "debug-info: 0"
+      else if en != null && builtins.head en == "debug-info" then "debug-info: 2"
       else if en != null && isProjectField (builtins.head en) then "${builtins.head en}: True"
       else if di != null && isProjectField (builtins.head di) then "${builtins.head di}: False"
       else if kv != null && isProjectField (builtins.head kv) then "${builtins.head kv}: ${builtins.elemAt kv 1}"

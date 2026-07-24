@@ -1,11 +1,11 @@
 # Test a package set
-{ stdenv, lib, util, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages, dwarfdump }:
+{ stdenv, lib, util, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages, dwarfdump }:
 
 with lib;
 
 let
   project = cabalProject' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "cabal-simple-debug";
     # v2 bakes DWARF in at slice build time when cabal.project
     # records `debug-info:`, and uses the `.dwarf` GHC variant

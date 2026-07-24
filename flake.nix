@@ -9,6 +9,9 @@
     nixpkgs-2411 = { url = "github:NixOS/nixpkgs/nixpkgs-24.11-darwin"; };
     nixpkgs-2505 = { url = "github:NixOS/nixpkgs/nixpkgs-25.05-darwin"; };
     nixpkgs-2511 = { url = "github:NixOS/nixpkgs/nixpkgs-25.11-darwin"; };
+    # nixpkgs 26.05 is the last release supporting x86_64-darwin (unstable /
+    # 26.11 dropped it), so the CI matrix uses this pin for x86_64-darwin.
+    nixpkgs-2605 = { url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     flake-compat = { url = "github:input-output-hk/flake-compat/hkm/gitlab-fix"; flake = false; };
     "hls-1.10" = { url = "github:haskell/haskell-language-server/1.10.0.0"; flake = false; };
@@ -69,12 +72,22 @@
       url = "github:stable-haskell/iserv-proxy?ref=iserv-syms";
       flake = false;
     };
+    # hyper-linux (`hl`, github:zw3rk/hyper-linux) runs Linux ELFs on Apple
+    # Silicon macOS via Hypervisor.framework.  It fills the qemu-user-mode slot
+    # (which doesn't exist on macOS) when cross-compiling darwin -> linux, so
+    # Template Haskell / tests can run the target binary.  This is a real flake
+    # (we want its `hl` package); keep its nixpkgs on ours.
+    hyper-linux = {
+      url = "github:zw3rk/hyper-linux";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
     { self
     , nixpkgs
     , nixpkgs-unstable
+    , nixpkgs-2605
     , flake-compat
     , ...
     }@inputs:
@@ -98,6 +111,12 @@
       traceHydraJobs = x: x // { inherit (traceNames "" x) hydraJobs; };
 
       # systems supported by haskell.nix
+      # NB: x86_64-darwin is still supported, but ONLY via the 26.05 nixpkgs pin
+      # — nixpkgs unstable (26.11) dropped x86_64-darwin ("Nixpkgs 26.11 has
+      # dropped support for x86_64-darwin").  So every unstable-based output
+      # (legacyPackages, the `unstable` ci dimension, the nix-tools subflake)
+      # falls back to / excludes x86_64-darwin accordingly; see the pin fallback
+      # in `legacyPackages*` below and the `nixpkgsVersions` gate in ci.nix.
       systems = [
         "x86_64-linux"
       ] ++ (if runningHydraEvalTest then [ ] else [
@@ -156,15 +175,19 @@
               (import ./default.nix);
         };
 
+        # nixpkgs unstable (26.11) dropped x86_64-darwin, so on that platform
+        # the "unstable" pkgs fall back to the 26.05 pin (the last release that
+        # supports it).  Everywhere else these track the unstable nixpkgs as
+        # before.
         legacyPackages = forEachSystem (system:
-          import nixpkgs {
+          import (if system == "x86_64-darwin" then nixpkgs-2605 else nixpkgs) {
             inherit config;
             overlays = [ self.overlay ];
             localSystem = { inherit system; };
           });
 
         legacyPackagesUnstable = forEachSystem (system:
-          import nixpkgs-unstable {
+          import (if system == "x86_64-darwin" then nixpkgs-2605 else nixpkgs-unstable) {
             inherit config;
             overlays = [ self.overlay ];
             localSystem = { inherit system; };
@@ -320,6 +343,9 @@
           hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
             name = "nix-tools";
             constituents = (if runningHydraEvalTest then [ ] else [
+              # x86_64-darwin static nix-tools still build: they come from the
+              # ./nix-tools subflake, which resolves pkgs via its OWN pinned
+              # haskellNix whose unstable nixpkgs predates the x86_64-darwin drop.
               "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
               "x86_64-darwin.nix-tools.static.zipped.nix-tools-static"
               "aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"

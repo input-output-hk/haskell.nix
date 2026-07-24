@@ -161,7 +161,7 @@ let
       ++ [{
           name = "hoogle";
           compiler-nix-name = compiler.nix-name;
-          inherit evalPackages;
+          evalSystem = evalPackages.stdenv.hostPlatform.system;
         }]);
     };
 
@@ -175,7 +175,7 @@ in
     nativeBuildInputs = [ ghcEnv.drv ]
       ++ nativeBuildInputs
       ++ mkDrvArgs.nativeBuildInputs or []
-      ++ lib.attrValues (pkgsBuildBuild.haskell-nix.tools' evalPackages compiler.nix-name tools)
+      ++ lib.attrValues (pkgsBuildBuild.haskell-nix.tools' evalPackages.stdenv.hostPlatform.system compiler.nix-name tools)
       ++ lib.optional (ghcEnv.baseGhc.useLdLld or false) llvmPackages.bintools
       # If this shell is a cross compilation shell include
       # wrapper script for running cabal build with appropriate args.

@@ -3,11 +3,11 @@
 # the builder makes the package data-dir available to tests — in particular
 # under builderVersion = 2, where the check runs the installed binary directly
 # and `lib/check.nix` must set `<pkg>_datadir`.
-{ lib, stdenv, project', testSrc, compiler-nix-name, evalPackages }:
+{ lib, stdenv, project', testSrc, compiler-nix-name, evalPackages, evalSystem }:
 
 let
   mkProject = builderVersion: project' {
-    inherit compiler-nix-name evalPackages builderVersion;
+    inherit compiler-nix-name evalSystem builderVersion;
     src = testSrc "check-datadir";
   };
 

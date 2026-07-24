@@ -274,7 +274,10 @@ let
   configFiles = makeConfigFiles {
     component = componentForSetup;
     inherit (package) identifier;
-    inherit fullName flags needsProfiling enableDWARF prebuilt-depends instantiations;
+    inherit fullName flags needsProfiling enableDWARF instantiations;
+    # Merge the global (project-level) prebuilt-depends with any per-component
+    # additional-prebuilt-depends set via the modules system (package-options.nix).
+    prebuilt-depends = prebuilt-depends ++ (component.additional-prebuilt-depends or []);
   };
 
   enableFeature = enable: feature:
@@ -582,13 +585,19 @@ let
       # for gi-gtk-hs it seems to help.
       ++ haskellLib.uniqueWithName (map pkgs.lib.getDev (builtins.concatLists pkgconfig))
       # These only need to be propagated for library components (otherwise they
-      # will be in `buildInputs`)
-      ++ lib.optionals (haskellLib.isLibrary componentId) configFiles.libDeps # libDeps is already deduplicated
+      # will be in `buildInputs`).  Use regularLibDeps (without prebuilt-depends)
+      # to prevent prebuilt-depends from leaking into the setup package DBs of
+      # downstream packages that depend on this library.
+      ++ lib.optionals (haskellLib.isLibrary componentId) configFiles.regularLibDeps
       ++ lib.optionals stdenv.hostPlatform.isWindows
         (haskellLib.uniqueWithName (lib.flatten component.libs)));
 
     buildInputs = haskellLib.checkUnique "${ghc.targetPrefix}${fullName} buildInputs" (
       lib.optionals (!haskellLib.isLibrary componentId) configFiles.libDeps # libDeps is already deduplicated
+      # For library components, prebuilt-depends must be in buildInputs (not
+      # propagatedBuildInputs) so they are available in pkgsHostTarget for the
+      # inline config-files script but do NOT leak to downstream packages.
+      ++ lib.optionals (haskellLib.isLibrary componentId) (configFiles."prebuilt-depends" or [])
       ++ lib.optionals (!stdenv.hostPlatform.isWindows)
         (haskellLib.uniqueWithName (lib.flatten component.libs)));
 
@@ -881,14 +890,24 @@ let
     '');
 
     doInstallCheck = true;
-    installCheckPhase = lib.optionalString (haskellLib.isLibrary componentId) ''
-      if test -n "$(shopt -s nullglob; echo $out/package.conf.d/${name}-*.conf)"; then
-          echo $out/package.conf.d/${name}-*.conf " is present"
+    installCheckPhase = lib.optionalString (haskellLib.isLibrary componentId) (
+      let
+        # The registered id is normally `<pkgid>-<hash>[-<sublib>]`, but an
+        # explicit `--ipid` (e.g. the stable-haskell stage2 boot libraries'
+        # `--ipid=$pkgid`) can register under the bare `<pkgid>.conf`.  Only
+        # widen the glob for components that pass --ipid, so everything else
+        # keeps its derivation hash.
+        hasIpid = lib.any (lib.hasPrefix "--ipid") configureFlags;
+        confGlob = "$out/package.conf.d/${name}-*.conf"
+          + lib.optionalString hasIpid " $out/package.conf.d/${name}.conf";
+      in ''
+      if test -n "$(shopt -s nullglob; echo ${confGlob})"; then
+          echo ${confGlob} " is present"
       else
-        echo "ERROR: $out/package.conf.d/${name}-*.conf was not created"
+        echo "ERROR: ${confGlob} was not created"
         exit 1
       fi
-    '';
+    '');
 
     shellHook = ''
       export PATH=$ghc/bin:$PATH

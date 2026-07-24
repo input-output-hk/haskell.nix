@@ -25,10 +25,12 @@ let
   # Construct the dummy-ghc the same way `lib/call-cabal-project-to-nix.nix`
   # does at plan-to-nix time.  Using the same function ensures the
   # test exercises the actual code path.
-  dummyGhc = import ../../lib/dummy-ghc.nix {
+  # lib/dummy-ghc.nix now returns the { dummy-ghc, dummy-ghc-pkg } pair; this
+  # test exercises the `ghc` half.
+  dummyGhc = (import ../../lib/dummy-ghc.nix {
     inherit pkgs evalPackages;
     ghc = realGhc;
-  };
+  }).dummy-ghc;
 
   ghcCmd = "${realGhc.targetPrefix}ghc";
 
@@ -46,6 +48,7 @@ let
     "JavaScript CPP command" "JavaScript CPP flags"
     "C-- CPP command" "C-- CPP flags" "C-- CPP supports -g0"
     "ld supports compact unwind" "ld supports filelist" "ld supports single module"
+    "ld supports verbatim namespace"
     "ld is GNU ld"
     "Merge objects command" "Merge objects flags" "Merge objects supports response files"
     "ar command" "ar flags" "ar supports at file" "ar supports -L"

@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem }:
 
 with lib;
 
@@ -16,7 +16,7 @@ let
   ];
 
   project = cabalProject' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "cabal-simple-prof";
     cabalProjectLocal = builtins.readFile ../cabal.project.local
       + lib.optionalString (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64) ''

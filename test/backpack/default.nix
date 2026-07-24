@@ -1,9 +1,9 @@
 # Test backpack
-{ stdenv, lib, haskellLib, cabalProject', testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, haskellLib, cabalProject', testSrc, compiler-nix-name, evalPackages, evalSystem }:
 
 let
   project = cabalProject' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "backpack";
     cabalProjectLocal = builtins.readFile ../cabal.project.local
       + lib.optionalString (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64) ''

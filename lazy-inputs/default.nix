@@ -44,6 +44,11 @@ in {
       inherit ((callFlake { pkgs = final; src = ./ghc9124; }).defaultNix) ghc9124;
       inherit ((callFlake { pkgs = final; src = ./ghc9141; }).defaultNix) ghc9141;
       inherit ((callFlake { pkgs = final; src = ./ghc914X; }).defaultNix) ghc914X;
+      inherit ((callFlake { pkgs = final; src = ./ghc914-sh; }).defaultNix) ghc914-sh;
+      # source-repository-packages referenced by the ghc914-sh stage2 cabal.project.
+      inherit ((callFlake { pkgs = final; src = ./ghc914-sh-cabal; }).defaultNix) ghc914-sh-cabal;
+      inherit ((callFlake { pkgs = final; src = ./ghc914-sh-hpc-bin; }).defaultNix) ghc914-sh-hpc-bin;
+      inherit ((callFlake { pkgs = final; src = ./ghc914-sh-hsc2hs; }).defaultNix) ghc914-sh-hsc2hs;
       inherit ((callFlake { pkgs = final; src = ./ghc915; }).defaultNix) ghc915;
       inherit ((callFlake { pkgs = final; src = ./libffi-wasm; }).defaultNix) libffi-wasm;
     } // prev.haskell-nix.sources;

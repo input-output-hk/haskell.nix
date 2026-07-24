@@ -228,19 +228,42 @@ let
   cabalStoreSync = pkgs.pkgsBuildBuild.writeShellScriptBin "haskell-nix-cabal-store-sync" ''
     set -eu
 
+    # The stable-haskell cabal fork keeps a PROJECT-LOCAL store under the build
+    # dir (distStoreDirLayout = <builddir>/store), NOT a shared ~/.cabal/store —
+    # so seed that.  BUILDDIR is a positional arg (default `dist-newstyle`, the
+    # fork's own default builddir); a project built with a custom `--builddir`
+    # passes the same value here.  One store per builddir, never shared between
+    # unrelated projects — matching `cabal build`'s own behaviour.
     force=0
-    case "''${1:-}" in
-      --force) force=1 ;;
-      "") ;;
-      *) echo "usage: haskell-nix-cabal-store-sync [--force]" >&2; exit 2 ;;
-    esac
+    buildDir=dist-newstyle
+    for arg in "$@"; do
+      case "$arg" in
+        --force) force=1 ;;
+        -*) echo "usage: haskell-nix-cabal-store-sync [--force] [BUILDDIR]" >&2; exit 2 ;;
+        *) buildDir=$arg ;;
+      esac
+    done
 
     src="${composedStore}"
-    tgt_base="''${CABAL_DIR:-$HOME/.cabal}/store"
+    tgt_base="$buildDir/store"
     ghc_pkg="${ghc}/bin/${ghc.targetPrefix or ""}ghc-pkg"
     lndir="${lndir}/bin/lndir"
 
     mkdir -p "$tgt_base"
+
+    # The stable-haskell fork's staged store reaches build-stage units
+    # (setup/build-tool deps) through a `build -> host` link — natively
+    # build==host (same toolchain, same unit ids).  The slice builder makes
+    # this inside each slice's store (`ln -sn host $storeDir/build`);
+    # replicate it in the user's store so `cabal build`'s receipt-based reuse
+    # (`improveInstallPlanWithStoreUnits` scans <store>/build/<platform>/units
+    # as well) recognises those build-stage neighbours — without it nothing
+    # flips to Installed and everything rebuilds.  ($tgt_base is the local
+    # <builddir>/store, so this link lives per-builddir alongside the deps.)
+    if [ -d "$src/host" ] && [ "$(readlink "$tgt_base/build" 2>/dev/null)" != host ]; then
+      rm -f "$tgt_base/build" 2>/dev/null || true
+      ln -s host "$tgt_base/build"
+    fi
 
     # ---- Fast path: same composedStore, already synced -----------
     # After a successful run we drop a marker file at
@@ -277,77 +300,114 @@ let
     # been GC'd — exactly the cases we want to treat as "missing"
     # so the install pass below replaces them.
 
-    # Arrays: lines of the form "<kind>\t<ghcDir>\t<relPath>".
-    # kind is one of: conf, unit, lib.
+    # `new_items` / `conflicts`: rel paths (relative to $src) to
+    # install; a rel path may contain slashes (e.g.
+    # `host/<platform>/package.conf.d/foo.conf`).
     new_items=()
     conflicts=()
 
-    # ---- Pass 1: scan --------------------------------------------
-    for ghcDir in "$src"/ghc-*/; do
-      [ -d "$ghcDir" ] || continue
-      ghcName=$(basename "$ghcDir")
-      tgt_ghcDir="$tgt_base/$ghcName"
+    # A "store root" is any dir under $src that holds a package db.
+    # Two layouts are supported:
+    #   * mainline cabal   — `<src>/ghc-<ver>/`, db at `package.db`,
+    #                         unit dirs as siblings, libs as flat files.
+    #   * stable-haskell   — `<src>/host/<platform>/`, db at
+    #     fork (v2 slices)    `package.conf.d`, unit store entries under
+    #                         `units/`, per-unit lib dirs `lib/<unit-id>/`.
+    # `.conf` files are `''${pkgroot}`-relative, so faithfully mirroring a
+    # root's subtree (symlinks for files, lndir for dir trees) is all
+    # cabal/ghc-pkg need — pkgroot resolves to wherever the copied
+    # `package.conf.d` / `package.db` ends up in the target store.
+    roots=()
+    for d in "$src"/ghc-*/ "$src"/host/*/; do
+      d="''${d%/}"
+      [ -d "$d" ] || continue
+      [ -L "$d" ] && continue   # skip the fork's inert build->host link
+      if [ -d "$d/package.db" ] || [ -d "$d/package.conf.d" ]; then
+        roots+=("$d")
+      fi
+    done
 
-      # Symlinked single-file entries (conf, lib): if the target is
-      # already a symlink pointing at the source path, no work to
-      # do — short-circuit before the per-file `diff -q` fork.
-      if [ -d "$ghcDir/package.db" ]; then
-        for conf in "$ghcDir/package.db"/*.conf; do
-          [ -e "$conf" ] || continue
-          base=$(basename "$conf")
-          tgt="$tgt_ghcDir/package.db/$base"
-          if [ ! -e "$tgt" ]; then
-            new_items+=("conf	$ghcName	package.db/$base")
-          elif [ -L "$tgt" ] && [ "$(readlink "$tgt")" = "$conf" ]; then
-            : # already linked correctly
-          elif ! diff -q "$conf" "$tgt" >/dev/null 2>&1; then
-            conflicts+=("conf	$ghcName	package.db/$base")
-          fi
+    # classify_file REL — a single file/symlink entry (a .conf, a fork
+    # unit-store symlink, or a mainline flat lib file).  Already the
+    # right symlink? skip.  `[ ! -e ]` treats a GC'd (dangling) symlink
+    # as missing, so it gets reinstalled.
+    classify_file () {
+      local rel=$1 s="$src/$1" t="$tgt_base/$1"
+      if [ ! -e "$t" ]; then
+        new_items+=("$rel")
+      elif [ -L "$t" ] && [ "$(readlink "$t")" = "$s" ]; then
+        : # already linked correctly
+      elif ! diff -q "$s" "$t" >/dev/null 2>&1; then
+        conflicts+=("$rel")
+      fi
+    }
+
+    # classify_tree REL — a directory tree (a mainline unit dir, or a
+    # fork per-unit lib dir), installed via lndir.  Probe one leaf
+    # symlink to see if the tree already came from this source.
+    classify_tree () {
+      local rel=$1 s="$src/$1" t="$tgt_base/$1" probe target
+      if [ ! -e "$t" ]; then
+        new_items+=("$rel")
+      else
+        probe=$(find "$t" -type l -print -quit 2>/dev/null)
+        if [ -n "$probe" ]; then
+          target=$(readlink "$probe")
+          case "$target" in
+            "$s"/*) return ;;
+          esac
+        fi
+        if ! diff -qr "$s" "$t" >/dev/null 2>&1; then
+          conflicts+=("$rel")
+        fi
+      fi
+    }
+
+    # classify_entry REL — dispatch on the source type: a real dir (not
+    # a symlink) is an lndir tree; anything else (file or symlink) is a
+    # single symlink.
+    classify_entry () {
+      local s="$src/$1"
+      if [ -d "$s" ] && [ ! -L "$s" ]; then
+        classify_tree "$1"
+      else
+        classify_file "$1"
+      fi
+    }
+
+    # ---- Pass 1: scan --------------------------------------------
+    for root in "''${roots[@]}"; do
+      rootRel="''${root#$src/}"
+      if [ -d "$root/package.conf.d" ]; then dbName=package.conf.d; else dbName=package.db; fi
+
+      # package-db confs
+      for conf in "$root/$dbName"/*.conf; do
+        [ -e "$conf" ] || continue
+        classify_entry "$rootRel/$dbName/$(basename "$conf")"
+      done
+
+      # unit store entries: under `units/` (fork) or db-siblings (mainline)
+      if [ -d "$root/units" ]; then
+        for u in "$root/units"/*; do
+          [ -e "$u" ] || continue
+          classify_entry "$rootRel/units/$(basename "$u")"
+        done
+      else
+        for u in "$root"/*/; do
+          u="''${u%/}"
+          [ -d "$u" ] || continue
+          case "$(basename "$u")" in
+            lib|bin|units|package.db|package.conf.d|incoming) continue ;;
+          esac
+          classify_entry "$rootRel/$(basename "$u")"
         done
       fi
 
-      # Unit dirs: lndir-installed trees of symlinks.  We can't
-      # readlink the dir itself (it's a real dir), so verify a
-      # representative leaf — pick the first symlink under the unit
-      # tree and check it points back into this `$src/$ghcName/$unitId`.
-      # If any leaf does, the whole tree was lndir'd from the same
-      # source, so no further work is needed.  Falls through to the
-      # full `diff -qr` only when the cheap check fails.
-      for unitDir in "$ghcDir"/*/; do
-        [ -d "$unitDir" ] || continue
-        unitId=$(basename "$unitDir")
-        case "$unitId" in lib|package.db|incoming) continue ;; esac
-        tgt="$tgt_ghcDir/$unitId"
-        if [ ! -e "$tgt" ]; then
-          new_items+=("unit	$ghcName	$unitId")
-        else
-          want="$ghcDir$unitId"
-          want="''${want%/}"
-          probe=$(find "$tgt" -type l -print -quit 2>/dev/null)
-          if [ -n "$probe" ]; then
-            target=$(readlink "$probe")
-            case "$target" in
-              "$want"/*) continue ;;
-            esac
-          fi
-          if ! diff -qr "$unitDir" "$tgt" >/dev/null 2>&1; then
-            conflicts+=("unit	$ghcName	$unitId")
-          fi
-        fi
-      done
-
-      if [ -d "$ghcDir/lib" ]; then
-        for libFile in "$ghcDir/lib"/*; do
-          [ -e "$libFile" ] || continue
-          base=$(basename "$libFile")
-          tgt="$tgt_ghcDir/lib/$base"
-          if [ ! -e "$tgt" ]; then
-            new_items+=("lib	$ghcName	lib/$base")
-          elif [ -L "$tgt" ] && [ "$(readlink "$tgt")" = "$libFile" ]; then
-            : # already linked correctly
-          elif ! diff -q "$libFile" "$tgt" >/dev/null 2>&1; then
-            conflicts+=("lib	$ghcName	lib/$base")
-          fi
+      # libs: per-unit dirs (fork) or flat files (mainline), both under lib/
+      if [ -d "$root/lib" ]; then
+        for l in "$root/lib"/*; do
+          [ -e "$l" ] || continue
+          classify_entry "$rootRel/lib/$(basename "$l")"
         done
       fi
     done
@@ -358,8 +418,7 @@ let
       echo "haskell.nix v2 shell: cabal store has entries that differ from" >&2
       echo "this shell's slices; refusing to overwrite:" >&2
       for c in "''${conflicts[@]}"; do
-        IFS=$'\t' read -r kind ghcName rel <<<"$c"
-        echo "  $ghcName/$rel" >&2
+        echo "  $c" >&2
       done
       echo "" >&2
       echo "To replace these with the shell's versions, run:" >&2
@@ -378,77 +437,57 @@ let
     if [ "''${#new_items[@]}" -gt 0 ]; then
       echo "The following are being linked into your cabal store:"
       for p in "''${new_items[@]}"; do
-        IFS=$'\t' read -r kind ghcName rel <<<"$p"
-        echo " - $ghcName/$rel"
+        echo " - $p"
       done
     fi
     if [ "''${#conflicts[@]}" -gt 0 ] && [ "$force" = "1" ]; then
       echo ""
       echo "The following are being overwritten (--force):"
       for c in "''${conflicts[@]}"; do
-        IFS=$'\t' read -r kind ghcName rel <<<"$c"
-        echo " - $ghcName/$rel"
+        echo " - $c"
       done
     fi
     echo ""
 
     # ---- Pass 2: install -----------------------------------------
-    # Track which ghcNames actually saw a change — only those need
-    # a package.db recache afterwards.
-    declare -A touched_ghc
-
-    install_item () {
-      # $1 kind, $2 ghcName, $3 rel
-      local kind=$1 ghcName=$2 rel=$3
-      local src_path="$src/$ghcName/$rel"
-      local tgt_path="$tgt_base/$ghcName/$rel"
-      mkdir -p "$(dirname "$tgt_path")"
-      case "$kind" in
-        conf|lib)
-          # Single file — replace any existing entry with a symlink
-          # to the source.
-          if [ -e "$tgt_path" ] || [ -L "$tgt_path" ]; then
-            rm -f "$tgt_path"
-          fi
-          ln -s "$src_path" "$tgt_path"
-          ;;
-        unit)
-          # Directory tree — `lndir` mirrors the source dir as a
-          # tree of dirs containing symlinks at the leaves.  Cabal
-          # and ghc-pkg follow the symlinks transparently.
-          if [ -d "$tgt_path" ] || [ -L "$tgt_path" ]; then
-            chmod -R u+w "$tgt_path" 2>/dev/null || true
-            rm -rf "$tgt_path"
-          fi
-          mkdir -p "$tgt_path"
-          "$lndir" -silent "$src_path" "$tgt_path"
-          ;;
-      esac
-      touched_ghc[$ghcName]=1
+    install_entry () {
+      local rel=$1 s="$src/$1" t="$tgt_base/$1"
+      mkdir -p "$(dirname "$t")"
+      if [ -d "$s" ] && [ ! -L "$s" ]; then
+        # Directory tree — lndir mirrors it as a tree of symlinks.
+        if [ -d "$t" ] || [ -L "$t" ]; then
+          chmod -R u+w "$t" 2>/dev/null || true
+          rm -rf "$t"
+        fi
+        mkdir -p "$t"
+        "$lndir" -silent "$s" "$t"
+      else
+        # Single file or symlink — replace with a symlink to source.
+        if [ -e "$t" ] || [ -L "$t" ]; then
+          rm -f "$t"
+        fi
+        ln -s "$s" "$t"
+      fi
     }
 
     for p in "''${new_items[@]}"; do
-      IFS=$'\t' read -r kind ghcName rel <<<"$p"
-      install_item "$kind" "$ghcName" "$rel"
+      install_entry "$p"
     done
     if [ "$force" = "1" ]; then
       for c in "''${conflicts[@]}"; do
-        IFS=$'\t' read -r kind ghcName rel <<<"$c"
-        install_item "$kind" "$ghcName" "$rel"
+        install_entry "$c"
       done
     fi
 
-    # ---- Pass 3: recache (only ghcNames we touched) --------------
-    # We install confs via symlinks above; ghc-pkg needs a real
-    # writable `package.cache` describing the merged set
-    # (composed-store confs plus anything else the user already
-    # had in their cabal store) — so regenerate it here.
-    for ghcName in "''${!touched_ghc[@]}"; do
-      db="$tgt_base/$ghcName/package.db"
+    # ---- Pass 3: recache each store root's package db ------------
+    # We install confs as symlinks; ghc-pkg needs a real writable
+    # `package.cache` describing the merged set, so regenerate one per
+    # store root (there was at least one install, or we'd have exited).
+    for root in "''${roots[@]}"; do
+      rootRel="''${root#$src/}"
+      if [ -d "$root/package.conf.d" ]; then dbName=package.conf.d; else dbName=package.db; fi
+      db="$tgt_base/$rootRel/$dbName"
       [ -d "$db" ] || continue
-      # If a previous run left a `package.cache` symlink (e.g. from
-      # a stricter version of this script), it can't be opened for
-      # write through /nix/store; drop it so recache can recreate.
       for f in package.cache package.cache.lock; do
         if [ -L "$db/$f" ]; then rm -f "$db/$f"; fi
       done
@@ -568,9 +607,19 @@ let
   # Build tools from hackage via haskell-nix.tool.  Use the project's
   # compiler so the tools are compatible with the shell's GHC.
   compilerNixName = compiler.nix-name;
+  # A tool value is normally a hackage version string / module spec passed
+  # to `haskell-nix.tool`.  A prebuilt DERIVATION is taken as-is and put
+  # straight on PATH — needed for tools that can't be rebuilt through
+  # `haskell-nix.tool` under a from-source `compiler-nix-name` (which has
+  # no nixpkgs-prebuilt GHC), notably the v2 store layout's own fork cabal
+  # `haskell-nix.v2-cabal-install`.  A v2 shell that keeps mainline cabal
+  # ("latest") gets a cabal that reads the old `ghc-<ver>/package.db`
+  # layout and re-plans the whole composed store from scratch.
   toolDrvs = lib.mapAttrsToList
     (name: versionOrMod:
-      pkgs.pkgsBuildBuild.haskell-nix.tool compilerNixName name versionOrMod)
+      if lib.isDerivation versionOrMod
+      then versionOrMod
+      else pkgs.pkgsBuildBuild.haskell-nix.tool compilerNixName name versionOrMod)
     tools;
 
   # withHoogle: ensure hoogle is on PATH.  If the user already listed

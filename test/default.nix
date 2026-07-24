@@ -18,6 +18,7 @@
     ];
   }
 , evalPackages ? import pkgs.path nixpkgsArgs
+, evalSystem ? evalPackages.stdenv.hostPlatform.system
 , ifdLevel ? 1000
 , compiler-nix-name
 , CADerivationsEnabled ? false
@@ -163,7 +164,16 @@ let
   # testSrc = subDir: testSrcRoot + "/${subDir}";
   testSrcRootWithGitDir = evalPackages.haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; includeSiblings = true; keepGitDir = true; };
   testSrcWithGitDir = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRootWithGitDir; inherit subDir; includeSiblings = true; };
-  callTest = x: args: haskell-nix.callPackage x (args // { inherit testSrc compiler-nix-name evalPackages; });
+  # Thread `evalSystem` (the platform plan-to-nix runs on) into tests that
+  # declare it, so a project sets `evalSystem` rather than the now read-only
+  # `evalPackages` option (see modules/project-common.nix).  Passed only to
+  # tests whose function accepts it (via `functionArgs`) so tests that don't
+  # need it are unaffected.  `evalPackages` is still passed unconditionally
+  # for tests that use it as a plain nixpkgs (cleanGit, runCommand, …).
+  callTest = x: args:
+    let wantsEvalSystem = (builtins.functionArgs (if builtins.isFunction x then x else import x)) ? evalSystem;
+    in haskell-nix.callPackage x (args // { inherit testSrc compiler-nix-name evalPackages; }
+      // lib.optionalAttrs wantsEvalSystem { inherit evalSystem; });
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.
@@ -194,7 +204,8 @@ let
     stack-local-resolver-subdir = callTest ./stack-local-resolver-subdir {};
     stack-remote-resolver = callTest ./stack-remote-resolver {};
     shell-for-setup-deps = callTest ./shell-for-setup-deps {};
-    setup-deps = import ./setup-deps { inherit pkgs evalPackages compiler-nix-name; };
+    setup-deps = import ./setup-deps { inherit pkgs evalPackages evalSystem compiler-nix-name; };
+    setup-deps-boot-cabal = callTest ./setup-deps-boot-cabal {};
     callStackToNix = callTest ./call-stack-to-nix {};
     callCabalProjectToNix = callTest ./call-cabal-project-to-nix { inherit evalPackages; };
     cabal-source-repo = callTest ./cabal-source-repo {};
@@ -208,6 +219,7 @@ let
     stack-source-repo = callTest ./stack-source-repo {};
     ghc-lib-reinstallable-cabal = callTest ./ghc-lib-reinstallable/cabal.nix {};
     ghc-lib-reinstallable-stack = callTest ./ghc-lib-reinstallable/stack.nix {};
+    generated-light = callTest ./generated-light {};
     cabal-doctests = callTest ./cabal-doctests { inherit util; };
     extra-hackage = callTest ./extra-hackage {};
     ghcjs-overlay = callTest ./ghcjs-overlay {};
