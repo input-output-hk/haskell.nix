@@ -15,6 +15,7 @@
 , prePatch ? component.prePatch, postPatch ? component.postPatch
 , preConfigure ? component.preConfigure, postConfigure ? component.postConfigure
 , setupBuildFlags ? component.setupBuildFlags
+, buildJobs ? component.buildJobs
 , preBuild ? component.preBuild , postBuild ? component.postBuild
 , preCheck ? component.preCheck , postCheck ? component.postCheck
 , setupInstallFlags ? component.setupInstallFlags
@@ -228,6 +229,15 @@ let
     if configureAllComponents
       then allComponent
       else component;
+
+  # The `-jN` flag passed to `Setup build`.  When `buildJobs` is null we keep
+  # the historical default (`-j` capped at min(NIX_BUILD_CORES, 4)); otherwise
+  # the component pins the job count (e.g. `buildJobs = 1` for a sequential,
+  # low-memory build).  See #1479.
+  buildJobsFlag =
+    if buildJobs == null
+      then "-j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES))"
+      else "-j${toString buildJobs}";
 
   # Ignore attempts to include DWARF info when it is not possible
   enableDWARF = drvArgs.enableDWARF or false
@@ -460,7 +470,7 @@ let
       LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
       LC_ALL = "en_US.UTF-8";
 
-      enableParallelBuilding = true;
+      enableParallelBuilding = buildJobs != 1;
 
       SETUP_HS = setup + "/bin/${setup.exeName}";
 
@@ -699,7 +709,7 @@ let
       '' else ''
         runHook preBuild
         # https://gitlab.haskell.org/ghc/ghc/issues/9221
-        $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " setupBuildFlags}
+        $SETUP_HS build ${haskellLib.componentTarget componentId} ${buildJobsFlag} ${lib.concatStringsSep " " setupBuildFlags}
         runHook postBuild
       '');
 
