@@ -878,7 +878,20 @@ ENDSCRIPT
     # non-absolute script arguments).  Copy it from the configured source tree.
     cp ${configuredSrc}/config.sub ./config.sub
     ${s1exe "ghc-toolchain-bin" "ghc-toolchain-bin"} \
-      --disable-ld-override \
+      --disable-ld-override ${lib.optionalString hp.isDarwin
+        # Darwin: bake `-fuse-ld=<lld>` into the settings' C-compiler link
+        # flags.  ghc-toolchain's `--cc-link-opt` is the ghc-toolchain
+        # equivalent of the classic builder's `CONF_GCC_LINKER_OPTS_STAGE2`
+        # that `compiler/ghc/default.nix`'s `useLdLld` sets — a "user
+        # specified linker flag" that Link.hs uses verbatim (no detection),
+        # so it works despite `find_ld`/ghc-toolchain refusing to search for
+        # lld on darwin (GHC #21712) and despite `--disable-ld-override`.
+        # The dev-shell / v2-builder cctools `ld` (ld64-956.6 + clang/llvm
+        # libLTO) SIGTRAPs on any Cocoa link (e.g. a jsaddle-wkwebview exe);
+        # LLD is unaffected.  Absolute path so every consumer (dep slices,
+        # exes, the interactive shell) links with this exact lld without
+        # needing it on PATH.
+        "--cc-link-opt=-fuse-ld=${pkgs.buildPackages.llvmPackages_21.lld}/bin/ld64.lld"} \
       --triple ${buildTriple} \
       --cc  $(type -P cc) \
       --cxx $(type -P c++) \
