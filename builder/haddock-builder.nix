@@ -124,8 +124,12 @@ let
         ${lib.optionalString quickjump "--quickjump"} \
         ${# Pass the component's ghcOptions on to the GHC invocations haddock
           # makes, so haddock sees the same language extensions/options the
-          # build used (see #2129).
-          lib.concatStringsSep " " (map (o: "--haddock-option=--optghc=${o}") component.ghcOptions)} \
+          # build used (see #2129).  Split each option string into words (as
+          # cabal does for its own `--ghc-options`) so each flag becomes its
+          # own `--optghc`, and shell-escape every argument so options
+          # containing whitespace or shell-special characters survive intact.
+          lib.escapeShellArgs (map (o: "--haddock-option=--optghc=${o}")
+            (lib.filter (o: o != "") (lib.concatMap (lib.splitString " ") component.ghcOptions)))} \
         ${lib.concatStringsSep " " setupHaddockFlags}
       }
       runHook postHaddock
