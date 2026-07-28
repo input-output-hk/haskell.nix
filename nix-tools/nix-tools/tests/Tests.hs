@@ -26,8 +26,14 @@ cliTests :: [TestTree]
 cliTests =
   [ singleTest "cabal-to-nix --help exits 0 and prints usage" $
       ShellCheck $ do
-        (code, out, err) <- readProcessWithExitCode "cabal-to-nix" ["--help"] ""
-        return (checkHelp code (out ++ err))
+        -- Preflight the executable so a missing `cabal-to-nix` on PATH becomes a
+        -- clear test failure rather than an IOException that aborts the run.
+        mexe <- findExecutable "cabal-to-nix"
+        case mexe of
+          Nothing -> return (Just "cabal-to-nix is not on PATH")
+          Just _  -> do
+            (code, out, err) <- readProcessWithExitCode "cabal-to-nix" ["--help"] ""
+            return (checkHelp code (out ++ err))
   ]
 
 -- | Assertion for the `--help` smoke test, factored out so it is pure and

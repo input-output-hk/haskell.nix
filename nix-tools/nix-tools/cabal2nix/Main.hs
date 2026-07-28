@@ -44,9 +44,10 @@ usage = unlines
   [ "cabal-to-nix - convert a Cabal package into a Nix expression"
   , ""
   , "Usage:"
-  , "  cabal-to-nix <url> <sha256>     fetch the package from <url> (must start"
-  , "                                  with http) at revision/hash <sha256> and"
-  , "                                  emit Nix for the cabal file(s) it contains"
+  , "  cabal-to-nix <url> <rev>        fetch the package from <url> (must start"
+  , "                                  with http) at revision/ref <rev> and emit"
+  , "                                  Nix for the cabal file(s) it contains (the"
+  , "                                  sha256 is prefetched, not supplied here)"
   , "  cabal-to-nix <path> <file>      emit Nix for the cabal <file>, using <path>"
   , "                                  as the source location"
   , "  cabal-to-nix <path> <dir>       emit a Nix set for a pkg/version/*.cabal"
@@ -59,9 +60,9 @@ usage = unlines
 main :: IO ()
 main = getArgs >>= \case
   args | args `elem` [["--help"], ["-h"]] -> putStr usage
-  [url,hash] | "http" `isPrefixOf` url ->
+  [url,rev] | "http" `isPrefixOf` url ->
           let subdir = "." in
-          fetch (\dir -> cabalFromPath url hash subdir $ dir </> subdir)
+          fetch (\dir -> cabalFromPath url rev subdir $ dir </> subdir)
             (Source url mempty UnknownHash) >>= \case
             (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
             _ -> return ()
