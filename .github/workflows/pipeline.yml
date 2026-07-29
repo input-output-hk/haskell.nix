@@ -252,6 +252,13 @@ jobs:
       - name: "Check that the haskell.nix roots do not require IFDs"
         run: nix build .#roots.x86_64-linux --accept-flake-config --option allow-import-from-derivation false
 
+  # These two evaluated `requiredJobs.x86_64-darwin.…`, which cannot work on a
+  # linux runner: evaluating a darwin jobset needs its import-from-derivation
+  # inputs built for darwin, and `--builders ''` deliberately forbids farming
+  # that out (that is the property being tested).  The darwin outputs are not
+  # in cache.iog.io or cache.zw3rk.com either, so there is nothing to
+  # substitute.  Evaluate the linux jobsets instead, so the check runs on the
+  # same platform as the runner.
   hydra-without-remote-builders-ghc967:
     runs-on: ubuntu-latest
     steps:
@@ -260,7 +267,7 @@ jobs:
       - name: "Check that evaluation of hydra jobs works without using remote builders for GHC 9.6.7"
         run: |
           sed -i 's/runningHydraEvalTest = true;/runningHydraEvalTest = false;/' flake.nix
-          nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc967-native --show-trace --builders ''
+          nix path-info --derivation .#requiredJobs.x86_64-linux.required-unstable-ghc967-native --show-trace --builders ''
 
   # Was `ghc9102`, but the 9.10 entry in the CI matrix is now `ghc9103`, so
   # `requiredJobs.….required-unstable-ghc9102-native` no longer exists and this
@@ -274,7 +281,7 @@ jobs:
       - name: "Check that evaluation of hydra jobs works without using remote builders for GHC 9.10.3"
         run: |
           sed -i 's/runningHydraEvalTest = true;/runningHydraEvalTest = false;/' flake.nix
-          nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc9103-native --show-trace --builders ''
+          nix path-info --derivation .#requiredJobs.x86_64-linux.required-unstable-ghc9103-native --show-trace --builders ''
 
   hix-cabal:
     runs-on: ubuntu-latest
