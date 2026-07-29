@@ -193,18 +193,26 @@ jobs:
           sed -i 's/ifdLevel = 3;/ifdLevel = 2;/' flake.nix
           ./check-hydra.sh
 
-  hydra-ifdLevel-3:
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/install-nix
-      - name: "Check that jobset will evaluate in Hydra at ifdLevel 3"
-        run: |
-          nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
-          sed -i 's/runningHydraEvalTest = false;/runningHydraEvalTest = true;/' flake.nix
-          sed -i 's/evalSystem = "aarch64-darwin";/evalSystem = "x86_64-linux";/' flake.nix
-          ./check-hydra.sh
+  # Disabled for now: full-IFD evaluation does not fit a GitHub-hosted runner.
+  # It was cancelled at the 120 minute limit still inside its single
+  # `nix-eval-jobs` call, having never reached check-hydra's "OK" line, so the
+  # duration it actually needs is unknown and may exceed GitHub's 6 hour job
+  # cap.  For scale, `hydra-ifdLevel-2` completes in ~18 minutes on the same
+  # runner.  ifdLevel 0/1/2 above still cover evaluation regressions cheaply,
+  # and Hydra continues to run the full ifdLevel 3 evaluation on machines with
+  # the darwin builders and warm store it was designed for.
+#  hydra-ifdLevel-3:
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 120
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: ./.github/actions/install-nix
+#      - name: "Check that jobset will evaluate in Hydra at ifdLevel 3"
+#        run: |
+#          nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
+#          sed -i 's/runningHydraEvalTest = false;/runningHydraEvalTest = true;/' flake.nix
+#          sed -i 's/evalSystem = "aarch64-darwin";/evalSystem = "x86_64-linux";/' flake.nix
+#          ./check-hydra.sh
 
   closure-size:
     runs-on: ubuntu-latest
