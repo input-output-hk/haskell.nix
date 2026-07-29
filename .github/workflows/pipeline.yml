@@ -262,15 +262,19 @@ jobs:
           sed -i 's/runningHydraEvalTest = true;/runningHydraEvalTest = false;/' flake.nix
           nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc967-native --show-trace --builders ''
 
-  hydra-without-remote-builders-ghc9102:
+  # Was `ghc9102`, but the 9.10 entry in the CI matrix is now `ghc9103`, so
+  # `requiredJobs.….required-unstable-ghc9102-native` no longer exists and this
+  # job could only fail on a missing attribute.  That went unnoticed because
+  # the workflow has not run since the self-hosted runners disappeared.
+  hydra-without-remote-builders-ghc9103:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/install-nix
-      - name: "Check that evaluation of hydra jobs works without using remote builders for GHC 9.10.2"
+      - name: "Check that evaluation of hydra jobs works without using remote builders for GHC 9.10.3"
         run: |
           sed -i 's/runningHydraEvalTest = true;/runningHydraEvalTest = false;/' flake.nix
-          nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc9102-native --show-trace --builders ''
+          nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc9103-native --show-trace --builders ''
 
   hix-cabal:
     runs-on: ubuntu-latest
