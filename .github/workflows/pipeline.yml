@@ -220,7 +220,14 @@ jobs:
   update-docs:
     runs-on: ubuntu-latest
     steps:
+      # `update-docs.sh` does `git checkout gh-pages`, so it needs that branch.
+      # actions/checkout defaults to a shallow, single-branch fetch, whose
+      # refspec is only the branch under test -- the script's `git fetch origin`
+      # would not bring `gh-pages` and the checkout would fail with
+      # "pathspec 'gh-pages' did not match any file(s) known to git".
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/install-nix
       - name: "Update docs"
         run: |
