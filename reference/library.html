@@ -12,21 +12,20 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="../favicon.svg">
-        <link rel="shortcut icon" href="../favicon.png">
-        <link rel="stylesheet" href="../css/variables.css">
-        <link rel="stylesheet" href="../css/general.css">
-        <link rel="stylesheet" href="../css/chrome.css">
-        <link rel="stylesheet" href="../css/print.css" media="print">
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-2459343d.css">
+        <link rel="stylesheet" href="../css/chrome-ae938929.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="../fonts/fonts.css">
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
-        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
-        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
 
@@ -36,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex.js";
+            window.path_to_searchindex_js = "../searchindex-7778d646.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc.js"></script>
+        <script src="../toc-d0ee0c62.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -53,7 +52,7 @@
             </div>
         </div>
     </div>
-    <div id="body-container">
+    <div id="mdbook-body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
             try {
@@ -82,12 +81,12 @@
             html.classList.add("js");
         </script>
 
-        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
             let sidebar = null;
-            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
@@ -102,39 +101,39 @@
             }
         </script>
 
-        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
                 <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
             </div>
         </nav>
 
-        <div id="page-wrapper" class="page-wrapper">
+        <div id="mdbook-page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="menu-bar-hover-placeholder"></div>
-                <div id="menu-bar" class="menu-bar sticky">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
-                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
-                            <i class="fa fa-bars"></i>
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
                         </label>
-                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
-                            <i class="fa fa-paint-brush"></i>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
                         </button>
-                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
                         </ul>
-                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
-                            <i class="fa fa-search"></i>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
                         </button>
                     </div>
 
@@ -142,38 +141,38 @@
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
-                            <i id="print-button" class="fa fa-print"></i>
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
                     </div>
                 </div>
 
-                <div id="search-wrapper" class="hidden">
-                    <form id="searchbar-outer" class="searchbar-outer">
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
                         <div class="search-wrapper">
-                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
                             <div class="spinner-wrapper">
-                                <i class="fa fa-spinner fa-spin"></i>
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
                             </div>
                         </div>
                     </form>
-                    <div id="searchresults-outer" class="searchresults-outer hidden">
-                        <div id="searchresults-header" class="searchresults-header"></div>
-                        <ul id="searchresults">
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
                         </ul>
                     </div>
                 </div>
 
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
                 <script>
-                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
-                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
-                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
                         link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
                     });
                 </script>
 
-                <div id="content" class="content">
+                <div id="mdbook-content" class="content">
                     <main>
                         <p><a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> contains a library of functions for creating buildable
 package sets from their Nix expression descriptions. The library is
@@ -202,13 +201,19 @@ system.</p>
   };
 }
 </code></pre>
-<div class="table-wrapper"><table><thead><tr><th>Attribute</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Attribute</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
 <tr><td><code>options</code></td><td>Module options</td><td>The combination of all options set through the <code>modules</code> argument passed to <code>mkPkgsSet</code>.</td></tr>
 <tr><td><code>config</code></td><td></td><td>The result of evaluating and applying the <code>options</code> with <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a></td></tr>
 <tr><td><code>.hsPkgs</code></td><td>Attrset of <a href="#haskell-package">Haskell Packages</a></td><td>Buildable packages, created from <code>packages</code></td></tr>
 <tr><td><code>.packages</code></td><td>Attrset of <a href="#haskell-package-descriptions">Haskell Package descriptions</a></td><td>Configuration for each package in <code>hsPkgs</code></td></tr>
 <tr><td><code>.compiler</code></td><td>Attrset</td><td></td></tr>
-</tbody></table>
+</tbody>
+</table>
 </div>
 <h2 id="haskell-package-description"><a class="header" href="#haskell-package-description">Haskell Package description</a></h2>
 <p>The <em>Haskell package descriptions</em> are values of the
@@ -225,7 +230,7 @@ component. The configuration options are described under
 <h2 id="haskell-package"><a class="header" href="#haskell-package">Haskell Package</a></h2>
 <p>In <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>, a <em>Haskell package</em> is a derivation which has a
 <code>components</code> attribute. This derivation is actually just for the
-package <code>Setup.hs</code> script, and isn't very interesting. To actually use
+package <code>Setup.hs</code> script, and isn’t very interesting. To actually use
 the package, look within the components structure.</p>
 <pre><code class="language-nix">components = {
   library = COMPONENT;
@@ -253,19 +258,25 @@ set. They are either:</p>
 </ol>
 <p>If using the function form of a module, the following named parameters
 will be passed to it:</p>
-<div class="table-wrapper"><table><thead><tr><th>Argument</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
 <tr><td><code>haskellLib</code></td><td>attrset</td><td>The <a href="#haskelllib">haskellLib</a> utility functions.</td></tr>
 <tr><td><code>pkgs</code></td><td></td><td>The Nixpkgs collection.</td></tr>
 <tr><td><code>pkgconfPkgs</code></td><td></td><td>A mapping of cabal build-depends names to Nixpkgs packages. (TODO: more information about this)</td></tr>
 <tr><td><code>buildModules</code></td><td></td><td></td></tr>
 <tr><td><code>config</code></td><td></td><td></td></tr>
 <tr><td><code>options</code></td><td></td><td></td></tr>
-</tbody></table>
+</tbody>
+</table>
 </div>
 <h1 id="top-level-attributes"><a class="header" href="#top-level-attributes">Top-level attributes</a></h1>
-<h2 id="project"><a class="header" href="#project">project'</a></h2>
+<h2 id="project"><a class="header" href="#project">project’</a></h2>
 <p>Function that accepts attribute set with a <code>src</code> attribute and looks for <code>stack.yaml</code> file relative to it.</p>
-<p>If file exists, it calls <a href="#stackproject&#x27;">stackProject</a> function. Otherwise it will call <a href="#cabalproject&#x27;">cabalProject</a> function.</p>
+<p>If file exists, it calls <a href="#stackproject&#39;">stackProject</a> function. Otherwise it will call <a href="#cabalproject&#39;">cabalProject</a> function.</p>
 <p><strong>Example</strong>:</p>
 <pre><code class="language-nix">pkgs.haskell-nix.project' {
   # 'cleanGit' cleans a source directory based on the files known by git
@@ -275,25 +286,36 @@ will be passed to it:</p>
   };
 }
 </code></pre>
-<h2 id="stackproject"><a class="header" href="#stackproject">stackProject'</a></h2>
+<h2 id="stackproject"><a class="header" href="#stackproject">stackProject’</a></h2>
 <p>A function calling <a href="#callstacktonix">callStackToNix</a> with all arguments.</p>
 <p>Then feeding its result into <a href="#mkstackpkgset">mkStackPkgSet</a> passing also
 <code>pkg-def-extras</code> and <code>modules</code> arguments.</p>
 <p><strong>Return value</strong>:</p>
-<div class="table-wrapper"><table><thead><tr><th>Attribute</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Attribute</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
 <tr><td><code>hsPkgs</code></td><td>Attrset of <a href="#haskell-package">Haskell Packages</a></td><td>Buildable packages, created from <code>packages</code></td></tr>
 <tr><td><code>stack-nix</code></td><td></td><td><code>projectNix</code> attribute of <a href="#callstacktonix"><code>callStackToNix</code></a> return value</td></tr>
 <tr><td><code>shellFor</code></td><td>Function</td><td><a href="#shellfor"><code>shellFor</code></a></td></tr>
 <tr><td><code>ghcWithHoogle</code></td><td>Function</td><td><a href="#ghcwithhoogle"><code>ghcWithHoogle</code></a></td></tr>
 <tr><td><code>ghcWithPackages</code></td><td>Function</td><td><a href="#ghcwithpackages"><code>ghcWithPackages</code></a></td></tr>
-</tbody></table>
+</tbody>
+</table>
 </div>
-<h2 id="cabalproject"><a class="header" href="#cabalproject">cabalProject'</a></h2>
+<h2 id="cabalproject"><a class="header" href="#cabalproject">cabalProject’</a></h2>
 <p>A function calling <a href="#callcabalprojecttonix">callCabalProjectToNix</a> with all arguments.</p>
 <p>Then feeding its result into <a href="#mkcabalprojectpkgset">mkCabalProjectPkgSet</a> passing also
 <code>pkg-def-extras</code>, <code>extra-hackages</code> and <code>modules</code> arguments.</p>
 <p><strong>Return value</strong>:</p>
-<div class="table-wrapper"><table><thead><tr><th>Attribute</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Attribute</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
 <tr><td><code>hsPkgs</code></td><td>Attrset of <a href="#haskell-package">Haskell Packages</a></td><td>Buildable packages, created from <code>packages</code></td></tr>
 <tr><td><code>plan-nix</code></td><td></td><td><code>projectNix</code> attribute of <a href="#callcabalprojecttonix"><code>callCabalProjectToNix</code></a> return value</td></tr>
 <tr><td><code>index-state</code></td><td></td><td><code>index-state</code> attribute of <a href="#callcabalprojecttonix"><code>callCabalProjectToNix</code></a> return value</td></tr>
@@ -304,11 +326,12 @@ will be passed to it:</p>
 <tr><td><code>projectVariants</code></td><td>Attrset</td><td>Attribute set of variant for the project, mapped from <code>flake.variants</code> config values</td></tr>
 <tr><td><code>appendModule</code></td><td>Function</td><td>Re-eval the project with an extra module (or module list).</td></tr>
 <tr><td><code>extend</code> and <code>appendOverlays</code></td><td>Function</td><td>Modify a project, or add attributes, through overlays: <code>p.extend(final: prev: { })</code>. The overlays are carried-over <code>projectCross</code> and <code>appendModule</code> invocations.</td></tr>
-</tbody></table>
+</tbody>
+</table>
 </div>
 <h2 id="project-cabalproject-and-stackproject"><a class="header" href="#project-cabalproject-and-stackproject">project, cabalProject and stackProject</a></h2>
-<p>These versions of the function are the same as project', cabalProject'
-and stackProject', but <code>hsPkgs</code> attributes are also included in the
+<p>These versions of the function are the same as project’, cabalProject’
+and stackProject’, but <code>hsPkgs</code> attributes are also included in the
 return value directly.  That way a package can be referenced as
 <code>(project {...}).foo</code> instead of <code>(project' {...}).hsPkgs.foo</code>.</p>
 <h2 id="mkstackpkgset"><a class="header" href="#mkstackpkgset">mkStackPkgSet</a></h2>
@@ -317,11 +340,17 @@ of <code>stack-to-nix</code>.</p>
 <pre><code class="language-nix">mkStackPkgSet =
     { stack-pkgs, pkg-def-extras ? [], modules ? []}: ...
 </code></pre>
-<div class="table-wrapper"><table><thead><tr><th>Argument</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
 <tr><td><code>stack-pkgs</code></td><td></td><td><code>import ./pkgs.nix</code> — The imported file generated by <code>stack‑to‑nix</code>.</td></tr>
 <tr><td><code>pkg‑def‑extras</code></td><td>List of <a href="#extras">Extras</a></td><td>For overriding the package set.</td></tr>
 <tr><td><code>modules</code></td><td>List of <a href="#modules">Modules</a></td><td>For overriding the package set.</td></tr>
-</tbody></table>
+</tbody>
+</table>
 </div>
 <p><strong>Return value</strong>: a <a href="#package-set"><code>pkgSet</code></a></p>
 <h2 id="mkcabalprojectpkgset"><a class="header" href="#mkcabalprojectpkgset">mkCabalProjectPkgSet</a></h2>
@@ -330,11 +359,17 @@ of <code>plan-to-nix</code>.</p>
 <pre><code class="language-nix">mkCabalProjectPkgSet =
     { plan-pkgs, pkg-def-extras ? [], modules ? []}: ...
 </code></pre>
-<div class="table-wrapper"><table><thead><tr><th>Argument</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
 <tr><td><code>plan-pkgs</code></td><td></td><td><code>import ./pkgs.nix</code> — The imported file generated by <code>plan‑to‑nix</code>.</td></tr>
 <tr><td><code>pkg‑def‑extras</code></td><td>List of <a href="#extras">Extras</a></td><td>For overriding the package set.</td></tr>
 <tr><td><code>modules</code></td><td>List of <a href="#modules">Modules</a></td><td>For overriding the package set.</td></tr>
-</tbody></table>
+</tbody>
+</table>
 </div>
 <p><strong>Return value</strong>: a <a href="#package-set"><code>pkgSet</code></a></p>
 <h2 id="mkpkgset"><a class="header" href="#mkpkgset">mkPkgSet</a></h2>
@@ -372,31 +407,43 @@ needed for <code>importAndFilterProject</code>.</p>
       src = ./.;
     })).pkgs;
 </code></pre>
-<div class="table-wrapper"><table><thead><tr><th>Argument</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
 <tr><td><code>name</code></td><td>String</td><td>Optional name for better error messages.</td></tr>
 <tr><td><code>src</code></td><td>Path</td><td>Location of the cabal project files.</td></tr>
-<tr><td><code>compiler-nix-name</code></td><td>String</td><td>The name of the ghc compiler to use eg. "ghc9122"</td></tr>
-<tr><td><code>index-state</code></td><td>Timestamp</td><td>Optional hackage index-state, eg. "2025-01-10T00:00:00Z".</td></tr>
+<tr><td><code>compiler-nix-name</code></td><td>String</td><td>The name of the ghc compiler to use eg. “ghc9122”</td></tr>
+<tr><td><code>index-state</code></td><td>Timestamp</td><td>Optional hackage index-state, eg. “2025-01-10T00:00:00Z”.</td></tr>
 <tr><td><code>index-sha256</code></td><td>Sha256</td><td>Optional hash of the truncated hackage index-state.</td></tr>
 <tr><td><code>plan-sha256</code></td><td>Sha256</td><td>Optional hash of the plan-to-nix output (makes the plan-to-nix step a fixed output derivation).</td></tr>
-<tr><td><code>cabalProject</code></td><td>String</td><td>Optional cabal project file contents (defaults to readFile "${src}/cabal.project").</td></tr>
-<tr><td><code>cabalProjectLocal</code></td><td>String</td><td>Optional cabal project file contents (defaults to readFile "${src}/cabal.project.local").</td></tr>
-<tr><td><code>cabalProjectFreeze</code></td><td>String</td><td>Optional cabal project file contents (defaults to readFile "${src}/cabal.project.freeze").</td></tr>
+<tr><td><code>cabalProject</code></td><td>String</td><td>Optional cabal project file contents (defaults to readFile “${src}/cabal.project”).</td></tr>
+<tr><td><code>cabalProjectLocal</code></td><td>String</td><td>Optional cabal project file contents (defaults to readFile “${src}/cabal.project.local”).</td></tr>
+<tr><td><code>cabalProjectFreeze</code></td><td>String</td><td>Optional cabal project file contents (defaults to readFile “${src}/cabal.project.freeze”).</td></tr>
 <tr><td><code>ghc</code></td><td></td><td>Deprecated. Use <code>compiler-nix-name</code> instead. Optional ghc to use</td></tr>
 <tr><td><code>nix-tools</code></td><td></td><td>Optional nix-tools to use</td></tr>
 <tr><td><code>hpack</code></td><td></td><td>Optional hpack to use</td></tr>
 <tr><td><code>cabal-install</code></td><td></td><td>Optional cabal-install to use</td></tr>
-<tr><td><code>configureArgs</code></td><td>String</td><td>Optional extra arguments to pass to <code>cabal new-configure</code> (--enable-tests is included by default, include <code>--disable-tests</code> to override that).</td></tr>
-</tbody></table>
+<tr><td><code>configureArgs</code></td><td>String</td><td>Optional extra arguments to pass to <code>cabal new-configure</code> (–enable-tests is included by default, include <code>--disable-tests</code> to override that).</td></tr>
+</tbody>
+</table>
 </div>
 <h2 id="importandfilterproject"><a class="header" href="#importandfilterproject">importAndFilterProject</a></h2>
 <p>Imports from a derivation created by <code>callStackToNix</code>
 or <code>callCabalProjectToNix</code>.</p>
 <p>The result is an attrset with the following values:</p>
-<div class="table-wrapper"><table><thead><tr><th>Attribute</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Attribute</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
 <tr><td><code>pkgs</code></td><td>attrset</td><td>that can be passed to <code>mkStackPkgSet</code> (as <code>stack-pkgs</code>) or <code>mkCabalProjectPkgSet</code> (as <code>plan-pkgs</code>).</td></tr>
 <tr><td><code>nix</code></td><td></td><td>this can be built and cached so that the amount built in the evaluation phase is not too great (helps to avoid timeouts on Hydra).</td></tr>
-</tbody></table>
+</tbody>
+</table>
 </div>
 <h2 id="hackage"><a class="header" href="#hackage">hackage</a></h2>
 <h2 id="stackage"><a class="header" href="#stackage">stackage</a></h2>
@@ -407,7 +454,7 @@ or <code>callCabalProjectToNix</code>.</p>
 <p>Filters a source tree removing common filenames that are not Haskell
 build sources.</p>
 <p>This can avoid unecessary rebuilds when these files change.</p>
-<p>It's recommended to provide <code>name</code> so that the source derivation
+<p>It’s recommended to provide <code>name</code> so that the source derivation
 remains constant regardless of how it was fetched.</p>
 <p>Example:</p>
 <pre><code class="language-nix">src = pkgs.haskell-nix.cleanSourceHaskell {
@@ -426,7 +473,7 @@ use the convenience function <a href="#cleansourcehaskell"><code>cleanSourceHask
 <p>Assorted functions for operating on <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> data. This is
 distinct from <code>pkgs.haskell.lib</code> in the current Nixpkgs Haskell
 Infrastructure.</p>
-<h3 id="collectcomponents-collectcomponents"><a class="header" href="#collectcomponents-collectcomponents">collectComponents, collectComponents'</a></h3>
+<h3 id="collectcomponents-collectcomponents"><a class="header" href="#collectcomponents-collectcomponents">collectComponents, collectComponents’</a></h3>
 <p>Extracts a selection of components from a Haskell <a href="#package-set">package set</a>.</p>
 <p>This can be used to filter out all test suites or benchmarks of
 your project, so that they can be built in Hydra (see check if you
@@ -437,11 +484,17 @@ predicate for filtering.</p>
     group: packageSel: haskellPackages: ...
 collectComponents' = group: collectComponents (_: true)
 </code></pre>
-<div class="table-wrapper"><table><thead><tr><th>Argument</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
 <tr><td><code>group</code></td><td>String</td><td>A <a href="#subComponentTypes">sub-component type</a>.</td></tr>
 <tr><td><code>packageSel</code></td><td>A function <code>Package -&gt; Bool</code></td><td>A predicate to filter packages with.</td></tr>
 <tr><td><code>haskellPackages</code></td><td><a href="#package-set">Package set</a></td><td>All packages in the build.</td></tr>
-</tbody></table>
+</tbody>
+</table>
 </div>
 <p><strong>Return value</strong>: a recursive attrset mapping package names → component names → components.</p>
 <p><strong>Example</strong>:</p>
@@ -449,15 +502,21 @@ collectComponents' = group: collectComponents (_: true)
 </code></pre>
 <p>Will result in moving derivations from <code>hsPkgs.mypackage.components.tests.unit-tests</code>
 to <code>tests.mypackage.unit-tests</code>.</p>
-<h3 id="collectchecks-collectchecks"><a class="header" href="#collectchecks-collectchecks">collectChecks, collectChecks'</a></h3>
+<h3 id="collectchecks-collectchecks"><a class="header" href="#collectchecks-collectchecks">collectChecks, collectChecks’</a></h3>
 <p>These are just like <code>collectComponents</code> and <code>collectComponents'</code>, except that they collect
-the <code>checks</code> attributes of packages (which aren't components, and so can't be collected
+the <code>checks</code> attributes of packages (which aren’t components, and so can’t be collected
 by the other functions.</p>
 <h4 id="check"><a class="header" href="#check">check</a></h4>
 <p>This function turns a derivation that builds a test into one to run it.</p>
-<div class="table-wrapper"><table><thead><tr><th>Argument</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
 <tr><td><code>drv</code></td><td>Derivation</td><td>One of <code>$pkg.components.tests.$test</code>.</td></tr>
-</tbody></table>
+</tbody>
+</table>
 </div>
 <p>For convenience <code>$pkg.components.tests</code> are mapped with this function
 to <code>$pkg.checks</code>.</p>
@@ -484,7 +543,12 @@ packages with <code>ghci</code> or <code>cabal v2-build</code> (but not Stack).<
 <pre><code class="language-nix">shellFor =
     { packages, withHoogle ? true, exactDeps ? false, ...}: ...
 </code></pre>
-<div class="table-wrapper"><table><thead><tr><th>Argument</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Argument</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
 <tr><td><code>name</code></td><td>String</td><td>Name of the derivation</td></tr>
 <tr><td><code>packages</code></td><td>Function</td><td>Package selection function. It takes a list of <a href="#haskell-package">Haskell packages</a> and returns a subset of these packages.</td></tr>
 <tr><td><code>components</code></td><td>Function</td><td>Similar to <code>packages</code>, by default all the components of the selected packages are selected.</td></tr>
@@ -501,7 +565,8 @@ packages with <code>ghci</code> or <code>cabal v2-build</code> (but not Stack).<
 <tr><td><code>buildInputs</code></td><td></td><td>Passed to <a href="https://nixos.org/nixpkgs/manual/#sec-using-stdenv"><code>mkDerivation</code></a> (via <a href="https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-mkShell">mkShell</a>).</td></tr>
 <tr><td><code>nativeBuildInputs</code></td><td></td><td>Passed to <a href="https://nixos.org/nixpkgs/manual/#sec-using-stdenv"><code>mkDerivation</code></a> (via <a href="https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-mkShell">mkShell</a>).</td></tr>
 <tr><td><code>passthru</code></td><td></td><td>Passed to <a href="https://nixos.org/nixpkgs/manual/#sec-using-stdenv"><code>mkDerivation</code></a>  (via <a href="https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-mkShell">mkShell</a>).</td></tr>
-</tbody></table>
+</tbody>
+</table>
 </div>
 <p>The arguments are checked using the module <code>modules/shell.nix</code>.</p>
 <p>To set environment variables in the shell use:</p>
@@ -556,11 +621,11 @@ shell.</p>
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                             <a rel="prev" href="../reference/commands.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
-                                <i class="fa fa-angle-left"></i>
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
                             <a rel="next prefetch" href="../reference/modules.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <i class="fa fa-angle-right"></i>
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
                         <div style="clear: both"></div>
@@ -570,16 +635,21 @@ shell.</p>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                     <a rel="prev" href="../reference/commands.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
-                        <i class="fa fa-angle-left"></i>
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
                     <a rel="next prefetch" href="../reference/modules.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <i class="fa fa-angle-right"></i>
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
 
         </div>
 
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
 
 
 
@@ -588,13 +658,13 @@ shell.</p>
         </script>
 
 
-        <script src="../elasticlunr.min.js"></script>
-        <script src="../mark.min.js"></script>
-        <script src="../searcher.js"></script>
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-c2a407aa.js"></script>
 
-        <script src="../clipboard.min.js"></script>
-        <script src="../highlight.js"></script>
-        <script src="../book.js"></script>
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-862e895d.js"></script>
+        <script src="../book-a0b12cfe.js"></script>
 
         <!-- Custom JS scripts -->
 

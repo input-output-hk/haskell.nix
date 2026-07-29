@@ -1,0 +1,512 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Migrating to builderVersion &#x3D; 2 - Haskell.nix</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-2459343d.css">
+        <link rel="stylesheet" href="../css/chrome-ae938929.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-7778d646.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-d0ee0c62.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Haskell.nix</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="migrating-a-project-from-builderversion--1-to-builderversion--2"><a class="header" href="#migrating-a-project-from-builderversion--1-to-builderversion--2">Migrating a project from <code>builderVersion = 1</code> to <code>builderVersion = 2</code></a></h1>
+<p>The v2 builder runs <code>cabal v2-build</code> inside each per-component slice
+derivation rather than driving <code>Setup.hs</code> from haskell.nix.  As a
+consequence, configuration that haskell.nix used to consume <em>after</em>
+plan-to-nix (via module-level options) now has to be visible to cabal
+<em>at</em> plan-to-nix time — either in <code>cabal.project</code> /
+<code>cabalProjectLocal</code>, or routed via mechanisms that feed plan.json’s
+<code>configure-args</code>.</p>
+<p>This document collects the patterns we hit migrating the in-tree test
+suite.  If you’re flipping <code>builderVersion = 2</code> on your own project
+and see one of the symptoms below, follow the matching pattern.</p>
+<h2 id="routing-settings-through-cabalprojectlocal"><a class="header" href="#routing-settings-through-cabalprojectlocal">Routing settings through <code>cabalProjectLocal</code></a></h2>
+<p>Several haskell.nix module options that v1 honoured directly are no
+longer enough on their own.  v2 reads plan.json’s per-unit
+<code>configure-args</code> to compute UnitIds, and anything not visible in
+cabal.project at plan time forks the slice’s UnitId hash from
+plan-nix’s recorded UnitId — symptoms include “unit … not found” at
+slice link time, or quietly re-resolved versions.</p>
+<h3 id="library--executable-profiling"><a class="header" href="#library--executable-profiling">Library / executable profiling</a></h3>
+<p><strong>Old (v1):</strong></p>
+<pre><code class="language-nix">modules = [{
+  packages.foo.components.library.enableLibraryProfiling = true;
+  packages.foo.components.exes.bar.enableProfiling       = true;
+}];
+# ... then later:
+project.hsPkgs.foo.components.exes.bar.profiled
+</code></pre>
+<p><strong>New (v2):</strong></p>
+<pre><code class="language-nix">cabalProjectLocal = ''
+  package *
+    library-profiling: True
+  package foo
+    profiling: True
+'';
+# ... then:
+project.hsPkgs.foo.components.exes.bar
+</code></pre>
+<p>The <code>.profiled</code> overlay attribute is no longer produced by the v2
+builder.  To build a profiled variant alongside a non-profiled one,
+instantiate <strong>a second sibling project</strong> whose <code>cabalProjectLocal</code>
+carries the profiling toggles — see <code>test/exe-dlls/default.nix</code>,
+<code>test/th-dlls/default.nix</code>, and <code>test/gi-gtk/default.nix</code> for
+patterns that thread a <code>profiled</code> argument through the project
+constructor.</p>
+<h3 id="coverage"><a class="header" href="#coverage">Coverage</a></h3>
+<p><strong>Old:</strong></p>
+<pre><code class="language-nix">modules = [{
+  packages.pkga.doCoverage = true;
+  packages.pkgb.doCoverage = true;
+}];
+</code></pre>
+<p><strong>New:</strong> keep the module entries (still honoured), but also mirror
+them in <code>cabalProjectLocal</code>:</p>
+<pre><code class="language-nix">cabalProjectLocal = ''
+  package pkga
+    coverage: True
+  package pkgb
+    coverage: True
+'';
+</code></pre>
+<p><code>test/coverage/default.nix</code> shows the pattern.</p>
+<h3 id="dwarf-debug-info"><a class="header" href="#dwarf-debug-info">DWARF debug info</a></h3>
+<p><strong>Old (v1):</strong></p>
+<pre><code class="language-nix">project.hsPkgs.foo.components.exes.bar.dwarf
+</code></pre>
+<p><strong>New (v2):</strong></p>
+<pre><code class="language-nix">project = cabalProject' {
+  compilerSelection = p: lib.mapAttrs (_: c: c.dwarf) p.haskell-nix.compiler;
+  cabalProjectLocal = ''
+    package *
+      debug-info: 2
+  '';
+  # …
+};
+# ... then:
+project.hsPkgs.foo.components.exes.bar
+</code></pre>
+<p>Reasons:</p>
+<ul>
+<li>The <code>.dwarf</code> slice overlay would diverge from plan-nix’s UnitId
+(slice cabal sees different <code>-g</code> flags than plan-nix’s dummy GHC),
+so it’s dropped — <code>comp-v2-builder</code> throws a hint pointing here if
+you reference <code>.dwarf</code>.</li>
+<li><code>compilerSelection</code> routes the swap through the <em>whole</em> compiler
+chain (plan-nix, slice GHC, dummy-ghc), so DWARF covers both your
+code and the runtime — matching what <code>&lt;slice&gt;.dwarf</code> used to do
+for runtime coverage.</li>
+</ul>
+<p><code>test/cabal-simple-debug/default.nix</code> shows the pattern.</p>
+<h3 id="haddock-documentation"><a class="header" href="#haddock-documentation">Haddock documentation</a></h3>
+<pre><code class="language-nix">cabalProjectLocal = ''
+  package *
+    documentation: True
+'';
+</code></pre>
+<p>Without this, v2 doesn’t produce sublib haddocks.  <code>test/sublib-docs</code>
+shows the pattern.  Note the on-disk layout also changed: v1 writes
+<code>share/doc/&lt;pkg&gt;/html/&lt;Module&gt;.html</code>, v2 writes
+<code>share/doc/html/&lt;Module&gt;.html</code> (the unit-id is hashed into the path,
+so don’t synthesise paths — use <code>find -name '&lt;Module&gt;.html'</code>).</p>
+<h3 id="per-package-ghc-options"><a class="header" href="#per-package-ghc-options">Per-package <code>ghc-options</code></a></h3>
+<p><strong>Old (v1):</strong></p>
+<pre><code class="language-nix">modules = [{
+  packages.HsOpenSSL.ghcOptions = ["-optc=-Wno-incompatible-pointer-types"];
+}];
+</code></pre>
+<p><strong>New (v2):</strong> move into <code>cabal.project.local</code>:</p>
+<pre><code>package HsOpenSSL
+  ghc-options: -optc=-Wno-incompatible-pointer-types
+</code></pre>
+<p><code>test/cabal.project.local</code> and <code>test/modules.nix</code> show the
+migration — the <code>package-keys</code> entry stays in <code>modules.nix</code> only if
+<em>other</em> per-package overrides need it.</p>
+<h3 id="per-package-extra-lib-dirs--extra-include-dirs"><a class="header" href="#per-package-extra-lib-dirs--extra-include-dirs">Per-package <code>extra-lib-dirs</code> / <code>extra-include-dirs</code></a></h3>
+<p><strong>Old (v1):</strong></p>
+<pre><code class="language-nix">modules = [{
+  packages.test-lib.components.library.extraLibDirs = ["${test-clib}/lib"];
+}];
+</code></pre>
+<p><strong>New (v2):</strong> prefer <code>cabal.project</code>:</p>
+<pre><code class="language-nix">cabalProjectLocal = ''
+  package test-lib
+    extra-lib-dirs: ${test-clib}/lib
+    extra-lib-dirs: ${test-clib}/bin
+'';
+</code></pre>
+<p><code>test/th-dlls-minimal/default.nix</code> shows the Windows case.</p>
+<h2 id="module-level-option-scope-changes"><a class="header" href="#module-level-option-scope-changes">Module-level option scope changes</a></h2>
+<p>A few options moved from per-component to per-package scope.</p>
+<h3 id="ghcoptions"><a class="header" href="#ghcoptions"><code>ghcOptions</code></a></h3>
+<p><strong>Old (v1):</strong></p>
+<pre><code class="language-nix">modules = [{
+  packages.th-dlls.components.library.ghcOptions = [ "-fexternal-interpreter" ];
+}];
+</code></pre>
+<p><strong>New (v2):</strong></p>
+<pre><code class="language-nix">modules = [{
+  packages.th-dlls.ghcOptions = [ "-fexternal-interpreter" ];
+}];
+</code></pre>
+<p>v2 applies the package-level setting to all components in the slice.</p>
+<h3 id="module-options-on-packages-outside-the-local-project"><a class="header" href="#module-options-on-packages-outside-the-local-project">Module options on packages outside the local project</a></h3>
+<p>If your <code>modules</code> set options on a hackage package that isn’t a
+“home” package (e.g. <code>HsOpenSSL</code>), declare the key:</p>
+<pre><code class="language-nix">modules = [{
+  package-keys = [ "HsOpenSSL" ];
+  packages.HsOpenSSL.ghcOptions = [ … ];
+}];
+</code></pre>
+<p>Without this, v2’s per-package option lookup misses the override.</p>
+<h2 id="shellfor-instead-of-componentshell--componentenv"><a class="header" href="#shellfor-instead-of-componentshell--componentenv"><code>shellFor</code> instead of <code>component.shell</code> / <code>component.env</code></a></h2>
+<p>v2 doesn’t produce per-component <code>.shell</code> / <code>.env</code> attributes.  Use
+the project-level shell:</p>
+<p><strong>Old (v1):</strong></p>
+<pre><code class="language-nix">test-shell = project.hsPkgs.test-with-packages.components.library.shell;
+</code></pre>
+<p><strong>New (v2):</strong></p>
+<pre><code class="language-nix">test-shell = project.shellFor {
+  packages = ps: [ ps.test-with-packages ];
+  exposePackagesVia = "ghc-pkg";
+};
+</code></pre>
+<p><code>exposePackagesVia</code> controls how the dep closure is exposed to the
+shell:</p>
+<ul>
+<li><code>"cabal-store"</code> (default) — seeds <code>~/.cabal/store</code> from the
+composed slice store so plain <code>cabal v2-build</code> in the shell
+reuses the haskell.nix-built units.</li>
+<li><code>"ghc-pkg"</code> — wraps <code>ghc</code> and <code>ghc-pkg</code> with
+<code>GHC_ENVIRONMENT</code> / <code>GHC_PACKAGE_PATH</code> so <code>ghc -e …</code> /
+<code>ghc-pkg list</code> see the dep closure directly.  Use this when you
+want runghc-style invocations to find the deps without going
+through cabal.</li>
+</ul>
+<p><code>test/with-packages/default.nix</code> and <code>test/shell-for/default.nix</code>
+show the migration.</p>
+<h3 id="withhoogle--false-on-static"><a class="header" href="#withhoogle--false-on-static"><code>withHoogle = false</code> on <code>static</code></a></h3>
+<p>On musl-static the GHC compiler tree ships no <code>.dyn_hi</code> files
+(only <code>.hi</code> and <code>.p_hi</code>).  Hoogle’s haddock chain tries to
+haddock-build packages whose TH needs <code>.dyn_hi</code>
+(e.g. <code>OneTuple</code> reaching <code>Language.Haskell.TH.dyn_hi</code>) and fails:</p>
+<pre><code>Exception when reading interface file
+  …/template-haskell-2.24.0.0/Language/Haskell/TH.dyn_hi:
+  does not exist (No such file or directory)
+</code></pre>
+<p>Mitigation: gate <code>withHoogle</code> off when static.</p>
+<pre><code class="language-nix">shellArgs.withHoogle = !stdenv.hostPlatform.isStatic;
+</code></pre>
+<h2 id="source-tree-overrides"><a class="header" href="#source-tree-overrides">Source-tree overrides</a></h2>
+<h3 id="origsrc--origsubdir-no-longer-plumbs-git-into-the-build"><a class="header" href="#origsrc--origsubdir-no-longer-plumbs-git-into-the-build"><code>origSrc</code> / <code>origSubDir</code> no longer plumbs <code>.git</code> into the build</a></h3>
+<p>v1’s <code>comp-builder</code> copied the whole <code>origSrc</code> into the build env
+and <code>cd</code>d to <code>origSubDir</code>, so TH that walked up the tree for <code>.git</code>
+(<code>githash</code>’s <code>tGitInfoCwd</code>) found it.  v2’s slice tarballs only the
+package subdir, so the parent <code>.git</code> is lost.</p>
+<p>Workaround: synthesise a <em>package root</em> that has <code>.git</code> at its top
+and pass it as <code>src</code>:</p>
+<pre><code class="language-nix">packageRoot = evalPackages.runCommand "my-pkg-root" {} ''
+  mkdir -p $out/.git
+  cp -rL ${packageSrc}/. $out/
+  cp -r ${gitDir}/HEAD    $out/.git/HEAD
+  cp -r ${gitDir}/refs    $out/.git/refs
+  cp -r ${gitDir}/objects $out/.git/objects
+'';
+project = cabalProject' {
+  src = { outPath = packageRoot; filterPath = { path, ... }: path; };
+  # …
+};
+</code></pre>
+<p>The <code>outPath + filterPath</code> form tells haskell.nix the source is
+already filtered — without this the default <code>haskellSourceFilter</code>
+strips <code>.git</code>.  <code>test/githash/default.nix</code> shows the full pattern.</p>
+<h2 id="setup-dependencies-on-custom-setup-packages"><a class="header" href="#setup-dependencies-on-custom-setup-packages">Setup dependencies on custom-setup packages</a></h2>
+<p>cabal v2-build doesn’t auto-add boot packages to <code>setup-depends</code>.
+If your custom Setup.hs imports from <code>base</code> or <code>directory</code>, list
+them explicitly:</p>
+<pre><code class="language-cabal">custom-setup
+  setup-depends:
+      base
+    , directory
+    , &lt;your other deps&gt;
+</code></pre>
+<p><code>test/setup-deps/pkg/pkg.cabal</code> and
+<code>test/shell-for-setup-deps/pkg/pkg.cabal</code> show the change.</p>
+<h2 id="platform-specific-gotchas"><a class="header" href="#platform-specific-gotchas">Platform-specific gotchas</a></h2>
+<h3 id="native-musl-shell-tools"><a class="header" href="#native-musl-shell-tools">Native-musl shell tools</a></h3>
+<p>The v2 slice ghc wrapper on native-musl sets
+<code>LD_LIBRARY_PATH=${musl-gcc-libs}</code> so <code>iserv-dyn</code> can find
+<code>libgcc_s</code> at TH-eval.  Glibc-linked subprocesses cabal spawns
+(notably <code>git</code> for <code>source-repository-package</code>) would then load musl
+libc and segfault.  When picking which <code>git</code> to put in
+<code>build-tools</code>, use the <em>host</em> platform’s git on native-musl (a musl
+binary that already runs on the build machine), and the
+<em>build-build</em> git everywhere else:</p>
+<pre><code class="language-nix">git =
+  if haskellLib.isNativeMusl
+    then gitReallyMinimal
+    else buildPackages.buildPackages.gitReallyMinimal;
+</code></pre>
+<p><code>test/githash/default.nix</code> shows the pattern.</p>
+<h3 id="android-cross-builds"><a class="header" href="#android-cross-builds">Android cross builds</a></h3>
+<p>Android cross hosts need a few <code>cabal.project</code> directives that
+neither plan-to-nix nor cabal infer from the cross GHC’s <code>--info</code>.
+The in-tree <code>test/cabal.project.android</code> carries them; project tests
+that exercise android targets inject it conditionally:</p>
+<pre><code class="language-nix">cabalProjectLocal = builtins.readFile ../cabal.project.local
+  + lib.optionalString stdenv.hostPlatform.isAndroid
+      (builtins.readFile ../cabal.project.android);
+</code></pre>
+<h3 id="uselocalghclib--true-for-libghc-consumers"><a class="header" href="#uselocalghclib--true-for-libghc-consumers"><code>useLocalGhcLib = true</code> for <code>lib:ghc</code> consumers</a></h3>
+<p>If your project depends on or constrains the <code>ghc</code> package
+(e.g. <code>ghc-lib-reinstallable</code>), set <code>useLocalGhcLib = true</code> on the
+project.  See the entry in <code>changelog.md</code>
+(2026-05-23) and <code>test/ghc-lib-reinstallable/cabal.nix</code>.</p>
+<h2 id="suggested-migration-order"><a class="header" href="#suggested-migration-order">Suggested migration order</a></h2>
+<ol>
+<li><strong>Flip <code>builderVersion = 2</code></strong> on a non-critical branch and let CI
+tell you which tests / components fail.</li>
+<li><strong>Profiling and coverage first</strong> — they’re the most mechanical
+and cover the largest blast radius.  Move toggles into
+<code>cabalProjectLocal</code> and introduce sibling projects for the
+<code>.profiled</code> callers.</li>
+<li><strong>DWARF / debug-info</strong> if you have any consumers of <code>.dwarf</code>.</li>
+<li><strong>Shell migration</strong> (<code>component.shell</code> / <code>component.env</code> →
+<code>project.shellFor</code>).</li>
+<li><strong>Per-package <code>ghcOptions</code> / <code>extraLibDirs</code></strong> in <code>modules</code> —
+move to <code>cabal.project</code> where possible; declare <code>package-keys</code>
+where the package isn’t in the home project.</li>
+<li><strong><code>origSrc</code> users</strong> (rare — typically <code>githash</code>-style TH that
+walks up to <code>.git</code>): synthesise a package-root drv.</li>
+<li><strong>Custom-setup <code>base</code> / <code>directory</code></strong> — add explicit
+<code>setup-depends</code>.</li>
+</ol>
+<p>If a slice fails to link with <code>unit … not found</code>, the cause is
+almost always plan-nix and slice cabal disagreeing on a UnitId
+input — re-check that every option that affects the UnitId hash
+(profiling, debug-info, library-for-ghci, ghc-options,
+extra-lib-dirs, extra-include-dirs, …) is visible in
+<code>cabal.project</code> rather than only in <code>modules</code>.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../dev/builder-v2.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../dev/installing-nix-tools.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../dev/builder-v2.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../dev/installing-nix-tools.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-c2a407aa.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-862e895d.js"></script>
+        <script src="../book-a0b12cfe.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

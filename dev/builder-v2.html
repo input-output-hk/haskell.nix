@@ -1,0 +1,651 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>V2 Component Builder - Haskell.nix</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-2459343d.css">
+        <link rel="stylesheet" href="../css/chrome-ae938929.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-7778d646.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-d0ee0c62.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Haskell.nix</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="v2-component-builder-cabal-v2-build--slice-based"><a class="header" href="#v2-component-builder-cabal-v2-build--slice-based">V2 Component Builder (cabal v2-build / slice-based)</a></h1>
+<p>The v2 builder is an alternative to the v1 (<code>Setup.hs</code>-based) builder.
+Where v1 produces one nix derivation per Cabal component by invoking
+<code>Setup.hs</code> directly (see <code>builder-v1.md</code>), v2 produces one nix
+derivation per Cabal component by running <code>cabal v2-build</code> inside an
+isolated, pre-populated <strong>cabal store</strong> and capturing the new entries
+that invocation produced.</p>
+<p>The unit of output is a <em>slice</em> — a directory laid out exactly the
+way cabal’s <code>~/.cabal/store/ghc-X.Y.Z/</code> is, holding only the units
+this component caused cabal to install.  Composing a downstream
+slice’s starting store from upstream slices’ <code>$out/store/</code> (via
+<code>lndir</code>) lets cabal reuse those units instead of rebuilding.</p>
+<p>Switch builders at the project level by setting <code>builderVersion = 2;</code>
+(the default).  The component derivation at
+<code>hsPkgs.&lt;pkg&gt;.components.&lt;kind&gt;.&lt;n&gt;</code> is whichever builder
+<code>builderVersion</code> selects — there’s no per-component opt-in.</p>
+<h2 id="why-v2-exists"><a class="header" href="#why-v2-exists">Why v2 exists</a></h2>
+<ul>
+<li><strong>Sublibs work in the dev shell.</strong>  The v1 shell wraps GHC with a
+pre-populated package db, which doesn’t expose Cabal <em>public sublibs</em>
+(<code>library &lt;n&gt;</code> stanzas) to a downstream <code>cabal v2-build</code> — the user’s
+cabal solver re-builds the sublib from source even though we have it
+pre-built.  The v2 shell pre-populates the user’s cabal store
+instead, so cabal sees every component (main lib + sublibs + exe-only
+units) as already-installed and reuses them.</li>
+<li><strong>Match what users see in development.</strong>  <code>cabal v2-build</code> is the
+command users run interactively.  Producing a slice with the same
+command (and the same UnitId hash inputs) means the units we
+pre-populate in <code>~/.cabal/store/</code> <em>can</em> be reused by a plain
+<code>cabal v2-build</code> inside the shell.</li>
+</ul>
+<h2 id="what-v2-produces"><a class="header" href="#what-v2-produces">What v2 produces</a></h2>
+<p>For each component (<code>lib</code>, <code>lib:&lt;sublib&gt;</code>, <code>exe:&lt;name&gt;</code>,
+<code>test:&lt;name&gt;</code>, <code>bench:&lt;name&gt;</code>), v2 produces a single nix derivation
+whose <code>$out</code> looks like:</p>
+<pre><code>$out/
+├── store/
+│   └── ghc-&lt;ver&gt;-inplace/
+│       ├── package.db/&lt;unit-id&gt;.conf …  (new units installed by this slice)
+│       ├── &lt;unit-id&gt;/…                  (new unit dirs)
+│       └── lib/lib&lt;unit-id&gt;-…dylib      (flat dylibs cabal emits)
+├── dist-newstyle/                       (full cabal dist tree)
+├── unit-ids                             (newline-separated list of captured units)
+├── nix-support/propagated-build-inputs  (pkg-config / framework / windows-lib deps)
+└── bin/&lt;exe-name&gt;                       (only for exe/test/bench)
+</code></pre>
+<p><code>$out/store/&lt;ghcDir&gt;/</code> is the cabal-store layout cabal expects.
+Composing many slices via <code>lndir</code> produces a merged store whose
+<code>&lt;unit-id&gt;.conf</code> files come from whichever slice produced each unit;
+<code>ghc-pkg recache</code> over the merged db makes the whole set queryable.</p>
+<p>A v2 slice’s UnitId is required to equal the plan-id plan-nix
+recorded for that component (<code>expectedUnitId</code> check, see below).
+The captured set in <code>$out/store/</code> must equal exactly
+<code>[expectedUnitId]</code>; any extras are an error.</p>
+<h2 id="high-level-flow"><a class="header" href="#high-level-flow">High-level flow</a></h2>
+<ol>
+<li>
+<p><strong><code>modules/component-driver.nix</code></strong> drives <code>config.hsPkgs</code> exactly
+the same way v1 does.  It calls <code>builder.build-package config pkg</code>
+for each package and stores the result in <code>config.hsPkgs</code>.</p>
+</li>
+<li>
+<p><strong><code>builder/hspkg-builder.nix</code></strong> receives <code>pkg</code> and walks every
+buildable component.  For each one it computes:</p>
+<ul>
+<li><code>homeDependIds</code> — sibling-component plan-json deps for cabal’s
+re-solve inside the slice (so the slicing repo holds every
+tarball cabal might need).</li>
+<li><code>pkgSet</code>, <code>packageIdsByName</code>, <code>planJsonByPlanId</code> — the
+canonical-name + plan-id keyed view of the install plan that
+comp-v2-builder uses to find per-plan-unit configure-args.
+<code>planJsonByPlanId</code> is the project-level
+<code>config.plan-json-by-id</code> index so per-component lookups are
+O(log N) attrset hits rather than linear scans over the
+install-plan list.</li>
+</ul>
+<p>Then it calls <code>comp-v2-builder</code> for each component and returns
+the result.  Under <code>builderVersion = 2</code>, that derivation IS the
+primary value at <code>hsPkgs.&lt;pkg&gt;.components.&lt;kind&gt;.&lt;n&gt;</code>.</p>
+</li>
+<li>
+<p><strong><code>builder/comp-v2-builder.nix</code></strong> computes the slice’s
+<code>cabal.project</code>, the slicing repo (a derivation with all the
+<code>&lt;pkg&gt;-&lt;ver&gt;.tar.gz</code> files cabal might need + an <code>00-index.tar.gz</code>),
+the dep slices to compose, and the slice’s <code>name</code> / <code>target</code> /
+<code>expectedPackage</code> / <code>expectedUnitId</code>, then calls
+<strong><code>buildCabalStoreSlice</code></strong>.</p>
+</li>
+<li>
+<p><strong><code>builder/build-cabal-slice.nix</code></strong> (alias <code>buildCabalStoreSlice</code>)
+is the slice derivation itself.  It composes dep slices via
+<code>lndir</code> into a starting cabal store — walks <code>pkgsHostTarget</code>
+for direct deps and follows each entry’s
+<code>$out/nix-support/transitive-deps</code> for the rest of the closure,
+so transitive dep slices stay out of nix-side <code>buildInputs</code> —
+runs <code>cabal v2-build --dry-run</code> (and validates the plan
+against <code>expectedPackage</code>), then runs <code>cabal v2-build</code> for
+real, captures the new units into <code>$out/store/</code>, and writes
+the slice’s own <code>nix-support/transitive-deps</code> so downstream
+consumers can follow the closure the same way.  The
+<code>expectedUnitId</code> check at the end requires the captured set
+to equal <code>[expectedUnitId]</code> exactly.</p>
+</li>
+<li>
+<p><strong><code>builder/compose-store.nix</code></strong> is a tiny helper that lndirs
+slices into a single cabal-store layout, walking
+<code>pkgsHostTarget</code> and following <code>nix-support/transitive-deps</code>
+files exactly like the slice’s own buildPhase.  Used by the
+per-component <code>.store</code> attribute (the slice’s <em>deps</em>, not the
+slice itself) and by the v2 shell’s composed store.</p>
+</li>
+</ol>
+<h2 id="data-flow-per-component"><a class="header" href="#data-flow-per-component">Data flow per component</a></h2>
+<pre><code>plan.json + module config
+  │
+  ▼
+componentTarball (incl. patches)
+  │
+  ▼
+slicingRepo (every dep's source tarball + this component's tarball,
+  │           plus a synthesised 00-index.tar.gz that cabal can read
+  │           via `repository … url: file://…  secure: False`)
+  │
+  ▼
+cabal.project    (with-compiler, active-repositories, allow-newer,
+  │              extra-packages: &lt;target&gt; + &lt;constrained deps&gt;,
+  │              constraints: any.&lt;target&gt; source, &lt;pin&gt; ==&lt;ver&gt; source,
+  │              per-package ghc-options / configure-options / flags,
+  │              per-package extra-(include|lib|framework)-dirs for
+  │              `c.frameworks` only — `c.libs` and `c.pkgconfig`
+  │              are deliberately excluded (their nix-store paths
+  │              would land in `pkgHashExtra(Include|Lib)Dirs` and
+  │              fork the slice's UnitId from plan-nix's, since
+  │              plan-to-nix's compute never sees the
+  │              haskell.nix-injected paths).  The cc wrapper
+  │              still finds these libs via NIX_*_FOR_TARGET — the
+  │              slice has them in `extraBuildInputs`,
+  │              project-level cabal pragmas extracted from plan.json's
+  │              configure-args)
+  │
+  ▼
+buildCabalStoreSlice
+  ├─ lndir each depSlice's $out/store into $storeDir
+  ├─ ghc-pkg recache (merged db)
+  ├─ cabal v2-build --dry-run  →  validate against expectedPackage
+  └─ cabal v2-build            →  produce new units
+  │
+  ▼
+$out/store/&lt;ghcDir&gt;/…   (this slice's captured units)
+$out/dist-newstyle/…    (full cabal dist tree)
+$out/bin/&lt;exe-name&gt;     (extracted from the captured store)
+</code></pre>
+<h2 id="how-cabals-solve-is-constrained"><a class="header" href="#how-cabals-solve-is-constrained">How cabal’s solve is constrained</a></h2>
+<p>There’s no “shim” package.  Each slice’s <code>cabal.project</code> has:</p>
+<ul>
+<li><strong>No <code>packages:</code> line.</strong>  Cabal v2-build accepts a project with
+only <code>extra-packages:</code> so long as the targets use the remote-package
+qualifier (<code>:pkg:foo:lib:bar</code>).</li>
+<li><strong><code>extra-packages:</code></strong> lists the slice’s target package + every
+entry in <code>libConstraintPins</code> (the lib-dep closure of this
+component’s plan units).  Without listing them as goals,
+cabal silently drops <code>&lt;pkg&gt; source</code> constraints on transitively-
+introduced packages.</li>
+<li><strong><code>constraints:</code></strong> has one line per pinned dep:
+<pre><code>constraints: any.&lt;target&gt; source
+constraints: &lt;dep&gt; ==&lt;ver&gt;, &lt;dep&gt; source
+…
+</code></pre>
+Pre-existing (boot) packages are skipped — re-pinning them tends
+to push cabal off the legacy-tool PATH fallback for tools like
+<code>hsc2hs</code>, and GHC’s bundled package db already fixes their
+versions.</li>
+<li><strong><code>active-repositories: hackage.haskell-nix</code></strong> so cabal only sees
+the slicing repo (the user’s real hackage is invisible).</li>
+<li><strong><code>allow-newer: *:*</code></strong> so stale upper bounds in <code>.cabal</code> files
+don’t reject the single candidate version we ship per package.</li>
+<li><strong>Project-level <code>package *</code> block</strong> carrying the
+<code>--enable-shared</code> / <code>--enable-static</code> / etc. toggles plan-nix
+recorded in its <code>configure-args</code> — without this, cabal’s defaults
+fork <code>pkgHashEnableSharedLib</code> and friends from plan-nix.</li>
+</ul>
+<p>The slice targets the package’s component directly via cabal’s
+<code>:pkg:</code> qualifier (<code>:pkg:foo:lib:bar</code>).  cabal-install bug #8684
+makes the bare form fail when the package isn’t in <code>packages:</code>, so
+the qualifier is always required.</p>
+<h2 id="how-dep-slices-compose"><a class="header" href="#how-dep-slices-compose">How dep slices compose</a></h2>
+<p><code>comp-v2-builder</code> collects every slice the current component needs:</p>
+<ul>
+<li><code>directDepSlices</code> — every lib dep of this component, from
+<code>component.depends</code>.  Slices for sibling components of the same
+package (e.g. a sublib) are kept; only a same-package self-reference
+(added by <code>lookupDependency</code> for Custom-build-type packages) is
+dropped.</li>
+<li><code>ownLibSlice</code> — when this is a non-library component (test,
+bench, exe) of a Cabal-spec ≥ 2.0 package, the same package’s
+library slice goes into the starting store too, so cabal reuses
+the lib unit instead of rebuilding it.</li>
+<li><code>buildToolSlices</code> — every v2 exe slice resolved from
+<code>build-tool-depends</code> (alex, happy, hsc2hs, …).  Composing them
+into the starting store lets cabal’s solver find them as
+already-installed.</li>
+<li><code>homeDepSlices</code> — sibling-component plan-json deps that aren’t
+in <code>component.depends</code> (e.g. tests’ deps when building a lib).</li>
+</ul>
+<p>Only the <em>direct</em> dep slices are passed in nix-side
+<code>buildInputs</code> (deduped via <code>haskellLib.uniqueWithName</code>, which
+partitions by <code>identifier.unit-id</code> so two incarnations of the
+same <code>name-version</code> land in separate buckets).  The slice’s
+buildPhase walks <code>pkgsHostTarget</code> for the direct entries and
+follows each one’s <code>$out/nix-support/transitive-deps</code> to pull
+in the rest of the closure at build time, then <code>lndir</code>s every
+unique entry’s <code>$dep/store</code> into <code>$storeDir</code> before
+<code>cabal v2-build</code> runs.  cabal sees the dep units as
+already-installed and skips them.</p>
+<p>Hoisting the closure walk out of the nix evaluator and into
+bash (with the closure recorded per-slice in
+<code>nix-support/transitive-deps</code>) keeps <code>buildInputs</code> lists short
+and avoids the O(N²) heap blow-up the previous nix-side
+<code>passthru.transitiveStoreSlices</code> walk caused on big projects.</p>
+<h2 id="unitid-stability"><a class="header" href="#unitid-stability">UnitId stability</a></h2>
+<p><code>cabal v2-build</code> hashes a fixed set of inputs to compute each
+component’s UnitId (<code>pkgHashConfigInputs</code>):</p>
+<ul>
+<li><code>pkgHashCompilerId</code> (<code>with-compiler:</code> text in cabal.project),</li>
+<li><code>pkgHashFlagAssignment</code> (per-package <code>flags:</code>),</li>
+<li><code>pkgHashProgramArgs</code> (<code>--with-PROG=</code> flags + per-package
+<code>ghc-options:</code>),</li>
+<li><code>pkgHashConfigureScriptArgs</code> (per-package <code>configure-options:</code>),</li>
+<li><code>pkgHashExtra(Include|Lib)Dirs</code> (per-package
+<code>extra-(include|lib)-dirs:</code>),</li>
+<li><code>pkgHashEnableSharedLib</code> / <code>pkgHashEnableStaticLib</code> /
+<code>pkgHashEnableLibraryForGhci</code> / profiling / split-sections /
+split-objs toggles.</li>
+</ul>
+<p>For the units we pre-install via <code>depSlices</code> to be reused inside
+the slice’s own <code>cabal v2-build</code>, <em>every</em> hash input listed above
+has to be identical between the producing slice and this slice.
+That’s why comp-v2-builder is careful about:</p>
+<ul>
+<li>Reading <code>ghcOptions</code> / <code>configureOptions</code> from both
+<code>packages.&lt;n&gt;.&lt;field&gt;</code> (set by the user via <code>modules</code>) and
+<code>packages.&lt;plan-id&gt;.&lt;field&gt;</code> (set by <code>configure-args.nix</code> from
+plan.json’s <code>configure-args</code>).  See <code>perPackageOptionOf</code>.</li>
+<li>Filtering <code>-hide-all-packages</code> from extracted ghc-options
+under v2 only (<code>configure-args.nix</code>): cabal injects it on
+every <code>Setup configure</code> call, so round-tripping it through
+the v2 builder’s per-package <code>ghc-options:</code> block would
+produce a duplicate <code>--ghc-option=-hide-all-packages</code> entry
+in <code>pkgHashProgramArgs</code>, while a downstream <code>cabal v2-build</code>
+outside the slice only sees it once — forking the UnitId
+hash and defeating cache reuse.  v1 doesn’t round-trip
+through cabal.project, so it leaves the option alone.</li>
+<li>Emitting per-package <code>extra-(include|lib|framework)-dirs</code>
+blocks for each dep’s own <code>c.frameworks</code> only.  <code>c.libs</code> and
+<code>c.pkgconfig</code> deliberately do <em>not</em> land here — their
+nix-store paths would feed
+<code>pkgHashExtra(Include|Lib)Dirs</code> and fork unit-ids from
+plan-nix’s (plan-to-nix’s compute never sees the
+haskell.nix-injected paths).  cabal still finds these libs
+via the wrapped cc / pkg-config — the slice’s
+<code>extraBuildInputs</code> carries them so
+<code>NIX_CFLAGS_COMPILE_FOR_TARGET</code> /
+<code>NIX_LDFLAGS_FOR_TARGET</code> route them in at compile / link
+time.  See <code>pkgcfglessSysLibs</code>.</li>
+<li>Keeping the dummy GHC’s <code>--info</code> capability fields aligned with
+the real GHC’s (see <code>lib/call-cabal-project-to-nix.nix</code>).
+Without <code>Support dynamic-too: YES</code> / <code>RTS ways: … dyn</code> in the
+dummy, plan-to-nix records <code>--disable-shared</code> while the real
+cabal v2-build picks <code>--enable-shared</code>, forking
+<code>pkgHashEnableSharedLib</code>.  ghcjs / wasm cross targets keep the
+more restricted capability set since their cross GHCs really
+don’t ship a dynamic RTS.</li>
+</ul>
+<p>After <code>cabal v2-build --dry-run</code> the slice cross-checks the plan
+against <code>expectedPackage</code> and exits early if cabal is about to
+build any package other than the slice’s target — that almost
+always means a hash input has drifted.  After the build, the
+captured unit-ids must equal <code>[expectedUnitId]</code> exactly.</p>
+<h2 id="checkagainstplan--diagnosing-divergence"><a class="header" href="#checkagainstplan--diagnosing-divergence"><code>checkAgainstPlan</code> — diagnosing divergence</a></h2>
+<p>Each slice has a sibling derivation at
+<code>hsPkgs.&lt;pkg&gt;.components.&lt;kind&gt;.&lt;n&gt;.checkAgainstPlan</code>.  It re-runs
+<em>just</em> the slice’s <code>cabal v2-build --dry-run</code> step, captures the
+slice’s <code>dist-newstyle/cache/plan.json</code>, and diffs each entry
+against the corresponding entry in plan-nix.json (matched by id,
+otherwise by <code>pkg-name</code> + <code>component-{name,type}</code>).  Both are
+pretty-printed with <code>jq -S</code> and diffed with full-file context so
+the diverging field (compiler-id, flags, dep unit-ids, …) is
+visible against the rest of the entry.</p>
+<p>Plan-nix.json is plumbed in via <code>pkgsBuildBuild.writeText</code> only on
+<code>checkAgainstPlan</code> itself — it’s never a dep of the slice.</p>
+<pre><code>nix build .#…hsPkgs.&lt;pkg&gt;.components.library.checkAgainstPlan
+cat result/diff-report.txt    # per-pkg full-context diffs
+cat result/cabal.project      # the slice's exact cabal.project
+cat result/build.log          # cabal v2-build --dry-run output
+</code></pre>
+<p><code>$out</code> also contains the slice’s full <code>plan.json</code>, a copy of
+plan-nix.json, and the slice’s <code>build.log</code>.</p>
+<h2 id="per-component-store-attribute"><a class="header" href="#per-component-store-attribute">Per-component <code>.store</code> attribute</a></h2>
+<p><code>comp-v2-builder</code> attaches <code>.store</code> to each slice — a derivation
+holding the lndir’d composition of that component’s <code>depSlices</code>
+(the deps, not the slice itself).  Useful for inspection:</p>
+<pre><code>nix-build -A 'foo.components.library.store'
+</code></pre>
+<p>The same <code>composeStore</code> helper builds the v2 shell’s composed dep
+store; both attach a <code>package.cache</code> produced by <code>ghc-pkg recache</code>.</p>
+<h2 id="dev-shell"><a class="header" href="#dev-shell">Dev shell</a></h2>
+<p>When a project sets <code>builderVersion = 2;</code>, <code>project.shell</code> and
+<code>project.shellFor { ... }</code> automatically dispatch to the v2
+implementation in <code>builder/shell-for-v2.nix</code> (see the dispatch in
+<code>builder/default.nix</code>).  Users opting into v2 wholesale don’t have
+to change their shell call site.</p>
+<p>Where the v1 shell wraps GHC with a pre-populated package db, the
+v2 shell pre-populates the user’s cabal store
+(<code>~/.cabal/store/&lt;ghcDir&gt;/</code>) so a plain <code>cabal v2-build</code> inside
+the shell reuses our slices instead of rebuilding from source —
+and so public sublibs that the v1 GHC-package-db approach can’t
+expose to cabal show up correctly.</p>
+<p>The hook (<code>haskell-nix-cabal-store-sync</code>):</p>
+<ol>
+<li>Writes a <code>nix-store --add-root --indirect</code> gcroot for the
+composed dep store under <code>~/.cabal/store/.haskell-nix-gcroots/</code>
+so <code>nix-collect-garbage</code> can’t drop the slices our links point
+at.</li>
+<li>Scans every <code>&lt;unit-id&gt;.conf</code> / unit-dir / lib file in the
+composed store against the user’s existing
+<code>~/.cabal/store/&lt;ghcDir&gt;/</code>, classifying each as new, same, or
+conflict.</li>
+<li>If conflicts exist and <code>--force</code> wasn’t passed, errors out with
+a summary (and instructions to re-run with <code>--force</code>).</li>
+<li>Symlinks new (and, with <code>--force</code>, conflicting) entries from
+composedStore into the user’s store via <code>ln -s</code> (single files)
+or <code>lndir</code> (unit dirs).</li>
+<li>Runs <code>ghc-pkg recache</code> on each touched <code>&lt;ghcDir&gt;/package.db</code>.</li>
+</ol>
+<p>The script is exposed standalone as <code>haskell-nix-cabal-store-sync</code>,
+so a user can re-run it with <code>--force</code> from inside the shell.</p>
+<h3 id="cross-compilation"><a class="header" href="#cross-compilation">Cross compilation</a></h3>
+<p>For each cross target (<code>crossPlatforms = p: [ p.ghcjs ]; …</code>) the
+overlay adds the cross project’s shell to the main shell’s
+<code>inputsFrom</code>.  <code>shell-for-v2.nix</code>:</p>
+<ul>
+<li>Routes <code>cabalStoreSync</code> through <code>pkgs.pkgsBuildBuild.writeShellScriptBin</code>
+so the cross shell evaluates without a host CC (cross targets
+like ghcjs have none).</li>
+<li>Resolves <code>shellGhc</code> to the cross-compiling GHC at
+<code>pkgs.buildPackages.haskell-nix.compiler.&lt;n&gt;</code> (build → host) —
+i.e. a GHC that runs on the build platform but targets the
+cross host.</li>
+<li>Builds a <code>${prefix}cabal</code> wrapper (e.g.
+<code>javascript-unknown-ghcjs-cabal</code>) that invokes plain <code>cabal</code>
+with <code>--with-compiler=&lt;ghcShim&gt;/bin/${prefix}ghc</code> so the user
+doesn’t have to remember the cross-GHC paths.  <code>ghcShim</code> is a
+tiny symlink farm exposing both prefixed and unprefixed GHC
+binaries so cabal v2-build’s “near compiler” lookup finds plain
+<code>ghc-pkg</code>.</li>
+<li>Merges <code>passthru.depSlices</code> from every <code>inputsFrom</code> shell into
+this shell’s <code>composedStore</code> so cross + native slices both seed
+<code>~/.cabal/store</code>.</li>
+</ul>
+<h2 id="how-configure-argsnix-integrates"><a class="header" href="#how-configure-argsnix-integrates">How configure-args.nix integrates</a></h2>
+<p>Cabal’s <code>plan.json</code> records the exact <code>Setup configure</code> command
+line it would invoke for each plan unit.
+<code>modules/install-plan/configure-args.nix</code> parses those:</p>
+<ul>
+<li><code>--ghc-option=X</code> / <code>--ghcjs-option=X</code> →
+<code>packages.&lt;plan-id&gt;.ghcOptions</code></li>
+<li><code>--configure-option=X</code> →
+<code>packages.&lt;plan-id&gt;.configureOptions</code></li>
+<li>other <code>--PROG-option=X</code> →
+<code>packages.&lt;plan-id&gt;.configureFlags</code></li>
+</ul>
+<p>These get merged with the canonical-name-keyed entry that the user
+writes via <code>modules</code>.  <code>comp-v2-builder.nix</code>’s
+<code>perPackageOptionOf</code> reads both and complains if components / plan
+units disagree (cabal’s <code>package &lt;n&gt;</code> block applies to all
+components — there’s no way to emit per-component values via
+cabal.project).</p>
+<h2 id="testing--checking"><a class="header" href="#testing--checking">Testing &amp; checking</a></h2>
+<p>The slice itself only <em>builds</em> a test/bench’s binary — actually
+running it is left to <code>lib/check.nix</code> (via <code>haskellLib.check</code>),
+mirroring v1’s split between build-time and check-time.  For
+cross-host targets that need a launcher (windows: wine; ghcjs:
+node), the launcher prefix is taken from the slice’s
+<code>passthru.config.testWrapper</code> (set by the windows / ghcjs default
+modules).</p>
+<h2 id="key-files"><a class="header" href="#key-files">Key files</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Path</th><th>Role</th></tr>
+</thead>
+<tbody>
+<tr><td><code>builder/comp-v2-builder.nix</code></td><td>per-component: cabal.project + slicingRepo + plumbing</td></tr>
+<tr><td><code>builder/build-cabal-slice.nix</code></td><td>the slice derivation (compose + cabal v2-build + capture)</td></tr>
+<tr><td><code>builder/compose-store.nix</code></td><td>lndir helper for <code>.store</code> and shell composed store</td></tr>
+<tr><td><code>builder/shell-for-v2.nix</code></td><td>v2 nix-shell (<code>haskell-nix-cabal-store-sync</code> hook)</td></tr>
+<tr><td><code>builder/cabal-install-patches/</code></td><td>cabal-install patches (sublib visibility, completed-revdeps)</td></tr>
+<tr><td><code>lib/call-cabal-project-to-nix.nix</code></td><td>dummy GHC’s <code>--info</code> (must mirror real GHC’s capability fields)</td></tr>
+<tr><td><code>modules/install-plan/configure-args.nix</code></td><td>extract ghc/configure args from plan.json</td></tr>
+<tr><td><code>modules/install-plan/planned.nix</code></td><td>mark planned components + populate plan-id pkg.identifier</td></tr>
+<tr><td><code>modules/install-plan/override-package-by-name.nix</code></td><td><code>package-ids-by-name</code> + plan-id alias</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="when-to-prefer-v2"><a class="header" href="#when-to-prefer-v2">When to prefer v2</a></h2>
+<ul>
+<li>Your project (or any of its deps) uses Cabal <em>public sublibs</em>
+(<code>library &lt;n&gt;</code> stanzas).  v1’s shell can’t expose those to
+cabal; v2’s shell can.</li>
+<li>You want a plain <code>cabal v2-build</code> inside the dev shell to reuse
+our pre-built slices instead of rebuilding from source.</li>
+<li>You care about UnitId stability between haskell.nix-built units
+and the units a plain <code>cabal v2-build</code> inside the shell would
+produce.</li>
+</ul>
+<p>v1 is still supported — set <code>builderVersion = 1;</code> on the project.
+See <a href="./builder-v1.html"><code>builder-v1.md</code></a>.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../dev/builder-v1.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../dev/migrating-to-v2.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../dev/builder-v1.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../dev/migrating-to-v2.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-c2a407aa.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-862e895d.js"></script>
+        <script src="../book-a0b12cfe.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>
