@@ -173,6 +173,7 @@ jobs:
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
           sed -i 's/runningHydraEvalTest = false;/runningHydraEvalTest = true;/' flake.nix
+          sed -i 's/evalSystem = "aarch64-darwin";/evalSystem = "x86_64-linux";/' flake.nix
           sed -i 's/ifdLevel = 3;/ifdLevel = 0;/' flake.nix
           ./check-hydra.sh
           sed -i 's/ifdLevel = 0;/ifdLevel = 1;/' flake.nix
@@ -188,6 +189,7 @@ jobs:
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
           sed -i 's/runningHydraEvalTest = false;/runningHydraEvalTest = true;/' flake.nix
+          sed -i 's/evalSystem = "aarch64-darwin";/evalSystem = "x86_64-linux";/' flake.nix
           sed -i 's/ifdLevel = 3;/ifdLevel = 2;/' flake.nix
           ./check-hydra.sh
 
@@ -201,6 +203,7 @@ jobs:
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
           sed -i 's/runningHydraEvalTest = false;/runningHydraEvalTest = true;/' flake.nix
+          sed -i 's/evalSystem = "aarch64-darwin";/evalSystem = "x86_64-linux";/' flake.nix
           ./check-hydra.sh
 
   closure-size:
@@ -267,6 +270,7 @@ jobs:
       - name: "Check that evaluation of hydra jobs works without using remote builders for GHC 9.6.7"
         run: |
           sed -i 's/runningHydraEvalTest = true;/runningHydraEvalTest = false;/' flake.nix
+          sed -i 's/evalSystem = "aarch64-darwin";/evalSystem = "x86_64-linux";/' flake.nix
           nix path-info --derivation .#requiredJobs.x86_64-linux.required-unstable-ghc967-native --show-trace --builders ''
 
   # Was `ghc9102`, but the 9.10 entry in the CI matrix is now `ghc9103`, so
@@ -281,6 +285,7 @@ jobs:
       - name: "Check that evaluation of hydra jobs works without using remote builders for GHC 9.10.3"
         run: |
           sed -i 's/runningHydraEvalTest = true;/runningHydraEvalTest = false;/' flake.nix
+          sed -i 's/evalSystem = "aarch64-darwin";/evalSystem = "x86_64-linux";/' flake.nix
           nix path-info --derivation .#requiredJobs.x86_64-linux.required-unstable-ghc9103-native --show-trace --builders ''
 
   hix-cabal:
