@@ -14,134 +14,161 @@ defaults:
     shell: bash
 
 # do we really want nixos-unstable?
-env: 
+env:
   NIX_PATH: "nixpkgs=channel:nixos-unstable"
 
+# These jobs used to run on `[self-hosted, linux]` runners that had Nix
+# preinstalled.  Those runners went away, so every run just queued until
+# GitHub cancelled it at the 24h timeout.  They now run on GitHub-hosted
+# runners and install Nix themselves via the shared composite action in
+# `.github/actions/install-nix`.
 jobs:
   nix-build:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Run tests with ghc967: Running the nix-build tests..."
         run: "./test/tests.sh ghc967 nix-build"
 
   unit-tests:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Run tests with ghc967: Running the unit tests..."
         run: "./test/tests.sh ghc967 unit-tests"
 
   runghc:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Run tests with ghc967: Checking that a nix-shell works for runghc..."
         run: "./test/tests.sh ghc967 runghc"
 
   cabal:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Run tests with ghc967: Checking that a nix-shell works for cabal..."
         run: "./test/tests.sh ghc967 cabal"
 
   cabal-doExactConfig:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Run tests with ghc967: Checking that a nix-shell works for cabal (doExactConfig component)..."
         run: "./test/tests.sh ghc967 cabal-doExactConfig"
 
   tests-benchmarks:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Run tests with ghc967: Checking that a nix-shell works for a project with test-suite build-tools and benchmarks..."
         run: "./test/tests.sh ghc967 tests-benchmarks"
 
   multi-target:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Run tests with ghc967: Checking that a nix-shell works for a multi-target project..."
         run: "./test/tests.sh ghc967 multi-target"
 
   shellFor-single-package:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Run tests with ghc967: Checking shellFor works for a cabal project, multiple packages..."
         run: "./test/tests.sh ghc967 shellFor-single-package"
 
   shellFor-multiple-package:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Run tests with ghc967: Checking shellFor works for a cabal project, single package...y"
         run: "./test/tests.sh ghc967 shellFor-multiple-package"
 
   shellFor-hoogle:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Run tests with ghc967: Checking shellFor works for a cabal project, single package..."
         run: "./test/tests.sh ghc967 shellFor-hoogle"
 
   shellFor-not-depends:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Run tests with ghc967: Checking shellFor does not depend on given packages...y"
         run: "./test/tests.sh ghc967 shellFor-not-depends"
 
   maintainer-scripts:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Run tests with ghc967: Checking the maintainer scripts...y"
         run: "./test/tests.sh ghc967 maintainer-scripts"
 
   plan-extra-hackages:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Run tests with ghc967: Checking that plan construction works with extra Hackages..."
         run: "./test/tests.sh ghc967 plan-extra-hackages"
 
   build-extra-hackages:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Run tests with ghc967: Checking that package with extra Hackages can be build..."
         run: "./test/tests.sh ghc967 build-extra-hackages"
 
   hix:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Run tests with ghc967: End-2-end test of hix project initialization and flakes development shell ..."
         run: "./test/tests.sh ghc967 hix"
 
 #  template:
-#    runs-on: [self-hosted, linux]
+#    runs-on: ubuntu-latest
 #    steps:
 #      - uses: actions/checkout@v4
+#      - uses: ./.github/actions/install-nix
 #      - name: "Run tests with ghc967: End-2-end test of hix project initialization and flakes development shell ..."
 #        run: "./test/tests.sh ghc967 template"
 
   docs:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Test examples in documentation ..."
         run: "./test/tests.sh ghc967 docs"
 
+  # The `timeout-minutes` on the hydra-ifdLevel jobs were tuned for
+  # self-hosted runners with a warm Nix store.  A GitHub-hosted runner starts
+  # empty and has fewer cores, so it spends a large part of the job just
+  # fetching substitutes; the limits are raised accordingly.
   hydra-ifdLevel-0-and-1:
-    runs-on: [self-hosted, linux]
-    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Check that jobset will evaluate in Hydra at ifdLevel 0 and 1"
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
@@ -152,10 +179,11 @@ jobs:
           ./check-hydra.sh
 
   hydra-ifdLevel-2:
-    runs-on: [self-hosted, linux]
-    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Check that jobset will evaluate in Hydra at ifdLevel 2"
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
@@ -164,10 +192,11 @@ jobs:
           ./check-hydra.sh
 
   hydra-ifdLevel-3:
-    runs-on: [self-hosted, linux]
-    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Check that jobset will evaluate in Hydra at ifdLevel 3"
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
@@ -175,9 +204,10 @@ jobs:
           ./check-hydra.sh
 
   closure-size:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Check closure size with ghc967"
         run: |
           nix-build build.nix -A maintainer-scripts.check-closure-size --argstr compiler-nix-name ghc967 -o check-closure-size.sh
@@ -185,66 +215,74 @@ jobs:
           ./check-closure-size.sh
 
   update-docs:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Update docs"
         run: |
           nix-build build.nix -A maintainer-scripts.update-docs -o update-docs.sh
           ./update-docs.sh
 
   check-materialization-concurrency:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Make sure materialize function does not limit concurrency"
         run: |
           nix-build build.nix -A maintainer-scripts.check-materialization-concurrency -o check-materialization-concurrency.sh
           ./check-materialization-concurrency.sh
 
   check-path-support:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Make sure non store paths like can be used as src"
         run: |
           nix-build build.nix -A maintainer-scripts.check-path-support --argstr compiler-nix-name ghc967 -o check-path-support.sh
           ./check-path-support.sh
 
   haskell-nix-roots-do-not-require-IFDs:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Check that the haskell.nix roots do not require IFDs"
         run: nix build .#roots.x86_64-linux --accept-flake-config --option allow-import-from-derivation false
 
   hydra-without-remote-builders-ghc967:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Check that evaluation of hydra jobs works without using remote builders for GHC 9.6.7"
         run: |
           sed -i 's/runningHydraEvalTest = true;/runningHydraEvalTest = false;/' flake.nix
           nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc967-native --show-trace --builders ''
 
   hydra-without-remote-builders-ghc9102:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Check that evaluation of hydra jobs works without using remote builders for GHC 9.10.2"
         run: |
           sed -i 's/runningHydraEvalTest = true;/runningHydraEvalTest = false;/' flake.nix
           nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc9102-native --show-trace --builders ''
 
   hix-cabal:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - name: "Check hix -- run github:haskell/cabal/3.10#cabal-install:exe:cabal -- --version"
         run: "HIX_DIR=$(mktemp -d) nix run .#hix --accept-flake-config -- run github:haskell/cabal/3.10#cabal-install:exe:cabal --accept-flake-config --override-input haskellNix . -- --version"
 
   check-nix-tools:
-    runs-on: [self-hosted, linux]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-nix
       - run: nix build ./nix-tools#checks.x86_64-linux.truncate-index --accept-flake-config
