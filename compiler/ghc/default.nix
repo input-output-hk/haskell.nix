@@ -933,7 +933,16 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         cp config.sub config.sub.ghcjs
       '';
     });
-
+  }
+  # Only defined for hadrian-built GHCs (>= 9.4).  The make-based build has a
+  # different `generated` layout (it also ships
+  # `includes/dist-derivedconstants/header/GHCConstantsHaskell*.hs`, which
+  # hadrian does not produce because the constants live in
+  # `GHC/Platform/Constants.hs` instead) and no hadrian to drive.  Leaving the
+  # attribute out is what makes the `ghc.generated-light or ghc.generated`
+  # fallbacks in the consumers (and the `ghc ? generated-light` guards in
+  # `overlays/haskell.nix` and `test/generated-light`) actually do something.
+  // lib.optionalAttrs useHadrian {
     # Lightweight replacement for the `generated` *output*.
     #
     # The `generated` output above is harvested from `_build/stage1` *after a
@@ -951,7 +960,7 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     # library compile entirely (minutes instead of hours) and is independently
     # cacheable.
     generated-light = stdenv.mkDerivation ({
-      name = name + "-generated";
+      name = name + "-generated-light";
       inherit
         buildInputs
         version
@@ -1033,7 +1042,8 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         cp config.sub config.sub.ghcjs
       '';
     });
-
+  }
+  // {
     # Used to detect non haskell-nix compilers (accidental use of nixpkgs compilers can lead to unexpected errors)
     isHaskellNixCompiler = true;
 
