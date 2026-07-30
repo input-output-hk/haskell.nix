@@ -142,8 +142,18 @@ in rec {
             '') // { srcForCabal2Nix = ghc.passthru.configured-src + "/${subDir}"; }
           else if subDir == "compiler"
             then final.haskell-nix.haskellLib.cleanSourceWith {
+              # `lnGlob` skips patterns that match nothing.  Plain
+              # `ln -s <dir>/* $out/compiler` does not fail in that case (a
+              # symlink target need not exist), it silently creates a dangling
+              # link literally named `*`, which then shows up in the source
+              # tree.  Both patterns below legitimately match nothing for some
+              # compilers: hadrian never produces
+              # `includes/dist-derivedconstants/header` (the constants are in
+              # `GHC/Platform/Constants.hs` instead), and GHC 9.14 dropped the
+              # `primop-*.hs-incl` files.
               src = nix24srcFix (final.buildPackages.runCommand "ghc-src" { nativeBuildInputs = [(final.buildPackages.lndir or final.buildPackages.xorg.lndir)]; } ''
                 mkdir $out
+                lnGlob() { for f in "$@"; do if [[ -e $f ]]; then ln -s "$f" $out/compiler; fi; done; }
                 lndir -silent ${ghc.passthru.configured-src} $out
                 if [[ -f ${gen}/libraries/ghc-boot/dist-install/build/GHC/Version.hs ]]; then
                   ln -s ${gen}/libraries/ghc-boot/dist-install/build/GHC/Version.hs $out/libraries/ghc-boot/GHC
@@ -163,8 +173,8 @@ in rec {
                 if [[ -f ${gen}/compiler/GHC/CmmToLlvm/Version/Bounds.hs ]]; then
                   ln -s ${gen}/compiler/GHC/CmmToLlvm/Version/Bounds.hs $out/compiler/GHC/CmmToLlvm/Version
                 fi
-                ln -s ${gen}/includes/dist-derivedconstants/header/* $out/compiler
-                ln -s ${gen}/compiler/stage2/build/*.hs-incl $out/compiler
+                lnGlob ${gen}/includes/dist-derivedconstants/header/*
+                lnGlob ${gen}/compiler/stage2/build/*.hs-incl
               '');
               inherit subDir;
               includeSiblings = true;
