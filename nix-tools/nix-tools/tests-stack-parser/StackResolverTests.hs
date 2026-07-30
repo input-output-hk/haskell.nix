@@ -7,7 +7,7 @@ module Main (main) where
 
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Yaml as Y
-import Test.Tasty (TestTree, defaultMain, testGroup)
+import Test.Tasty (defaultMain, testGroup)
 import Test.Tasty.HUnit (testCase, assertFailure, (@?=))
 
 import Stack2nix.Stack (Stack(..), StackSnapshot(..))
