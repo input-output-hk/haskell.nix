@@ -15,6 +15,7 @@ module NixTools.Cache
 
 import Control.DeepSeq ((<$!!>))
 import Control.Exception (catch, SomeException(..))
+import Data.Maybe (mapMaybe)
 
 readCache :: FilePath
           -> IO [( String -- url
@@ -24,9 +25,15 @@ readCache :: FilePath
                  , String -- pkgname
                  , String -- nixexpr-path
                  )]
-readCache f = fmap (toTuple . words) . lines <$!!> readFile f
-  where toTuple [ url, rev, subdir, sha256, pkgname, exprPath ]
-          = ( url, rev, subdir, if sha256 == "NOHASH" then "" else sha256, pkgname, exprPath )
+readCache f = mapMaybe (toTuple . words) . lines <$!!> readFile f
+  where
+    -- The cache is advisory, so skip any line we cannot make sense of (a blank
+    -- line, or a truncated one from an interrupted `appendCache`) instead of
+    -- letting an incomplete pattern match abort the whole read and throw away
+    -- every other entry.  A skipped entry just means we fetch it again.
+    toTuple [ url, rev, subdir, sha256, pkgname, exprPath ]
+      = Just ( url, rev, subdir, if sha256 == "NOHASH" then "" else sha256, pkgname, exprPath )
+    toTuple _ = Nothing
 
 -- When we do not need a hash (when the files are local) we store "NOHASH" instead of ""
 -- in the file so that the use of `words` function in `readCache` still works.
@@ -38,7 +45,7 @@ cacheHits :: FilePath -> String -> String -> String -> IO [ (String, String) ]
 cacheHits f url rev subdir
   = do cache <- catch' (readCache f) (const (pure []))
        return [ ( pkgname, exprPath )
-              | ( url', rev', subdir', sha256, pkgname, exprPath ) <- cache
+              | ( url', rev', subdir', _sha256, pkgname, exprPath ) <- cache
               , url == url'
               , rev == rev'
               , subdir == subdir' ]
