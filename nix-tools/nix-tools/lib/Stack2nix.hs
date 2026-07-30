@@ -80,12 +80,12 @@ stack2nix args (Stack resolver compiler pkgs pkgFlags ghcOpts) =
         error $ concat ((\(name, _) ->
           "Duplicate definitions for package " <> show name <> "\n") <$> duplicates)
      return . mkNonRecSet $
-       [ "extras" $= ("hackage" ==> mkNonRecSet
+       [ "extras" $= ("hackage" ==> mkLets [ hackageVersionHelper ] (mkNonRecSet
                      ([ "packages" $= mkNonRecSet (snd <$> allPackages) ]
                    ++ [ "compiler.version" $= fromString (quoted ver)
                       | (Just c) <- [compiler], let ver = filter (`elem` (".0123456789" :: [Char])) c]
                    ++ [ "compiler.nix-name" $= fromString (quoted name)
-                      | (Just c) <- [compiler], let name = filter (`elem` ((['a'..'z']++['0'..'9']) :: [Char])) c]))
+                      | (Just c) <- [compiler], let name = filter (`elem` ((['a'..'z']++['0'..'9']) :: [Char])) c])))
        , "resolver"  $= fromString (quoted resolver)
        , "modules" $= mkList [
            mkParamset [("lib", Nothing)] True ==> mkNonRecSet [ "packages" $= mkNonRecSet flags ]
@@ -107,11 +107,11 @@ stack2nix args (Stack resolver compiler pkgs pkgFlags ghcOpts) =
 extraDeps2nix :: [Dependency] -> [(T.Text, Binding NExpr)]
 extraDeps2nix pkgs =
   let extraDeps = [(pkgId, info) | PkgIndex pkgId info <- pkgs]
-  in [ (toText pkg, quoted (toText pkg) $= ((((mkSym "hackage" @. toText pkg) @. quoted (toText ver)) @. "revisions") @. "default"))
+  in [ (toText pkg, quoted (toText pkg) $= hackageVersion (toText pkg) (toText ver) "default")
      | (PackageIdentifier pkg ver, Nothing) <- extraDeps ]
-  ++ [ (toText pkg, quoted (toText pkg) $= ((((mkSym "hackage" @. toText pkg) @. quoted (toText ver)) @. "revisions") @. quoted (T.pack sha)))
+  ++ [ (toText pkg, quoted (toText pkg) $= hackageVersion (toText pkg) (toText ver) (T.pack sha))
      | (PackageIdentifier pkg ver, (Just (Left sha))) <- extraDeps ]
-  ++ [ (toText pkg, quoted (toText pkg) $= ((((mkSym "hackage" @. toText pkg) @. quoted (toText ver)) @. "revisions") @. toText revNo))
+  ++ [ (toText pkg, quoted (toText pkg) $= hackageVersion (toText pkg) (toText ver) (toText revNo))
      | (PackageIdentifier pkg ver, (Just (Right revNo))) <- extraDeps ]
   where parsePackageIdentifier :: String -> Maybe PackageIdentifier
         parsePackageIdentifier = simpleParse
