@@ -57,8 +57,20 @@ let
       } ''
         export HOME=$(mktemp -d)
         mkdir $out
-        cp $(nix --offline --extra-experimental-features "flakes nix-command" \
+        # Deliberately not `nix --offline`: that bundles `substitute = false`, so
+        # anything missing from the builder's store is compiled from source rather
+        # than fetched.  On a darwin builder that meant rebuilding llvm and running
+        # its 57k-test check-all suite, which hung and was killed by max-silent-time
+        # after 3h (ci.zw3rk.com/build/1695375).  Substitution happens daemon-side,
+        # outside the recursive-nix sandbox, so it was never a hermeticity risk.
+        # tarball-ttl is what --offline was actually wanted for: don't re-fetch
+        # the flake inputs, which nativeBuildInputs above already pins into the
+        # store.  Just that one setting -- narinfo-cache-meta-ttl exists in nix
+        # 2.34 but not in the 2.31.2 that pkgs.nix pins here, where it only logs
+        # "warning: unknown setting" and does nothing.
+        cp $(nix --extra-experimental-features "flakes nix-command" \
           build --accept-flake-config --no-link --print-out-paths --no-allow-import-from-derivation \
+          --option tarball-ttl 4294967295 \
           --system ${pkgs.stdenv.hostPlatform.system} \
           ${../.}#${fragment-drv})/*.zip $out/
       '';
