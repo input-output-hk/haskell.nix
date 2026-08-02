@@ -49,6 +49,28 @@ jobs:
         with:
           check: 'nix-tools'
 
+      # Substitute the eval-time derivations before asking for the zips.
+      #
+      # The zip attributes are cheap to *build* -- Hydra has them, so they come
+      # straight from the cache -- but evaluating them runs the haskell.nix
+      # project, which imports from derivation.  On this runner there is
+      # nothing to build with (`--builders ""`, `--max-jobs 0`) and `evalSystem`
+      # is aarch64-darwin, so every path that evaluation wants to realise has
+      # to already be substitutable.  `plan-nix` and `roots` are Hydra jobs
+      # precisely so they are.
+      #
+      # This is why the step below could previously point at the `*-no-ifd`
+      # wrappers with no such preamble: those derivations are cheap to
+      # *instantiate*, their only inputs being nix, git and the flake sources.
+      - name: "Pre-fetch eval-time inputs"
+        run: |
+          set -euo pipefail
+          for sys in aarch64-darwin x86_64-darwin x86_64-linux; do
+            nix build --impure --builders "" --max-jobs 0 --no-link \
+              "${{ steps.flake-metadata.outputs.LOCKED_URL }}#hydraJobs.$sys.nix-tools.static.flake.plan-nix" \
+              "${{ steps.flake-metadata.outputs.LOCKED_URL }}#hydraJobs.$sys.nix-tools.static.flake.roots"
+          done
+
       - name: "Pull nix-tools"
         run: |
           ls -lah .
