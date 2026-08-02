@@ -63,15 +63,23 @@ jobs:
           # The `nix-tools` check that just went green is Hydra's aggregate
           # build for this commit.  Its details_url carries the build id; take
           # the id only, since this instance reports a localhost base URL.
-          build=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${COMMIT}/check-runs" \
-                    --jq '.check_runs[] | select(.name == "nix-tools") | .details_url' \
-                  | grep -oE '/build/[0-9]+' | grep -oE '[0-9]+' | head -1)
+          # Kept as two statements on purpose.  Folded into one pipeline, a
+          # `grep` that matches nothing returns non-zero, and under `set -e`
+          # with `pipefail` that aborts the step before the error message below
+          # can run -- turning "the check-run moved or vanished" into a silent
+          # failure.  The `gh` call stays outside the `|| true` so an API
+          # failure still fails the step.
+          details=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${COMMIT}/check-runs" \
+                      --jq '.check_runs[] | select(.name == "nix-tools") | .details_url')
+          build=$(printf '%s\n' "$details" | grep -oE '/build/[0-9]+' | grep -oE '[0-9]+' | head -1 || true)
           [ -n "$build" ] || { echo "::error::no Hydra nix-tools check-run for $COMMIT"; exit 1; }
 
           # A build can belong to several evaluations, so take the one whose
           # flake ref is this commit.
+          evals=$(curl -sf -H 'Accept: application/json' "$hydra/build/$build" | jq -r '.jobsetevals[]') \
+            || { echo "::error::could not read Hydra build $build"; exit 1; }
           evalid=""
-          for e in $(curl -sf -H 'Accept: application/json' "$hydra/build/$build" | jq -r '.jobsetevals[]'); do
+          for e in $evals; do
             if curl -sf -H 'Accept: application/json' "$hydra/eval/$e" \
                  | jq -e --arg r "$COMMIT" '(.flake // "") | contains($r)' >/dev/null; then
               evalid=$e; break
