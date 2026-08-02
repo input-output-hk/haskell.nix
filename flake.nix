@@ -266,11 +266,27 @@
             # on the version of haskell.nix locked in the subflake. They are
             # evaluated within their own flake and independently of anything
             # else. Here we only expose them in the main flake.
+            # Deliberately no `pkgs` argument.  flake-compat fetches the
+            # subflake's inputs with `pkgs.fetchzip or fetchTarball`, so
+            # handing it a package set makes every one of those fetches a
+            # derivation *on that package set's platform* -- and since this is
+            # `forEachSystem`, the darwin jobs got aarch64-darwin fetch
+            # derivations that evaluation then has to realise.  That is fine on
+            # Hydra, which has darwin builders, and impossible anywhere else:
+            # `nix build .#hydraJobs.aarch64-darwin.nix-tools...` on linux died
+            # with "Cannot build '...-source.drv' ... Required system:
+            # 'aarch64-darwin'", and the path was not in any cache because
+            # fetches are not Hydra jobs so nothing publishes them.
+            #
+            # Without `pkgs` it falls back to `builtins.fetchTarball`, which
+            # needs no builder at all.  The lock file supplies `narHash` for
+            # every input, so this still works under pure evaluation, and the
+            # fetched paths are unchanged -- a fixed-output path depends on the
+            # hash and name, not on who fetched it.
             nix-tools-hydraJobs =
               let
                 cf = callFlake {
                   inherit system;
-                  pkgs = self.legacyPackages.${system};
                   src = ./nix-tools;
                 };
               in
