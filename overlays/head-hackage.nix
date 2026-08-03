@@ -122,8 +122,15 @@ let
   # The original tarballs, fetched by hash from the index.  Laid out the way
   # `cabal fetch` would leave them, which is where the overlay tool looks:
   #   <repo-cache>/<repo-name>/<pkg>/<version>/<pkg>-<version>.tar.gz
+  #
+  # `sourceRepoName` is deliberately not "hackage.haskell.org": cabal has a
+  # built-in definition for that name, and with the repository called that its
+  # `update` went to the real hackage.haskell.org instead of the `file:` url the
+  # tool was given -- which only showed up once the build ran sandboxed.
+  sourceRepoName = "head-hackage-upstream";
+
   repoCache = buildPkgs.runCommand "head-hackage-repo-cache" { } (''
-    mkdir -p $out/hackage.haskell.org
+    mkdir -p $out/${sourceRepoName}
   '' + lib.concatStrings (lib.mapAttrsToList (pv: sha256:
     let
       m = builtins.match "(.*)-([0-9][0-9.]*)" pv;
@@ -135,8 +142,8 @@ let
         inherit sha256;
       };
     in ''
-      mkdir -p $out/hackage.haskell.org/${pname}/${pver}
-      ln -s ${tarball} $out/hackage.haskell.org/${pname}/${pver}/${pv}.tar.gz
+      mkdir -p $out/${sourceRepoName}/${pname}/${pver}
+      ln -s ${tarball} $out/${sourceRepoName}/${pname}/${pver}/${pv}.tar.gz
     '') srcHashes));
 
   # One fixed timestamp for everything we re-tar, taken from the head.hackage
@@ -152,7 +159,7 @@ let
   # unsigned copy of the pinned index rather than hackage.haskell.org.
   # mk-local-hackage-repo is what haskell.nix already uses for this.
   localHackage = mkLocalHackageRepo {
-    name = "hackage.haskell.org";
+    name = sourceRepoName;
     index = hackageIndex;
   };
 
@@ -237,6 +244,7 @@ in
       } ''
       export HOME=$(mktemp -d)
 
+
       # Signing keys.  These are generated per build rather than pinned: the
       # repository is consumed over `file:` from the store, so the signatures
       # are not a trust boundary, and the `repository` stanza that reads it
@@ -263,7 +271,7 @@ in
         --patches=./tmp/patches \
         --repo-cache=./cache \
         --keys=$HOME/keys \
-        --repo-name=hackage.haskell.org \
+        --repo-name=${sourceRepoName} \
         --repo-url=file:${localHackage} \
         --template=template \
         ./repo
