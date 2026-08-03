@@ -139,10 +139,19 @@ let
       ln -s ${tarball} $out/hackage.haskell.org/${pname}/${pver}/${pv}.tar.gz
     '') srcHashes));
 
+  # One fixed timestamp for everything we re-tar, taken from the head.hackage
+  # input's own lastModified so it is deterministic and only moves when the
+  # patches do.  Not epoch: cabal derives a repository's index-state from the
+  # newest entry in its index, and an index stamped 1970 makes any project
+  # asking for a present-day index-state look newer than the repository.
+  repoEpoch = toString sources.head-hackage.lastModified;
+
+  mkLocalHackageRepo = import ../mk-local-hackage-repo final;
+
   # `cabal update` has to succeed offline, so point the tool at a local,
   # unsigned copy of the pinned index rather than hackage.haskell.org.
   # mk-local-hackage-repo is what haskell.nix already uses for this.
-  localHackage = import ../mk-local-hackage-repo final {
+  localHackage = mkLocalHackageRepo {
     name = "hackage.haskell.org";
     index = hackageIndex;
   };
@@ -163,7 +172,7 @@ let
   # one overrides theirs without patching their source; with it, two
   # independent runs agree byte for byte.
   deterministicTar = buildPkgs.writeShellScriptBin "tar" ''
-    exec ${buildPkgs.gnutar}/bin/tar "$@" --mtime=@1 --clamp-mtime
+    exec ${buildPkgs.gnutar}/bin/tar "$@" --mtime=@${repoEpoch} --clamp-mtime
   '';
 
 in
@@ -200,7 +209,11 @@ in
         '';
       }).hsPkgs.tool.components.exes.tool;
 
-    head-hackage-repo = buildPkgs.runCommand "head-hackage.ghc.haskell.org"
+    # The tool's own output.  Its `package/*.tar.gz` are reproducible (see the
+    # tar wrapper), but its TUF metadata is not: it is signed with keys generated
+    # during this build, so root/mirrors/snapshot/timestamp differ every time.
+    # `head-hackage-repo` below keeps the packages and replaces the metadata.
+    head-hackage-patched-repo = buildPkgs.runCommand "head-hackage-patched"
       {
         nativeBuildInputs = [
           # `deterministicTar` must come before gnutar on PATH.
@@ -220,7 +233,7 @@ in
           # -- this is the same one the overlay tool above is built with.
           buildPkgs.haskell.compiler.ghc967
         ];
-        passthru = { inherit patchedPackages srcHashesFile; };
+        passthru = { inherit patchedPackages srcHashesFile seedName; };
       } ''
       export HOME=$(mktemp -d)
 
@@ -257,5 +270,56 @@ in
 
       cp -r repo $out
     '';
+
+    # The repository as consumed.  Packages come from the tool; the TUF metadata
+    # is regenerated unsigned, so the whole output is reproducible.
+    #
+    # mk-local-hackage-repo exists for exactly this and says so: "We will create
+    # a completely unsigned bare repository.  Using signing keys within nix would
+    # be pointless as we'd have to hardcode them to produce the same output
+    # reproducibly."  Signing stays only as the bootstrap step the overlay tool
+    # insists on, and nothing downstream checks it -- the `repository` stanza
+    # reading this uses `root-keys:` with `key-threshold: 0`.
+    head-hackage-repo =
+      let
+        patched = final.haskell-nix.head-hackage-patched-repo;
+        # hackage-repo-tool writes the index tar itself, stamping each entry
+        # with the time of the build, so `01-index.tar.gz` differs run to run
+        # even though its contents do not.  Verified with `nix-build --check`:
+        # across two builds the extracted files and the entry order were
+        # identical and only the mtimes moved (14:09 vs 14:11).
+        #
+        # Re-tar with a fixed mtime, feeding the original listing back in so the
+        # order is preserved exactly.  Order matters in a Hackage index -- later
+        # entries supersede earlier ones, which is how `.cabal` revisions work --
+        # so this must not sort.
+        index = buildPkgs.runCommand "head-hackage-01-index.tar.gz"
+          { nativeBuildInputs = [ buildPkgs.gnutar buildPkgs.gzip ]; } ''
+          mkdir idx
+          tar -xzf ${patched}/01-index.tar.gz -C idx
+          tar -tzf ${patched}/01-index.tar.gz > order.txt
+          tar -cf index.tar --format=ustar --numeric-owner --owner=root \
+              --group=root --mtime=@${repoEpoch} --no-recursion -C idx -T order.txt
+          # -n: keep gzip's own timestamp and name fields out of the header.
+          gzip -n -9 -c index.tar > $out
+        '';
+
+        # A derivation without `outputHash`, so mk-local-hackage-repo's
+        # cross-check against one is skipped.
+        metadata = mkLocalHackageRepo {
+          name = "head.hackage.ghc.haskell.org";
+          inherit index;
+        };
+      in
+      buildPkgs.runCommand "head-hackage.ghc.haskell.org"
+        { passthru = { inherit (patched) patchedPackages srcHashesFile seedName; }; } ''
+        mkdir -p $out
+        cp -r ${patched}/package $out/package
+        # -L: mk-local-hackage-repo symlinks the index it was handed, and the
+        # result should stand on its own.
+        cp -L ${metadata}/01-index.tar.gz $out/01-index.tar.gz
+        cp ${metadata}/root.json ${metadata}/mirrors.json \
+           ${metadata}/snapshot.json ${metadata}/timestamp.json $out/
+      '';
   };
 }
