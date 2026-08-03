@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -7,7 +7,8 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "sublib-docs";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
+    inputMap = testInputMap;
+    cabalProjectLocal = testCabalProjectLocal + ''
 
       package *
         documentation: True

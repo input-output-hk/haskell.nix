@@ -1,4 +1,4 @@
-{ stdenv, lib, buildPackages, mkCabalProjectPkgSet, callCabalProjectToNix, loadCabalPlan, haskellLib, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, buildPackages, mkCabalProjectPkgSet, callCabalProjectToNix, loadCabalPlan, haskellLib, testSrc, compiler-nix-name, evalPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -21,7 +21,8 @@ let
     inherit compiler-nix-name evalPackages;
     # reuse the cabal-simple test project
     src = testSrc "cabal-simple";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local
+    inputMap = testInputMap;
+    cabalProjectLocal = testCabalProjectLocal
       + androidStaticLocal
       + lib.optionalString (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64) ''
         constraints: text -simdutf, text source

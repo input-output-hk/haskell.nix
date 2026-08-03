@@ -163,7 +163,13 @@ let
   # testSrc = subDir: testSrcRoot + "/${subDir}";
   testSrcRootWithGitDir = evalPackages.haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; includeSiblings = true; keepGitDir = true; };
   testSrcWithGitDir = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRootWithGitDir; inherit subDir; includeSiblings = true; };
-  callTest = x: args: haskell-nix.callPackage x (args // { inherit testSrc compiler-nix-name evalPackages; });
+  headHackage = import ./head-hackage.nix { inherit pkgs; };
+  testCabalProjectLocal = headHackage.cabalProjectLocal;
+  testInputMap = headHackage.inputMap;
+
+  callTest = x: args: haskell-nix.callPackage x (args // {
+    inherit testSrc compiler-nix-name evalPackages testCabalProjectLocal testInputMap;
+  });
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.

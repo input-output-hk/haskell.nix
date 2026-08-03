@@ -1,5 +1,5 @@
 { stdenv, lib, pkgs, haskellLib, haskell-nix, buildPackages, runCommand
-, cabalProject', testSrc, compiler-nix-name, evalPackages }:
+, cabalProject', testSrc, compiler-nix-name, evalPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
