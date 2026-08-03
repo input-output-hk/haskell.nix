@@ -20,16 +20,21 @@
   cabalProjectLocal =
     let
       raw = builtins.readFile ./cabal.project.local;
-      stripped = builtins.replaceStrings [''
-        key-threshold: 3
-          root-keys:
-             f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
-             26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
-             7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
-      ''] [''
-        root-keys:
-          key-threshold: 0
-      ''] raw;
+      # Written with explicit newlines rather than `''`-strings: there, the
+      # replacement's indentation is relative to the source, so `key-threshold`
+      # reads as though it were nested under `root-keys:` when it is not.  It is
+      # a sibling, both at two spaces -- the same shape as the ghcjs-overlay
+      # stanza already in cabal.project.local.
+      published =
+        "key-threshold: 3\n"
+        + "  root-keys:\n"
+        + "     f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89\n"
+        + "     26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329\n"
+        + "     7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d\n";
+      servedLocally =
+        "root-keys:\n"
+        + "  key-threshold: 0\n";
+      stripped = builtins.replaceStrings [ published ] [ servedLocally ] raw;
     in
       assert stripped != raw; stripped;
 
