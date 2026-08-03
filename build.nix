@@ -21,7 +21,7 @@ in rec {
 
   # See test/head-hackage.nix: the tests use the head.hackage repository
   # haskell.nix builds, not the published one.
-  headHackage = import ./test/head-hackage.nix { inherit pkgs; };
+  headHackage = import ./test/head-hackage.nix { inherit evalPackages; };
 
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.lib.recurseIntoAttrs ({

@@ -163,7 +163,7 @@ let
   # testSrc = subDir: testSrcRoot + "/${subDir}";
   testSrcRootWithGitDir = evalPackages.haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; includeSiblings = true; keepGitDir = true; };
   testSrcWithGitDir = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRootWithGitDir; inherit subDir; includeSiblings = true; };
-  headHackage = import ./head-hackage.nix { inherit pkgs; };
+  headHackage = import ./head-hackage.nix { inherit evalPackages; };
   testCabalProjectLocal = headHackage.cabalProjectLocal;
   testInputMap = headHackage.inputMap;
 

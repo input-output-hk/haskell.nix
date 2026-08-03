@@ -11,7 +11,7 @@
 # published root keys cannot apply to it.  They are dropped here rather than
 # weakened in the checked-in file, which stays correct for everyone who is not
 # going through haskell.nix.
-{ pkgs }:
+{ evalPackages }:
 {
   # The `assert` is the point of writing it this way.  If the stanza in
   # cabal.project.local is reformatted this stops matching, and we want that to
@@ -40,7 +40,14 @@
 
   # Scoped to our own tests deliberately: a haskell.nix user whose project names
   # this url should still get the published repository, not ours.
+  #
+  # Taken from `evalPackages`, not `pkgs`: this is an eval-time derivation, like
+  # plan-to-nix, and belongs on the eval system.  Reached through `pkgs` it came
+  # out built for the target's build platform, so evaluating the x86_64-linux
+  # jobs produced an x86_64-linux derivation and CI tried to build it on the
+  # linux VMs instead of the darwin builders that do eval-time work.
   inputMap = {
-    "https://ghc.gitlab.haskell.org/head.hackage/" = pkgs.haskell-nix.head-hackage-repo;
+    "https://ghc.gitlab.haskell.org/head.hackage/" =
+      evalPackages.haskell-nix.head-hackage-repo;
   };
 }
