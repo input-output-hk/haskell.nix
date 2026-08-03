@@ -33,8 +33,8 @@ in lib.recurseIntoAttrs {
   # Used for testing externally with nix-shell (../tests.sh).
   test-shell = (project.shellFor {
       tools = {
-        cabal = { cabalProjectLocal = testCabalProjectLocal; };
-        hoogle = { cabalProjectLocal = testCabalProjectLocal; };
+        cabal = { inputMap = testInputMap; cabalProjectLocal = testCabalProjectLocal; };
+        hoogle = { inputMap = testInputMap; cabalProjectLocal = testCabalProjectLocal; };
       };
       withHoogle = !stdenv.hostPlatform.isStatic;
     }).overrideAttrs (_: _: {

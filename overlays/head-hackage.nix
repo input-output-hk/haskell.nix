@@ -108,6 +108,17 @@ let
 
   srcHashes = import srcHashesFile;
 
+  # hackage-repo-tool will not bootstrap an empty repository, so one package has
+  # to be in place first.  Pick it here rather than with `ls | head -1` in the
+  # builder: that order depends on locale collation, so the choice -- and with it
+  # the bootstrapped metadata -- could differ between machines.
+  seedName = lib.head (lib.sort (a: b: a < b) (builtins.attrNames srcHashes));
+  seedPackage = buildPkgs.fetchurl {
+    name = "${seedName}.tar.gz";
+    url = "https://hackage.haskell.org/package/${seedName}/${seedName}.tar.gz";
+    sha256 = srcHashes.${seedName};
+  };
+
   # The original tarballs, fetched by hash from the index.  Laid out the way
   # `cabal fetch` would leave them, which is where the overlay tool looks:
   #   <repo-cache>/<repo-name>/<pkg>/<version>/<pkg>-<version>.tar.gz
@@ -223,8 +234,7 @@ in
       # hackage-repo-tool refuses to bootstrap an empty repository, so seed it
       # with one package, exactly as head.hackage's ci/build-repo.sh does.
       mkdir -p repo/package
-      seed=$(ls ${repoCache}/hackage.haskell.org/*/*/*.tar.gz | head -1)
-      cp "$seed" repo/package/
+      cp ${seedPackage} repo/package/${seedName}.tar.gz
       hackage-repo-tool bootstrap --keys=$HOME/keys --repo=./repo
 
       # Everything the tool needs is already local: the patches from the flake

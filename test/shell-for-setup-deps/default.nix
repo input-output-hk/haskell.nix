@@ -12,7 +12,7 @@ let
 
   env = project.shellFor {
     exposePackagesVia = "ghc-pkg";
-    tools.hoogle = { cabalProjectLocal = testCabalProjectLocal; };
+    tools.hoogle = { inputMap = testInputMap; cabalProjectLocal = testCabalProjectLocal; };
     withHoogle = true;
   };
 
