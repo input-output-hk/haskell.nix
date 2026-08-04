@@ -167,9 +167,20 @@ let
   testCabalProjectLocal = headHackage.cabalProjectLocal;
   testInputMap = headHackage.inputMap;
 
-  callTest = x: args: haskell-nix.callPackage x (args // {
-    inherit testSrc compiler-nix-name evalPackages testCabalProjectLocal testInputMap;
-  });
+  # `testCabalProjectLocal` / `testInputMap` are passed only to tests that ask
+  # for them.  callPackage's third argument is applied unconditionally, and a
+  # test with a closed argument set rejects anything it does not declare --
+  # "function 'anonymous lambda' called with unexpected argument
+  # 'testCabalProjectLocal'" -- which broke every test that does not use
+  # cabal.project.local.  The other three have always been passed to everything
+  # and every test declares them, so they stay unconditional.
+  callTest = x: args:
+    let
+      headHackageArgs = { inherit testCabalProjectLocal testInputMap; };
+    in
+    haskell-nix.callPackage x (args
+      // { inherit testSrc compiler-nix-name evalPackages; }
+      // builtins.intersectAttrs (builtins.functionArgs (import x)) headHackageArgs);
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.
