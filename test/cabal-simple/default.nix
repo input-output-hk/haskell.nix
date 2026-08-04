@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, mkCabalProjectPkgSet, project', haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, util, mkCabalProjectPkgSet, project', haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -15,7 +15,8 @@ let
   project = project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-simple";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local
+    inputMap = testInputMap;
+    cabalProjectLocal = testCabalProjectLocal
       + lib.optionalString (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64) ''
         constraints: text -simdutf, text source
     '';
@@ -32,8 +33,8 @@ in lib.recurseIntoAttrs {
   # Used for testing externally with nix-shell (../tests.sh).
   test-shell = (project.shellFor {
       tools = {
-        cabal = { cabalProjectLocal = builtins.readFile ../cabal.project.local; };
-        hoogle = { cabalProjectLocal = builtins.readFile ../cabal.project.local; };
+        cabal = { inputMap = testInputMap; cabalProjectLocal = testCabalProjectLocal; };
+        hoogle = { inputMap = testInputMap; cabalProjectLocal = testCabalProjectLocal; };
       };
       withHoogle = !stdenv.hostPlatform.isStatic;
     }).overrideAttrs (_: _: {

@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -18,7 +18,8 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-simple-prof";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local
+    inputMap = testInputMap;
+    cabalProjectLocal = testCabalProjectLocal
       + lib.optionalString (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64) ''
         constraints: text -simdutf, text source
       ''

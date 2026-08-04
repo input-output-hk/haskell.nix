@@ -69,6 +69,17 @@
       url = "github:stable-haskell/iserv-proxy?ref=iserv-syms";
       flake = false;
     };
+    # head.hackage's patches, plus the tool its CI uses to turn them into a
+    # package repository.  We build the repository ourselves rather than
+    # downloading the published one -- see overlays/head-hackage.nix.
+    head-hackage = {
+      url = "gitlab:ghc/head.hackage?host=gitlab.haskell.org";
+      flake = false;
+    };
+    hackage-overlay-repo-tool = {
+      url = "github:bgamari/hackage-overlay-repo-tool";
+      flake = false;
+    };
   };
 
   outputs =

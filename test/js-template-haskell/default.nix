@@ -1,5 +1,5 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, project', haskellLib, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, project', haskellLib, testSrc, compiler-nix-name, evalPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -7,7 +7,8 @@ let
   project = profiled: project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "js-template-haskell";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local
+    inputMap = testInputMap;
+    cabalProjectLocal = testCabalProjectLocal
       + ''
       if arch(javascript)
         extra-packages: ghci
