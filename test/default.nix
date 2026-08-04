@@ -212,7 +212,7 @@ let
     stack-remote-resolver = callTest ./stack-remote-resolver {};
     stack-symlink-yaml = callTest ./stack-symlink-yaml {};
     shell-for-setup-deps = callTest ./shell-for-setup-deps {};
-    setup-deps = import ./setup-deps { inherit pkgs evalPackages compiler-nix-name; };
+    setup-deps = import ./setup-deps { inherit pkgs evalPackages compiler-nix-name testCabalProjectLocal testInputMap; };
     callStackToNix = callTest ./call-stack-to-nix {};
     callCabalProjectToNix = callTest ./call-cabal-project-to-nix { inherit evalPackages; };
     cabal-source-repo = callTest ./cabal-source-repo {};
