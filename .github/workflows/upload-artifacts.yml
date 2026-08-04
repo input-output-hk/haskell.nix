@@ -16,10 +16,12 @@ env:
 # at all -- they read build metadata from the Hydra API and download the
 # artifacts Hydra built -- but the split is still worth keeping: nothing on the
 # PR path has any reason to write.
+#
+# `checks: read` and `statuses: read` used to be needed to find the `nix-tools`
+# aggregate's check-run.  Nothing reads GitHub check state any more; the job
+# list and the evaluation both come from the Hydra API.
 permissions:
   contents: read
-  checks: read
-  statuses: read
 
 jobs:
   wait-for-hydra:
@@ -28,11 +30,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Wait for nix-tools meta job
-        uses: input-output-hk/actions/wait-for-hydra@angerman/support-prs
-        with:
-          check: 'nix-tools'
 
       # Take the zips from Hydra, which built them, rather than reconstructing
       # our way back to them with nix.
@@ -51,50 +48,71 @@ jobs:
       # Hydra always has the artifacts it built, so ask it directly.  No
       # evaluation, no cache, no nix.  Integrity still holds: Hydra publishes a
       # sha256 per build product and we check the download against it.
-      - name: "Pull nix-tools"
+      #
+      # We wait on the four zip jobs themselves rather than on an aggregate.
+      # There used to be a `hydraJobs.nix-tools` aggregate and a
+      # `wait-for-hydra` step keyed on its check-run; both are gone.  The
+      # aggregate cost 476MB of zip closures copied onto one agent (see
+      # flake.nix), and keying off a check-run meant depending on Hydra's
+      # GitHub status sync, which strands this workflow whenever that sync
+      # backs up.  Polling Hydra directly needs strictly less to be true: just
+      # the evaluation, no check-run and no aggregate build.
+      - name: "Wait for and pull nix-tools"
         env:
           # On pull_request, github.sha is the merge commit; Hydra evaluates the
-          # head, which is where the check-run lives.
+          # head, so that is the revision to match.
           COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+          # Which Hydra jobset evaluated $COMMIT.  PRs get their own jobset;
+          # master pushes and `nix-tools-*` tags (which are cut from master
+          # commits) are covered by `master`.  Note Hydra keeps only 2
+          # evaluations per jobset, so a commit it has since evaluated past
+          # cannot be resolved -- the step fails loudly rather than silently
+          # reaching for a neighbouring revision.
+          JOBSET: ${{ github.event.pull_request.number && format('pullrequest-{0}', github.event.pull_request.number) || 'master' }}
+          # Generous: these zips are cross-built and the queue can be deep.  It
+          # only has to beat the job actually finishing, and a stuck build now
+          # shows up as this timeout rather than as a run that hangs all day.
+          TIMEOUT_MIN: 240
         run: |
           set -euo pipefail
           hydra=https://ci.zw3rk.com
+          project=input-output-hk-haskell-nix
 
-          # The `nix-tools` check that just went green is Hydra's aggregate
-          # build for this commit.  Its details_url carries the build id; take
-          # the id only, since this instance reports a localhost base URL.
-          # Kept as two statements on purpose.  Folded into one pipeline, a
-          # `grep` that matches nothing returns non-zero, and under `set -e`
-          # with `pipefail` that aborts the step before the error message below
-          # can run -- turning "the check-run moved or vanished" into a silent
-          # failure.  The `gh` call stays outside the `|| true` so an API
-          # failure still fails the step.
-          details=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${COMMIT}/check-runs" \
-                      --jq '.check_runs[] | select(.name == "nix-tools") | .details_url')
-          build=$(printf '%s\n' "$details" | grep -oE '/build/[0-9]+' | grep -oE '[0-9]+' | head -1 || true)
-          [ -n "$build" ] || { echo "::error::no Hydra nix-tools check-run for $COMMIT"; exit 1; }
+          jobs="aarch64-darwin.nix-tools.static.zipped.nix-tools-static
+          x86_64-darwin.nix-tools.static.zipped.nix-tools-static
+          x86_64-linux.nix-tools.static.zipped.nix-tools-static
+          x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
 
-          # A build can belong to several evaluations, so take the one whose
-          # flake ref is this commit.
-          evals=$(curl -sf -H 'Accept: application/json' "$hydra/build/$build" | jq -r '.jobsetevals[]') \
-            || { echo "::error::could not read Hydra build $build"; exit 1; }
-          evalid=""
-          for e in $evals; do
-            if curl -sf -H 'Accept: application/json' "$hydra/eval/$e" \
-                 | jq -e --arg r "$COMMIT" '(.flake // "") | contains($r)' >/dev/null; then
-              evalid=$e; break
-            fi
-          done
-          [ -n "$evalid" ] || { echo "::error::Hydra build $build has no evaluation at $COMMIT"; exit 1; }
-          echo "Hydra eval $evalid (aggregate build $build) for $COMMIT"
+          # Find the evaluation for this exact revision.  `.flake` carries the
+          # full ref, e.g. github:owner/repo/<rev>?narHash=..., so match on the
+          # revision as a substring.  Kept out of a single pipeline so that a
+          # jq miss reports the error below instead of tripping `pipefail`.
+          evals=$(curl -sf -H 'Accept: application/json' "$hydra/jobset/$project/$JOBSET/evals") \
+            || { echo "::error::could not list evaluations for jobset $JOBSET"; exit 1; }
+          evalid=$(printf '%s' "$evals" \
+                     | jq -r --arg r "$COMMIT" 'first(.evals[] | select((.flake // "") | contains($r)) | .id) // empty')
+          [ -n "$evalid" ] || {
+            echo "::error::no Hydra evaluation of $COMMIT in jobset $JOBSET (only 2 are kept)"
+            printf '%s' "$evals" | jq -r '.evals[] | "  eval \(.id): \(.flake // "?")"' || true
+            exit 1
+          }
+          echo "Hydra eval $evalid for $COMMIT (jobset $JOBSET)"
 
-          for job in \
-            aarch64-darwin.nix-tools.static.zipped.nix-tools-static \
-            x86_64-darwin.nix-tools.static.zipped.nix-tools-static \
-            x86_64-linux.nix-tools.static.zipped.nix-tools-static \
-            x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64
-          do
-            meta=$(curl -sfL -H 'Accept: application/json' "$hydra/eval/$evalid/job/$job")
+          deadline=$(( $(date +%s) + TIMEOUT_MIN * 60 ))
+          for job in $jobs; do
+            # Wait for this job to finish.  `finished` flips to 1 once Hydra is
+            # done with the build, whatever the outcome; buildstatus is only
+            # meaningful after that.
+            while :; do
+              meta=$(curl -sfL -H 'Accept: application/json' "$hydra/eval/$evalid/job/$job") \
+                || { echo "::error::$job is not in eval $evalid"; exit 1; }
+              [ "$(echo "$meta" | jq -r '.finished')" = "1" ] && break
+              [ "$(date +%s)" -lt "$deadline" ] \
+                || { echo "::error::timed out after ${TIMEOUT_MIN}m waiting for $job"; exit 1; }
+              echo "waiting for $job (build $(echo "$meta" | jq -r '.id'))"
+              sleep 60
+            done
+
             status=$(echo "$meta" | jq -r '.buildstatus')
             [ "$status" = "0" ] || { echo "::error::$job did not succeed (buildstatus $status)"; exit 1; }
 
