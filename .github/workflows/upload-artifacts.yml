@@ -64,10 +64,10 @@ jobs:
           COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
           # Which Hydra jobset evaluated $COMMIT.  PRs get their own jobset;
           # master pushes and `nix-tools-*` tags (which are cut from master
-          # commits) are covered by `master`.  Note Hydra keeps only 2
-          # evaluations per jobset, so a commit it has since evaluated past
-          # cannot be resolved -- the step fails loudly rather than silently
-          # reaching for a neighbouring revision.
+          # commits) are covered by `master`.  Old evaluations do age out
+          # eventually, so a long-forgotten revision may not be resolvable --
+          # the step then fails loudly, listing what Hydra does have, rather
+          # than silently reaching for a neighbouring revision.
           JOBSET: ${{ github.event.pull_request.number && format('pullrequest-{0}', github.event.pull_request.number) || 'master' }}
           # Generous: these zips are cross-built and the queue can be deep.  It
           # only has to beat the job actually finishing, and a stuck build now
@@ -83,28 +83,48 @@ jobs:
           x86_64-linux.nix-tools.static.zipped.nix-tools-static
           x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
 
-          # Find the evaluation for this exact revision.  `.flake` carries the
-          # full ref, e.g. github:owner/repo/<rev>?narHash=..., so match on the
-          # revision as a substring.  Kept out of a single pipeline so that a
-          # jq miss reports the error below instead of tripping `pipefail`.
-          evals=$(curl -sf -H 'Accept: application/json' "$hydra/jobset/$project/$JOBSET/evals") \
-            || { echo "::error::could not list evaluations for jobset $JOBSET"; exit 1; }
-          evalid=$(printf '%s' "$evals" \
-                     | jq -r --arg r "$COMMIT" 'first(.evals[] | select((.flake // "") | contains($r)) | .id) // empty')
-          [ -n "$evalid" ] || {
-            echo "::error::no Hydra evaluation of $COMMIT in jobset $JOBSET (only 2 are kept)"
-            printf '%s' "$evals" | jq -r '.evals[] | "  eval \(.id): \(.flake // "?")"' || true
-            exit 1
-          }
+          deadline=$(( $(date +%s) + TIMEOUT_MIN * 60 ))
+
+          # Wait for Hydra to evaluate this revision, then find that evaluation.
+          # The wait is the point: the push and this workflow start at the same
+          # moment, so on a new commit Hydra has not evaluated yet -- it still
+          # has to notice the push and then spend ~30-50min evaluating.  The
+          # `wait-for-hydra` action this replaced waited for a check-run to
+          # appear, which covered the same gap.
+          #
+          # `.flake` carries the full ref, e.g. github:owner/repo/<rev>?narHash=...,
+          # so match the revision as a substring.  Every step is guarded so a
+          # transient API failure or a jq miss retries instead of tripping
+          # `set -e`/`pipefail`; only the deadline ends the loop unsuccessfully.
+          evalid=""
+          while :; do
+            # `--max-time` matters here: without it a hung request blocks the
+            # loop indefinitely and the deadline below is never reached.  This
+            # endpoint routinely takes several seconds when the queue is busy.
+            evals=$(curl -sf --max-time 120 -H 'Accept: application/json' "$hydra/jobset/$project/$JOBSET/evals") || evals=""
+            evalid=$(printf '%s' "$evals" \
+                       | jq -r --arg r "$COMMIT" 'first(.evals[]? | select((.flake // "") | contains($r)) | .id) // empty' 2>/dev/null) \
+              || evalid=""
+            if [ -n "$evalid" ]; then break; fi
+            [ "$(date +%s)" -lt "$deadline" ] || {
+              echo "::error::timed out after ${TIMEOUT_MIN}m waiting for Hydra to evaluate $COMMIT in jobset $JOBSET"
+              echo "evaluations Hydra does have for that jobset:"
+              printf '%s' "$evals" | jq -r '.evals[]? | "  eval \(.id): \(.flake // "?")"' || true
+              exit 1
+            }
+            echo "waiting for Hydra to evaluate $COMMIT in jobset $JOBSET"
+            sleep 60
+          done
           echo "Hydra eval $evalid for $COMMIT (jobset $JOBSET)"
 
-          deadline=$(( $(date +%s) + TIMEOUT_MIN * 60 ))
           for job in $jobs; do
             # Wait for this job to finish.  `finished` flips to 1 once Hydra is
             # done with the build, whatever the outcome; buildstatus is only
-            # meaningful after that.
+            # meaningful after that.  `--retry` so a transient 5xx from Hydra
+            # (a 504 showed up while testing this) does not fail the run; a job
+            # that is genuinely absent from the eval still fails fast.
             while :; do
-              meta=$(curl -sfL -H 'Accept: application/json' "$hydra/eval/$evalid/job/$job") \
+              meta=$(curl -sfL --retry 3 --retry-delay 5 --max-time 120 -H 'Accept: application/json' "$hydra/eval/$evalid/job/$job") \
                 || { echo "::error::$job is not in eval $evalid"; exit 1; }
               [ "$(echo "$meta" | jq -r '.finished')" = "1" ] && break
               [ "$(date +%s)" -lt "$deadline" ] \
