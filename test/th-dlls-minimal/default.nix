@@ -1,5 +1,5 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -20,7 +20,8 @@ let
     # for `test-lib` includes them, and the v2 slice's
     # cabal-computed uid stays in sync.  Mingw ships import libs
     # (`.dll.a`) under `bin/` rather than `lib/`, so list both.
-    cabalProjectLocal = builtins.readFile ../cabal.project.local
+    inputMap = testInputMap;
+    cabalProjectLocal = testCabalProjectLocal
       + lib.optionalString profiled ''
         package *
           library-profiling: True

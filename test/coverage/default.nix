@@ -1,4 +1,4 @@
-{ stdenv, lib, cabal-install, cabalProject', stackProject', runCommand, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, cabal-install, cabalProject', stackProject', runCommand, testSrc, compiler-nix-name, evalPackages, buildPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -27,7 +27,8 @@ let
   # but for stack we would need a different resolver to be used..
   cabalProj = (cabalProject' (projectArgs // {
     inherit compiler-nix-name;
-    cabalProjectLocal = builtins.readFile ../cabal.project.local + coverageProjectLocal;
+    inputMap = testInputMap;
+    cabalProjectLocal = testCabalProjectLocal + coverageProjectLocal;
   }));
   stackProj = (stackProject' projectArgs);
 
