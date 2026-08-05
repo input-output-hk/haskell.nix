@@ -146,11 +146,16 @@ in rec {
               # `ln -s <dir>/* $out/compiler` does not fail in that case (a
               # symlink target need not exist), it silently creates a dangling
               # link literally named `*`, which then shows up in the source
-              # tree.  Both patterns below legitimately match nothing for some
-              # compilers: hadrian never produces
-              # `includes/dist-derivedconstants/header` (the constants are in
-              # `GHC/Platform/Constants.hs` instead), and GHC 9.14 dropped the
-              # `primop-*.hs-incl` files.
+              # tree.
+              #
+              # This is required rather than defensive: `generated-light` has no
+              # `includes/dist-derivedconstants/header` at all -- hadrian keeps
+              # the constants in `GHC/Platform/Constants.hs` instead -- so that
+              # first pattern matches nothing for every compiler, and without
+              # `lnGlob` each one would gain a dangling `*` in its `lib:ghc`
+              # source.  The `primop-*.hs-incl` pattern does match today (16-18
+              # files depending on the GHC version); it is guarded for the same
+              # reason, against a version that stops producing them.
               src = nix24srcFix (final.buildPackages.runCommand "ghc-src" { nativeBuildInputs = [(final.buildPackages.lndir or final.buildPackages.xorg.lndir)]; } ''
                 mkdir $out
                 lnGlob() { for f in "$@"; do if [[ -e $f ]]; then ln -s "$f" $out/compiler; fi; done; }

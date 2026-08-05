@@ -959,6 +959,18 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
     # ask hadrian to build only those file targets, which skips the stage1
     # library compile entirely (minutes instead of hours) and is independently
     # cacheable.
+    #
+    # The `primop-*.hs-incl` targets cannot be hardcoded: the set differs by GHC
+    # version (16 files on 9.6/9.8, 17 on 9.10, 18 on 9.12/9.14), so `buildPhase`
+    # greps them out of hadrian's own `Rules/Generate.hs`.  That grep needs
+    # `|| true`, and not merely for tidiness: stdenv runs phases under
+    # `set -eu -o pipefail`, so on a GHC that produced none of these files the
+    # grep would fail, take the pipeline down with it, and abort the build --
+    # instead of proceeding with the empty list the code is written to handle.
+    # Piping through `sort` does not mask that; pipefail propagates grep's
+    # status.  (Kept out here rather than beside the line it describes: text
+    # inside `buildPhase` is part of the derivation hash, so comments there
+    # rebuild `generated-light` for every compiler when edited.)
     generated-light = stdenv.mkDerivation ({
       name = name + "-generated-light";
       inherit
@@ -990,12 +1002,9 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         # Only the generated-source targets — hadrian builds their prerequisites
         # (genprimopcode / deriveConstants, both stage0Boot) but NOT lib:ghc.
         #
-        # The set of `primop-*.hs-incl` files differs between GHC versions (GHC
-        # 9.14.1 dropped them entirely; older GHCs have ~20).  Rather than
-        # hardcode a version-specific list, read the authoritative set from
-        # hadrian's own `compilerDependencies` (Rules/Generate.hs), so this
-        # works for every GHC we build.
-        primopIncls=$(grep -oE 'primop-[A-Za-z0-9-]+\.hs-incl' hadrian/src/Rules/Generate.hs 2>/dev/null | sort -u)
+        # Read the authoritative primop-include list from hadrian itself; see
+        # the note above the derivation for why, and why `|| true` is required.
+        primopIncls=$(grep -oE 'primop-[A-Za-z0-9-]+\.hs-incl' hadrian/src/Rules/Generate.hs 2>/dev/null | sort -u || true)
         echo "generated-light: primop includes:"; echo "$primopIncls" | sed 's/^/  /'
         # NB: `-j1`.  genprimopcode is occasionally invoked without its mode
         # argument under hadrian's parallel scheduler; serialising is reliable
