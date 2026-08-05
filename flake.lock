@@ -86,11 +86,11 @@
     "hackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1785371851,
-        "narHash": "sha256-4KYPxBpcb+YfIyMyRIHUCRXztbb6///O4mdnXv+M6NY=",
+        "lastModified": 1785890829,
+        "narHash": "sha256-x/qgBmr1Ul60a//77wNF+JnZxkFvBJXhfiLq9NG3VNA=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "394e52592d1e7cdc68a5903d7e09fec662977296",
+        "rev": "a0901e5663e2d8d8d97d8b969d3c55ed73e4e344",
         "type": "github"
       },
       "original": {
@@ -102,11 +102,11 @@
     "hackage-for-stackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1785371840,
-        "narHash": "sha256-9M2moyY7zurM1OkPJInhLenGisuwPeW9lfLAgPcl5HQ=",
+        "lastModified": 1785890388,
+        "narHash": "sha256-PobAAWpx7bxX3cFN2wTEwTXchibd+fgUCjbDIUWd+F4=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "c913f19af8ec466187493ea6d5231c55daf05a3e",
+        "rev": "a13b1e813c7360c307a8a6be16b70abfe85206b4",
         "type": "github"
       },
       "original": {
@@ -130,6 +130,40 @@
         "owner": "input-output-hk",
         "repo": "hackage.nix",
         "type": "github"
+      }
+    },
+    "hackage-overlay-repo-tool": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1671663228,
+        "narHash": "sha256-GKeke8FT9w2u6J9aI4eN3mOV0BURHiytQAEir4/4M1Q=",
+        "owner": "bgamari",
+        "repo": "hackage-overlay-repo-tool",
+        "rev": "f60aa0d497961745a503ddea2adb0facb58376e8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "bgamari",
+        "repo": "hackage-overlay-repo-tool",
+        "type": "github"
+      }
+    },
+    "head-hackage": {
+      "flake": false,
+      "locked": {
+        "host": "gitlab.haskell.org",
+        "lastModified": 1780387533,
+        "narHash": "sha256-oifEa/JYg8ZLUtkbM8HVzKmqCcT9QxaDmG0ex2qT0Ng=",
+        "owner": "ghc",
+        "repo": "head.hackage",
+        "rev": "a50bec6c7722f774415bc0f0a0e64f6e2b8989b7",
+        "type": "gitlab"
+      },
+      "original": {
+        "host": "gitlab.haskell.org",
+        "owner": "ghc",
+        "repo": "head.hackage",
+        "type": "gitlab"
       }
     },
     "hls": {
@@ -541,6 +575,8 @@
         "hackage": "hackage",
         "hackage-for-stackage": "hackage-for-stackage",
         "hackage-internal": "hackage-internal",
+        "hackage-overlay-repo-tool": "hackage-overlay-repo-tool",
+        "head-hackage": "head-hackage",
         "hls": "hls",
         "hls-1.10": "hls-1.10",
         "hls-2.0": "hls-2.0",
@@ -574,11 +610,11 @@
     "stackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1785371200,
-        "narHash": "sha256-eK57L0lZwjXiAKtfZRZD9cro0vdNRU8WCMW4FEHjc+Q=",
+        "lastModified": 1785889709,
+        "narHash": "sha256-g65F1SArn5HRCDDYUHHbY0UCxTdEBdK3VfEP0he0poY=",
         "owner": "input-output-hk",
         "repo": "stackage.nix",
-        "rev": "805802b9f4e0630d16d182dca423ac8ecac24787",
+        "rev": "7470f68340a3cf68913a05502afb5daedd1b84b1",
         "type": "github"
       },
       "original": {

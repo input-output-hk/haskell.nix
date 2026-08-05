@@ -3,6 +3,7 @@ let
   overlays = {
     wine = import ./wine.nix;
     haskell = import ./haskell.nix { inherit sources; };
+    head-hackage = import ./head-hackage.nix { inherit sources; };
 
     # Here is where we import nix-tools into the overlays that haskell.nix is
     # going to use. To cut the evaluation time of nix-tools (which would itself
@@ -125,6 +126,7 @@ let
     musl
     android
     tools
+    head-hackage
     emscripten
     nix-prefetch-git-minimal
     ghcjs
