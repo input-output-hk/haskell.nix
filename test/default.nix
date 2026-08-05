@@ -164,16 +164,28 @@ let
   # testSrc = subDir: testSrcRoot + "/${subDir}";
   testSrcRootWithGitDir = evalPackages.haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; includeSiblings = true; keepGitDir = true; };
   testSrcWithGitDir = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRootWithGitDir; inherit subDir; includeSiblings = true; };
-  # Thread `evalSystem` (the platform plan-to-nix runs on) into tests that
-  # declare it, so a project sets `evalSystem` rather than the now read-only
-  # `evalPackages` option (see modules/project-common.nix).  Passed only to
-  # tests whose function accepts it (via `functionArgs`) so tests that don't
-  # need it are unaffected.  `evalPackages` is still passed unconditionally
-  # for tests that use it as a plain nixpkgs (cleanGit, runCommand, …).
+  headHackage = import ./head-hackage.nix { inherit evalPackages; };
+  testCabalProjectLocal = headHackage.cabalProjectLocal;
+  testInputMap = headHackage.inputMap;
+
+  # `evalSystem` / `testCabalProjectLocal` / `testInputMap` are passed only to
+  # tests that ask for them.  callPackage's third argument is applied
+  # unconditionally, and a test with a closed argument set rejects anything it
+  # does not declare -- "function 'anonymous lambda' called with unexpected
+  # argument 'testCabalProjectLocal'" -- which broke every test that does not
+  # use cabal.project.local.  `evalSystem` (the platform plan-to-nix runs on) is
+  # optional for the same reason: a project selects the eval platform with
+  # `evalSystem` rather than the now read-only `evalPackages` option (see
+  # modules/project-common.nix), but not every test builds a project.  The other
+  # three have always been passed to everything and every test declares them, so
+  # they stay unconditional.
   callTest = x: args:
-    let wantsEvalSystem = (builtins.functionArgs (if builtins.isFunction x then x else import x)) ? evalSystem;
-    in haskell-nix.callPackage x (args // { inherit testSrc compiler-nix-name evalPackages; }
-      // lib.optionalAttrs wantsEvalSystem { inherit evalSystem; });
+    let
+      optionalArgs = { inherit evalSystem testCabalProjectLocal testInputMap; };
+    in
+    haskell-nix.callPackage x (args
+      // { inherit testSrc compiler-nix-name evalPackages; }
+      // builtins.intersectAttrs (builtins.functionArgs (import x)) optionalArgs);
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.
@@ -205,7 +217,7 @@ let
     stack-remote-resolver = callTest ./stack-remote-resolver {};
     stack-symlink-yaml = callTest ./stack-symlink-yaml {};
     shell-for-setup-deps = callTest ./shell-for-setup-deps {};
-    setup-deps = import ./setup-deps { inherit pkgs evalPackages evalSystem compiler-nix-name; };
+    setup-deps = import ./setup-deps { inherit pkgs evalPackages evalSystem compiler-nix-name testCabalProjectLocal testInputMap; };
     setup-deps-boot-cabal = callTest ./setup-deps-boot-cabal {};
     callStackToNix = callTest ./call-stack-to-nix {};
     callCabalProjectToNix = callTest ./call-cabal-project-to-nix { inherit evalPackages; };

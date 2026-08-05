@@ -1,4 +1,4 @@
-{ stdenv, lib, mkCabalProjectPkgSet, cabalProject', haskellLib, util, testSrc, compiler-nix-name, evalPackages, evalSystem }:
+{ stdenv, lib, mkCabalProjectPkgSet, cabalProject', haskellLib, util, testSrc, compiler-nix-name, evalPackages, evalSystem, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -6,7 +6,8 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalSystem;
     src = testSrc "cabal-22";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    inputMap = testInputMap;
+    cabalProjectLocal = testCabalProjectLocal;
   };
 
   packages = project.hsPkgs;

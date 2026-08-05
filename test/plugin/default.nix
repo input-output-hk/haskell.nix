@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellLib, project', testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages }:
+{ stdenv, lib, haskellLib, project', testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -6,7 +6,8 @@ let
   project = project' {
     inherit compiler-nix-name evalSystem;
     src = testSrc "plugin";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
+    inputMap = testInputMap;
+    cabalProjectLocal = testCabalProjectLocal + ''
       allow-newer: polysemy-plugin:containers, polysemy:containers
     '';
   };

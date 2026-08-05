@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages, dwarfdump }:
+{ stdenv, lib, util, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages, dwarfdump, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -17,7 +17,8 @@ let
     # GHC, dummy-ghc, ...) on the same DWARF variant; per-slice
     # overrides via `.dwarf` would diverge from plan-nix's UnitId.
     compilerSelection = p: lib.mapAttrs (_: c: c.dwarf) p.haskell-nix.compiler;
-    cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
+    inputMap = testInputMap;
+    cabalProjectLocal = testCabalProjectLocal + ''
       package *
         debug-info: 2
     '';

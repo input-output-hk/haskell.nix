@@ -1,12 +1,16 @@
-{ stdenv, lib, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages }:
+{ stdenv, lib, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
 let
   project = cabalProject' {
     src = testSrc "ghcjs-overlay";
+    # `evalSystem` is this branch's knob for the eval platform and `evalPackages`
+    # is derived from it, so passing `evalSystem` alone (rather than master's
+    # `evalPackages`) keeps the two from being specified independently.
     inherit compiler-nix-name evalSystem;
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    inputMap = testInputMap;
+    cabalProjectLocal = testCabalProjectLocal;
   };
   packages = project.hsPkgs;
 

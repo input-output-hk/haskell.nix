@@ -1,4 +1,4 @@
-{ stdenv, lib, haskell-nix, haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, runCommand, gitReallyMinimal, buildPackages }:
+{ stdenv, lib, haskell-nix, haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, runCommand, gitReallyMinimal, buildPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -54,7 +54,8 @@ let
     # with `outPath` + `filterPath` tells haskell.nix the source is
     # already filtered and to skip its own cleaner.
     src = { outPath = packageRoot; filterPath = { path, ... }: path; };
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    inputMap = testInputMap;
+    cabalProjectLocal = testCabalProjectLocal;
     modules = [{
       packages.githash-test.components.exes.githash-test.build-tools = mkForce [ git ];
     }];

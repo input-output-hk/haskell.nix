@@ -81,6 +81,17 @@
       url = "github:zw3rk/hyper-linux";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # head.hackage's patches, plus the tool its CI uses to turn them into a
+    # package repository.  We build the repository ourselves rather than
+    # downloading the published one -- see overlays/head-hackage.nix.
+    head-hackage = {
+      url = "gitlab:ghc/head.hackage?host=gitlab.haskell.org";
+      flake = false;
+    };
+    hackage-overlay-repo-tool = {
+      url = "github:bgamari/hackage-overlay-repo-tool";
+      flake = false;
+    };
   };
 
   outputs =
@@ -350,30 +361,23 @@
       };
 
     in
-    traceHydraJobs (lib.recursiveUpdate flake (lib.optionalAttrs (ifdLevel > 2)
-      (
-        let pkgs = nixpkgs.legacyPackages."x86_64-linux"; in
-        {
-          hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
-            name = "nix-tools";
-            constituents = (if runningHydraEvalTest then [ ] else [
-              # x86_64-darwin static nix-tools still build: they come from the
-              # ./nix-tools subflake, which resolves pkgs via its OWN pinned
-              # haskellNix whose unstable nixpkgs predates the x86_64-darwin drop.
-              "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
-              "x86_64-darwin.nix-tools.static.zipped.nix-tools-static"
-              "aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
-              "x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
-            ]) ++ [
-              "x86_64-linux.nix-tools.static.zipped.nix-tools-static"
-              "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
-              "x86_64-linux.nix-tools.static.zipped.nix-tools-static-no-ifd"
-              "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64-no-ifd"
-              (pkgs.writeText "gitrev" (self.rev or "0000000000000000000000000000000000000000"))
-            ];
-          };
-        }
-      )));
+    # There used to be a `hydraJobs.nix-tools` aggregate here, grouping the four
+    # `<system>.nix-tools.static.zipped.*` zips so `upload-artifacts.yml` had a
+    # single check to wait on.  It was expensive out of proportion to that.
+    #
+    # `releaseTools.aggregate` takes its constituents as job-name strings, which
+    # are Hydra metadata and create no nix dependency -- but nix-eval-jobs
+    # resolves named constituents and rewrites the derivation to depend on them,
+    # so the built `nix-tools.drv` really did list all four zips in `inputDrvs`.
+    # nix realises every input on the build machine whether the builder script
+    # reads it or not, so the aggregate dragged 476MB of zip closures onto
+    # whichever single agent Hydra happened to pick.  On the darwin-hosted linux
+    # builders, where import already dominates step time, that regularly hit the
+    # one-hour wall and failed, then retried elsewhere and copied it all again.
+    #
+    # The workflow now asks the Hydra API for the eval matching the commit and
+    # reads those four jobs from it directly, so nothing has to co-locate them.
+    traceHydraJobs flake;
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {

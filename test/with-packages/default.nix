@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellLib, util, cabalProject', testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages }:
+{ stdenv, lib, haskellLib, util, cabalProject', testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 with util;
@@ -7,7 +7,8 @@ let
   project = doExactConfig: cabalProject' {
     inherit compiler-nix-name evalSystem;
     src = testSrc "with-packages";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    inputMap = testInputMap;
+    cabalProjectLocal = testCabalProjectLocal;
     modules = [
       # overrides to fix the build
       {

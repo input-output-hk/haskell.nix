@@ -1,5 +1,5 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages }:
+{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -7,7 +7,8 @@ let
   project = project' {
     inherit compiler-nix-name evalSystem;
     src = testSrc "exe-dlls";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local
+    inputMap = testInputMap;
+    cabalProjectLocal = testCabalProjectLocal
       + lib.optionalString stdenv.hostPlatform.isAndroid
           (builtins.readFile ../cabal.project.android);
     modules = import ../modules.nix;
@@ -21,7 +22,8 @@ let
   projectProfiled = project' {
     inherit compiler-nix-name evalSystem;
     src = testSrc "exe-dlls";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local
+    inputMap = testInputMap;
+    cabalProjectLocal = testCabalProjectLocal
       + lib.optionalString stdenv.hostPlatform.isAndroid
           (builtins.readFile ../cabal.project.android)
       + ''

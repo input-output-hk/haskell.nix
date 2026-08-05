@@ -13,18 +13,28 @@
 
 let
   haskell = pkgs.haskell-nix;
+  # Master takes `evalPackages` as an argument; here `evalSystem` is the sole
+  # knob and `evalPackages` is derived from it, via the per-eval-system memoised
+  # nixpkgs in overlays/haskell.nix, so every consumer sharing an `evalSystem`
+  # reuses one nixpkgs instance.  Only head-hackage.nix needs it directly.
+  evalPackages = pkgs.haskell-nix.evalPackages.${evalSystem};
   buildHaskell = pkgs.buildPackages.haskell-nix;
   tool = buildHaskell.tool;
   ghcFromTo = from: to: __compareVersions haskell.compiler.${compiler-nix-name}.version from >= 0 && __compareVersions haskell.compiler.${compiler-nix-name}.version to < 0;
 in rec {
   tests = import ./test/default.nix { inherit pkgs evalSystem ifdLevel compiler-nix-name; };
 
+  # See test/head-hackage.nix: the tests use the head.hackage repository
+  # haskell.nix builds, not the published one.
+  headHackage = import ./test/head-hackage.nix { inherit evalPackages; };
+
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.lib.recurseIntoAttrs ({
       cabal-latest = tool compiler-nix-name "cabal" ({
         inherit evalSystem;
       } // pkgs.lib.optionalAttrs (ghcFromTo "9.13" "9.14") {
-        cabalProjectLocal = builtins.readFile ./test/cabal.project.local;
+        inputMap = headHackage.inputMap;
+        cabalProjectLocal = headHackage.cabalProjectLocal;
       });
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0) {
       hlint-latest = tool compiler-nix-name "hlint" {
