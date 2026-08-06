@@ -724,22 +724,33 @@ stdenv.mkDerivation ({
         fi
       done
     fi
-    ${lib.optionalString (buildToolSourceFrags != []) ''
-    # Build-stage tools built from source in-slice (happy/happy-lib, staged
-    # via `buildToolSourceFrags`) get registered by `ghc-pkg recache` into the
-    # BUILD-platform db (`store/host/<build-platform>`, reached through the
-    # `build`→`host` link) — a DIFFERENT platform dir than the cross target's
-    # that `discoverStore` fixes above.  Its `package.cache{,.lock}` are still
-    # composed as read-only symlinks into /nix/store, so the recache `flock()`
-    # fails with `hLock: invalid argument (Bad file descriptor)`.  Make EVERY
-    # composed platform db writable so build-stage registration can proceed.
+    # Every composed platform db must be writable AND carry a real
+    # `package.cache`:
+    #  * Build-stage tools built from source in-slice (happy/happy-lib, staged
+    #    via `buildToolSourceFrags`) get registered by `ghc-pkg recache` into
+    #    the BUILD-platform db (`store/host/<build-platform>`, reached through
+    #    the `build`→`host` link) — a DIFFERENT platform dir than the cross
+    #    target's that `discoverStore` fixes above.  Its `package.cache{,.lock}`
+    #    may be composed as read-only symlinks into /nix/store, so the recache
+    #    `flock()` fails with `hLock: invalid argument (Bad file descriptor)`.
+    #  * A dep slice does not necessarily SHIP a cache at all (whether one is
+    #    composed in depends on which dep slice's db got composed first), and
+    #    ghc refuses a non-empty db with no cache ("there is no package.cache
+    #    in …") — which kills the SETUP compile of any slice whose
+    #    setup-depends resolve to composed units (leksah: ghc-boot's
+    #    setup-scope Cabal-3.16 twin db held two confs and no cache once the
+    #    plan gained a package and the compose order shifted).
+    # So make every composed platform db writable and freshly cached
+    # unconditionally, not just when build tools are staged in-slice.
     for db in $storeDir/host/*/package.conf.d; do
       [ -d "$db" ] || continue
       for f in package.cache package.cache.lock; do
         [ -L "$db/$f" ] && rm "$db/$f" || true
       done
+      if [ ! -e "$db/package.cache" ]; then
+        ${ghcPkgBin} --package-db=$db recache
+      fi
     done
-    ''}
 
     ${lib.optionalString (buildToolBinOverlays != []) ''
       # Overlay each cross-target build-tool's `bin/<name>` in the
