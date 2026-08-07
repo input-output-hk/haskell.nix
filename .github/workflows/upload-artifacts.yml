@@ -6,6 +6,16 @@ on:
       - master
     tags:
       - "nix-tools-*"
+      # `nix-tools-sh-*` matches `nix-tools-*`, so without this exclusion every
+      # stable-haskell release would start this workflow too.  It could only
+      # fail: the stable-haskell zips are different jobs
+      # (`<system>.nix-tools-sh.static.zipped.*`), so the wait below would sit
+      # out its full 240m timeout looking for mainline jobs that the tag did not
+      # change.  The mainline pin would survive -- `release` needs
+      # `wait-for-hydra` -- but every stable-haskell release would carry a
+      # four-hour red run beside the green one.  Negations are evaluated in order
+      # and must follow the positive pattern.  See upload-artifacts-sh.yml.
+      - "!nix-tools-sh-*"
   pull_request:
 
 env:

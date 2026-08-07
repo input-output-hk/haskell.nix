@@ -52,6 +52,19 @@ let
         # full rebuild.
         static-nix-tools-for-default-setup = static-nix-tools' ../nix-tools-static-for-default-setup.nix;
 
+        # The stable-haskell variant, built from ../nix-tools-sh and pinned
+        # separately for the same reason `default-setup` is: so it can move
+        # without dragging anything else with it.
+        #
+        # NOTHING SELECTS THIS BY DEFAULT.  plan-to-nix and make-install-plan
+        # generate plan-nix for whatever compiler they are pointed at, so making
+        # these the shared default would move every existing GHC onto the
+        # stable-haskell Cabal fork.  It is opt-in per project through the
+        # `nix-tools` option in modules/cabal-project.nix, resolved in
+        # lib/call-cabal-project-to-nix.nix; ghc9.6 .. ghc9.14 continue to use
+        # ../nix-tools-static.nix.  See ../nix-tools-static-sh.nix.
+        static-nix-tools-sh = static-nix-tools' ../nix-tools-static-sh.nix;
+
         # Version of nix-tools built with a pinned version of haskell.nix.
         pinned-nix-tools-lib = (import final.haskell-nix.sources.flake-compat {
             pkgs = final;
@@ -70,6 +83,16 @@ let
             # either nix-tools from its overlay or from the tarball.
             nix-tools-unchecked = static-nix-tools // {
               exes =  static-nix-tools.exes // {
+                inherit (static-nix-tools-for-default-setup.exes) default-setup default-setup-ghcjs;
+              };
+            };
+            # As above, with the stable-haskell tools.  `default-setup` still
+            # comes from the shared pin on purpose: it is the one whose hash
+            # rebuilds everything, and the fork has no reason to differ there,
+            # so opting a project into these tools must not fork the setup used
+            # to build the world.
+            nix-tools-unchecked-sh = static-nix-tools-sh // {
+              exes = static-nix-tools-sh.exes // {
                 inherit (static-nix-tools-for-default-setup.exes) default-setup default-setup-ghcjs;
               };
             };
