@@ -3,7 +3,6 @@
 
 import Cabal2Nix (Src, gpd2nix)
 import qualified Cabal2Nix hiding (gpd2nix)
-import Data.Bifunctor (first)
 import qualified Data.ByteString.Lazy as BSL
 import Data.Foldable (for_)
 import qualified Data.Text.Encoding as T
@@ -15,14 +14,12 @@ import Distribution.Client.NixStyleOptions (NixStyleFlags (..), defaultNixStyleF
 import Distribution.Client.ProjectConfig
 import Distribution.Client.ProjectOrchestration
 import Distribution.Client.ProjectPlanning (ElaboratedConfiguredPackage (..), availableTargets, rebuildInstallPlan)
-import Distribution.Client.ProjectPlanning.Stage (WithStage (..))
 import Distribution.Client.Setup
 import Distribution.Client.Types.PackageLocation (PackageLocation (..))
 import Distribution.Client.Types.Repo (LocalRepo (..), RemoteRepo (..), Repo (..))
 import Distribution.Client.Types.SourceRepo (SourceRepositoryPackage (..))
 import Distribution.Package (pkgName)
 import Distribution.PackageDescription.Parsec (parseGenericPackageDescription, runParseResult)
-import Distribution.Parsec.Error (showPErrorWithSource)
 import Distribution.Pretty (prettyShow)
 import Distribution.Simple.Command
 import Distribution.Simple.Flag
@@ -51,14 +48,9 @@ main = do
     CommandReadyToGo (mkflags, _commandParse) ->
       let globalFlags = defaultGlobalFlags
           flags@NixStyleFlags{configFlags} = mkflags (commandDefaultFlags cmdUI)
-          -- cabal 3.17: configVerbosity is now a Flag VerbosityFlags and `normal`
-          -- is a VerbosityFlags; wrap it into a Verbosity for the API below.
-          verbosity = Verbosity.mkVerbosity Verbosity.defaultVerbosityHandles
-            (fromFlagOrDefault Verbosity.normal (configVerbosity configFlags))
+          verbosity = fromFlagOrDefault Verbosity.normal (configVerbosity configFlags)
           cliConfig = commandLineFlagsToProjectConfig globalFlags flags mempty
-          -- cabal 3.17: topHandler now takes a predicate selecting which exceptions
-          -- are "user" (friendly) exceptions; we treat none specially.
-       in topHandler (const False) (installPlanAction verbosity cliConfig)
+       in topHandler (installPlanAction verbosity cliConfig)
 
 cmdUI :: CommandUI (NixStyleFlags ())
 cmdUI =
@@ -72,20 +64,14 @@ cmdUI =
     , commandOptions = nixStyleOptions (const [])
     }
 
--- cabal 3.17: many plan values are now tagged with the build Stage; this drops it.
-dropStage :: WithStage a -> a
-dropStage (WithStage _ a) = a
-
 -- The following is adapted from cabal-install's Distribution.Client.CmdFreeze
 installPlanAction :: Verbosity -> ProjectConfig -> IO ()
 installPlanAction verbosity cliConfig = do
-  ProjectBaseContext{distDirLayout, projectConfig, localPackages} <-
+  ProjectBaseContext{distDirLayout, cabalDirLayout, projectConfig, localPackages} <-
     establishProjectBaseContext verbosity cliConfig OtherCommand
 
-  -- cabal 3.17: rebuildInstallPlan no longer takes the CabalDirLayout argument and
-  -- returns a 4-tuple (the improved plan is no longer returned separately).
-  (elaboratedPlan, elaboratedSharedConfig, totalIndexState, activeRepos) <-
-    rebuildInstallPlan verbosity distDirLayout projectConfig localPackages Nothing
+  (_improvedPlan, elaboratedPlan, elaboratedSharedConfig, totalIndexState, activeRepos) <-
+    rebuildInstallPlan verbosity distDirLayout cabalDirLayout projectConfig localPackages Nothing
 
   -- Write plan.json
   Cabal.notice verbosity $ "Writing plan.json to " ++ distProjectCacheFile distDirLayout "plan.json"
@@ -93,9 +79,7 @@ installPlanAction verbosity cliConfig = do
     distDirLayout
     elaboratedPlan
     elaboratedSharedConfig
-    -- cabal 3.17: availableTargets keys are now WithStage-qualified unit ids;
-    -- drop the stage so plan.json keeps its (UnitId, ComponentName) shape.
-    ((fmap . fmap . fmap) (first dropStage) (availableTargets elaboratedPlan))
+    (availableTargets elaboratedPlan)
 
   -- Write cabal.freeze
   let freezeConfig = projectFreezeConfig elaboratedPlan totalIndexState activeRepos
@@ -107,15 +91,14 @@ installPlanAction verbosity cliConfig = do
   Cabal.createDirectoryIfMissingVerbose verbosity True cabalFilesDir
   Cabal.notice verbosity $ "Writing cabal files to " ++ cabalFilesDir
 
-  -- cabal 3.17: elabLocalToProject was renamed elabIsSourcePackage.
-  let ecps = [ecp | InstallPlan.Configured ecp <- InstallPlan.toList elaboratedPlan, not $ elabIsSourcePackage ecp]
+  let ecps = [ecp | InstallPlan.Configured ecp <- InstallPlan.toList elaboratedPlan, not $ elabLocalToProject ecp]
 
   for_ ecps $
     \ElaboratedConfiguredPackage
       { elabPkgSourceId
       , elabPkgSourceLocation
       , elabPkgSourceHash
-      , elabIsSourcePackage
+      , elabLocalToProject
       , elabPkgDescriptionOverride
       } -> do
         let nixFile = cabalFilesDir </> prettyShow (pkgName elabPkgSourceId) <.> "nix"
@@ -126,10 +109,10 @@ installPlanAction verbosity cliConfig = do
           let gpdText = BSL.toStrict pkgTxt
           let src = packageLocation2Src elabPkgSourceLocation elabPkgSourceHash
           let gpd = case runParseResult (parseGenericPackageDescription gpdText) of
-                (_, Left (_, err)) -> error ("Failed to parse in-memory cabal file: " ++ foldMap showPErrorWithSource err)
+                (_, Left (_, err)) -> error ("Failed to parse in-memory cabal file: " ++ show err)
                 (_, Right desc) -> desc
           let extra = mkNonRecSet ["package-description-override" $= mkStr (T.decodeUtf8 gpdText)]
-          let nix = gpd2nix elabIsSourcePackage Cabal2Nix.MinimalDetails (Just src) (Just extra) gpd
+          let nix = gpd2nix elabLocalToProject Cabal2Nix.MinimalDetails (Just src) (Just extra) gpd
           writeDoc nixFile $ prettyNix nix
 
 packageLocation2Src :: PackageLocation local -> Maybe HashValue -> Cabal2Nix.Src

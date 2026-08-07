@@ -81,14 +81,7 @@
         ghc912 = true;
         ghc914 = true;
         ghc914llvm = true;
-        # ghc914-sh temporarily disabled: it cost ~30% of the eval wall clock
-        # (18435s of 61874s) at 13.1s/job against 5.5-6.7s/job for every other
-        # compiler, and no eval of this branch has completed since 2026-07-23.
-        # The cost is concentrated in the cross targets -- wasi32 23.2s/job vs
-        # 3.8s for ghc9141, aarch64-android-prebuilt 24.4s vs 6.7s -- while
-        # native is near normal (5.7s vs 3.6s).  Re-enable once that is fixed;
-        # this branch exists to add ghc914-sh, so it must not merge disabled.
-        # ghc914-sh = true;
+        ghc914-sh = true;
         # ghc915 = true;
       })));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:

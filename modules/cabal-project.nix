@@ -373,6 +373,21 @@ in {
     (lib.mkIf
       ((config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name}.isStableHaskell or false)
       { builderVersion = lib.mkDefault 2; })
+    # ...and to the stable-haskell nix-tools bundle.  `make-install-plan` has
+    # to link the fork's cabal to see the cross-compilation "stage" system
+    # (--with-build-compiler / build:/host: stage-qualified constraints); the
+    # shared 3.16 tarball cannot express it.  Only these compilers get it:
+    # plan-to-nix and make-install-plan generate plan-nix for whatever compiler
+    # they are pointed at, so making the fork the global default is what cost
+    # 6x-89x per job to evaluate on ghc9.6 .. ghc9.14 (see overlays/default.nix).
+    #
+    # `mkDefault` so an explicit per-project `nix-tools` still wins, and
+    # `mkIf` rather than an option `default` for the same reason
+    # `builderVersion` above uses one -- the option default is forced too
+    # eagerly by the module system and recurses.
+    (lib.mkIf
+      ((config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name}.isStableHaskell or false)
+      { nix-tools = lib.mkDefault config.evalPackages.haskell-nix.nix-tools-unchecked-sh; })
     # stable-haskell `-target` cross compilers (ghc914-sh for a cross
     # target) ship NO boot libraries: the compiler's target package db is
     # empty and the plan-time dummy `ghc-pkg dump` is empty too (see

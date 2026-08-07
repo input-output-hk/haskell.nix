@@ -7,9 +7,7 @@ import Distribution.Client.IndexUtils
 import qualified Distribution.Client.InstallPlan as InstallPlan
 import Distribution.Client.ProjectConfig
 import Distribution.Client.ProjectPlanning
--- cabal 3.17: UserAnyQualifier/UserQualified moved from UserConstraintScope to the
--- new UserConstraintQualifier type (UserConstraintScope now also carries a Maybe Stage).
-import Distribution.Client.Targets (UserConstraint (UserConstraint), UserConstraintQualifier (UserAnyQualifier, UserQualified), UserQualifier (UserQualToplevel))
+import Distribution.Client.Targets (UserConstraint (UserConstraint), UserConstraintScope (UserAnyQualifier, UserQualified), UserQualifier (UserQualToplevel))
 import Distribution.Package
 import Distribution.Simple.Flag (Flag, pattern Flag)
 import Distribution.Solver.Types.ConstraintSource (ConstraintSource (ConstraintSourceFreeze))
@@ -132,6 +130,5 @@ projectFreezeConstraints plan =
       Map.fromList
         [ (packageName elab, ())
           | InstallPlan.Configured elab <- InstallPlan.toList plan,
-            -- cabal 3.17: elabLocalToProject was renamed elabIsSourcePackage.
-            elabIsSourcePackage elab
+            elabLocalToProject elab
         ]

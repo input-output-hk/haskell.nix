@@ -2128,7 +2128,12 @@ ENDSCRIPT
         # haskell.nix's patched cabal-install understands the project files;
         # the Makefile's `stable-cabal` target can still build the in-repo
         # one (from the stable-haskell/Cabal srp) if preferred.
-        pkgs.buildPackages.haskell-nix.nix-tools-unchecked.exes.cabal
+        #
+        # The `-sh` bundle specifically: these are the ghc914-sh dev shells, and
+        # the project files they are for use the fork's stage system
+        # (build:/host: stage-qualified constraints), which the shared 3.16
+        # cabal does not understand.
+        pkgs.buildPackages.haskell-nix.nix-tools-unchecked-sh.exes.cabal
         alexTool
         happyTool
       ] ++ (with pkgs.buildPackages; [

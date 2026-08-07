@@ -383,7 +383,16 @@ let
     dummy-ghc-pkg-dump = evalPackages.runCommand "dummy-ghc-pkg-dump" {
       buildInputs = prebuilt-depends;
       nativeBuildInputs = [
-        evalPackages.haskell-nix.nix-tools-unchecked.exes.cabal2json
+        # `cabal2json` is Cabal-syntax-json, so it has to be able to parse the
+        # boot packages' `.cabal` files.  Stable-haskell boot libs come from the
+        # Cabal 3.17 fork, so they get the fork's cabal2json (the
+        # `cabal-syntax-json-condtree-3.17` port); every other compiler keeps
+        # the shared 3.16 one.  This is the one nix-tools consumer that is NOT
+        # reachable through the `nix-tools` project option, so it has to
+        # discriminate here.
+        (if ghc.isStableHaskell or false
+          then evalPackages.haskell-nix.nix-tools-unchecked-sh
+          else evalPackages.haskell-nix.nix-tools-unchecked).exes.cabal2json
         evalPackages.jq
       ];
     } (let varname = x: builtins.replaceStrings ["-"] ["_"] x; in ''

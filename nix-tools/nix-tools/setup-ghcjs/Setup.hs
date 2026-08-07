@@ -12,14 +12,7 @@ import System.Directory (doesFileExist)
 import Distribution.Types.Library (libBuildInfo, Library(..))
 import Distribution.Types.BuildInfo (cSources, jsSources, includeDirs, options, extraBundledLibs)
 import Distribution.Simple.BuildTarget (readBuildTargets, BuildTarget(..))
--- Cabal 3.17: `silent`/`verbose` are now VerbosityFlags; mkVerbosity turns them
--- into a Verbosity for the Cabal API calls below.
-import Distribution.Verbosity (silent, verbose, mkVerbosity, defaultVerbosityHandles)
--- Cabal 3.17: cSources/jsSources are [ExtraSource Pkg]; extraSourceFile gets the path.
--- Imported via Distribution.PackageDescription because this setup exe only depends on
--- the Cabal package (Cabal-syntax is hidden), and Cabal re-exports PackageDescription,
--- which in turn re-exports the ExtraSource module.
-import Distribution.PackageDescription (extraSourceFile)
+import Distribution.Verbosity (silent, verbose)
 import Distribution.Types.ComponentName
 import Distribution.Simple.Program.Types (programPath)
 import Distribution.Simple.Program.Db (lookupProgram)
@@ -41,7 +34,7 @@ emarProgram = simpleProgram "emar"
 
 buildEMCCLib :: PackageDescription -> LocalBuildInfo -> IO ()
 buildEMCCLib desc lbi = do
-    let verbosity = mkVerbosity defaultVerbosityHandles verbose
+    let verbosity = verbose
     -- get build dir
     createDirectoryIfMissingVerbose verbosity True ((getSymbolicPath (buildDir lbi)) </> "emcc")
     --
@@ -50,22 +43,22 @@ buildEMCCLib desc lbi = do
             -- Let's see if we are going to export anything. If not there is likely no point in compiling anything
             -- from the C code.
             names <- forM (jsSources . libBuildInfo $ lib) $ \src -> do
-                unwords . concatMap (drop 2 . words) . filter (isPrefixOf "// EMCC:EXPORTED_FUNCTIONS") . lines <$> readFile (getSymbolicPath (extraSourceFile src))
+                unwords . concatMap (drop 2 . words) . filter (isPrefixOf "// EMCC:EXPORTED_FUNCTIONS") . lines <$> readFile (getSymbolicPath src)
 
             unless (null names) $ do
                 let depIncludeDirs = concatMap IPI.includeDirs (topologicalOrder $ installedPkgs lbi)
                 -- alright, let's compile all .c files into .o files with emcc, which is the `gcc` program.
                 forM_ (cSources . libBuildInfo $ lib) $ \src -> do
-                    let dst = (getSymbolicPath (buildDir lbi)) </> "emcc" </> (getSymbolicPath (extraSourceFile src) -<.> "o")
+                    let dst = (getSymbolicPath (buildDir lbi)) </> "emcc" </> (getSymbolicPath src -<.> "o")
                     createDirectoryIfMissingVerbose verbosity True (takeDirectory dst)
                     runDbProgram verbosity gccProgram (withPrograms lbi) $
-                        ["-c", getSymbolicPath (extraSourceFile src), "-o", dst] ++ ["-I" <> getSymbolicPath incDir | incDir <- (includeDirs . libBuildInfo $ lib) ++ map makeSymbolicPath depIncludeDirs]
+                        ["-c", getSymbolicPath src, "-o", dst] ++ ["-I" <> getSymbolicPath incDir | incDir <- (includeDirs . libBuildInfo $ lib) ++ map makeSymbolicPath depIncludeDirs]
 
                 -- and now construct a canonical `.js_a` file, *if* we have any cSources we turned into objects.
                 unless (null . cSources . libBuildInfo $ lib) $ do
                     let dstLib = (getSymbolicPath (buildDir lbi)) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".js_a"
                     runDbProgram verbosity emarProgram (withPrograms lbi) $
-                        [ "-r",  dstLib ] ++ [ getSymbolicPath (buildDir lbi) </> "emcc" </> (getSymbolicPath (extraSourceFile src) -<.> "o") | src <- cSources . libBuildInfo $ lib ]
+                        [ "-r",  dstLib ] ++ [ getSymbolicPath (buildDir lbi) </> "emcc" </> (getSymbolicPath src -<.> "o") | src <- cSources . libBuildInfo $ lib ]
 
                 let expLib = getSymbolicPath (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported.js_a"
                 writeFile expLib (unwords names)
@@ -90,7 +83,7 @@ linkCLib libname desc lbi = do
                                     , l /= "dl" ]
             libDirs = [ "-L" <> path | path <- concatMap IPI.libraryDirs (topologicalOrder $ installedPkgs lbi) ]
 
-        let verbosity = mkVerbosity defaultVerbosityHandles verbose
+        let verbosity = verbose
         libs0 <- filterM doesFileExist $
                 concatMap (\x -> [ libDir </> "libEMCC" <> (unPackageName . pkgName . sourcePackageId $ x) <> ".js_a"
                                 | libDir <- libraryDirs x ])
@@ -133,7 +126,7 @@ postBuildHook :: Args -> BuildFlags -> PackageDescription -> LocalBuildInfo -> I
 postBuildHook _args flags desc lbi = do
     case (takeFileName . programPath <$> lookupProgram ghcProgram (withPrograms lbi)) of
         Just "js-unknown-ghcjs-ghc" ->
-            readBuildTargets (mkVerbosity defaultVerbosityHandles silent) desc (buildTargets flags) >>= \case
+            readBuildTargets silent desc (buildTargets flags) >>= \case
                 [BuildTargetComponent (CLibName _)] -> print "OK. Lib (Build)" >> buildEMCCLib desc lbi
                 [BuildTargetComponent (CExeName _)] -> print "OK. Exe"
                 [BuildTargetComponent (CTestName _)] -> print "OK. Test"
@@ -149,9 +142,7 @@ postConfHook args flags desc lbi = do
             -- this is technically only needed if the package uses TH somewhere.
             linkEMCCTHLib desc lbi
             -- only link the final lib if we want to produce an output.
-            -- Cabal 3.17: configureArgs dropped its leading Bool; it is now
-            -- configureArgs :: ConfigFlags -> [String].
-            readBuildTargets (mkVerbosity defaultVerbosityHandles silent) desc (configureArgs flags) >>= \case
+            readBuildTargets silent desc (configureArgs False flags) >>= \case
                 [BuildTargetComponent (CLibName _)] -> print "OK. Lib" >> postConf simpleUserHooks args flags desc lbi
                 [BuildTargetComponent (CExeName _)] -> print "OK. Exe (Link)" >> linkEMCCLib desc lbi
                 [BuildTargetComponent (CTestName _)] -> print "OK. Test (Link)" >> linkEMCCLib desc lbi
@@ -177,9 +168,7 @@ emccBuildHook desc lbi hooks flags = do
 
   where
     jsLib = "dist/build" </> "emcc" </> "lib.js"
-    -- Cabal 3.17: BuildInfo.options is now a flat [String] (the
-    -- PerCompilerFlavor wrapper was removed), so extraOpts is just a list.
-    extraOpts = [jsLib]
+    extraOpts = PerCompilerFlavor [jsLib] []
     -- don't inject it for libraries, only for exe, test, bench.
     updateLibrary :: Library -> Library
     updateLibrary = id -- lib@Library{ libBuildInfo = bi } = lib { libBuildInfo = bi { options = options bi <> extraOpts } }
