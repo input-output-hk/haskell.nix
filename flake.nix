@@ -287,6 +287,28 @@
               in
               cf.defaultNix.hydraJobs;
 
+            # And the stable-haskell variant, from ./nix-tools-sh.  Same
+            # independence as above: its own flake, its own lock, no dependency
+            # on the haskell.nix in ./.
+            #
+            # It is a second copy of the subflake rather than a build variant of
+            # the first because the two cannot share a source tree -- the fork
+            # changes the Haskell sources (Cabal2Nix, MakeInstallPlan,
+            # ProjectPlanOutput, Freeze, setup-ghcjs) to suit the stable-haskell
+            # Cabal fork at 3.17, not only cabal.project.  Carrying both trees
+            # here, instead of keeping the fork on an unmerged branch, is what
+            # lets `nix-tools-sh-*` tags be cut from master commits exactly like
+            # mainline ones; see .github/workflows/upload-artifacts-sh.yml.
+            nix-tools-sh-hydraJobs =
+              let
+                cf = callFlake {
+                  inherit system;
+                  pkgs = self.legacyPackages.${system};
+                  src = ./nix-tools-sh;
+                };
+              in
+              cf.defaultNix.hydraJobs;
+
             # The GHC compilers present in the CI matrix (the keys of the "GHC
             # version" dimension, under each nixpkgs pin).  Used by the
             # ci-status-matrix guard test below.
@@ -298,7 +320,9 @@
           in
           self.allJobs.${system}
           // lib.optionalAttrs (ifdLevel > 2)
-            { nix-tools = nix-tools-hydraJobs.${system} or { }; }
+            { nix-tools = nix-tools-hydraJobs.${system} or { };
+              nix-tools-sh = nix-tools-sh-hydraJobs.${system} or { };
+            }
           # Fail CI if a compiler enters/leaves the matrix without the README
           # CI-status table's generator being updated to match.  Only needs to
           # run on one system (the compiler dimension is system-independent).
