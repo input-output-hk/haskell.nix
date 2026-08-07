@@ -16,6 +16,13 @@ extra-packages: cabal-install, hpack, Cabal-syntax-json
 test-show-details: direct
 
 allow-newer:
+    -- nix-tools (and its deps) bound Cabal/Cabal-syntax to ^>=3.16;
+    -- the stable-haskell fork below is 3.17.  Relax the upper bound on
+    -- these deps project-wide so make-install-plan links the fork.
+    Cabal,
+    Cabal-syntax,
+    cabal-install,
+    cabal-install-solver,
     algebraic-graphs:deepseq,
     hackage-db:base,
     hackage-db:Cabal,
@@ -44,3 +51,33 @@ source-repository-package
     location: https://github.com/andreabedini/Cabal-syntax-json.git
     tag: b0033ed4d00a09340c64f4290cc649f4009deabd
     --sha256: sha256-Aymi25AQLSMextVeXbsMnaOppxAO93qVbwo7Vt44ej4=
+
+-- Build make-install-plan against the stable-haskell cabal fork
+-- (branch hkm/installed-sublibs — stable-haskell/master plus the
+-- installed-sublib solver support, plan-node dedupe, unit receipts,
+-- and Host-stage scoping of executable-static; the SAME rev the v2
+-- builder's cabal-install is pinned to in builder/default.nix, so
+-- plan-time and slice-time elaboration can never skew).  This is the
+-- cabal that ships the cross-compilation "stage" system
+-- (haskell/cabal#11179: ProjectConfigToolchain /
+-- --with-build-compiler / build:/host: stage-qualified constraints),
+-- which lets the solver break the Win32 -> hsc2hs -> process -> Win32
+-- build-tool cycle by resolving build-tool-depends in the build scope
+-- instead of relying on a full Hackage "older universe".
+source-repository-package
+    type: git
+    location: https://github.com/stable-haskell/Cabal.git
+    tag: 74047a6c520fb8e05882416ce9cfe9c8391b23c6
+    --sha256: sha256-19WHVPEDSagAl3HuiO8vxc48FYCeXf5mdVlhLhRi4rY=
+    subdir: Cabal
+            Cabal-syntax
+            cabal-install
+            cabal-install-solver
+            hooks-exe
+
+source-repository-package
+    type: git
+    location: https://github.com/stable-haskell/hackage-security.git
+    tag: baaad2e189a8203966f7d3f752a348f02eefd1b2
+    --sha256: sha256-mVWZCWGJKsSjQSqb5iw0Q8fmV+4aFZVL4zOmMaNnEhA=
+    subdir: hackage-security

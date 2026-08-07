@@ -18,8 +18,16 @@
 # it, plan-nix unit-ids fork from slice-build unit-ids whenever the
 # eval system differs from the build system (e.g. evaluating on
 # Darwin while building x86_64-linux derivations).
+#
+# The `Cabal-syntax-json` patch ports that package (source of the
+# `cabal2json` exe, pulled via source-repository-package) to the
+# stable-haskell cabal fork's Cabal-syntax 3.17 API, which dropped
+# the constraint type parameter from CondTree/CondBranch.
 {
   packages.cabal-install.patches = [
     ./cabal-install-patches/installed-package-id-os-override.patch
+  ];
+  packages.Cabal-syntax-json.patches = [
+    ./cabal-install-patches/cabal-syntax-json-condtree-3.17.patch
   ];
 }
