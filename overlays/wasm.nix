@@ -71,6 +71,14 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.targetPlatform.isWasm {
         (x: !(builtins.elem (x.pname or "") [ "cmake" "ninja" ]))
         (old.nativeBuildInputs or [])
       ++ [ final.buildPackages.lld ];
+    # Drop nixpkgs' CMake configuration outright, not just its hook.  Every
+    # derivation attribute is evaluated even when unused, and nixpkgs'
+    # `cmakeFlags` for wasilibc reference the wasi `compiler-rt`, which reaches
+    # `compiler-rt-src` -> `llvm-source-…-haskell`.stdenv -> stdenv and back:
+    # infinite recursion while evaluating `libc_bin` of the wasi
+    # llvm-binutils-wrapper.  We drive the fork's Makefile directly, so these
+    # are dead weight; clearing them cuts the edge that closes the cycle.
+    cmakeFlags = [];
     dontUseCmakeConfigure = true;
     dontUseNinjaBuild = true;
     dontUseNinjaInstall = true;
