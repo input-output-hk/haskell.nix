@@ -421,7 +421,11 @@ let
       # The C-compiler identity is not part of pkgHashConfigInputs (cabal-install
       # PackageHash.hs hashes compiler-id/platform/program-args, not cc), so this
       # does not shift UnitIds.
-      ++ [ (evalPackages.writeShellScriptBin "gcc" ''exec ${evalPackages.stdenv.cc}/bin/cc "$@"'') ]
+      # Gated on the fork: adding it unconditionally puts an extra input
+      # derivation on EVERY project's plan-nix, so no plan-nix built before this
+      # change can be substituted for any compiler.
+      ++ pkgs.lib.optionals (ghc.isStableHaskell or false)
+           [ (evalPackages.writeShellScriptBin "gcc" ''exec ${evalPackages.stdenv.cc}/bin/cc "$@"'') ]
       # The build-platform dummy pair for the fork's cross stage system.
       # Appended AFTER the target dummy-ghc/dummy-ghc-pkg so the target pair
       # still wins on PATH for `-w ghc` (earlier nativeBuildInputs entries take
@@ -524,9 +528,14 @@ let
           # We are using `-w` rather than `--with-ghc` here to override
           # the `with-compiler:` in the `cabal.project` file.
           ghc.targetPrefix}ghc \
-        --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
-        ${pkgs.lib.optionalString withBuildCompiler
-            "--with-build-compiler=${dummy-build-ghc}/bin/ghc --with-build-hc-pkg=${dummy-build-ghc-pkg}/bin/ghc-pkg"} \
+        --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg${
+          # Appended to the line above rather than written on a line of its own:
+          # an `optionalString` that occupies a line still emits that line's
+          # indentation and trailing `\` when it yields "", which changes this
+          # buildCommand — and hence every project's plan-nix hash — in the
+          # (overwhelmingly common) case where there is no build compiler.
+          pkgs.lib.optionalString withBuildCompiler
+            " --with-build-compiler=${dummy-build-ghc}/bin/ghc --with-build-hc-pkg=${dummy-build-ghc-pkg}/bin/ghc-pkg"} \
         --enable-tests \
         --enable-benchmarks \
         ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-")

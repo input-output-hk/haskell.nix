@@ -40,6 +40,41 @@ let
       kernelName = if p.isWindows then "mingw32" else kernel.name;
     in
       "${cpuName}-${vendorName}-${kernelName}";
+  # The stable-haskell fork brands its `--info` with `Edition` (hardcoded in
+  # compiler/GHC/Driver/Session.hs), emitted by every ghc914-sh (native and
+  # cross).  Match it so the dummy `--info` equals the real ghc914-sh `--info`
+  # (tests.dummy-ghc-info).
+  #
+  # (`ld supports verbatim namespace` — a per-target linker capability cabal
+  # does not consult for elaboration — is handled via the test's ignoredFields
+  # rather than reproduced here.)
+  #
+  # Bound here, carrying its own leading newline, rather than written as an
+  # `optionalString` on its own line in the script below: an interpolation that
+  # occupies a line still emits that line's whitespace when it yields "", which
+  # changes the generated script — and hence every non-stable-haskell
+  # compiler's dummy-ghc hash, its dummy-ghc-pkg-dump, and every plan-nix
+  # derived from it.  Keeping the newline inside the conditional makes the
+  # script byte-identical for compilers that are not the fork.
+  editionInfoLine = pkgs.lib.optionalString (ghc.isStableHaskell or false)
+    "\n    echo ',(\"Edition\",\"Stable Haskell\")'";
+  # A `<pkg>/<pkg>.cabal.in` fallback for the stable-haskell fork, whose boot
+  # packages live outside the GHC source tree layout and ship only the generated
+  # `.cabal.in`.  (The `compiler/` and `libraries/` `.cabal.in` branches below
+  # are NOT gated — they predate this and are on master too.)
+  #
+  # Emitted as a whole `elif` branch carrying its own leading newline, and only
+  # for the fork.  Written inline it adds 2 lines per boot package (~90 in
+  # total) to the generated dump for EVERY compiler: dead code for hadrian GHCs,
+  # since an earlier branch always matches first, but it still changes
+  # dummy-ghc-pkg-dump's hash and with it every plan-nix that consumes it.
+  # Keeping the newline inside the conditional leaves the script byte-identical
+  # for compilers that are not the fork.
+  dotCabalInBranches = paths:
+    pkgs.lib.optionalString (ghc.isStableHaskell or false)
+      (pkgs.lib.concatMapStrings
+        (p: "\nelif [ -f ${p}.cabal.in ]; then\n  cabal_file=${p}.cabal.in")
+        paths);
   dummy-ghc = evalPackages.writeTextFile {
   name = "dummy-" + ghc.name;
   executable = true;
@@ -135,18 +170,7 @@ let
         echo ',("cross compiling","${
           if pkgs.stdenv.buildPlatform.parsed.cpu.name != pkgs.stdenv.targetPlatform.parsed.cpu.name
           || pkgs.stdenv.buildPlatform.parsed.kernel.name != pkgs.stdenv.targetPlatform.parsed.kernel.name
-            then "YES" else "NO"}")'
-        # The stable-haskell fork brands its --info with `Edition` (hardcoded
-        # in compiler/GHC/Driver/Session.hs), emitted by every ghc914-sh
-        # (native and cross).  Match it so the dummy --info equals the real
-        # ghc914-sh --info (tests.dummy-ghc-info); gated on the fork so other
-        # compilers (whose real --info omits it) stay byte-equivalent.
-        # (`ld supports verbatim namespace` — a per-target linker capability
-        # cabal doesn't consult for elaboration — is handled via the test's
-        # ignoredFields rather than reproduced here.)
-        ${pkgs.lib.optionalString (ghc.isStableHaskell or false) ''
-        echo ',("Edition","Stable Haskell")'
-        ''}
+            then "YES" else "NO"}")'${editionInfoLine}
         ${
           # GHC < 9.8 doesn't emit a `Project Unit Id` field in
           # `ghc --info` and registers its boot packages without
@@ -488,9 +512,8 @@ let
               elif [ -f ${ghcSrc}/utils/haddock/${name}/${name}.cabal ]; then
                 cabal_file=${ghcSrc}/utils/haddock/${name}/${name}.cabal
               elif [ -f ${ghcSrc}/${name}/${name}.cabal ]; then
-                cabal_file=${ghcSrc}/${name}/${name}.cabal
-              elif [ -f ${ghcSrc}/${name}/${name}.cabal.in ]; then
-                cabal_file=${ghcSrc}/${name}/${name}.cabal.in
+                cabal_file=${ghcSrc}/${name}/${name}.cabal${
+                  dotCabalInBranches [ "${ghcSrc}/${name}/${name}" ]}
               fi
               if [[ "$cabal_file" != "" ]]; then
                 fixed_cabal_file=$(mktemp)
@@ -573,11 +596,20 @@ let
                 PKGS+=" ghcjs-prim ghcjs-th"
                 LAST_PKG="ghcjs-th"
               ''
-          }
-          # With an empty dump (or no prebuilt-depends) nothing below may
-          # write to $out — create it explicitly so the derivation still
-          # produces its (empty) output.
-          touch $out
+          }${
+            # Nothing above writes `$out` when the boot-package loop produced no
+            # entries, and the loop below only writes it if some prebuilt-depend
+            # has a `package.conf.d` — so for `emptyGlobalPackageDb` compilers
+            # the derivation would fail with no output at all.  Create it
+            # explicitly in exactly that case.
+            #
+            # Gated on `emptyDump`, and appended to the closing `}` above rather
+            # than written on a line of its own: a line that interpolates to ""
+            # is still a line, and one extra line here re-hashes
+            # dummy-ghc-pkg-dump for EVERY compiler — and with it every plan-nix
+            # that consumes it.  The preceding value already ends in a newline,
+            # so this lands at the start of its own line when it fires.
+            pkgs.lib.optionalString emptyDump "touch $out"}
           for l in "''${pkgsHostTarget[@]}"; do
             if [ -d "$l/package.conf.d" ]; then
               files=("$l/package.conf.d/"*.conf)
