@@ -111,7 +111,7 @@
       # derivation holds its outputs -- so the next level substitutes them
       # instead of rebuilding.  Each step stays well inside the watchdog and the
       # pins accumulate.
-      ifdLevel = 0;
+      ifdLevel = 1;
       runningHydraEvalTest = false;
       # The system that evaluation-time derivations (plan-to-nix, dummy-ghc,
       # hadrian's plan) are built on.  This is deliberately *not* the target
