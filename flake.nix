@@ -96,7 +96,22 @@
     let
       callFlake = import flake-compat;
 
-      ifdLevel = 3;
+      # STAGED RAMP -- must be back to 3 before this merges.
+      #
+      # A first eval after a nixpkgs bump has no cached IFD outputs, so at
+      # ifdLevel 3 the evaluator builds every plan-to-nix itself: ~6.6 s/job
+      # against ~0.3 s/job when they substitute, i.e. 13-17h for this job set,
+      # which does not fit the 18h eval watchdog.  Worse, none of that work is
+      # kept -- IFD outputs of an eval that never commits get no gcroot, so the
+      # next auto-GC deletes them and the following eval pays the same cost.
+      #
+      # So ramp 0 -> 1 -> 2 -> 3, raising the level only once the previous eval
+      # has committed.  A committed eval turns that level's IFD derivations into
+      # Hydra jobs, which get gcroots -- and with `keep-outputs = true` a rooted
+      # derivation holds its outputs -- so the next level substitutes them
+      # instead of rebuilding.  Each step stays well inside the watchdog and the
+      # pins accumulate.
+      ifdLevel = 0;
       runningHydraEvalTest = false;
       # The system that evaluation-time derivations (plan-to-nix, dummy-ghc,
       # hadrian's plan) are built on.  This is deliberately *not* the target
