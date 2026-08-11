@@ -172,10 +172,25 @@ let
       wasm-opt --low-memory-unused --debuginfo -Os libffi.so -o $out/lib/libffi.so
     '';
 
-  lib-wasm = pkgsBuildBuild.symlinkJoin {
-    name = "lib-wasm";
-    paths = [ targetPackages.wasilibc libffi-wasm ];
-  };
+  # The `node` wrapper below hands GHC's wasm dyld exactly ONE search directory,
+  # and the dyld resolves bare names (`libdl.so`, `libc.so`, …) inside it.  Our
+  # wasilibc installs its libraries per target, in `lib/wasm32-wasi/`, because
+  # that is the sysroot layout clang expects — so a plain join leaves `lib/`
+  # holding nothing but that subdirectory and Template Haskell dies with
+  # `findSystemLibrary(libdl.so): not found`.  Flatten instead, covering both
+  # layouts (wasilibc used to install straight into `lib/`), and leave the
+  # sysroot itself alone so the compile and link paths keep working.
+  lib-wasm = pkgsBuildBuild.runCommand "lib-wasm" { } ''
+    mkdir -p $out/lib
+    for d in ${targetPackages.wasilibc}/lib ${targetPackages.wasilibc}/lib/wasm32-wasi ${libffi-wasm}/lib; do
+      [ -d "$d" ] || continue
+      for f in "$d"/*; do
+        # -f skips the per-target subdirectory and its `wasm32-wasip1` alias.
+        [ -f "$f" ] || continue
+        ln -sfn "$f" "$out/lib/$(basename "$f")"
+      done
+    done
+  '';
 
   # TODO check if this possible fix for segfaults works or not.
   targetLibffi =
