@@ -28,7 +28,32 @@ let
       packages.th-dlls.ghcOptions = [ "-fexternal-interpreter" ];
       # Static openssl seems to fail to load in iserv for musl
       packages.HsOpenSSL.components.library.libs = lib.optional pkgs.stdenv.hostPlatform.isMusl (pkgs.openssl.override { static = false; });
-    })];
+    })]
+    # GHC 9.14.1's RTS linker faults while running the merged GHCi
+    # object's `.init_array`:
+    #
+    #   #0  0x000000030000000f in ?? ()
+    #   #1  runInitFini.isra.0 () / runInit () / ocRunInit_ELF ()
+    #   #2  runPendingInitializers () / resolveObjs ()
+    #
+    # The profiled init code (`<module>_init__prof_init`, reached from
+    # `.init_array.<module>_init_arr`) carries `R_X86_64_32` relocations,
+    # so it is only valid while mapped in the low 4GB; the merged
+    # `HS<unit>.o` for `vector` is ~5.9MB and ends up placed above it,
+    # leaving a truncated function pointer.  Only the profiling way has
+    # `.init_array` entries at all (cost-centre registration), which is
+    # why the non-profiled variants are fine, and `ghc9141llvm` is
+    # unaffected.  Dropping the merged object makes the RTS load the
+    # `.a` members individually, which fits.
+    #
+    # A minimal reproducer is `base` + `template-haskell` + `vector`
+    # with `library-profiling: True` and `-fexternal-interpreter`;
+    # remove this once GHC fixes the placement.
+    ++ lib.optional (profiled && externalInterpreter
+                  && stdenv.hostPlatform.isLinux
+                  && compiler-nix-name == "ghc9141") {
+      enableLibraryForGhci = false;
+    };
     shell.nativeBuildInputs = [ buildPackages.haskell-nix.nix-tools-unchecked.exes.cabal ];
   };
 

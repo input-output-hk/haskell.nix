@@ -172,10 +172,25 @@ let
       wasm-opt --low-memory-unused --debuginfo -Os libffi.so -o $out/lib/libffi.so
     '';
 
-  lib-wasm = pkgsBuildBuild.symlinkJoin {
-    name = "lib-wasm";
-    paths = [ targetPackages.wasilibc libffi-wasm ];
-  };
+  # The `node` wrapper below hands GHC's wasm dyld exactly ONE search directory,
+  # and the dyld resolves bare names (`libdl.so`, `libc.so`, …) inside it.  Our
+  # wasilibc installs its libraries per target, in `lib/wasm32-wasi/`, because
+  # that is the sysroot layout clang expects — so a plain join leaves `lib/`
+  # holding nothing but that subdirectory and Template Haskell dies with
+  # `findSystemLibrary(libdl.so): not found`.  Flatten instead, covering both
+  # layouts (wasilibc used to install straight into `lib/`), and leave the
+  # sysroot itself alone so the compile and link paths keep working.
+  lib-wasm = pkgsBuildBuild.runCommand "lib-wasm" { } ''
+    mkdir -p $out/lib
+    for d in ${targetPackages.wasilibc}/lib ${targetPackages.wasilibc}/lib/wasm32-wasi ${libffi-wasm}/lib; do
+      [ -d "$d" ] || continue
+      for f in "$d"/*; do
+        # -f skips the per-target subdirectory and its `wasm32-wasip1` alias.
+        [ -f "$f" ] || continue
+        ln -sfn "$f" "$out/lib/$(basename "$f")"
+      done
+    done
+  '';
 
   # TODO check if this possible fix for segfaults works or not.
   targetLibffi =
@@ -1099,7 +1114,27 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         runHook preInstall
         ${hadrian}/bin/hadrian ${hadrianArgs} binary-dist-dir
         cd _build/bindist/ghc-*
-        ./configure --prefix=$out ${lib.concatStringsSep " " configureFlags}
+        ./configure --prefix=$out ${lib.concatStringsSep " " configureFlags}${
+          # Pre-answer GHC's C++ standard library probe on Darwin.
+          #
+          # FP_FIND_CXX_STD_LIB (m4/fp_find_cxx_std_lib.m4) links a test object
+          # with `"$CC" -o actest actest.o -lc++ -lc++abi -L"$d" 2>/dev/null`.
+          # autoconf >= 2.72 appends the C23 option to CC when the compiler needs
+          # one, so in *this* configure run CC is two words
+          # ("…/bin/cc -std=gnu23"); the quoted "$CC" is then executed as a single
+          # filename, every candidate library set "fails" (the exec error being
+          # what 2>/dev/null discards), and configure aborts with
+          # "Failed to find C++ standard library" — after the whole compiler has
+          # already been built.  The source tree's own configure is unaffected
+          # because its CC stays one word, which is why only this second,
+          # bindist configure broke, and only for some GHC versions.
+          #
+          # A non-empty CXX_STD_LIB_LIBS makes the macro skip the probe entirely.
+          # The matching *_DIRS variables are deliberately left unset: a
+          # successful probe ends up with them empty too (it maps its `-L.` answer
+          # to ""), and the dynamic-library-dirs of system-cxx-std-lib-1.0.conf
+          # are filled in just below.
+          lib.optionalString stdenv.isDarwin " CXX_STD_LIB_LIBS='c++ c++abi'"}
         ${lib.optionalString (stdenv.isDarwin && (__tryEval libcxxabi).success) ''
           substituteInPlace mk/system-cxx-std-lib-1.0.conf \
             --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
