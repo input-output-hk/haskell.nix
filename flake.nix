@@ -104,7 +104,6 @@
     }@inputs:
     let
       callFlake = import flake-compat;
-
       ifdLevel = 3;
       runningHydraEvalTest = false;
       # The system that evaluation-time derivations (plan-to-nix, dummy-ghc,
