@@ -108,11 +108,11 @@
       # eval runs plan-to-nix (and the rest) as eval-time IFDs, and because
       # this branch invalidates plan-nix for every compiler none of them
       # substitute -- the attempts before this ran past hydra-eval-watchdog's
-      # 18h limit and were killed.  Level 0 evaluated in 163s (eval 2332, 166
-      # jobs) against 15412s / 6640 jobs for the last level-3 run to finish
-      # (eval 2096), so raise it a step at a time and watch the eval time.
-      # Restore to 3 before merging.
-      ifdLevel = 1;
+      # 18h limit and were killed.  So far: level 0 in 163s / 166 jobs (eval
+      # 2332), level 1 in 274s / 879 jobs (eval 2334), against 15412s / 6640
+      # jobs for the last level-3 run to finish (eval 2096).  Raise a step at
+      # a time and watch the eval time.  Restore to 3 before merging.
+      ifdLevel = 2;
       runningHydraEvalTest = false;
       # The system that evaluation-time derivations (plan-to-nix, dummy-ghc,
       # hadrian's plan) are built on.  This is deliberately *not* the target
