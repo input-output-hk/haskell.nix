@@ -550,7 +550,7 @@ let
   externalDepIds = haskellLib.uniqueWithName
     (map (d: { name = d.identifier.name; version = d.identifier.version; }) externalDeps
      ++ lib.filter (nv: nv.name != pkgName)
-          (homeDependIds ++ homeBuildToolIds));
+          (homeDependIdsInClosure ++ homeBuildToolIds));
 
   # An entry in `component.depends` is either a dep package record
   # (has `.components`, e.g. `hsPkgs.provider`) or a v2 slice
@@ -791,8 +791,16 @@ let
   # `cardano-wallet-ui` exports `cardano-wallet-ui:common` and
   # `cardano-wallet-ui:shelley` but has no main `library`.
   # Returns null when none is present (boot / pre-existing pkgs).
+  # Prefer the exact plan-unit id when hspkg-builder supplied one: a
+  # name+version lookup goes through the plan-`targets` name redirects,
+  # which for a package that ALSO has a pre-existing boot twin (parsec,
+  # Cabal) point at that other, unbuildable unit — the id is exact
+  # (same reasoning as `setupDepSlices`).
   homeDepSliceOf = nv:
-    sliceOfPkgRecord (lookupDepPkg hsPkgs nv.name (nv.version or null));
+    let byId = if (nv.id or null) != null then hsPkgs.${nv.id} or null else null;
+    in sliceOfPkgRecord
+         (if byId != null then byId
+          else lookupDepPkg hsPkgs nv.name (nv.version or null));
   sliceOfPkgRecord = dPkg:
     let depLib = if dPkg != null
                     && (dPkg ? components)
@@ -829,6 +837,25 @@ let
   # So drop the build-tool-ONLY ids (those that are not also genuine lib
   # deps) from the store-composition set for two-stage plans; the runnable
   # tool comes from `homeDepExeSlices` (pkgsBuildBuild) instead.
+  # Sibling lib deps INSIDE this component's own dependency closure —
+  # `allDepClosure` is seeded from this component's unit alone (see
+  # `ourPlanUnits`), so membership by name partitions `homeDependIds`:
+  # in-closure sibling deps compose as built slices below (their units
+  # ARE needed to build the target — e.g. a test component's own deps,
+  # which arrive only via `homeDependIds`); out-of-closure ones are
+  # solver-only and travel source-staged via `metadataSourceFrags`.
+  componentClosureNames =
+    lib.unique (map (e: e.entry.pkg-name or "") allDepClosure);
+  # Keep a sibling dep as a BUILT slice when it is in this component's
+  # own closure, and ALSO when the metadata path could not stage it (no
+  # hackage sdist — GHC-boot universes): only deps that actually moved
+  # to the source-only index may leave the built-slice path, or the
+  # slice's solve hits "unknown package: <sibling dep>".
+  homeDependIdsInClosure =
+    lib.filter (nv:
+      lib.elem nv.name componentClosureNames
+      || !(lib.elem nv.name metadataStagedNames)) homeDependIds;
+
   homeLibDepNames =
     map (d: d.identifier.name) externalDeps
     ++ map (nv: nv.name) homeDependIds;
@@ -855,7 +882,7 @@ let
   # (build tools) are deliberately excluded here: they contribute source
   # (via the repo) but no constraints.
   homeLibDepSlices = lib.filter (s: s != null)
-    (map homeDepSliceOf (lib.filter (nv: nv.name != pkgName) homeDependIds));
+    (map homeDepSliceOf (lib.filter (nv: nv.name != pkgName) homeDependIdsInClosure));
   dependsSlices = haskellLib.uniqueWithName
     (directDepSlices
      ++ homeLibDepSlices
@@ -980,8 +1007,11 @@ let
   # Resolve a home-dep {name;version} (sibling-component from
   # plan-json, includes setup-depends) to the same "pkg record"
   # shape that component.depends gives us.
-  homeDepPkgOf = nv: lookupDepPkg hsPkgs nv.name (nv.version or null);
-  homeDepPkgs = lib.filter (p: p != null) (map homeDepPkgOf homeDependIds);
+  homeDepPkgOf = nv:
+    let byId = if (nv.id or null) != null then hsPkgs.${nv.id} or null else null;
+    in if byId != null then byId
+       else lookupDepPkg hsPkgs nv.name (nv.version or null);
+  homeDepPkgs = lib.filter (p: p != null) (map homeDepPkgOf homeDependIdsInClosure);
 
   # SysLibs of a component — the same shape we feed to
   # `extraBuildInputs` and `cabal.project`'s `extra-include-dirs:`.
@@ -1287,6 +1317,218 @@ let
       in lib.attrValues (lib.listToAttrs
            (map (f: lib.nameValuePair f.pkgName f) frags)));
 
+  # ---- metadata-only sibling sources ------------------------------
+  # `ourPlanUnits` seeds `allDepClosure` from THIS component's unit
+  # only, so composed slices, sysLibs and constraint pins cover exactly
+  # the target's dependency closure.  But cabal's solver works at
+  # PACKAGE granularity: elaborating `:pkg:<pkg>:exe:<name>` must still
+  # SOLVE the deps of the package's other components (leksah's
+  # exe:leksah needs gi-webkit even when the target is exe:leksah-warp,
+  # whose binary links none of it).  Those solver-only goals need INDEX
+  # candidates, not built slices: stage each out-of-closure dep's
+  # source (tarball + revised `.cabal`, via `passthru.v2SourceFrag` —
+  # no drv edge to the dep's build) into the slicing repo, exactly as
+  # two-stage build-tool sources are staged.  They contribute no store
+  # unit, no constraint pin, no sysLibs and no `extra-packages:` goal —
+  # if cabal unexpectedly tried to BUILD one it would fail loudly on
+  # its (absent) system deps rather than silently linking anything.
+  # pkg-config versions for these candidates come from
+  # `cabalPkgConfigWrapper`'s metadata fallback instead of a realized
+  # `.pc` (see overlays/cabal-pkg-config.nix).
+  metadataSourceFrags = metadataPartition.frags;
+  # Names of the DIRECT sibling deps that moved to the metadata path —
+  # the complement partition for `homeDependIdsInClosure`.
+  metadataStagedNames = metadataPartition.stagedNames;
+  metadataPartition =
+    let
+      closureKeys = lib.listToAttrs
+        (map (e: lib.nameValuePair e.key true) allDepClosure);
+      packagePlanUnits = lib.filter
+        (p: (p.pkg-name or null) == package.identifier.name
+            && (p.pkg-version or null) == package.identifier.version)
+        planJson;
+      # LIB dependencies only (no `exe-depends`, no setup): build-tool
+      # goals are BUILD-stage under two-stage plans and have their own
+      # staging machinery (`buildToolSourceFrags`); walking them here
+      # would stage build-twin sources (e.g. a tool's `text`) whose
+      # index entries then shadow the HOST stage's pre-existing boot
+      # instances in the solver.
+      metaDepsOf = q:
+        (q.depends or [])
+        ++ lib.concatMap (c: c.depends or [])
+             (lib.attrValues (builtins.removeAttrs (q.components or {}) ["setup"]));
+      # The candidate UNIVERSE walks all three edge kinds (lib, setup,
+      # exe): a staged candidate's custom-setup deps (xml-conduit's
+      # patched-local cabal-doctest) and build tools must be reachable
+      # for `subtreeOf`'s per-edge rules below to see them at all.
+      universeDepsOf = q:
+        metaDepsOf q ++ setupDepsOfEntry q ++ exeDepsOfEntry q;
+      packageDepClosure = mkClosureFrom packagePlanUnits universeDepsOf;
+      outEntries = lib.filter (e:
+          !(closureKeys ? ${e.key})
+          && (e.entry.pkg-name or "") != pkgName)
+        packageDepClosure;
+      outByKey = lib.listToAttrs (map (e: lib.nameValuePair e.key e) outEntries);
+      # Only units with a fetchable, hash-stable hackage sdist
+      # (`pkg-src-sha256`) can be reproduced from metadata alone.
+      # Anything else — GHC-boot / source-repo units (`transformers`
+      # or a reinstalled `ghc-bignum` in bootstrap universes),
+      # pre-existing units, `nonReinstallablePkgs` — cannot: boot
+      # sources are null-hash fetchurls that throw on interpolation,
+      # and the solver could never close their goals from the index.
+      # Any configured non-boot unit can be staged: its slice's
+      # `pkgTarball` exists for every source shape — hackage sdist,
+      # packed source-repository-package (the fork's own `Cabal` in
+      # staged setup scopes), and packed LOCAL directories (the
+      # project's patched cabal-doctest).  The `nonReinstallablePkgs`
+      # guard keeps out GHC-boot units whose srcs can be null-hash
+      # fetchurls (throwing on interpolation) and which installed
+      # instances satisfy anyway.
+      stageable = e:
+        (e.entry.type or "") == "configured"
+        && !(lib.elem (e.entry.pkg-name or "") nonReinstallablePkgs);
+      # The out-of-closure subtree under one unit id.  A staged SOURCE
+      # candidate's solve opens more than lib deps: its custom-setup
+      # scope (gi-*'s haskell-gi/Cabal) and its build-tool goals
+      # (old-time's `build:old-time:hsc2hs:exe.hsc2hs`).  Walk all
+      # three edge kinds, never re-entering the in-closure set (those
+      # are composed):
+      #   * lib/setup edges to PRE-EXISTING units are skipped — the
+      #     compiler's installed instance satisfies those goals;
+      #   * an exe-depends edge to a pre-existing unit POISONS the
+      #     subtree instead: an installed lib registration cannot
+      #     provide the `exe:` component a build-tool goal demands,
+      #     so the sibling must fall back to a built slice (whose
+      #     composition pins everything `installed` and provides the
+      #     tool binary via the normal machinery).
+      setupDepsOfEntry = q: q.components.setup.depends or [];
+      exeDepsOfEntry = q:
+        (q.exe-depends or [])
+        ++ lib.concatMap (c: c.exe-depends or [])
+             (lib.attrValues (builtins.removeAttrs (q.components or {}) ["setup"]));
+      subtreeOf = id: map (x: x.key) (builtins.genericClosure {
+        startSet = lib.optional (outByKey ? ${id}) { key = id; };
+        operator = item:
+          if item.key == "POISON" then [] else
+          let q = outByKey.${item.key}.entry;
+              follow = d: lib.optional (outByKey ? ${d}) { key = d; };
+              # Setup goals must close from the index or the installed
+              # db: a pre-existing setup dep (the bundled Cabal) is
+              # satisfied installed; an out-of-closure configured one
+              # joins the subtree; anything else (in-closure ones are
+              # composed) is unreachable — poison.
+              followSetup = d:
+                if closureKeys ? ${d} then []
+                else if outByKey ? ${d} then follow d
+                else if ((planJsonByPlanId.${d} or {}).type or "") == "pre-existing" then []
+                else [ { key = "POISON"; } ];
+              # An exe-dep must either be satisfied in-closure (the
+              # build-tool slice machinery provides the binary), join
+              # the staged subtree, or POISON it — never be silently
+              # dropped: an unknown/pre-existing/build-stage tool id
+              # means the tool goal cannot close from the index.
+              followExe = d:
+                if closureKeys ? ${d} then []
+                else if outByKey ? ${d} then follow d
+                else [ { key = "POISON"; } ];
+          in lib.concatMap follow (metaDepsOf q)
+             ++ lib.concatMap followSetup (setupDepsOfEntry q)
+             ++ lib.concatMap followExe (exeDepsOfEntry q);
+      });
+      outSiblings = lib.filter
+        (nv: !(lib.elem nv.name componentClosureNames)) homeDependIds;
+      siblingUnitIdsOf = nv: map (e: e.key)
+        (lib.filter (e:
+            (e.entry.pkg-name or "") == nv.name
+            && (e.entry.pkg-version or "") == nv.version)
+          outEntries);
+      siblingSubtree = nv:
+        lib.unique (lib.concatMap subtreeOf (siblingUnitIdsOf nv));
+      # A sibling dep may leave the built-slice path only when its
+      # WHOLE out-of-closure subtree is stageable: a staged candidate
+      # is a SOURCE candidate, so the solver must be able to close
+      # every goal it opens (bitvec -> ghc-bignum, a configured-local
+      # boot unit, sinks the entire monad-logger subtree back to
+      # built slices).  Built slices compose their closure and pin it
+      # `installed`, so nothing below them is ever solved.
+      fullyStageable = nv:
+        let ids = siblingSubtree nv;
+        in ids != []
+           && !(lib.elem "POISON" ids)
+           && lib.all (id: stageable outByKey.${id}) ids;
+      stagedSiblings = lib.filter fullyStageable outSiblings;
+      stagedIds = lib.filter (id: id != "POISON")
+        (lib.unique (lib.concatMap siblingSubtree stagedSiblings));
+      # Units that are the TARGET of an exe-depends edge from another
+      # staged unit are build-TOOL candidates: the solver requires
+      # their `executable` stanza present in the index .cabal ("does
+      # not contain executable 'happy'"), so the staging strip must
+      # keep exes for exactly these.
+      toolIds =
+        let exeTargets = lib.unique (lib.concatMap
+              (id: exeDepsOfEntry outByKey.${id}.entry) stagedIds);
+        in lib.filter (id: lib.elem id exeTargets) stagedIds;
+      fragOf = id:
+        let e = outByKey.${id};
+            sl = sliceOfPkgRecord (hsPkgs.${id} or null);
+            frag = if sl == null then null else sl.passthru.v2SourceFrag or null;
+        # Carry the plan's flag assignment: the slice's solver
+        # re-solves a source candidate's flags — unpinned, it may
+        # diverge from the plan (text +simdutf wants system-cxx-std-lib
+        # where the plan's assignment avoided it) and fail on goals the
+        # plan never had.
+        in if frag == null then null
+           else frag // {
+             flags = e.entry.flags or {};
+             keepExes = lib.elem id toolIds;
+           };
+      frags = lib.filter (f: f != null) (map fragOf stagedIds);
+      # BUILD-stage setup closure of every staged unit: setup scopes
+      # re-solve their dep closures from SOURCE (composed host units
+      # are invisible to the build stage), so every configured unit a
+      # staged candidate's setup can reach needs a (stripped) index
+      # candidate — including packages that are IN-closure for the
+      # host (conduit/vector when the target's own lib uses them):
+      # the composed conf serves the host scope, the stripped index
+      # cabal serves the setup scope (extraFragStaging runs before the
+      # repo-frag walk, whose `cp -n` cannot clobber it).  Walked on
+      # the BUILD-twin-preferring index (same reasoning as
+      # `setupDepClosureIds`) so boot deps resolve to the build
+      # compiler's PRE-EXISTING units and drop out.
+      setupUniverseIds =
+        let byIdB = planJsonByPlanIdBuild';
+            cfgOnly = d:
+              let q = byIdB.${d} or null;
+              in if q == null || (q.type or "") != "configured" then []
+                 else [ { key = d; } ];
+        in map (x: x.key) (builtins.genericClosure {
+          startSet = lib.concatMap (id:
+            lib.concatMap cfgOnly (setupDepsOfEntry outByKey.${id}.entry))
+            stagedIds;
+          operator = item:
+            lib.concatMap cfgOnly (metaDepsOf (byIdB.${item.key} or {}));
+        });
+      setupFragOf = id:
+        let q = planJsonByPlanIdBuild'.${id} or null;
+            sl = sliceOfPkgRecord (hsPkgs.${id} or null);
+            frag = if sl == null then null else sl.passthru.v2SourceFrag or null;
+        in if q == null || frag == null
+              || lib.elem (q.pkg-name or "") nonReinstallablePkgs
+           then null
+           else frag // { flags = q.flags or {}; keepExes = false; };
+      setupFrags = lib.filter (f: f != null) (map setupFragOf setupUniverseIds);
+      # Dedup by name-version; a dep reachable through several siblings
+      # contributes one source.
+    in {
+      # Direct frags first: on a name-version collision listToAttrs
+      # keeps the FIRST entry, and the sibling-subtree frag (with the
+      # host twin's flags and keepExes) is the more specific one.
+      frags = lib.attrValues (lib.listToAttrs
+        (map (f: lib.nameValuePair "${f.pkgName}-${f.pkgVersion}" f)
+          (frags ++ setupFrags)));
+      stagedNames = map (nv: nv.name) stagedSiblings;
+    };
+
   # ---- componentKindLabel / componentName -----------------------
   # `componentId` is a set with `ctype` (e.g. "lib", "exe", "test",
   # "bench", "sublib") and `cname`.
@@ -1433,7 +1675,28 @@ let
           planJson;
         uid = package.identifier.unit-id or null;
         myUnit = if uid == null then null else planJsonByPlanId.${uid} or null;
-    in if isLibrary && myUnit != null then [ myUnit ] else allUnits;
+        # Exe / test / bench slices: narrow to the unit whose plan-json
+        # `component-name` matches this component, for the same reason
+        # the lib narrowing above exists — seeding from EVERY unit of
+        # the package drags sibling components' dep closures (leksah's
+        # exe:leksah gi-webkit stack) into this slice's composed store,
+        # sysLibs and constraint pins.  Sibling deps the SOLVER still
+        # needs are staged source-only via `metadataSourceFrags`.
+        # Custom-Build packages collapse to one entry with
+        # `component-name` unset, so `compUnits` comes up empty and the
+        # whole-package seed correctly remains (that single unit really
+        # does carry every component's deps).
+        planCompName =
+          if ctype == "exe" then "exe:${cname}"
+          else if ctype == "test" then "test:${cname}"
+          else if ctype == "bench" then "bench:${cname}"
+          else null;
+        compUnits =
+          if planCompName == null then []
+          else lib.filter (p: (p.component-name or null) == planCompName) allUnits;
+    in if isLibrary && myUnit != null then [ myUnit ]
+       else if compUnits != [] then compUnits
+       else allUnits;
 
   # `depends` + `exe-depends` — for the slicing repo's tarball set
   # and the slice's dep-slice composition.  cabal needs every
@@ -1818,6 +2081,7 @@ let
     inherit depSlices;
     inherit v2Fragment;
     inherit buildToolSourceFrags;
+    inherit metadataSourceFrags;
     ghc = sliceGhc;
     twoStage = isTwoStagePlan && !isBuildStageUnit;
     # Repo + cabal.project are composed at build time from `v2Fragment`;

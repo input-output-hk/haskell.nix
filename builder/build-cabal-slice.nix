@@ -72,6 +72,14 @@ let outerGhc = ghc; in
                              # build it BUILD-stage, without a drv edge to
                              # the tool's (cyclic) built slice.  See
                              # comp-v2-builder.nix `buildToolSourceFrags`.
+, metadataSourceFrags ? []   # same `{ pkgName; pkgVersion; tarball; cabalFile; }`
+                             # shape: sources for SOLVER-ONLY goals — deps the
+                             # package's sibling components need for cabal's
+                             # package-granularity solve but the target
+                             # component never builds or links.  Index
+                             # candidates only: no store unit, no constraint,
+                             # no sysLibs.  See comp-v2-builder.nix
+                             # `metadataSourceFrags`.
 , preBuild                   # stage sources, write cabal.project, cd into project dir
 , target ? "all"
 , extraSublibSeeds ? []      # list of `{ pkg = ...; sublib = ...; }`
@@ -396,19 +404,92 @@ let
   # byte-identical.  Each frag becomes an index candidate (tarball +
   # .cabal) so the slice's own cabal can build the tool BUILD-stage —
   # no built slice, no store unit, no constraint.
-  extraFragStaging = lib.optionalString (buildToolSourceFrags != [])
-    (lib.concatMapStrings (f: ''
+  # Flag pins for metadata-staged solver-only candidates: `package
+  # <name> / flags:` blocks reproducing the plan's flag assignments, so
+  # the slice's re-solve elaborates those source candidates exactly as
+  # plan-nix did instead of exploring flag space (see comp-v2-builder
+  # `metadataSourceFrags`).  Empty string when there are none, keeping
+  # existing slices byte-identical.
+  metadataFlagBlocks = lib.concatMapStrings (f:
+    let fl = f.flags or {};
+        flagsLine = lib.concatStringsSep " "
+          (lib.mapAttrsToList (n: v: (if v then "+" else "-") + n) fl);
+    in lib.optionalString (fl != {}) ''
+      package ${f.pkgName}
+        flags: ${flagsLine}
+    '') metadataSourceFrags;
+
+  stageFrag = f: ''
 
       ln -sf ${f.tarball} $v2repo/package/${f.pkgName}-${f.pkgVersion}.tar.gz
       mkdir -p $v2idx/${f.pkgName}/${f.pkgVersion}
       ${if f.cabalFile != null
         then "cp -f --no-preserve=mode ${f.cabalFile} $v2idx/${f.pkgName}/${f.pkgVersion}/${f.pkgName}.cabal"
-        else "tar -xOzf ${f.tarball} ${f.pkgName}-${f.pkgVersion}/${f.pkgName}.cabal > $v2idx/${f.pkgName}/${f.pkgVersion}/${f.pkgName}.cabal"}''
-    ) buildToolSourceFrags);
+        else "tar -xOzf ${f.tarball} ${f.pkgName}-${f.pkgVersion}/${f.pkgName}.cabal > $v2idx/${f.pkgName}/${f.pkgVersion}/${f.pkgName}.cabal"}'';
+  # Metadata (solver-only) sources additionally get stripped down to
+  # what the SOLVER may see of them: cabal solves a package goal with
+  # the deps of all its components, but a metadata candidate's
+  # test/bench/exe deps — and those of sublibraries nothing references —
+  # are not in plan-json (dependencies' non-library components are never
+  # planned), so their goals could never be satisfied from a
+  # plan-projected index (vector's internal `library benchmarks-O2`
+  # wants tasty; optparse-applicative's test-suite wants QuickCheck).
+  #
+  #   pass 1: drop test-suite / benchmark / executable / foreign-library
+  #           stanzas (top-level keyword to next top-level construct;
+  #           `[^ \t\r]` keeps CRLF cabal files — hackage revisions are
+  #           CRLF — from resetting the skip at a `\r`-only "blank" line);
+  #   pass 2: drop named `library <sub>` stanzas whose name appears
+  #           nowhere outside library headers — an UNREFERENCED sublib
+  #           (benchmarks-O2).  Referenced ones (attoparsec's main
+  #           library needs its public `attoparsec-internal`) stay, and
+  #           their deps are lib deps the plan does know.
+  #
+  # These units are never build targets and nothing hashes their package
+  # descriptions; the main library, kept sublibs, `common` blocks and
+  # `flag` definitions make library solving behave exactly as plan-nix's.
+  stageMetadataFrag = f:
+    let cab = "$v2idx/${f.pkgName}/${f.pkgVersion}/${f.pkgName}.cabal"; in
+    stageFrag f + ''
+
+      awk 'BEGIN{s=0} /^(test-suite|benchmark${if f.keepExes or false then "" else "|executable"}|foreign-library)[ \t]/{s=1;next} /^[^ \t\r]/{s=0} s==1{next} {print}' \
+        ${cab} > ${cab}.x && mv ${cab}.x ${cab}
+      for hsnix_sub in $(awk '/^library[ \t]+[^ \t\r]/{print $2}' ${cab} | tr -d '\r'); do
+        hsnix_refs=$(grep -v '^[Ll]ibrary' ${cab} | grep -cw "$hsnix_sub" || true)
+        if [ "$hsnix_refs" = 0 ]; then
+          awk -v sl="$hsnix_sub" \
+            'BEGIN{s=0} $0 ~ ("^library[ \t]+" sl "[ \t\r]*$") {s=1;next} /^[^ \t\r]/{s=0} s==1{next} {print}' \
+            ${cab} > ${cab}.x && mv ${cab}.x ${cab}
+        fi
+      done'';
+  # The staging commands go through a store FILE `source`d by the
+  # build script: several hundred metadata frags (the build-stage
+  # setup universe) inlined into the script push the builder's
+  # env+argv past ARG_MAX ("Argument list too long" executing bash).
+  extraFragStaging = lib.optionalString (buildToolSourceFrags != [] || metadataSourceFrags != [])
+    # Two-stage build-tool sources verbatim (their exes really build
+    # in-slice), then solver-only metadata sources, stanza-stripped —
+    # the sets are disjoint by construction (metadata frags are the
+    # OUT-of-closure remainder).
+    "\nsource ${pkgsBuildBuild.writeText "hsnix-stage-frags"
+      (lib.concatMapStrings stageFrag buildToolSourceFrags
+       + lib.concatMapStrings stageMetadataFrag metadataSourceFrags)}";
+
+  # The pkg-config with-flag is deliberately INDEPENDENT of
+  # `ghc.targetPrefix`: two-stage host slices get a WRAPPED ghc whose
+  # passthru drops targetPrefix, leaving `crossWithFlags` empty — yet
+  # the deployed pkg-config is still the PREFIXED cross wrapper, and
+  # without `--with-pkg-config` cabal finds no pkg-config at all
+  # (readPkgConfigDb -> NoPkgConfigDb) and rejects every
+  # `pkgconfig-depends` of a SOURCE goal with "no pkg-config executable
+  # was found" (zlib's own slice under the musl cross).  Composed
+  # installed deps never re-check pkgconfig-depends, which is why only
+  # slices that SOLVE a pkgconfig-using package from source ever see it.
+  pkgConfigWithFlag = lib.optionalString (pkgConfigPrefix != "")
+    " --with-pkg-config=${pkgConfigPrefix}pkg-config";
 
   crossWithFlags = lib.optionalString (targetPrefix != "") (
     " --with-compiler=${ghcShim}/bin/${ghcBin}"
-    + " --with-pkg-config=${pkgConfigPrefix}pkg-config"
     + lib.optionalString (stdenv.hasCC or (stdenv.cc != null)) (
         # CC
         (if stdenv.hostPlatform.isGhcjs
@@ -1163,7 +1244,12 @@ stdenv.mkDerivation ({
         for blk in flags ghc-options configure-options program-options doc extra-lib-dirs; do
           while IFS=$'\t' read -r name f; do cat "$f/nix-support/v2-frag/$blk"; done < <(sortedByName "''${blkFrags[@]}")
         done
-
+${lib.optionalString (metadataSourceFrags != []) ''
+        # Plan flag assignments for metadata-staged (solver-only)
+        # candidates — see `metadataFlagBlocks` (store file: the block
+        # list is large and must stay out of the script's env).
+        cat ${pkgsBuildBuild.writeText "hsnix-metadata-flags" metadataFlagBlocks}
+''}
         # constraints: self `any.<pkg> source`, then lib-dep pins (name-sorted).
         echo "constraints: any.${v2Fragment.pkgName} source"
         while IFS=$'\t' read -r name f; do
@@ -1270,7 +1356,7 @@ stdenv.mkDerivation ({
     # after the build (see the staged-store-layout comment above).
     # comp-v2-builder's `trimDistNewstyle` clears the bulk out of $out
     # again, keeping the `store` symlink.
-    cabalCmdArgs="--builddir=$distDir ${crossWithFlags}${twoStageFlags}${withProgFlags}"
+    cabalCmdArgs="--builddir=$distDir ${pkgConfigWithFlag}${crossWithFlags}${twoStageFlags}${withProgFlags}"
     # Match v1's `-j` behaviour: cap GHC's per-module parallelism at
     # 4 even when nix gives us more cores.  Going much wider tends to
     # thrash memory on big modules (cardano-ledger templates,

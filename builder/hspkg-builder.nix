@@ -135,20 +135,26 @@ let
               let q = byId.${id} or null;
               in if q == null
                  then null
-                 else { name = q.pkg-name; version = q.pkg-version; };
+                 else { name = q.pkg-name; version = q.pkg-version; inherit id; };
             # Boot packages (base, ghc-prim, rts, ...) don't have
             # slicable haskell.nix builds — they come with GHC and
             # are already registered in the starting package db.
             # `pre-existing` in plan-json flags these; skip them.
-            preExisting = lib.filter
-              (p: (p.type or null) == "pre-existing")
-              plan;
-            preExistingNames = map (p: p.pkg-name) preExisting;
-            isExcluded = nv:
-              nv == null
-              || nv.name == package.identifier.name
-              || lib.elem nv.name preExistingNames;
-            filterIds = ids: lib.filter (nv: !(isExcluded nv)) (map idToNV ids);
+            # Exclude by the referenced UNIT's type, not by name: under
+            # stable-haskell a boot library can exist BOTH pre-existing
+            # (the compiler's db) and reinstalled `configured inplace`
+            # (parsec on the musl cross), and a sibling dep edge that
+            # points at the reinstalled twin must still reach the slice
+            # — a name-based skip drops it and the slice's solver then
+            # finds no parsec at all.
+            isExcludedId = id:
+              let q = byId.${id} or null;
+              in q == null
+                 || (q.pkg-name or null) == package.identifier.name
+                 || (q.type or null) == "pre-existing";
+            filterIds = ids:
+              lib.filter (nv: nv != null)
+                (map idToNV (lib.filter (id: !(isExcludedId id)) ids));
           in {
             homeDependIds    = filterIds libIds;
             homeBuildToolIds = filterIds exeIds;
