@@ -104,7 +104,12 @@
     }@inputs:
     let
       callFlake = import flake-compat;
-      ifdLevel = 3;
+      # TEMPORARY: 0 so this branch can finish evaluating.  At level 3 the
+      # eval runs plan-to-nix (and the rest) as eval-time IFDs, and because
+      # this branch invalidates plan-nix for every compiler none of them
+      # substitute -- the last attempts ran past hydra-eval-watchdog's 18h
+      # limit and were killed.  Restore to 3 before merging.
+      ifdLevel = 0;
       runningHydraEvalTest = false;
       # The system that evaluation-time derivations (plan-to-nix, dummy-ghc,
       # hadrian's plan) are built on.  This is deliberately *not* the target
