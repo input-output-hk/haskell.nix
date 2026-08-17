@@ -6,6 +6,22 @@
 # A test that cannot fail is worse than no test.
 set -euo pipefail
 
+# Keep every example on a GHC that `ci.nix` builds, or this job compiles a
+# compiler from source instead of substituting one from cache.zw3rk.com.
+# `ci.nix` caches the aliases ghc96/ghc98/ghc910/ghc912/ghc914, which resolve
+# through `latestVerMap` in overlays/bootstrap.nix to the newest patch release
+# of each series -- today ghc96 -> 9.6.7 and ghc98 -> 9.8.4.
+#
+# That makes the niv pins under `tutorials/*/nix/sources.json` load-bearing: a
+# stale haskell.nix resolves the very same `ghc96` alias to an older patch
+# version, and nothing has ever cached that one.  Pinned at 2025-03-26 these
+# examples asked for 9.6.6 and spent ~40 minutes building it.
+#
+#   getting-started, development                  ghc96 -> 9.6.7  (niv pin)
+#   getting-started-flakes                        ghc96 -> 9.6.7
+#   shell-package, shell-stackage,
+#   hackage-stackage                              lts-23.28 -> ghc984
+
 # Tutorials
 pushd tutorials
 
@@ -37,12 +53,16 @@ nix-build --no-out-link
 popd
 
 ## Handling git repositories in projects
-pushd source-repository-hashes
-# Instantiate rather than build: constructing the plan is what exercises the
-# `sha256map` this example is about, and building pandoc 2.9.2.1 with GHC
-# 8.10.7 would add hours to the job for no extra coverage.
-nix-instantiate
-popd
+# `source-repository-hashes` is not run here.  Its example builds pandoc
+# 2.9.2.1 at a 2020 index-state, which needs a GHC of that era -- and
+# haskell.nix now refuses anything older than 9.6 outright ("Desired GHC
+# (8.10.7) is older than the oldest GHC haskell.nix might work with"), so the
+# example cannot be evaluated at all, with or without a compiler pin.  The
+# `sha256map` mechanism it documents is covered for real by
+# `test/sha256map/`.  Modernising the snippet needs a package whose Hackage
+# `cabal.project` carries a `source-repository-package` stanza and that builds
+# with a supported GHC; until someone picks one, running it here could only
+# ever be red.
 
 # TODO
 # - CleanGit
