@@ -21,7 +21,10 @@
 # This keeps the user's store in a consistent state for their other
 # projects while still letting them iterate on this one.
 { lib, stdenv, pkgs, runCommand, mkShell, hsPkgs, haskellLib, ghc, haskell-nix
-, compiler, composeStore, makeGhcShim, cabalProjectLocal ? null }:
+, compiler, composeStore, makeGhcShim, cabalProjectLocal ? null
+  # The cabal-install the v2 slice builder used, and its version.  See
+  # `toolDrvs` below for why the shell's `cabal` has to be that one.
+, v2CabalInstall, v2CabalInstallVersion }:
 
 { # Same shape as shellFor's `packages`: packages the user works on.
   # Their *dependencies* are composed into the shell's cabal store;
@@ -568,9 +571,53 @@ let
   # Build tools from hackage via haskell-nix.tool.  Use the project's
   # compiler so the tools are compatible with the shell's GHC.
   compilerNixName = compiler.nix-name;
+
+  # `cabal` is not an ordinary tool here.  The whole point of the v2
+  # shell is that the composed cabal store already holds the project's
+  # dependencies, so `cabal build` reuses them instead of rebuilding.
+  # Reuse is keyed on UnitId, and a UnitId is a hash of cabal-install's
+  # own `PackageHashInputs` rendering — so a *different cabal-install*
+  # computes different UnitIds for byte-identical inputs, misses every
+  # unit in the store, and rebuilds the world from source.  Silently:
+  # nothing errors, the shell just stops being useful.
+  #
+  # `tools.cabal = {}` resolves to whatever cabal-install is newest in
+  # the project's hackage index, which drifts every time a new one is
+  # released, while the slices are built by `v2CabalInstall` (pinned in
+  # `builder/default.nix`).  On 2026-08-15 that drift happened —
+  # cabal-install 3.18.1.0 reached the index, slices stayed on 3.16.1.0
+  # — and `test/cabal-sublib-shell` went red because the shell's cabal
+  # rebuilt the sublib it was supposed to reuse.
+  #
+  # So when the caller has not pinned a version, hand back the very
+  # binary that built the slices rather than an independently-solved
+  # one.  It carries haskell.nix's cabal-install patches (see
+  # `builder/default.nix`); none of them affect hashing, and the
+  # sublib-pruning one only ever relaxes a solve.  A caller who *does*
+  # pin a version still gets exactly what they asked for — with a
+  # warning when it isn't the version the slices were built with, since
+  # the consequence (a silent from-source rebuild of every dependency)
+  # is otherwise indistinguishable from the shell simply not working.
+  cabalTool = versionOrMod:
+    let
+      pinned = if lib.isString versionOrMod
+                 then versionOrMod
+                 else versionOrMod.version or null;
+    in
+      if pinned == null then v2CabalInstall
+      else lib.warnIf (pinned != v2CabalInstallVersion)
+        ("shellFor: tools.cabal is pinned to ${pinned}, but this project's v2 "
+         + "slices were built with cabal-install ${v2CabalInstallVersion}.  The "
+         + "two compute different UnitIds, so `cabal build` in this shell will "
+         + "rebuild every dependency from source instead of reusing the composed "
+         + "cabal store.  Drop the pin to get the matching cabal.")
+        (pkgs.pkgsBuildBuild.haskell-nix.tool compilerNixName "cabal" versionOrMod);
+
   toolDrvs = lib.mapAttrsToList
     (name: versionOrMod:
-      pkgs.pkgsBuildBuild.haskell-nix.tool compilerNixName name versionOrMod)
+      if name == "cabal"
+        then cabalTool versionOrMod
+        else pkgs.pkgsBuildBuild.haskell-nix.tool compilerNixName name versionOrMod)
     tools;
 
   # withHoogle: ensure hoogle is on PATH.  If the user already listed

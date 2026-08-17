@@ -1,6 +1,25 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## August 17, 2026
+
+`builderVersion = 2`: `shellFor`'s `tools.cabal` now defaults to the same
+cabal-install the slice builder uses, instead of solving for the newest one
+in the project's hackage index.
+
+A UnitId is a hash of cabal-install's own rendering of a package's build
+inputs, so two cabal-install versions give the same package two different
+UnitIds.  When the shell's `cabal` was not the one that built the slices it
+missed every unit in the composed cabal store and rebuilt the whole
+dependency tree from source — no error, just a shell that had quietly
+stopped doing the one thing it exists for.  That is what happened when
+cabal-install 3.18.1.0 reached hackage on August 15 while the slice builder
+stayed pinned to 3.16.1.0.
+
+Only projects that ask for `shell.tools.cabal` are affected, and only when
+they do not pin a version.  An explicit pin still wins; you now get a
+warning when it isn't the version the slices were built with.
+
 ## June 12, 2026
 
 `builderVersion = 2`: test `checks` now run with more of the environment
