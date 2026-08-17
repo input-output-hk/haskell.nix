@@ -12,14 +12,32 @@
 # outside that copy resolves to `/nix/store/...` and trips
 # `pure evaluation mode` on aarch64-darwin's static build.
 #
-# The patch makes `Distribution.Client.PackageHash`'s
+# installed-package-id-os-override makes `Distribution.Client.PackageHash`'s
 # `hashedInstalledPackageId` consult `CABAL_INSTALLED_PACKAGE_ID_OS`,
 # pinning the unit-id format to the *build* platform's OS.  Without
 # it, plan-nix unit-ids fork from slice-build unit-ids whenever the
 # eval system differs from the build system (e.g. evaluating on
 # Darwin while building x86_64-linux derivations).
+#
+# glob-literal-fast-path stops `runDirFileGlob` listing a whole directory
+# to resolve a glob that is a literal filename.  Every `packages:` entry
+# goes through it, so a cabal.project holding absolute paths into
+# /nix/store rescans the entire store once PER ENTRY (31 entries x ~362k
+# store entries for the ghc914-sh stage2 plan).  Page-cached locally that
+# only wastes a second or two; inside a nix-linux-builder VM, where
+# /nix/store is virtiofs, every 2KB getdents64 is a round trip to the
+# macOS host and `make-install-plan` stops progressing entirely — 77s
+# natively vs killed by max-silent-time on the builder.  This one is a
+# plain upstream bug (the code comment there already promises the
+# behaviour) and should go to cabal rather than live here forever.
+#
+# NB this second patch is against the `Cabal` library, not `cabal-install`
+# — Distribution.Simple.Glob lives there — hence the separate attribute.
 {
   packages.cabal-install.patches = [
     ./cabal-install-patches/installed-package-id-os-override.patch
+  ];
+  packages.Cabal.patches = [
+    ./cabal-install-patches/glob-literal-fast-path.patch
   ];
 }
