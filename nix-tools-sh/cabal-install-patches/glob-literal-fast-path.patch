@@ -1,0 +1,77 @@
+Skip the directory listing when a file glob is a literal name.
+
+`runDirFileGlob`'s `GlobFile` branch always calls `listDirectory` on the
+parent and filters the result, even when the pattern is a single
+`Literal` and so can match at most one entry.  The cost is therefore
+O(entries in the parent directory) per pattern, regardless of how
+specific the pattern is.
+
+That is invisible on a small tree and ruinous on a large one.
+cabal-install resolves every `packages:` entry through this path
+(ProjectConfig.checkIsFileGlobPackage -> RebuildMonad.matchFileGlob ->
+Glob.matchFileGlob -> runDirFileGlob).  A project whose `packages:`
+stanza holds absolute paths into one big directory therefore rescans
+that whole directory once per entry.  Concretely, a generated
+cabal.project with 31 `/nix/store/<hash>-<name>-src` entries lists a
+/nix/store of ~362k entries 31 times.  Page-cached on a local disk that
+is merely wasteful; over a virtiofs share (a Linux builder VM on a macOS
+host) each 2KB getdents64 is a round trip to the host and the build
+stops making observable progress -- no CPU, no major faults, just
+permanent `request_wait_answer`.
+
+Add the missing literal case: stat the one candidate path instead of
+enumerating its parent.  The result is identical, since at most one
+directory entry can match a literal.  The new branch mirrors the general
+one exactly (same `mspec` file-vs-directory handling, same
+`doesGlobMatch` call, so `GlobWarnMultiDot` and `GlobMatchesDirectory`
+are produced as before); it only replaces the listing with a lookup.
+
+Note the block comment above `splitConstantPrefix` already promises this
+behaviour -- "and only walk as much as we need to: ... and just the
+specific file if it's a literal".  That was implemented for the constant
+directory prefix but never for the file component itself.
+
+diff --git a/src/Distribution/Simple/Glob.hs b/src/Distribution/Simple/Glob.hs
+--- a/src/Distribution/Simple/Glob.hs	2026-08-17 12:12:03
++++ b/src/Distribution/Simple/Glob.hs	2026-08-17 12:12:21
+@@ -388,6 +388,40 @@
+       Just spec -> checkNameMatches spec glob str
+       Nothing -> if matchGlobPieces glob str then Just (GlobMatch ()) else Nothing
+ 
++    -- Fast path: a literal file name needs no directory listing at all.
++    -- Listing costs O(entries in the parent directory), so a pattern naming
++    -- one exact file inside a large directory pays for a full scan -- and
++    -- callers such as cabal-install's `packages:` resolution do that once per
++    -- entry.  With absolute paths into a directory holding hundreds of
++    -- thousands of entries (e.g. `packages: /nix/store/<hash>-foo-src`) the
++    -- scan dominates everything else, and on a network or virtualised
++    -- filesystem it can stop a build making progress at all.  Stat the single
++    -- candidate instead: the result is identical, because at most one entry
++    -- of the directory can match a literal.
++    --
++    -- The comment above already promises "just the specific file if it's a
++    -- literal".  splitConstantPrefix implements that for the directory part;
++    -- this is the GlobFile half, which was missing.
++    go (GlobFile [Literal fname]) dir = do
++      let path = root </> dir </> fname
++      exists <- doesPathExist path
++      if not exists
++        then return []
++        else do
++          -- Mirrors the general branch below exactly, minus the listing.
++          isFile <- maybe (return True) (const $ doesFileExist path) mspec
++          let match = (dir </> fname <$) <$> doesGlobMatch [Literal fname] fname
++          return $
++            catMaybes
++              [ if isFile
++                  then match
++                  else case match of
++                    Just (GlobMatch x) -> Just $ GlobMatchesDirectory x
++                    Just (GlobWarnMultiDot x) -> Just $ GlobMatchesDirectory x
++                    Just (GlobMatchesDirectory x) -> Just $ GlobMatchesDirectory x
++                    Just (GlobMissingDirectory x) -> Just $ GlobMissingDirectory x
++                    Nothing -> Nothing
++              ]
+     go (GlobFile glob) dir = do
+       entries <- listDirectory (root </> dir)
+       catMaybes
