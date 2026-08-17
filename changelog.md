@@ -20,6 +20,17 @@ Only projects that ask for `shell.tools.cabal` are affected, and only when
 they do not pin a version.  An explicit pin still wins; you now get a
 warning when it isn't the version the slices were built with.
 
+The flakes we hand to users keep working on x86_64-darwin.  `hix init`, the
+`haskell-nix` flake template, the boilerplate behind `hix
+develop`/`build`/`run`, and the getting-started-flakes tutorial all follow
+`nixpkgs-unstable`, and nixpkgs 26.11 dropped that platform.  Because
+`flake-utils`' `eachSystem` evaluates every listed system in order to
+collect its output names, the one unimportable system broke `nix develop`
+and `nix build` on *all* of them — not just on Intel macOS.  Generated
+flakes now take a `nixpkgs-2605` input and import it for x86_64-darwin
+only, the same per-system selection haskell.nix's own `flake.nix` and
+`ci.nix` already make.
+
 ## June 12, 2026
 
 `builderVersion = 2`: test `checks` now run with more of the environment
