@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-79659dc4.js";
+            window.path_to_searchindex_js = "../searchindex-9be9712d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-8e5f1025.js"></script>
@@ -196,10 +196,11 @@ Instead, you can pin <code>hackage.nix</code> and <code>stackage.nix</code> inde
       stackage = stackageSrc;
     };
   };
-in {
-  inherit haskellNix
-  # ...
-}
+in
+  # Anything built from `haskellNix` now resolves against the pins above --
+  # this snapshot comes from `stackageSrc`, and the package metadata in it
+  # from `hackageSrc`.
+  haskellNix.pkgs.haskell-nix.snapshots."lts-23.28".alex.components.exes.alex
 </code></pre>
 <p>This way you can change the revisions of <code>hackage.nix</code> and <code>stackage.nix</code>
 without changing <code>haskell.nix</code>.</p>

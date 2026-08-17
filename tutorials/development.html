@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-79659dc4.js";
+            window.path_to_searchindex_js = "../searchindex-9be9712d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-8e5f1025.js"></script>
@@ -211,9 +211,10 @@ in
 
     # List of packages from the project you want to work on in
     # the shell (default is all the projects local packages).
+    # These are the names of *your* packages -- this example project
+    # contains just one, `hello`.
     packages = ps: with ps; [
-      pkga
-      pkgb
+      hello
     ];
 
     # Builds a Hoogle documentation index of all dependencies,
@@ -222,8 +223,8 @@ in
 
     # Some common tools can be added with the `tools` argument
     tools = {
-      cabal = "3.2.0.0";
-      hlint = "latest"; # Selects the latest version in the hackage.nix snapshot
+      cabal = "latest"; # Selects the latest version in the hackage.nix snapshot
+      hlint = "latest";
       haskell-language-server = "latest";
     };
     # See overlays/tools.nix for more details
@@ -231,9 +232,9 @@ in
     # Some you may need to get some other way.
     buildInputs = [ (import &lt;nixpkgs&gt; {}).git ];
 
-    # Sellect cross compilers to include.
+    # Select cross compilers to include.
     crossPlatforms = ps: with ps; [
-      ghcjs      # Adds support for `js-unknown-ghcjs-cabal build` in the shell
+      # ghcjs    # Adds support for `js-unknown-ghcjs-cabal build` in the shell
       # mingwW64 # Adds support for `x86_64-W64-mingw32-cabal build` in the shell
     ];
 
@@ -247,10 +248,10 @@ in
 <p>If you need a local Hoogle for all the dependencies of your project create this file</p>
 <pre><code class="language-nix"># shell-hoogle.nix
 let
-  project = import ./default.nix {};
+  project = import ./default.nix;
 in
   project.shellFor {
-      packages = ps: [ps.my-package];
+      packages = ps: [ps.hello];
       withHoogle = true;
   }
 </code></pre>
@@ -261,13 +262,15 @@ This will open a local Hoogle server at <code>http://127.0.0.1:8080</code>.</p>
 registered in the package database. The <code>ghcWithPackages</code> function
 operates on a Haskell.nix package set, and accepts an argument that
 selects packages from the larger package set.</p>
-<pre><code class="language-nix"># shell.nix
+<pre><code class="language-nix"># shell-package.nix
 let
   haskellNix = import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz") {};
   nixpkgs = import haskellNix.sources.nixpkgs haskellNix.nixpkgsArgs;
   haskell = nixpkgs.haskell-nix;
 in
-  haskell.haskellPackages.ghcWithPackages (ps: with ps;
+  # `haskell.haskellPackages` is whichever Stackage LTS happens to be newest,
+  # so it moves under you.  Naming the snapshot keeps the shell reproducible.
+  haskell.snapshots."lts-23.28".ghcWithPackages (ps: with ps;
     [ lens conduit conduit-extra ])
 </code></pre>
 <p>If you need a Hoogle documentation index, use <code>ghcWithHoogle</code> in place
@@ -281,7 +284,7 @@ project.</p>
   nixpkgs = import haskellNix.sources.nixpkgs haskellNix.nixpkgsArgs;
   haskell = nixpkgs.haskell-nix;
 in
-  haskell.snapshots."lts-13.18".alex.components.exes.alex
+  haskell.snapshots."lts-23.28".alex.components.exes.alex
 </code></pre>
 <p>There are Haskell.nix package sets for every Stackage snaphot under
 <code>haskell.snapshots</code>.</p>

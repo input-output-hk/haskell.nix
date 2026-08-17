@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-79659dc4.js";
+            window.path_to_searchindex_js = "searchindex-9be9712d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-8e5f1025.js"></script>
@@ -417,9 +417,10 @@ in
 
     # List of packages from the project you want to work on in
     # the shell (default is all the projects local packages).
+    # These are the names of *your* packages -- this example project
+    # contains just one, `hello`.
     packages = ps: with ps; [
-      pkga
-      pkgb
+      hello
     ];
 
     # Builds a Hoogle documentation index of all dependencies,
@@ -428,8 +429,8 @@ in
 
     # Some common tools can be added with the `tools` argument
     tools = {
-      cabal = "3.2.0.0";
-      hlint = "latest"; # Selects the latest version in the hackage.nix snapshot
+      cabal = "latest"; # Selects the latest version in the hackage.nix snapshot
+      hlint = "latest";
       haskell-language-server = "latest";
     };
     # See overlays/tools.nix for more details
@@ -437,9 +438,9 @@ in
     # Some you may need to get some other way.
     buildInputs = [ (import &lt;nixpkgs&gt; {}).git ];
 
-    # Sellect cross compilers to include.
+    # Select cross compilers to include.
     crossPlatforms = ps: with ps; [
-      ghcjs      # Adds support for `js-unknown-ghcjs-cabal build` in the shell
+      # ghcjs    # Adds support for `js-unknown-ghcjs-cabal build` in the shell
       # mingwW64 # Adds support for `x86_64-W64-mingw32-cabal build` in the shell
     ];
 
@@ -453,10 +454,10 @@ in
 <p>If you need a local Hoogle for all the dependencies of your project create this file</p>
 <pre><code class="language-nix"># shell-hoogle.nix
 let
-  project = import ./default.nix {};
+  project = import ./default.nix;
 in
   project.shellFor {
-      packages = ps: [ps.my-package];
+      packages = ps: [ps.hello];
       withHoogle = true;
   }
 </code></pre>
@@ -467,13 +468,15 @@ This will open a local Hoogle server at <code>http://127.0.0.1:8080</code>.</p>
 registered in the package database. The <code>ghcWithPackages</code> function
 operates on a Haskell.nix package set, and accepts an argument that
 selects packages from the larger package set.</p>
-<pre><code class="language-nix"># shell.nix
+<pre><code class="language-nix"># shell-package.nix
 let
   haskellNix = import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz") {};
   nixpkgs = import haskellNix.sources.nixpkgs haskellNix.nixpkgsArgs;
   haskell = nixpkgs.haskell-nix;
 in
-  haskell.haskellPackages.ghcWithPackages (ps: with ps;
+  # `haskell.haskellPackages` is whichever Stackage LTS happens to be newest,
+  # so it moves under you.  Naming the snapshot keeps the shell reproducible.
+  haskell.snapshots."lts-23.28".ghcWithPackages (ps: with ps;
     [ lens conduit conduit-extra ])
 </code></pre>
 <p>If you need a Hoogle documentation index, use <code>ghcWithHoogle</code> in place
@@ -487,7 +490,7 @@ project.</p>
   nixpkgs = import haskellNix.sources.nixpkgs haskellNix.nixpkgsArgs;
   haskell = nixpkgs.haskell-nix;
 in
-  haskell.snapshots."lts-13.18".alex.components.exes.alex
+  haskell.snapshots."lts-23.28".alex.components.exes.alex
 </code></pre>
 <p>There are Haskell.nix package sets for every Stackage snaphot under
 <code>haskell.snapshots</code>.</p>
@@ -612,8 +615,13 @@ cabal build
   description = "A very basic flake";
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
+  # nixpkgs unstable (26.11) dropped x86_64-darwin, and `eachSystem` below
+  # evaluates *every* listed system to collect its output names — so one
+  # unimportable system breaks `nix build` on all of them.  Keep the last
+  # pin that supports it and use it for that system only.
+  inputs.nixpkgs-2605.follows = "haskellNix/nixpkgs-2605";
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  outputs = { self, nixpkgs, flake-utils, haskellNix }:
+  outputs = { self, nixpkgs, nixpkgs-2605, flake-utils, haskellNix }:
     flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" ] (system:
     let
       overlays = [ haskellNix.overlay
@@ -639,7 +647,8 @@ cabal build
             };
         })
       ];
-      pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
+      pkgs = import (if system == "x86_64-darwin" then nixpkgs-2605 else nixpkgs)
+        { inherit system overlays; inherit (haskellNix) config; };
       flake = pkgs.helloProject.flake {
         # This adds support for `nix build .#js-unknown-ghcjs:hello:exe:hello`
         # crossPlatforms = p: [p.ghcjs];
@@ -950,10 +959,11 @@ Instead, you can pin <code>hackage.nix</code> and <code>stackage.nix</code> inde
       stackage = stackageSrc;
     };
   };
-in {
-  inherit haskellNix
-  # ...
-}
+in
+  # Anything built from `haskellNix` now resolves against the pins above --
+  # this snapshot comes from `stackageSrc`, and the package metadata in it
+  # from `hackageSrc`.
+  haskellNix.pkgs.haskell-nix.snapshots."lts-23.28".alex.components.exes.alex
 </code></pre>
 <p>This way you can change the revisions of <code>hackage.nix</code> and <code>stackage.nix</code>
 without changing <code>haskell.nix</code>.</p>
@@ -109664,6 +109674,30 @@ hix-shell
 <h1 id="changelog"><a href="#changelog" class="header">ChangeLog</a></h1>
 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="august-17-2026"><a class="header" href="#august-17-2026">August 17, 2026</a></h2>
+<p><code>builderVersion = 2</code>: <code>shellFor</code>’s <code>tools.cabal</code> now defaults to the same
+cabal-install the slice builder uses, instead of solving for the newest one
+in the project’s hackage index.</p>
+<p>A UnitId is a hash of cabal-install’s own rendering of a package’s build
+inputs, so two cabal-install versions give the same package two different
+UnitIds.  When the shell’s <code>cabal</code> was not the one that built the slices it
+missed every unit in the composed cabal store and rebuilt the whole
+dependency tree from source — no error, just a shell that had quietly
+stopped doing the one thing it exists for.  That is what happened when
+cabal-install 3.18.1.0 reached hackage on August 15 while the slice builder
+stayed pinned to 3.16.1.0.</p>
+<p>Only projects that ask for <code>shell.tools.cabal</code> are affected, and only when
+they do not pin a version.  An explicit pin still wins; you now get a
+warning when it isn’t the version the slices were built with.</p>
+<p>The flakes we hand to users keep working on x86_64-darwin.  <code>hix init</code>, the
+<code>haskell-nix</code> flake template, the boilerplate behind <code>hix develop</code>/<code>build</code>/<code>run</code>, and the getting-started-flakes tutorial all follow
+<code>nixpkgs-unstable</code>, and nixpkgs 26.11 dropped that platform.  Because
+<code>flake-utils</code>’ <code>eachSystem</code> evaluates every listed system in order to
+collect its output names, the one unimportable system broke <code>nix develop</code>
+and <code>nix build</code> on <em>all</em> of them — not just on Intel macOS.  Generated
+flakes now take a <code>nixpkgs-2605</code> input and import it for x86_64-darwin
+only, the same per-system selection haskell.nix’s own <code>flake.nix</code> and
+<code>ci.nix</code> already make.</p>
 <h2 id="june-12-2026"><a class="header" href="#june-12-2026">June 12, 2026</a></h2>
 <p><code>builderVersion = 2</code>: test <code>checks</code> now run with more of the environment
 <code>cabal v2-test</code> would provide, so tests that read their package’s data,
