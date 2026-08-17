@@ -1,5 +1,12 @@
 #! /usr/bin/env bash
 
+# Without this, a failing example is invisible: every command below runs
+# unconditionally and the script exits with the status of the last one, so the
+# `docs` CI job reported success while `getting-started-flakes` had been failing
+# to evaluate since nixpkgs unstable dropped x86_64-darwin.  A test that cannot
+# fail is worse than no test.
+set -euo pipefail
+
 # Tutorials
 pushd tutorials
 
