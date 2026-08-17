@@ -14,9 +14,12 @@ with lib;
 #   - provider: has a main library and a `visibility: public` sublib `slib`.
 #   - consumer: an executable that depends on `provider` and `provider:slib`.
 #
-# Test: spin up a v1 shell, drop into it, run `cabal v2-build consumer`
-# using the UNPATCHED cabal-install from nix-tools, and inspect the
-# build log.  If cabal built `provider` or the `slib` sublib from
+# Test: spin up the project's shell, drop into it, run `cabal v2-build
+# consumer` with the shell's own `cabal` (whatever `shell.tools.cabal`
+# resolves to — that is deliberately not pinned here, so the test also
+# covers the shell handing out a cabal-install that disagrees with the
+# slices; see `builder/shell-for-v2.nix`'s `cabalTool`), and inspect
+# the build log.  If cabal built `provider` or the `slib` sublib from
 # source, the sibling bug is present.
 let
   isTargetCompiler = compiler-nix-name == "ghc9141";

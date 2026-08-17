@@ -63,8 +63,15 @@ let
                 + "in `builder/default.nix`.")
        else picked;
 
+  # The one place the v2 builder's cabal-install version is written
+  # down.  `shell-for-v2.nix` reads it too: a v2 shell whose `cabal`
+  # is a *different* cabal-install from the one that built the slices
+  # computes different UnitIds, so nothing in the composed store
+  # matches and cabal rebuilds every dependency from source.
+  v2CabalInstallVersion = "3.16.1.0";
+
   v2CabalInstall = pkgsBuildBuild.haskell-nix.tool v2CabalInstallCompiler "cabal" {
-    version = "3.16.1.0";
+    version = v2CabalInstallVersion;
     builderVersion = 1;
     compilerSelection = p: p.haskell.compiler;
     modules = [{
@@ -196,7 +203,8 @@ let
     inherit (buildPackages) mkShell glibcLocales llvmPackages;
   };
   shellForV2 = haskellLib.weakCallPackage pkgs ./shell-for-v2.nix {
-    inherit hsPkgs haskellLib ghc compiler composeStore makeGhcShim cabalProjectLocal;
+    inherit hsPkgs haskellLib ghc compiler composeStore makeGhcShim cabalProjectLocal
+            v2CabalInstall v2CabalInstallVersion;
     inherit (buildPackages) mkShell;
     haskell-nix = pkgs.haskell-nix;
   };
