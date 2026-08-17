@@ -23,11 +23,35 @@
 # `cabal2json` exe, pulled via source-repository-package) to the
 # stable-haskell cabal fork's Cabal-syntax 3.17 API, which dropped
 # the constraint type parameter from CondTree/CondBranch.
+#
+# The `glob-literal-fast-path` patch stops `runDirFileGlob` listing a
+# whole directory just to resolve a glob that is a literal filename.
+# Every `packages:` entry is resolved through that code, so a
+# cabal.project holding absolute paths into one large directory
+# rescans that directory once PER ENTRY.  The ghc914-sh stage2 plan
+# does exactly that: `replace-hackage-tarball-urls` rewrites 31 boot
+# libraries to `/nix/store/<hash>-<name>-src`, so `make-install-plan`
+# lists a ~362k-entry /nix/store 31 times.  Page-cached on a local
+# disk that merely wastes a second or two; inside a nix-linux-builder
+# VM, where /nix/store is a virtiofs share from the macOS host, each
+# 2KB getdents64 is a round trip and the plan stops making observable
+# progress at all — 77 seconds natively versus killed by
+# max-silent-time on the builder.  A plain upstream bug (the comment
+# beside the code already promises the behaviour), so it should go to
+# cabal rather than live here indefinitely.
+#
+# NB `packages.Cabal.patches`, not `cabal-install`:
+# Distribution.Simple.Glob lives in the Cabal library, which this
+# project takes from the stable-haskell fork via
+# source-repository-package (see ./cabal.project).
 {
   packages.cabal-install.patches = [
     ./cabal-install-patches/installed-package-id-os-override.patch
   ];
   packages.Cabal-syntax-json.patches = [
     ./cabal-install-patches/cabal-syntax-json-condtree-3.17.patch
+  ];
+  packages.Cabal.patches = [
+    ./cabal-install-patches/glob-literal-fast-path.patch
   ];
 }
