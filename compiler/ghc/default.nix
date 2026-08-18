@@ -1028,6 +1028,25 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
         configurePlatforms
         configureFlags
         ;
+      # The main GHC derivation sets these at its top level, but this is a
+      # separate `mkDerivation` that inherits an explicit list of attributes,
+      # so it has to ask for them again.  Without them `LANG` is unset in the
+      # sandbox, glibc reports the ASCII codeset, and hadrian's locale-encoded
+      # `readFile'` of `primops.txt` dies on the `“safe”` in the
+      # `keepAlive#` docs:
+      #
+      #   primops.txt: hGetContents: invalid argument
+      #     (cannot decode byte sequence starting from 226)
+      #
+      # Narrow in practice, which is why it took a while to show up: only a
+      # hadrian older than 9.8 decodes the file in-process at all (9.8's
+      # `Builder.hs` swapped `readFile'` + `Stdin` for `FileStdin`, handing
+      # the subprocess a raw fd), and only 9.6/9.8 still have non-ASCII in
+      # `primops.txt.pp` (9.10 spells the quotes with ASCII).  So it hit
+      # exactly ghc96x on Linux; Darwin passed because its locale encoding is
+      # UTF-8 even with `LANG` unset.
+      LANG = "en_US.UTF-8";
+      LC_ALL = "en_US.UTF-8";
       phases = [ "unpackPhase" "patchPhase" "autoreconfPhase"
                  "configurePhase" "buildPhase" "installPhase" ];
       # Same as `configured-src`: generate the `.cabal` files from the
@@ -1089,6 +1108,9 @@ haskell-nix.haskellLib.makeCompilerDeps (stdenv.mkDerivation (rec {
           cp _build/stage1/libraries/ghc-boot/build/GHC/Platform/Host.hs $out/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs
         fi
       '';
+    } // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
+      # `en_US.UTF-8` only resolves if the locale archive is on hand.
+      LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive";
     } // lib.optionalAttrs targetPlatform.isGhcjs {
       postPatch = ''
         cp config.sub config.sub.ghcjs
