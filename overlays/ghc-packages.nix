@@ -122,7 +122,12 @@ let
 in rec {
   inherit combineAndMaterialize;
   ghc-boot-packages-src-and-nix = builtins.mapAttrs
-    (ghcName: ghc: builtins.mapAttrs
+    (ghcName: ghc:
+      # Prefer the lightweight `generated` derivation (hadrian's generated
+      # sources built without compiling all of GHC); fall back to the full
+      # `generated` output for compilers that don't provide it.
+      let gen = ghc.generated-light or ghc.generated; in
+      builtins.mapAttrs
       (pkgName: subDir: rec {
         src =
           # TODO remove once nix >=2.4 is widely adopted (will trigger rebuilds of everything).
@@ -133,33 +138,48 @@ in rec {
             then nix24srcFix (final.buildPackages.runCommand "ghc-boot-src" { nativeBuildInputs = [(final.buildPackages.lndir or final.buildPackages.xorg.lndir)]; } ''
               mkdir $out
               lndir -silent ${ghc.passthru.configured-src}/${subDir} $out
-              lndir -silent ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC $out/GHC
+              lndir -silent ${gen}/libraries/ghc-boot/dist-install/build/GHC $out/GHC
             '') // { srcForCabal2Nix = ghc.passthru.configured-src + "/${subDir}"; }
           else if subDir == "compiler"
             then final.haskell-nix.haskellLib.cleanSourceWith {
+              # `lnGlob` skips patterns that match nothing.  Plain
+              # `ln -s <dir>/* $out/compiler` does not fail in that case (a
+              # symlink target need not exist), it silently creates a dangling
+              # link literally named `*`, which then shows up in the source
+              # tree.
+              #
+              # This is required rather than defensive: `generated-light` has no
+              # `includes/dist-derivedconstants/header` at all -- hadrian keeps
+              # the constants in `GHC/Platform/Constants.hs` instead -- so that
+              # first pattern matches nothing for every compiler, and without
+              # `lnGlob` each one would gain a dangling `*` in its `lib:ghc`
+              # source.  The `primop-*.hs-incl` pattern does match today (16-18
+              # files depending on the GHC version); it is guarded for the same
+              # reason, against a version that stops producing them.
               src = nix24srcFix (final.buildPackages.runCommand "ghc-src" { nativeBuildInputs = [(final.buildPackages.lndir or final.buildPackages.xorg.lndir)]; } ''
                 mkdir $out
+                lnGlob() { for f in "$@"; do if [[ -e $f ]]; then ln -s "$f" $out/compiler; fi; done; }
                 lndir -silent ${ghc.passthru.configured-src} $out
-                if [[ -f ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC/Version.hs ]]; then
-                  ln -s ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC/Version.hs $out/libraries/ghc-boot/GHC
+                if [[ -f ${gen}/libraries/ghc-boot/dist-install/build/GHC/Version.hs ]]; then
+                  ln -s ${gen}/libraries/ghc-boot/dist-install/build/GHC/Version.hs $out/libraries/ghc-boot/GHC
                 fi
-                if [[ -f ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs ]]; then
-                  ln -s ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs $out/libraries/ghc-boot/GHC/Platform
+                if [[ -f ${gen}/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs ]]; then
+                  ln -s ${gen}/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs $out/libraries/ghc-boot/GHC/Platform
                 fi
-                if [[ -f ${ghc.generated}/compiler/stage2/build/Config.hs ]]; then
-                  ln -s ${ghc.generated}/compiler/stage2/build/Config.hs $out/compiler
+                if [[ -f ${gen}/compiler/stage2/build/Config.hs ]]; then
+                  ln -s ${gen}/compiler/stage2/build/Config.hs $out/compiler
                 fi
-                if [[ -f ${ghc.generated}/compiler/stage2/build/GHC/Platform/Constants.hs ]]; then
-                  ln -s ${ghc.generated}/compiler/stage2/build/GHC/Platform/Constants.hs $out/compiler/GHC/Platform
+                if [[ -f ${gen}/compiler/stage2/build/GHC/Platform/Constants.hs ]]; then
+                  ln -s ${gen}/compiler/stage2/build/GHC/Platform/Constants.hs $out/compiler/GHC/Platform
                 fi
-                if [[ -f ${ghc.generated}/compiler/stage2/build/GHC/Settings/Config.hs ]]; then
-                  ln -s ${ghc.generated}/compiler/stage2/build/GHC/Settings/Config.hs $out/compiler/GHC/Settings
+                if [[ -f ${gen}/compiler/stage2/build/GHC/Settings/Config.hs ]]; then
+                  ln -s ${gen}/compiler/stage2/build/GHC/Settings/Config.hs $out/compiler/GHC/Settings
                 fi
-                if [[ -f ${ghc.generated}/compiler/GHC/CmmToLlvm/Version/Bounds.hs ]]; then
-                  ln -s ${ghc.generated}/compiler/GHC/CmmToLlvm/Version/Bounds.hs $out/compiler/GHC/CmmToLlvm/Version
+                if [[ -f ${gen}/compiler/GHC/CmmToLlvm/Version/Bounds.hs ]]; then
+                  ln -s ${gen}/compiler/GHC/CmmToLlvm/Version/Bounds.hs $out/compiler/GHC/CmmToLlvm/Version
                 fi
-                ln -s ${ghc.generated}/includes/dist-derivedconstants/header/* $out/compiler
-                ln -s ${ghc.generated}/compiler/stage2/build/*.hs-incl $out/compiler
+                lnGlob ${gen}/includes/dist-derivedconstants/header/*
+                lnGlob ${gen}/compiler/stage2/build/*.hs-incl
               '');
               inherit subDir;
               includeSiblings = true;
