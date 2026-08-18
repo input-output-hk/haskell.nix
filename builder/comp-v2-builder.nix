@@ -2200,6 +2200,14 @@ let
       # haskellLib.flatLibDepends) can traverse v2 components the
       # same way as v1.
       config = component;
+      # v1 puts the package source in the component derivation's own
+      # `src` attribute (`commonAttrs.src = cleanSrc.root` in
+      # comp-builder.nix), so callers read it back as `component.src` --
+      # `test/cabal-project-nix-path` untars a `haskell-nix.tool` result's
+      # `.src` to get hello's sources.  A v2 slice builds several packages
+      # at once and so has no `src` derivation attribute at all; expose the
+      # same value here to keep the two builders interchangeable.
+      src = (haskellLib.rootAndSubDir src).root;
       # `lib/cover.nix` (HPC coverage report) reads `srcSubDirPath`
       # off each mix library to know where the .hs sources live for
       # `hpc markup --srcdir=...`.  v1 plumbs this from `cleanSrc`;

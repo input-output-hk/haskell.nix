@@ -287,7 +287,14 @@ in {
         # deriveConstants, config) without compiling all of GHC, so realising
         # this source-repository-package during plan-to-nix (needed for the v2
         # UnitId) does not force a full compiler build via IFD.
-        paths = [ ghc.configured-src (ghc.generated-light or ghc.generated) ];
+        #
+        # A cabalProject-built compiler (ghc914-sh) has NEITHER output -- it
+        # generates those sources during its own build -- and `x or y` still
+        # evaluates `y`, so an unguarded selection aborts evaluation rather
+        # than falling through.  Contribute the tree only when there is one.
+        paths = [ ghc.configured-src ]
+          ++ lib.optional (ghc ? generated-light || ghc ? generated)
+               (ghc.generated-light or ghc.generated);
       };
       ghcSrc = ghcFullSrc + "/compiler";
       ghcMinRepoUrl = "file://${ghcSrc}";
