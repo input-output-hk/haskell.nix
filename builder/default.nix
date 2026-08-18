@@ -38,6 +38,18 @@ let
     let v2ci = pkgsBuildBuild.haskell-nix.v2-cabal-install;
     in v2ci.evalWith.${evalPackages.stdenv.hostPlatform.system} or v2ci;
 
+  # The one place the v2 builder's cabal-install VERSION is written
+  # down.  `shell-for-v2.nix` reads it too: a v2 shell whose `cabal`
+  # is a *different* cabal-install from the one that built the slices
+  # computes different UnitIds, so nothing in the composed store
+  # matches and cabal rebuilds every dependency from source.
+  #
+  # Keep this in step with `version` in `haskell-nix.v2-cabal-install`
+  # (overlays/haskell.nix).  It is not mainline's 3.16.1.0 here: this
+  # branch builds the v2 cabal from the stable-haskell fork, which is
+  # 3.17.0.1.
+  v2CabalInstallVersion = "3.17.0.1";
+
   # Shared helper that wraps a real ghc into a "shim" with cabal-
   # near-compiler aliases, ghcjs settings patch, and native-musl
   # iserv aliases.  Used by both `build-cabal-slice` and the v2
@@ -162,7 +174,8 @@ let
     inherit (buildPackages) mkShell glibcLocales llvmPackages;
   };
   shellForV2 = haskellLib.weakCallPackage pkgs ./shell-for-v2.nix {
-    inherit hsPkgs haskellLib ghc compiler composeStore makeGhcShim cabalProjectLocal;
+    inherit hsPkgs haskellLib ghc compiler composeStore makeGhcShim cabalProjectLocal
+            v2CabalInstall v2CabalInstallVersion;
     inherit (buildPackages) mkShell;
     haskell-nix = pkgs.haskell-nix;
   };

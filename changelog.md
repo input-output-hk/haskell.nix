@@ -1,6 +1,36 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## August 17, 2026
+
+`builderVersion = 2`: `shellFor`'s `tools.cabal` now defaults to the same
+cabal-install the slice builder uses, instead of solving for the newest one
+in the project's hackage index.
+
+A UnitId is a hash of cabal-install's own rendering of a package's build
+inputs, so two cabal-install versions give the same package two different
+UnitIds.  When the shell's `cabal` was not the one that built the slices it
+missed every unit in the composed cabal store and rebuilt the whole
+dependency tree from source — no error, just a shell that had quietly
+stopped doing the one thing it exists for.  That is what happened when
+cabal-install 3.18.1.0 reached hackage on August 15 while the slice builder
+stayed pinned to 3.16.1.0.
+
+Only projects that ask for `shell.tools.cabal` are affected, and only when
+they do not pin a version.  An explicit pin still wins; you now get a
+warning when it isn't the version the slices were built with.
+
+The flakes we hand to users keep working on x86_64-darwin.  `hix init`, the
+`haskell-nix` flake template, the boilerplate behind `hix
+develop`/`build`/`run`, and the getting-started-flakes tutorial all follow
+`nixpkgs-unstable`, and nixpkgs 26.11 dropped that platform.  Because
+`flake-utils`' `eachSystem` evaluates every listed system in order to
+collect its output names, the one unimportable system broke `nix develop`
+and `nix build` on *all* of them — not just on Intel macOS.  Generated
+flakes now take a `nixpkgs-2605` input and import it for x86_64-darwin
+only, the same per-system selection haskell.nix's own `flake.nix` and
+`ci.nix` already make.
+
 ## July 16, 2026
 
 Breaking changes around the eval platform (the platform `cabal` /
