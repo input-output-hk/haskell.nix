@@ -95,7 +95,7 @@
     }@inputs:
     let
       callFlake = import flake-compat;
-      ifdLevel = 2;
+      ifdLevel = 1;
       runningHydraEvalTest = false;
       # The system that evaluation-time derivations (plan-to-nix, dummy-ghc,
       # hadrian's plan) are built on.  This is deliberately *not* the target
