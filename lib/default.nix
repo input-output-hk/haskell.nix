@@ -356,18 +356,25 @@ in {
   # In the case of sublibs the `depends` value should already be the derivation.
   dependToLib = d:
     # Do not simplify this to `d.components.library or d`, as that
-    # will not give a good error message if the `.library`
-    # is missing (happens if the package is unplanned,
-    # but has overrides).
-    # It would be nice to put an `assert` here, but there is
-    # currently no good way to get the name of the dependency
-    # when it is not in the plan.  The attribute path of
-    # `d` in the `nix` error should include the name
-    # eg. `packages.Cabal.components.library`.
+    # would silently drop the dependency when `.library` is missing
+    # (which happens when the package is unplanned but has overrides).
+    # A package value carries its `identifier` (see hspkg-builder.nix), so
+    # when the library component is absent we can throw a message naming the
+    # dependency instead of the opaque `attribute 'library' missing` error
+    # (see #1379).  Checking `d.components ? library` adds no strictness: the
+    # non-error path already forces `d.components` to read `.library`.
     if d ? components
-    then if d ? instantiations
-         then d.components.library.override { inherit (d) instantiations; }
-         else d.components.library
+    then if d.components ? library
+         then if d ? instantiations
+              then d.components.library.override { inherit (d) instantiations; }
+              else d.components.library
+         else throw ("haskell.nix: the library of package '${d.identifier.name or "<unknown>"}'"
+           + " is not available because it was not in the install plan."
+           + " This usually means the package was given overrides (e.g. via"
+           + " `modules` / `packages.${d.identifier.name or "<name>"}`) but is not part"
+           + " of the cabal plan, so none of its components were planned."
+           + " Add it to the project's dependencies (so it appears in the plan),"
+           + " or remove the override.")
     else d;
 
   projectOverlays = import ./project-overlays.nix {
