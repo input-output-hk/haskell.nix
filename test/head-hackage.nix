@@ -12,9 +12,11 @@
 # weakened in the checked-in file, which stays correct for everyone who is not
 # going through haskell.nix.
 { evalPackages
-  # Drop `ghcjs-overlay:override` from the `active-repositories` lines.  See
-  # `dropGhcjsOverlay` below for why, and test/default.nix for who asks.
-, dropGhcjsOverlay ? false
+  # The compiler in use ships NO target boot libraries and builds them from
+  # source instead.  Drops the parts of cabal.project.local that assume
+  # otherwise -- see `bootLibsFromSource` below for what and why, and
+  # test/default.nix for who asks.
+, bootLibsFromSource ? false
 }:
 {
   # The `assert` is the point of writing it this way.  If the stanza in
@@ -40,34 +42,53 @@
         + "  key-threshold: 0\n";
       stripped = builtins.replaceStrings [ published ] [ servedLocally ] raw;
 
-      # The ghcjs overlay is a package repository activated with `:override`,
-      # so for every package it carries it replaces hackage outright.  That is
-      # what it is for -- it patches packages that do not build for the JS
-      # backend, for a compiler that SHIPS its boot libraries.
+      # Two things in the `os(ghcjs)` part of this file assume the compiler
+      # ships its target boot libraries.  A stable-haskell `-target` compiler
+      # does not: its target package db is empty (`emptyGlobalPackageDb`), the
+      # boot packages are injected as `packages:` sources, and the boot deps
+      # are pinned to the versions its own stage2 project uses.  Both then
+      # contradict the project rather than help it, and the solver stops before
+      # reaching anything the test is actually about.
       #
-      # A compiler that builds them from source instead (a stable-haskell
-      # `-target` one: empty target package db, boot packages injected as
-      # sources, boot deps pinned to the versions its own stage2 project uses)
-      # has no use for it, and the two disagree.  The overlay carries
-      # `unix-2.8.1.0`; the pins ask for `unix ==2.8.8.0`; the boot project's
-      # `Cabal` needs `unix` on any non-Windows host.  Every ghcjs test then
-      # fails to resolve, before it reaches anything the test is about:
+      # (1) The ghcjs overlay is a package repository activated with
+      # `:override`, so for every package it carries it replaces hackage
+      # outright -- that is what it is for, patching packages that do not build
+      # for the JS backend.  It carries `unix-2.8.1.0`; the pins ask for
+      # `unix ==2.8.8.0`; the injected boot project's `Cabal` needs `unix` on
+      # any non-Windows host:
       #
       #   rejecting: host:unix == host:source:unix-2.8.1.0
       #     (constraint from cabal.project requires ==2.8.8.0)
       #
       # Dropped from `active-repositories` rather than from the `repository`
       # stanza, so the file still declares the same repositories and a plain
-      # `cabal` run driven by it is unaffected.  Same `assert` discipline as
-      # the root keys above: if the lines are reformatted we want to hear
-      # about it here, not in an opaque solver failure much later.
-      overlayActivation = ", ghcjs-overlay:override";
-      withoutOverlay =
-        let out = builtins.replaceStrings [ overlayActivation ] [ "" ] stripped;
-        in assert out != stripped; out;
+      # `cabal` run driven by it is unaffected.
+      #
+      # (2) `constraints: ghci installed` cannot hold when nothing is
+      # installed.  `libraries/ghci` is one of the injected boot packages, so
+      # it is a local source package and the only `ghci` at the right version:
+      #
+      #   rejecting: host:ghci == host:source:ghci-9.14
+      #     (constraint from project config cabal.project requires installed
+      #      instance)
+      #
+      # The neighbouring `extra-packages: ghci` stays.  It makes `ghci` a goal
+      # so the JS external interpreter has it for Template Haskell, which is
+      # just as true here -- only the demand that it come pre-installed is
+      # wrong.
+      #
+      # Both use the same `assert` discipline as the root keys above: if these
+      # lines are reformatted we want to hear about it here, not as an opaque
+      # solver failure much later.
+      drop = needle: s:
+        let out = builtins.replaceStrings [ needle ] [ "" ] s;
+        in assert out != s; out;
+      forFromSourceBootLibs =
+        drop "  constraints: ghci installed\n"
+          (drop ", ghcjs-overlay:override" stripped);
     in
       assert stripped != raw;
-      if dropGhcjsOverlay then withoutOverlay else stripped;
+      if bootLibsFromSource then forFromSourceBootLibs else stripped;
 
   # Scoped to our own tests deliberately: a haskell.nix user whose project names
   # this url should still get the published repository, not ours.

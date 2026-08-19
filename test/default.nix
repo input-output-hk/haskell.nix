@@ -178,7 +178,7 @@ let
     # inside `if os(ghcjs)` blocks, so dropping them changes nothing for any
     # other target -- but it would still change the cabal.project.local TEXT,
     # and with it every one of those targets' plan-nix hashes, for no reason.
-    dropGhcjsOverlay = stdenv.hostPlatform.isGhcjs
+    bootLibsFromSource = stdenv.hostPlatform.isGhcjs
       && (buildPackages.haskell-nix.compiler.${compiler-nix-name}.emptyGlobalPackageDb or false);
   };
   testCabalProjectLocal = headHackage.cabalProjectLocal;
