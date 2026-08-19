@@ -15,6 +15,11 @@
 # inline from lib/call-cabal-project-to-nix.nix.
 { pkgs, ghc, evalPackages, prebuilt-depends ? [] }:
 let
+  # The `RTS ways` a stable-haskell compiler reports.  Shared with
+  # overlays/stable-haskell.nix, which rewrites the same value into the real
+  # compiler's `settings`; `tests.dummy-ghc-info` compares the two byte for
+  # byte.  See lib/stable-haskell-rts-ways.nix for why the value is what it is.
+  shRtsWays = (import ./stable-haskell-rts-ways.nix).withProfiling;
   # Real GHC normalises a few fields in its platform strings
   # (`Target platform`, `target platform string`) away from the
   # nixpkgs `parsed.*` values:
@@ -189,10 +194,11 @@ let
         ${ let
           # Every stable-haskell (ghc914-sh) compiler — native AND every cross
           # — is the SAME stage-2 `ghc-bin` binary (each cross "compiler" is a
-          # thin `-target` wrapper around it), so the baked-in `Stage` (2) and
-          # `RTS ways` (v thr debug thr_debug) are identical across all of them;
-          # only the settings-derived fields vary with `-target`.  Mainline
-          # compilers keep their per-target values (isSH = false).
+          # thin `-target` wrapper around it), so the `Stage` (2) and the
+          # `RTS ways` (`shRtsWays`, written into every one of their `settings`
+          # files by overlays/stable-haskell.nix) are identical across all of
+          # them; only the settings-derived fields vary with `-target`.
+          # Mainline compilers keep their per-target values (isSH = false).
           isSH = ghc.isStableHaskell or false;
         in
           # Capability fields cabal-install reads to decide what
@@ -260,7 +266,7 @@ let
               then ''echo ',("target RTS linker only supports shared libraries","${if newWasm then "YES" else "NO"}")' ''
               else ""}
             echo ',("GHC Dynamic","NO")'
-            echo ',("RTS ways","${if isSH then "v thr debug thr_debug" else if newWasm then "v debug debug_dyn dyn" else "v debug"}")'
+            echo ',("RTS ways","${if isSH then shRtsWays else if newWasm then "v debug debug_dyn dyn" else "v debug"}")'
             echo ',("Stage","${if isSH then "2" else "1"}")'
           ''
           else if pkgs.stdenv.targetPlatform.isWindows
@@ -279,7 +285,7 @@ let
               then ''echo ',("target RTS linker only supports shared libraries","NO")' ''
               else ""}
             echo ',("GHC Dynamic","NO")'
-            echo ',("RTS ways","${if isSH then "v thr debug thr_debug" else "v thr thr_debug thr_debug_p thr_p debug debug_p p"}")'
+            echo ',("RTS ways","${if isSH then shRtsWays else "v thr thr_debug thr_debug_p thr_p debug debug_p p"}")'
             echo ',("Stage","${if isSH then "2" else "1"}")'
           ''
           else if pkgs.stdenv.targetPlatform.isAndroid
@@ -320,7 +326,7 @@ let
               then ''echo ',("target RTS linker only supports shared libraries","NO")' ''
               else ""}
             echo ',("GHC Dynamic","NO")'
-            echo ',("RTS ways","${if isSH then "v thr debug thr_debug" else "v thr thr_debug thr_debug_p thr_p debug debug_p p"}")'
+            echo ',("RTS ways","${if isSH then shRtsWays else "v thr thr_debug thr_debug_p thr_p debug debug_p p"}")'
             echo ',("Stage","${if isSH then "2" else (if pkgs.stdenv.buildPlatform.parsed.cpu.name != pkgs.stdenv.targetPlatform.parsed.cpu.name then "1" else "2")}")'
           ''
           else let
@@ -366,7 +372,7 @@ let
             # take a different branch above (8-way set without any
             # `_dyn`); this rule is only for native-cpu targets.
             ${if isStableHaskell
-              then ''echo ',("RTS ways","v thr debug thr_debug")' ''
+              then ''echo ',("RTS ways","${shRtsWays}")' ''
               else if pkgs.lib.versionAtLeast ghc.version "9.12"
               then ''echo ',("RTS ways","v thr thr_debug thr_debug_p thr_debug_p_dyn thr_debug_dyn thr_p thr_p_dyn thr_dyn debug debug_p debug_p_dyn debug_dyn p p_dyn dyn")' ''
               else if pkgs.lib.versionAtLeast ghc.version "9.10"

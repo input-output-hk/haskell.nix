@@ -68,6 +68,27 @@ let
 
   ghc914-shSrc = pkgs.haskell-nix.sources.ghc914-sh;
 
+  # ── RTS ways ────────────────────────────────────────────────────────────────
+  # `ghc-toolchain-bin --output-settings` hard-codes this field (see
+  # lib/stable-haskell-rts-ways.nix for the FIXME it carries upstream and for
+  # what goes wrong downstream), so every generated `settings` file below gets
+  # it rewritten by `fixRtsWays`.  The same value is what the plan-time dummy
+  # reports (lib/dummy-ghc.nix); `tests.dummy-ghc-info` diffs the two.
+  shRtsWays = import ../lib/stable-haskell-rts-ways.nix;
+  # Assert the value we expect to find before replacing it: if the fork ever
+  # sets its own list, we want the compiler build to stop here with the actual
+  # string in the log, not to overwrite it unnoticed.
+  fixRtsWays = settingsFile: ''
+    grep -qF '("RTS ways","${shRtsWays.fromToolchain}")' ${settingsFile} || {
+      echo "ghc-toolchain no longer writes the RTS ways string we patch;" >&2
+      echo "update lib/stable-haskell-rts-ways.nix.  It now says:" >&2
+      grep -F '"RTS ways"' ${settingsFile} >&2
+      exit 1
+    }
+    sed -i 's|("RTS ways","${shRtsWays.fromToolchain}")|("RTS ways","${shRtsWays.withProfiling}")|' \
+      ${settingsFile}
+  '';
+
   # ── Configured source ──────────────────────────────────────────────────────
   # Runs autoconf/configure to generate .cabal files from .cabal.in,
   # synthesises libraries/ghc-boot-th-next, patches the FIXME platform
@@ -897,6 +918,8 @@ ENDSCRIPT
       --cxx $(type -P c++) \
       --output-settings \
       -o $out/lib/ghc-${ghcVersion}/settings
+
+    ${fixRtsWays "$out/lib/ghc-${ghcVersion}/settings"}
 
     ${lib.optionalString hp.isx86_64 ''
     # On x86_64, the RTS includes XXHash3 which uses 256-bit AVX2 vectors.
@@ -1930,6 +1953,8 @@ ENDSCRIPT
     # interpreter instead of loading target objects in-process.
     sed -i 's|("cross compiling","NO")|("cross compiling","YES")|' \
       $tdir/lib/settings
+
+    ${fixRtsWays "$tdir/lib/settings"}
 
     ${lib.optionalString isGhcjsTarget ''
     # ghc-toolchain-bin resolves every tool command to an absolute path from
