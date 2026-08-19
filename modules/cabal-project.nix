@@ -470,6 +470,37 @@ in {
       ];
       tp = pkgs.stdenv.hostPlatform;
       isWasm = tp.isWasm or false;
+      # libffi contradicts itself on Android, and the link says so:
+      #
+      #   ld.lld: error: undefined hidden symbol: open_temp_exec_file
+      #   >>> referenced by tramp.c ... (ffi_tramp_init)
+      #
+      # `configure.ac` enables static trampolines for `aarch64*-*-linux-*` and
+      # `*arm*-*-linux-*`, both of which an Android triple matches, so
+      # `src/tramp.c` compiles `ffi_tramp_init` and it calls
+      # `open_temp_exec_file ()`.  `src/closures.c` only defines that function
+      # under `FFI_MMAP_EXEC_WRIT`, which it auto-defines for
+      # `__linux__ && !defined(__ANDROID__)` — Android is excluded on purpose,
+      # since it may forbid mapping a page writable and executable at once.
+      #
+      # Turn the trampolines off rather than force the mmap side on: the
+      # exclusion is the deliberate half, and static trampolines are exactly
+      # the feature that wants a file-backed executable mapping.
+      #
+      # `configure-options:` rather than a `configureFlags` module, because
+      # libffi-clib is `build-type: Configure` (cabal forwards the value to
+      # ./configure) and because it round-trips through plan.json's
+      # `configure-args` into the v2 slice's own cabal.project — so the slice
+      # and plan-nix agree on libffi-clib's UnitId.  One line, indented for the
+      # `package libffi-clib` stanza it is appended to.  It carries its own
+      # newline and indentation for two reasons: an interpolation is inserted
+      # verbatim, so Nix's indented-string stripping never reaches it; and
+      # appending to the previous line instead of occupying its own leaves the
+      # project text byte-identical on every non-Android target, which keeps
+      # their plan-nix hashes (and so the whole cross world) untouched.
+      libffiAndroidConfigureOptions =
+        lib.optionalString (tp.isAndroid or false)
+          "\n  configure-options: --disable-exec-static-tramp";
       # Windows target boot libraries `time`, `process` and `directory` gain a
       # `Win32` build-depends under `if os(windows)`.  The `-target` wrapper
       # keeps `targetPrefix = ""` (so `isCross` is false), which makes the
@@ -588,7 +619,7 @@ in {
           ${lib.concatMapStrings (p: ", ${p.name} ==${p.version}\n  ") shUrlBootPkgs}
 
         package libffi-clib
-          ghc-options: -no-rts -optc-Wno-error
+          ghc-options: -no-rts -optc-Wno-error${libffiAndroidConfigureOptions}
 
         package ghc
           flags: +build-tool-depends +internal-interpreter
