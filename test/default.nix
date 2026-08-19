@@ -164,7 +164,23 @@ let
   # testSrc = subDir: testSrcRoot + "/${subDir}";
   testSrcRootWithGitDir = evalPackages.haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; includeSiblings = true; keepGitDir = true; };
   testSrcWithGitDir = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRootWithGitDir; inherit subDir; includeSiblings = true; };
-  headHackage = import ./head-hackage.nix { inherit evalPackages; };
+  headHackage = import ./head-hackage.nix {
+    inherit evalPackages;
+    # A stable-haskell `-target` compiler registers no target boot libraries
+    # (`emptyGlobalPackageDb`), so every project using one builds them from
+    # source with the boot-dep versions pinned by
+    # `injectStableHaskellBootPackages`.  Those pins and the ghcjs overlay's
+    # `:override` are mutually exclusive -- see head-hackage.nix.  Keyed on the
+    # capability rather than the compiler name, like the `? dwarf` guard in
+    # test/cabal-simple-debug, so the next such compiler needs no edit.
+    #
+    # Also gated on the host actually being ghcjs.  The lines this rewrites sit
+    # inside `if os(ghcjs)` blocks, so dropping them changes nothing for any
+    # other target -- but it would still change the cabal.project.local TEXT,
+    # and with it every one of those targets' plan-nix hashes, for no reason.
+    dropGhcjsOverlay = stdenv.hostPlatform.isGhcjs
+      && (buildPackages.haskell-nix.compiler.${compiler-nix-name}.emptyGlobalPackageDb or false);
+  };
   testCabalProjectLocal = headHackage.cabalProjectLocal;
   testInputMap = headHackage.inputMap;
 
