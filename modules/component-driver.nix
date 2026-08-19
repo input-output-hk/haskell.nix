@@ -180,6 +180,15 @@ in
       pkgsBuildBuild = buildModules.config.hsPkgs;
     } //
     lib.mapAttrs
-      (name: pkg: if !(options.packages.${name}.isDefined or true) || pkg == null then null else builder.build-package config pkg)
+      # `hasPackageDefinition` (see modules/package.nix) separates a real
+      # package from a `packages.<pkg-name>` record that exists only to carry
+      # by-name overrides onto the plan's UnitID-keyed packages.  Callers
+      # already null-check every by-name lookup -- e.g. `lookupDepPkg` in
+      # builder/comp-v2-builder.nix, whose own comment notes that a
+      # multi-sublib library's bare `hsPkgs.happy-lib` is "present but null"
+      # -- so null is what they expect here.  Without it they get a record
+      # that throws on first use, and the throw names an option
+      # (`packages.alex.package.identifier.version'), not the lookup.
+      (name: pkg: if !(options.packages.${name}.isDefined or true) || pkg == null || !(pkg.hasPackageDefinition or true) then null else builder.build-package config pkg)
       (config.packages // lib.genAttrs (config.nonReinstallablePkgs ++ config.bootPkgs) (_: null));
 }

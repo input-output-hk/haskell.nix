@@ -1306,9 +1306,21 @@ let
         # only packages whose host record has an unrealizable null-hash `src` —
         # are already dropped by `toolLibExclude` above, so they never reach
         # here.
+        #
+        # Prefer the unit's own id, like `exeFrag` does: `config.packages` is
+        # keyed by plan id for every non-`pre-existing` unit, build-stage ones
+        # included, so an ordinary library dep of a build tool (c2hs's
+        # `language-c`) resolves exactly.  The name path stays as the fallback
+        # for the sublib case above, where there is no top-level id key.  It is
+        # only a fallback because `hsPkgs.<pkg-name>` is not a package at all —
+        # it is the by-name override alias (see
+        # modules/install-plan/override-package-by-name.nix), and reading it
+        # yields null for anything the plan did not key by that bare name.
         libFrag = e:
-          let sl = sliceOfPkgRecord (lookupDepPkg hsPkgs
-                     (e.entry.pkg-name or "") (e.entry.pkg-version or null));
+          let byId = hsPkgs.${e.key} or null;
+              sl = sliceOfPkgRecord (if byId != null then byId
+                     else lookupDepPkg hsPkgs
+                            (e.entry.pkg-name or "") (e.entry.pkg-version or null));
           in if sl == null then null else sl.passthru.v2SourceFrag or null;
         frags = lib.filter (f: f != null)
           (map exeFrag exeUnits ++ map libFrag toolLibUnits);
