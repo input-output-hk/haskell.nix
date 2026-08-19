@@ -1,3 +1,26 @@
+# One tiny flake per lazily-fetched source (mostly GHC forks), so that nix only
+# fetches the one a build actually asks for.
+#
+# ⚠ Do NOT bump these with `nix flake update`.  flake-compat resolves a
+# `type = "git"` lock node by handing its `narHash` to nixpkgs' `fetchgit` as
+# the `sha256` of a fixed-output derivation, and `fetchgit` gets there by
+# checking the rev out -- so `.gitattributes` line-ending filters apply to what
+# it writes.  GHC's `.gitattributes` marks
+# `testsuite/tests/parser/should_run/T25375.hs` `eol=crlf`, so fetchgit's tree
+# differs from the one nix's own git fetcher exports (which uses the raw blob)
+# by exactly that file's line endings, and so do the two NAR hashes.  The
+# hash these locks need is fetchgit's; `nix flake update` writes the flake
+# fetcher's, and every build that touches the source then dies with
+#
+#     error: hash mismatch in fixed-output derivation '...-ghc-<rev>.drv'
+#
+# during import-from-derivation.  On hydra that does not surface as a build
+# failure you can read: it is the compiler's entire job tree disappearing from
+# the eval, every job reporting `Build failed due to failed dependency`.
+#
+# To bump one: edit `rev` (and `ref`/`lastModified` if they moved) in its
+# flake.lock by hand, build anything that uses it, and paste the `got:` hash
+# into `narHash`.
 final: prev:
 let
   callFlake = import prev.haskell-nix.sources.flake-compat;

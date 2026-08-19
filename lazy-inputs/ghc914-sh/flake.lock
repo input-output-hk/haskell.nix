@@ -4,7 +4,7 @@
       "flake": false,
       "locked": {
         "lastModified": 1787115926,
-        "narHash": "sha256-JXmmNgzM6leEzTndagJXEWRlgqubZygQ9j79iZIjCQs=",
+        "narHash": "sha256-gILHR/GdTuk2aj7d58EU4PAwuefCTsiX4zoP36hliY4=",
         "ref": "stable-ghc-9.14-hn",
         "rev": "936ef98c8d4c8a3b44eb1ea62cac8c966d5dd3c3",
         "revCount": 68543,
