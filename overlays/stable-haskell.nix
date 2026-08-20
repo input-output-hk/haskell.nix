@@ -75,6 +75,19 @@ let
   # it rewritten by `fixRtsWays`.  The same value is what the plan-time dummy
   # reports (lib/dummy-ghc.nix); `tests.dummy-ghc-info` diffs the two.
   shRtsWays = import ../lib/stable-haskell-rts-ways.nix;
+  # `enableShared` IS the Makefile's DYNAMIC: it selects
+  # cabal.project.stage2.dynamic over .static (`shared: True`,
+  # `executable-dynamic: True`, `constraints: rts +dynamic`), and every
+  # consequence of that choice -- which rts ways exist, whether the `ghc`
+  # binary is dynamically linked -- keys off this one boolean rather than being
+  # decided again per site.  Same expression the compiler's `enableShared`
+  # passthru has always had (musl and pkgsStatic stay static).
+  dynamicStage2 = !pkgs.stdenv.hostPlatform.isMusl && !pkgs.stdenv.hostPlatform.isStatic;
+  stage2ProjectFile = "cabal.project.stage2.${if dynamicStage2 then "dynamic" else "static"}";
+  # One string for the native compiler and every `-target` wrapper: they are
+  # all the same stage2 `ghc-bin` binary, so their settings files all get this
+  # (see the comment in lib/dummy-ghc.nix, which echoes it back).
+  shRtsWaysValue = shRtsWays.for { enableShared = dynamicStage2; };
   # Assert the value we expect to find before replacing it: if the fork ever
   # sets its own list, we want the compiler build to stop here with the actual
   # string in the log, not to overwrite it unnoticed.
@@ -85,7 +98,7 @@ let
       grep -F '"RTS ways"' ${settingsFile} >&2
       exit 1
     }
-    sed -i 's|("RTS ways","${shRtsWays.fromToolchain}")|("RTS ways","${shRtsWays.withProfiling}")|' \
+    sed -i 's|("RTS ways","${shRtsWays.fromToolchain}")|("RTS ways","${shRtsWaysValue}")|' \
       ${settingsFile}
   '';
 
@@ -212,8 +225,8 @@ let
       # haskell.nix reads cabalProject as a string and writes it to a temp
       # location, so "import:" directives would not resolve.  We inline them
       # here so the merged files are self-contained.  Recurses, since the
-      # stage2 files import transitively: stage2.static → stage2.common →
-      # cabal.project.common.
+      # stage2 files import transitively: stage2.{static,dynamic} →
+      # stage2.common → cabal.project.common.
       inline_imports() {
         local f="$1"
         local line imp
@@ -241,14 +254,16 @@ let
       # 9.12+).  Widen to '< 3' to accept whatever the boot GHC provides.
       sed -i 's/template-haskell <= 2\.22/template-haskell < 3/' cabal.project.stage1.merged
 
-      # For stage2: inline imports (stage2.static → stage2.common →
+      # For stage2: inline imports (stage2.{static,dynamic} → stage2.common →
       # cabal.project.common).  Upstream split the former single
       # cabal.project.stage2 into a .common shared base plus .static / .dynamic
-      # selectors; .static is the Makefile default (DYNAMIC unset), so that is
-      # what we build from.  The direct hackage tarball URLs in the packages:
-      # stanza are rewritten to local nix store paths by haskell.nix when
+      # selectors, chosen by the Makefile's DYNAMIC; `dynamicStage2` is our
+      # DYNAMIC (see above).  The merged file keeps ONE name either way, so
+      # `cabalProjectFileName` and everything downstream is unaffected.  The
+      # direct hackage tarball URLs in the packages: stanza are rewritten to
+      # local nix store paths by haskell.nix when
       # `replace-hackage-tarball-urls` is enabled on the project (see below).
-      inline_imports cabal.project.stage2.static > cabal.project.stage2.merged
+      inline_imports ${stage2ProjectFile} > cabal.project.stage2.merged
 
       # Drop the 'index-state:' inherited from cabal.project.common.  stage2 and
       # cross both run under 'active-repositories: :none' with every dependency
@@ -807,7 +822,15 @@ let
         project              = stage1Project;
         # comp-builder.nix:44 accesses ghc.enableShared to decide whether to
         # build shared Haskell libraries.  Stage1/2 use shared libs on Darwin.
-        enableShared         = !pkgs.stdenv.hostPlatform.isMusl && !pkgs.stdenv.hostPlatform.isStatic;
+        enableShared         = dynamicStage2;
+        # What `fixRtsWays` wrote into this compiler's settings, echoed back by
+        # the plan-time dummy (lib/dummy-ghc.nix) so the two agree.
+        rtsWays              = shRtsWaysValue;
+        # ...but the stage1 `ghc` binary itself is always statically linked:
+        # cabal.project.stage1 hard-sets `shared: False` /
+        # `executable-dynamic: False` and has no .dynamic variant.  Only stage2
+        # follows `dynamicStage2`.
+        ghcIsDynamic         = false;
         # call-cabal-project-to-nix.nix:297 reads raw-src to locate bundled
         # package .cabal files.  Our eval-platform configured tree is the
         # fully-patched GHC source with all .cabal files generated, which is
@@ -1510,7 +1533,12 @@ ENDSCRIPT
         # machinery (see the comment there).
         isStableHaskell      = true;
         libDir               = "lib/ghc-${ghcVersion}";
-        enableShared         = !pkgs.stdenv.hostPlatform.isMusl && !pkgs.stdenv.hostPlatform.isStatic;
+        # The Makefile's DYNAMIC: picks cabal.project.stage2.dynamic, so the
+        # boot libraries get their shared way and this `ghc` is itself a
+        # dynamically-linked binary.
+        enableShared         = dynamicStage2;
+        rtsWays              = shRtsWaysValue;
+        ghcIsDynamic         = dynamicStage2;
         # stage2 builds text with +simdutf (see cabalProjectLocal), so the
         # installed text depends on system-cxx-std-lib.  The dummy ghc-pkg
         # dump synthesis reads this to add that depends edge (the flag
@@ -1877,6 +1905,12 @@ ENDSCRIPT
         # shared libraries for ghcjs (nor for static/musl).
         enableShared         = !(tp.isStatic or false) && !(tp.isMusl or false)
                             && !(tp.isGhcjs or false);
+        # Same settings file and the same stage2 `ghc-bin` binary as the native
+        # compiler (this is a `-target` wrapper around it), so both of these are
+        # the NATIVE values -- `GHC Dynamic` describes the binary that runs, not
+        # the target it emits code for.
+        rtsWays              = shRtsWaysValue;
+        ghcIsDynamic         = dynamicStage2;
         # The target registration ships NO boot libraries (see the comment
         # above).  lib/call-cabal-project-to-nix.nix keys off this to make
         # the plan-time dummy `ghc-pkg dump` empty, so cabal plans every
@@ -2221,7 +2255,7 @@ ENDSCRIPT
           echo "ghc914-sh dev shell — starting from haskell.nix's prebuilt stage1"
           echo "  make stage2 STAGE1_PATH=$STAGE1_PATH"
           echo "or drive cabal directly:"
-          echo "  cabal build --project-file cabal.project.stage2.static \\"
+          echo "  cabal build --project-file ${stage2ProjectFile} \\"
           echo "    -w $STAGE1_PATH/bin/ghc all"
         '';
       };

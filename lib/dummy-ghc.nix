@@ -15,11 +15,18 @@
 # inline from lib/call-cabal-project-to-nix.nix.
 { pkgs, ghc, evalPackages, prebuilt-depends ? [] }:
 let
-  # The `RTS ways` a stable-haskell compiler reports.  Shared with
-  # overlays/stable-haskell.nix, which rewrites the same value into the real
-  # compiler's `settings`; `tests.dummy-ghc-info` compares the two byte for
-  # byte.  See lib/stable-haskell-rts-ways.nix for why the value is what it is.
-  shRtsWays = (import ./stable-haskell-rts-ways.nix).withProfiling;
+  # The `RTS ways` a stable-haskell compiler reports: read off the compiler
+  # itself, which is where overlays/stable-haskell.nix's `fixRtsWays` wrote the
+  # very same string into the real `settings` -- `tests.dummy-ghc-info` compares
+  # the two byte for byte, so they must come from one place.  The fallback is
+  # the pre-`dynamicStage2` value, for any stable-haskell compiler that does not
+  # declare one.  See lib/stable-haskell-rts-ways.nix.
+  shRtsWays = ghc.rtsWays or (import ./stable-haskell-rts-ways.nix).withProfiling;
+  # Is the `ghc` BINARY dynamically linked (`cabal.project.stage2.dynamic`,
+  # i.e. the Makefile's DYNAMIC=1)?  A property of the executable, so it is the
+  # same answer for the native compiler and for every `-target` wrapper around
+  # it -- unlike everything else in this file, it does not vary with the target.
+  shGhcDynamic = if (ghc.ghcIsDynamic or false) then "YES" else "NO";
   # Real GHC normalises a few fields in its platform strings
   # (`Target platform`, `target platform string`) away from the
   # nixpkgs `parsed.*` values:
@@ -265,7 +272,7 @@ let
             ${if emitRtsLinkerShared
               then ''echo ',("target RTS linker only supports shared libraries","${if newWasm then "YES" else "NO"}")' ''
               else ""}
-            echo ',("GHC Dynamic","NO")'
+            echo ',("GHC Dynamic","${if isSH then shGhcDynamic else "NO"}")'
             echo ',("RTS ways","${if isSH then shRtsWays else if newWasm then "v debug debug_dyn dyn" else "v debug"}")'
             echo ',("Stage","${if isSH then "2" else "1"}")'
           ''
@@ -284,7 +291,7 @@ let
             ${if builtins.compareVersions ghc.version "9.12" >= 0
               then ''echo ',("target RTS linker only supports shared libraries","NO")' ''
               else ""}
-            echo ',("GHC Dynamic","NO")'
+            echo ',("GHC Dynamic","${if isSH then shGhcDynamic else "NO"}")'
             echo ',("RTS ways","${if isSH then shRtsWays else "v thr thr_debug thr_debug_p thr_p debug debug_p p"}")'
             echo ',("Stage","${if isSH then "2" else "1"}")'
           ''
@@ -325,17 +332,23 @@ let
             ${if builtins.compareVersions ghc.version "9.12" >= 0
               then ''echo ',("target RTS linker only supports shared libraries","NO")' ''
               else ""}
-            echo ',("GHC Dynamic","NO")'
+            echo ',("GHC Dynamic","${if isSH then shGhcDynamic else "NO"}")'
             echo ',("RTS ways","${if isSH then shRtsWays else "v thr thr_debug thr_debug_p thr_p debug debug_p p"}")'
             echo ',("Stage","${if isSH then "2" else (if pkgs.stdenv.buildPlatform.parsed.cpu.name != pkgs.stdenv.targetPlatform.parsed.cpu.name then "1" else "2")}")'
           ''
           else let
-            # stable-haskell (cabalProject-built) native compilers: the ghc
-            # binary is statically linked (`GHC Dynamic: NO`) and the stage2
-            # rts is built with only the four non-dyn, non-profiling ways.
+            # stable-haskell (cabalProject-built) native compilers: what the
+            # ghc binary and the stage2 rts actually are depends on how stage2
+            # was built, so both fields are read off the compiler
+            # (`ghcIsDynamic`, `rtsWays`) rather than assumed here -- static
+            # binary + four vanilla ways with cabal.project.stage2.static, a
+            # dynamic binary + the dyn ways with .dynamic, plus the profiled
+            # ways either way (overlays/stable-haskell.nix `bootLibProfiling`).
             # Cabal keys `--enable-shared` vs `--disable-shared` (and hence
-            # every pkgHash/UnitId) on these fields, so lying "dynamic" here
-            # makes plan-nix unit-ids unreproducible in v2 slice builds.
+            # every pkgHash/UnitId) on these fields, so a value here that
+            # disagrees with the real compiler makes plan-nix unit-ids
+            # unreproducible in v2 slice builds -- which is why neither is
+            # written out twice.
             isStableHaskell = ghc.isStableHaskell or false;
           in ''
             # Native (Linux / Darwin / etc.).  Real GHC 9.14.1 omits
@@ -355,7 +368,7 @@ let
             ${if builtins.compareVersions ghc.version "9.12" >= 0
               then ''echo ',("target RTS linker only supports shared libraries","NO")' ''
               else ""}
-            echo ',("GHC Dynamic","${if isStableHaskell then "NO" else "YES"}")'
+            echo ',("GHC Dynamic","${if isStableHaskell then shGhcDynamic else "YES"}")'
             # Real `ghc --info` RTS-ways strings (verified per-version
             # against the actual cross / native GHCs):
             #

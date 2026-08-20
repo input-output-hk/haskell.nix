@@ -74,12 +74,32 @@
 # lib/dummy-ghc.nix and overlays/stable-haskell.nix must agree exactly -- which
 # is the whole reason the value lives here rather than being spelled out at
 # each of the five sites that need it.
-{
-  # What `ghc-toolchain-bin --output-settings` writes today.  Asserted before
-  # rewriting, so a change in the fork fails the compiler build with a clear
-  # message instead of silently going unnoticed.
-  fromToolchain = "v thr debug thr_debug";
+let
+  # What `ghc-toolchain-bin --output-settings` writes today.
+  base = "v thr debug thr_debug";
+  # The same four sub-libraries in their profiled flavour (`library-profiling:
+  # True` on each, see overlays/stable-haskell.nix `bootLibProfiling`).
+  prof = "p thr_p debug_p thr_debug_p";
+  # ...and in their dynamic flavour, which exists when stage2 is built from
+  # `cabal.project.stage2.dynamic` (`shared: True` + `constraints: rts
+  # +dynamic`) -- the Makefile's DYNAMIC=1.  It writes the same four names
+  # (`$(SED) -i -e 's/"RTS ways","/"RTS ways","dyn debug_dyn thr_dyn
+  # thr_debug_dyn /'`), prepended rather than appended; order is irrelevant,
+  # `waySupported` does an `elem` on the words.  No `_p_dyn` family: the
+  # profiled ways are static-only unless `profiling-shared` is also set.
+  dyn  = "dyn thr_dyn debug_dyn thr_debug_dyn";
+in rec {
+  # Asserted before rewriting, so a change in the fork fails the compiler build
+  # with a clear message instead of silently going unnoticed.
+  fromToolchain = base;
 
-  # The same four rts sub-libraries, each in its vanilla and profiled flavour.
-  withProfiling = "v thr debug thr_debug p thr_p debug_p thr_debug_p";
+  withProfiling       = "${base} ${prof}";
+  withProfilingAndDyn = "${base} ${prof} ${dyn}";
+
+  # The value for a given compiler.  Every site that needs it goes through
+  # here: `fixRtsWays` writes it into the settings file, and lib/dummy-ghc.nix
+  # echoes it back from the plan-time dummy's `--info` -- and
+  # `tests.dummy-ghc-info` diffs those two byte for byte, so they must not be
+  # able to disagree.
+  for = { enableShared }: if enableShared then withProfilingAndDyn else withProfiling;
 }
