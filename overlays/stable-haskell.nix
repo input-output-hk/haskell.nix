@@ -316,6 +316,39 @@ let
     "terminfo"     "system-cxx-std-lib"
   ];
 
+  # Every library the final compiler REGISTERS is built in the profiling way as
+  # well as vanilla.  A native ghc914-sh registers its stage2 libraries under
+  # plan-deterministic unit ids (`base-4.22.0.0`, see `v2LocalPackageSlices`),
+  # and a consumer compiling with `-prof` resolves `-package-id base-4.22.0.0`
+  # and then asks the module finder for `Prelude.p_hi` beside `Prelude.hi`.
+  # Vanilla-only boot libs therefore fail every profiled consumer with GHC-88719
+  # ("Perhaps you haven't installed the profiling libraries for package
+  # 'base-4.22.0.0'?") -- `tests.cabal-simple-prof` and every dep slice under it
+  # (hashable, tagged, transformers-compat, safe).  Cross targets need nothing
+  # here: their compiler's global db is empty, so the boot libs are units of the
+  # CONSUMER's plan and take the profiling settings from it (that is the path
+  # `iserv-proxy-interpreter-prof` exercises).
+  #
+  # It has to be expressed in the PROJECT, not in `modules`: v2 takes its
+  # configure-args from plan.json, so a module-level `enableLibraryProfiling`
+  # would fork the slice's UnitId away from plan-nix's.  See
+  # docs/dev/profiling.md.
+  #
+  # Scoped to `bootLibraries` rather than `package *` so the stage2 build tools
+  # (alex, happy, happy-lib, ...) and build-stage-only units don't grow a
+  # profiled library nothing can ever link -- and, more to the point, don't add
+  # failure surface to the compiler build for artifacts no consumer wants.
+  #
+  # `library-profiling: True` on the four rts sub-libraries yields eight ways
+  # (each way vanilla + profiled), which is what the `RTS ways` rewrite in
+  # `fixRtsWays` advertises; without that rewrite Cabal's `waySupported` refuses
+  # profiling for the `build-type: Custom` boot libs (ghc, ghc-boot) outright.
+  # See lib/stable-haskell-rts-ways.nix.
+  bootLibProfiling = lib.concatMapStrings (p: ''
+    package ${p}
+      library-profiling: True
+  '') bootLibraries;
+
   # ── Dump source for plan-time "installed packages" ────────────────────────
   # call-cabal-project-to-nix.nix synthesises the dummy `ghc-pkg dump` (what
   # cabal's solver sees as installed) by scanning `ghc.raw-src` for
@@ -1015,6 +1048,7 @@ ENDSCRIPT
     # -optc-DTHREADED_RTS` (stable-haskell/ghc#191, merged to stable-ghc-9.14) —
     # so no `package rts` ghc-options workaround is needed here.
     cabalProjectLocal = ''
+      ${bootLibProfiling}
       package ghc-bin
         flags: -debug
       package haskeline
