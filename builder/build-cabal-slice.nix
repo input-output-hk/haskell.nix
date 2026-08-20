@@ -489,7 +489,7 @@ let
     " --with-pkg-config=${pkgConfigPrefix}pkg-config";
 
   crossWithFlags = lib.optionalString (targetPrefix != "") (
-    " --with-compiler=${ghcShim}/bin/${ghcBin}"
+    " --with-compiler=$hsnixCompilerDir/${ghcBin}"
     + lib.optionalString (stdenv.hasCC or (stdenv.cc != null)) (
         # CC
         (if stdenv.hostPlatform.isGhcjs
@@ -947,7 +947,12 @@ stdenv.mkDerivation ({
     # (haddock, hsc2hs, ...) keeps working.  Unit-id hashes are
     # unaffected: `pkgHashPackageDbs` stays `[GlobalPackageDB]` (no
     # path enters the hash).
-    composedDb=""
+    composedDb=""${lib.optionalString (targetPrefix != "")
+      # The dir `crossWithFlags` points `--with-compiler=` at.  It is an
+      # ABSOLUTE path, so the solver-tools farm below (a PATH prefix)
+      # cannot reach cabal by itself; when that farm exists it re-points
+      # this variable at itself.
+      "\n    hsnixCompilerDir=${ghcShim}/bin"}
     if [ -n "$ghcDir" ] && [ "$storePkgDb" = package.conf.d ]; then
       composedDb=$ghcDir/$storePkgDb
       ${lib.optionalString solverIncludesGlobalDb ''
@@ -1001,7 +1006,17 @@ stdenv.mkDerivation ({
       ''}
       wrapBin=$buildRoot/solver-tools
       mkdir -p $wrapBin
-      realGhcBinDir=$(dirname "$(type -P ${ghcBin})")
+      realGhcBinDir=${
+        # On cross, cabal is NOT told to find the compiler on PATH: it gets
+        # an absolute `--with-compiler=` inside the ghc shim, and its
+        # "near compiler" lookup then takes `ghc-pkg` from the SHIM's own
+        # bin/ -- so a PATH-only override left the composed units invisible
+        # to the solver and every `installed` pin below was unsatisfiable
+        # ("rejecting: host:<dep> ... requires installed instance").  Mirror
+        # the shim (the dir cabal actually uses) instead of the raw compiler
+        # bin/, and re-point `--with-compiler=` at the farm.
+        if targetPrefix != "" then "${ghcShim}/bin"
+        else ''$(dirname "$(type -P ${ghcBin})")''}
       for tool in "$realGhcBinDir"/*; do
         ln -sf "$tool" "$wrapBin/$(basename "$tool")"
       done
@@ -1016,7 +1031,11 @@ stdenv.mkDerivation ({
         printf '#!/bin/sh\nexec %s "$@"\n' "$g" > "$wrapBin/$gName"
         chmod +x "$wrapBin/$gName"
       done
-      for gp in "$realGhcBinDir"/${ghcPkgBin}*; do
+      for gp in "$realGhcBinDir"/${ghcPkgBin}*${lib.optionalString (targetPrefix != "")
+        # Cabal's near-compiler lookup asks for `ghc-pkg`, not
+        # `<prefix>ghc-pkg` (the shim exposes both), so the unprefixed
+        # alias needs the same `--global-package-db` override.
+        " \"$realGhcBinDir\"/ghc-pkg*"}; do
         [ -e "$gp" ] || continue
         gpName=$(basename "$gp")
         rm -f "$wrapBin/$gpName"
@@ -1024,7 +1043,8 @@ stdenv.mkDerivation ({
           "$gp" "$composedDb" > "$wrapBin/$gpName"
         chmod +x "$wrapBin/$gpName"
       done
-      export PATH=$wrapBin:$PATH
+      export PATH=$wrapBin:$PATH${lib.optionalString (targetPrefix != "")
+        "\n      hsnixCompilerDir=$wrapBin"}
     fi
 
     # --- CABAL_DIR and optional local-repo ---------------------------
