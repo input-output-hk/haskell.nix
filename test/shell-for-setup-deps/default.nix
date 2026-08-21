@@ -1,10 +1,10 @@
-{ stdenv, lib, cabal-install, cabalProject', runCommand, testSrc, compiler-nix-name, evalPackages, testCabalProjectLocal, testInputMap }:
+{ stdenv, lib, cabal-install, cabalProject', runCommand, testSrc, compiler-nix-name, evalPackages, evalSystem, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
 let
   project = cabalProject' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "shell-for-setup-deps";
     inputMap = testInputMap;
     cabalProjectLocal = testCabalProjectLocal;

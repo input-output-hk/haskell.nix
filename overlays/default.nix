@@ -81,6 +81,22 @@ let
           prev.haskell-nix // {
             inherit (nix-tools-pkgs) nix-tools nix-tools-set;
             # either nix-tools from its overlay or from the tarball.
+            #
+            # This branch used to point this at a from-source build of
+            # ../nix-tools, so `make-install-plan` would link the stable-haskell
+            # cabal fork.  That applied to EVERY compiler, and because plan-nix
+            # is the universal IFD it replaced one prebuilt bundle with three
+            # per-component builds in every plan-nix derivation across the whole
+            # compiler x platform matrix.  Measured against master it cost
+            # 6x-89x per job to evaluate on the PRE-EXISTING compilers (ghc967
+            # 124.8s/job vs 1.4s) -- not on ghc914-sh, which never reached that
+            # path -- and no evaluation of this branch completed between
+            # 2026-07-23 and the change being reverted.
+            #
+            # The fork now ships as its own static bundle, so ghc9.6 .. ghc9.14
+            # are back on the shared 3.16 tarball exactly as on master, and only
+            # stable-haskell compilers get the fork.  See
+            # `nix-tools-unchecked-sh` below.
             nix-tools-unchecked = static-nix-tools // {
               exes =  static-nix-tools.exes // {
                 inherit (static-nix-tools-for-default-setup.exes) default-setup default-setup-ghcjs;
@@ -108,6 +124,7 @@ let
     darwin = import ./darwin.nix;
     windows = import ./windows.nix;
     armv6l-linux = import ./armv6l-linux.nix;
+    hyper-linux = import ./hyper-linux.nix { inherit sources; };
     musl = import ./musl.nix;
     android = import ./android.nix;
     tools = import ./tools.nix;
@@ -121,6 +138,7 @@ let
     lazy-inputs = import ../lazy-inputs;
     rcodesign = import ./rcodesign.nix;
     wasm = import ./wasm.nix;
+    stable-haskell = import ./stable-haskell.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -146,6 +164,7 @@ let
     darwin
     windows
     armv6l-linux
+    hyper-linux
     musl
     android
     tools
@@ -159,8 +178,9 @@ let
     wasm
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
-    cacheCompilerDeps
     lazy-inputs
+    stable-haskell
+    cacheCompilerDeps
     rcodesign
   ];
   combined = builtins.foldl' composeExtensions (_: _: { }) ordered;

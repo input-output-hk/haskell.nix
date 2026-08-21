@@ -1,5 +1,5 @@
 { stdenv, lib, pkgs, haskellLib, haskell-nix, buildPackages, runCommand
-, cabalProject', testSrc, compiler-nix-name, evalPackages, testCabalProjectLocal, testInputMap }:
+, cabalProject', testSrc, compiler-nix-name, evalPackages, evalSystem, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -25,7 +25,7 @@ let
   isTargetCompiler = compiler-nix-name == "ghc9141";
 
   project = cabalProject' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "cabal-sublib-shell";
     # Don't `readFile ../cabal.project.local` here — the only
     # thing this test depends on from `test/cabal.project.local`
