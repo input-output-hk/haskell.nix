@@ -22,7 +22,7 @@ let
   tool = buildHaskell.tool;
   ghcFromTo = from: to: __compareVersions haskell.compiler.${compiler-nix-name}.version from >= 0 && __compareVersions haskell.compiler.${compiler-nix-name}.version to < 0;
 in rec {
-  tests = import ./test/default.nix { inherit pkgs evalSystem ifdLevel compiler-nix-name; };
+  tests = import ./test/default.nix { inherit pkgs evalSystem evalPackages ifdLevel compiler-nix-name; };
 
   # See test/head-hackage.nix: the tests use the head.hackage repository
   # haskell.nix builds, not the published one.
