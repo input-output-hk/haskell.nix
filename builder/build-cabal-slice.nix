@@ -646,6 +646,28 @@ stdenv.mkDerivation ({
 
     buildRoot=$PWD
 
+    # --- Timing instrumentation --------------------------------------
+    # A slice that is slow has to be attributable from its build log
+    # alone -- there is no way to attach a profiler to something nix ran
+    # an hour ago on a remote builder.  `sliceMark` prints an elapsed
+    # wall-clock second count at every phase boundary, and `sliceStamp`
+    # stamps each line of cabal's own output, so the gap after
+    # "Resolving dependencies..." IS the solver and the gap before it is
+    # everything cabal does to get there (reading the config, the index
+    # and `ghc-pkg dump`).  Each cabal call is additionally wrapped in
+    # bash's `time`, which splits wall from CPU: real >> user+sys means
+    # the cost is I/O (index untar, store composition, NFS), while
+    # real ~= user means it is compute (the solver).
+    #
+    # Caveat worth knowing when reading the stamps: cabal's stdout is a
+    # pipe here, so if it ever block-buffers, a burst of lines will all
+    # carry the timestamp of the flush.  The `sliceMark`s around each
+    # call are unaffected and remain the authoritative totals.
+    sliceMark() { printf '[slice %5ds] === %s\n' "$SECONDS" "$*"; }
+    sliceStamp() { while IFS= read -r sliceLine; do
+      printf '[slice %5ds] %s\n' "$SECONDS" "$sliceLine"; done; }
+    sliceMark "buildPhase start"
+
     # --- Compose starting store --------------------------------------
     # Use $out/store as the cabal store dir from the start so that
     # any path baked into a built binary (e.g. alex's `Paths_alex`
@@ -695,6 +717,7 @@ stdenv.mkDerivation ({
         done < "$dep/nix-support/transitive-deps"
       fi
     done
+    sliceMark "composed starting store from ''${#seenDeps[@]} dep slices"
 
     # --- Staged store layout (stable-haskell cabal fork) --------------
     # The fork's `v2-build` takes its install dirs and store package dbs
@@ -1046,6 +1069,13 @@ stdenv.mkDerivation ({
       export PATH=$wrapBin:$PATH${lib.optionalString (targetPrefix != "")
         "\n      hsnixCompilerDir=$wrapBin"}
     fi
+    # The size of the solver's INSTALLED index: every `.conf` here is a
+    # package the solver has to consider.  If planning is slow and this
+    # number is large, the composed db (not the source repo) is the input
+    # to look at.
+    sliceMark "solver-visible installed units: $(
+      if [ -n "$composedDb" ] && [ -d "$composedDb" ];
+        then ls -1 "$composedDb"/*.conf 2>/dev/null | wc -l; else echo 0; fi)"
 
     # --- CABAL_DIR and optional local-repo ---------------------------
     export HOME=$buildRoot/home
@@ -1127,7 +1157,10 @@ stdenv.mkDerivation ({
         url: file://$v2repo
         secure: False
       EOF
-      cabal update hackage.haskell-nix
+      sliceMark "assembled slicing repo: $(ls -1 $v2repo/package | wc -l) tarballs, $(
+        find $v2idx -name '*.cabal' | wc -l) index entries"
+      time cabal update hackage.haskell-nix
+      sliceMark "cabal update (build-time slicing repo)"
     '' else lib.optionalString (localRepo != null) ''
       # Hackage-style local repo: `00-index.tar.gz` + `package/<pkg>-<ver>.tar.gz`.
       # See comp-v2-builder.nix `slicingRepo` for why we use this layout
@@ -1149,13 +1182,16 @@ stdenv.mkDerivation ({
       # `$CABAL_DIR/packages/<repo>/` from the repo's
       # `00-index.tar.gz` before the solver can see anything.  This
       # is purely local IO — no network.
-      cabal update hackage.haskell-nix
+      sliceMark "slicing repo: $(ls -1 ${localRepo}/package | wc -l) tarballs"
+      time cabal update hackage.haskell-nix
+      sliceMark "cabal update (localRepo)"
     ''}
 
     # --- Caller hook: stage sources + write cabal.project ------------
     mkdir -p $buildRoot/project
     cd $buildRoot/project
     ${preBuild}
+    sliceMark "preBuild (source staging)"
 
     ${lib.optionalString (v2Fragment != null) ''
       # --- Compose cabal.project from per-package fragments ----------
@@ -1405,7 +1441,40 @@ ${lib.optionalString (metadataSourceFrags != []) ''
       # spending minutes rebuilding from source what should have
       # been a free store hit.
       echo "--- cabal v2-build --dry-run ${target} ---"
-      cabal $cabalGlobalArgs v2-build $cabalCmdArgs --dry-run ${target} 2>&1 | tee plan.log
+      # `plan.log` is parsed below, so stamp only what goes to the build
+      # log: `tee` writes the clean copy, `sliceStamp` timestamps stdout.
+      dryRunStart=$SECONDS
+      time { cabal $cabalGlobalArgs v2-build $cabalCmdArgs --dry-run ${target} 2>&1 \
+        | tee plan.log | sliceStamp; }
+      dryRunSecs=$((SECONDS - dryRunStart))
+      sliceMark "cabal v2-build --dry-run took ''${dryRunSecs}s (solve + elaborate, no building)"
+
+      # A dry run is planning and nothing else, so if it is slow the cost
+      # is in one of three places and they are not distinguishable from
+      # the outside: reading the inputs (index + `ghc-pkg dump`), the
+      # SOLVER searching, or elaboration.  `-v3` is the only thing that
+      # tells them apart -- it is where cabal's modular solver prints its
+      # `trying:` / `rejecting:` trace -- so re-run at `-v3` and digest
+      # it, but only once we already know this slice is slow.  A solve
+      # that prints a handful of steps and still takes minutes is NOT the
+      # solver, and that negative result is the useful half of this.
+      if [ "$dryRunSecs" -ge 60 ]; then
+        sliceMark "SLOW PLAN: re-running --dry-run -v3 to find out where"
+        timeout 900 cabal $cabalGlobalArgs v2-build $cabalCmdArgs \
+          --dry-run -v3 ${target} > solver.log 2>&1 || true
+        sliceMark "-v3 dry run captured $(wc -l < solver.log) lines"
+        echo "[slice] solver steps (\"[__N] trying/rejecting\"): $(
+          grep -c '^\[__[0-9]' solver.log || true)"
+        echo "[slice]   trying:   $(grep -c 'trying:' solver.log || true)"
+        echo "[slice]   rejecting: $(grep -c 'rejecting:' solver.log || true)"
+        echo "[slice] packages the solver worked hardest on:"
+        sed -n 's/.*rejecting: *\([^ ,(]*\).*/\1/p' solver.log \
+          | sed 's/:.*//; s/-[0-9][0-9.]*$//' | sort | uniq -c | sort -rn \
+          | head -15 | sed 's/^/[slice]   /'
+        echo "[slice] last 40 lines before the plan was produced:"
+        grep -v '^\[__[0-9]' solver.log | tail -40 | sed 's/^/[slice]   /'
+        cp solver.log $buildRoot/solver.log || true
+      fi
 
       # Parse the "In order, the following will/would be built:" block
       # — the per-package lines look like
@@ -1571,7 +1640,9 @@ ${lib.optionalString (metadataSourceFrags != []) ''
       # the actual build.  Only used by the `.checkAgainstPlan`
       # sibling drv.
       echo "--- cabal v2-build --dry-run ${target} (dryRunOnly) ---"
-      cabal $cabalGlobalArgs v2-build $cabalCmdArgs --dry-run ${target} 2>&1 | tee $buildRoot/build.log || true
+      time { cabal $cabalGlobalArgs v2-build $cabalCmdArgs --dry-run ${target} 2>&1 \
+        | tee $buildRoot/build.log | sliceStamp; } || true
+      sliceMark "cabal v2-build --dry-run (dryRunOnly)"
     '' else ''
       # `cabal v2-build` accepts remote-package component targets
       # (e.g. `:pkg:foo:lib:sublibname`) as long as the package is
@@ -1579,12 +1650,15 @@ ${lib.optionalString (metadataSourceFrags != []) ''
       # is in the slicing repo's index — both conditions are met by
       # comp-v2-builder for non-shim slices.
       echo "--- cabal v2-build ${target} ---"
-      cabal $cabalGlobalArgs v2-build $cabalCmdArgs -v ${target} 2>&1 | tee $buildRoot/build.log
+      time { cabal $cabalGlobalArgs v2-build $cabalCmdArgs -v ${target} 2>&1 \
+        | tee $buildRoot/build.log | sliceStamp; }
+      sliceMark "cabal v2-build"
       ${lib.optionalString doHaddock ''
         echo "--- cabal v2-haddock ${target} ---"
-        cabal $cabalGlobalArgs v2-haddock $cabalCmdArgs \
+        time { cabal $cabalGlobalArgs v2-haddock $cabalCmdArgs \
           --haddock-html --haddock-hyperlink-source --haddock-quickjump \
-          ${target} 2>&1 | tee -a $buildRoot/build.log
+          ${target} 2>&1 | tee -a $buildRoot/build.log | sliceStamp; }
+        sliceMark "cabal v2-haddock"
         # Cabal `v2-haddock` installs the main library's html into
         # the unit-store `<unit>/share/doc/html/`, but for
         # sublibraries it only emits the html under the per-package
@@ -1636,6 +1710,10 @@ ${lib.optionalString (metadataSourceFrags != []) ''
     # inspectable even when cabal's planning fails.
     mkdir -p $out
     cp $buildRoot/build.log $out/build.log 2>/dev/null || true
+    # Only written when the plan was slow enough to trigger the -v3
+    # re-run (see buildPhase); keeps the full solver trace for a
+    # slice whose log has already scrolled past.
+    cp $buildRoot/solver.log $out/solver.log 2>/dev/null || true
 
     # Capture the slice's cabal.project verbatim, plus every shim
     # `.cabal` file extracted from a `hs-nix-v2-shim-*.tar.gz` staged
