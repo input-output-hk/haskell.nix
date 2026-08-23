@@ -94,6 +94,9 @@ in rec {
   fromToolchain = base;
 
   withProfiling       = "${base} ${prof}";
+  # Currently unreachable: `enableSharedStage2` is False, because the .dynamic
+  # project cannot be borrowed for its shared libraries without also making the
+  # compiler report `GHC Dynamic: YES` (see overlays/stable-haskell.nix).
   withProfilingAndDyn = "${base} ${prof} ${dyn}";
 
   # The value for a given compiler.  Every site that needs it goes through
