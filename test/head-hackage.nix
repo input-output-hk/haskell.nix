@@ -1,16 +1,16 @@
 # How haskell.nix's own tests consume head.hackage.
 #
-# `test/cabal.project.local` keeps head.hackage's real root keys, so that a
-# plain `cabal` build driven by that file still verifies the published
-# repository.  haskell.nix does not use the published one: it builds the
-# repository itself (see overlays/head-hackage.nix), because the published one
-# is regenerated on a schedule and is not reproducible, so a `--sha256` pin
-# against it went stale roughly daily.
+# `test/cabal.project.local` keeps head.hackage's real url and root keys, so
+# that a plain `cabal` build driven by that file still uses the published
+# repository.  haskell.nix does not: it builds the repository itself (see
+# overlays/head-hackage.nix), because the published one is regenerated on a
+# schedule and is not reproducible, so a `--sha256` pin against it went stale
+# roughly daily.
 #
-# That locally built copy is signed with keys generated at build time, so the
-# published root keys cannot apply to it.  They are dropped here rather than
-# weakened in the checked-in file, which stays correct for everyone who is not
-# going through haskell.nix.
+# Both the url and the root keys are rewritten here rather than weakened in the
+# checked-in file, which stays correct for everyone who is not going through
+# haskell.nix.  The locally built copy is signed with keys generated at build
+# time, so the published root keys cannot apply to it.
 { evalPackages
   # The compiler in use ships NO target boot libraries and builds them from
   # source instead.  Drops the parts of cabal.project.local that assume
@@ -26,6 +26,30 @@
   cabalProjectLocal =
     let
       raw = builtins.readFile ./cabal.project.local;
+      # The url has to be rewritten too, not just the keys, and this is the
+      # whole reason `tests.*.with-packages` &c. were failing on any compiler
+      # that reaches head.hackage:
+      #
+      #   error: hash mismatch in fixed-output derivation 'containers-0.8.tar.gz':
+      #            specified: sha256-7rApmN1DDYmOceBUwE6XsZL6X0IQqcFnN3RmrMgs3TA=
+      #               got:    sha256-0/4TpYNETUMq6c6NjwGdMdfRggKsRkPsC3DuKt7/V+s=
+      #
+      # Pre-populating cabal's package cache from the local repository (which is
+      # what the `inputMap` entry below used to do) makes the SOLVER read the
+      # local index, so `pkg-src-sha256` in plan.json is the hash of the local
+      # tarball -- but `repo.uri` is still whatever the `repository` stanza says,
+      # and lib/load-cabal-plan.nix builds the fetch url from that.  So the
+      # published tarball was downloaded and checked against our own copy's
+      # hash.  The two can never agree: the published tarballs are re-created on
+      # every run of head.hackage's CI, which is why we build the repository
+      # ourselves in the first place.
+      #
+      # Naming the store path in the stanza fixes both halves at once --
+      # load-cabal-plan.nix already expects this shape ("repo.uri might look
+      # like file:/nix/store/xxx") and adds the string context so the fetch
+      # depends on it.
+      publishedUrl = "  url: https://ghc.gitlab.haskell.org/head.hackage/\n";
+      localUrl = "  url: file:${evalPackages.haskell-nix.head-hackage-repo}\n";
       # Written with explicit newlines rather than `''`-strings: there, the
       # replacement's indentation is relative to the source, so `key-threshold`
       # reads as though it were nested under `root-keys:` when it is not.  It is
@@ -40,7 +64,12 @@
       servedLocally =
         "root-keys:\n"
         + "  key-threshold: 0\n";
-      stripped = builtins.replaceStrings [ published ] [ servedLocally ] raw;
+      # Both halves asserted separately: `stripped != raw` would be satisfied by
+      # either one on its own, and leaving the published url in place is exactly
+      # the failure this replacement exists to prevent.
+      urlFixed = builtins.replaceStrings [ publishedUrl ] [ localUrl ] raw;
+      stripped = assert urlFixed != raw;
+        builtins.replaceStrings [ published ] [ servedLocally ] urlFixed;
 
       # Two things in the `os(ghcjs)` part of this file assume the compiler
       # ships its target boot libraries.  A stable-haskell `-target` compiler
@@ -87,19 +116,13 @@
         drop "  constraints: ghci installed\n"
           (drop ", ghcjs-overlay:override" stripped);
     in
-      assert stripped != raw;
+      assert stripped != urlFixed;
       if bootLibsFromSource then forFromSourceBootLibs else stripped;
 
-  # Scoped to our own tests deliberately: a haskell.nix user whose project names
-  # this url should still get the published repository, not ours.
-  #
-  # Taken from `evalPackages`, not `pkgs`: this is an eval-time derivation, like
-  # plan-to-nix, and belongs on the eval system.  Reached through `pkgs` it came
-  # out built for the target's build platform, so evaluating the x86_64-linux
-  # jobs produced an x86_64-linux derivation and CI tried to build it on the
-  # linux VMs instead of the darwin builders that do eval-time work.
-  inputMap = {
-    "https://ghc.gitlab.haskell.org/head.hackage/" =
-      evalPackages.haskell-nix.head-hackage-repo;
-  };
+  # Empty, and kept only so the ~30 test call sites that thread `testInputMap`
+  # through need no edit.  It used to map the published url to the local
+  # repository, which redirected the index but NOT the package tarballs (see
+  # `cabalProjectLocal` above); now that the stanza names the local repository
+  # directly there is nothing left to redirect.
+  inputMap = { };
 }
