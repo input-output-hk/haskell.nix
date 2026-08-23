@@ -1383,6 +1383,11 @@ ${lib.optionalString (metadataSourceFrags != []) ''
       echo "ERROR: preBuild did not produce a cabal.project" >&2
       exit 1
     fi
+    # Everything between the `preBuild` mark and this one is the
+    # build-time cabal.project composition -- notably `isComposedDep`,
+    # which globs the composed db once per lib-dep fragment, so this gap
+    # grows with (deps x installed units) rather than with either alone.
+    sliceMark "composed cabal.project ($(wc -l < cabal.project) lines)"
     echo "--- cabal.project ---"
     cat cabal.project
     # Dump the shim's .cabal too — its `build-depends` line is the
