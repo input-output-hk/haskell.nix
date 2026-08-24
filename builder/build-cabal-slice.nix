@@ -702,10 +702,17 @@ stdenv.mkDerivation ({
     storeDir=$out/store
     mkdir -p $storeDir
     declare -A seenDeps
+    depSliceCount=0
     addDep() {
       local d=$1
       if [ -n "$d" ] && [ -d "$d/store" ] && [ -z "''${seenDeps[$d]:-}" ]; then
         seenDeps[$d]=1
+        # Counted here rather than read off the array afterwards: under
+        # `set -u`, `''${#seenDeps[@]}` on an array that was `declare -A`'d
+        # but never assigned is an UNBOUND VARIABLE, not 0 (bash 5.3
+        # included) -- so a leaf slice with no dep slices died on the
+        # instrumentation instead of building.
+        depSliceCount=$((depSliceCount + 1))
         lndir -silent "$d/store" "$storeDir"
       fi
     }
@@ -717,7 +724,7 @@ stdenv.mkDerivation ({
         done < "$dep/nix-support/transitive-deps"
       fi
     done
-    sliceMark "composed starting store from ''${#seenDeps[@]} dep slices"
+    sliceMark "composed starting store from $depSliceCount dep slices"
 
     # --- Staged store layout (stable-haskell cabal fork) --------------
     # The fork's `v2-build` takes its install dirs and store package dbs
