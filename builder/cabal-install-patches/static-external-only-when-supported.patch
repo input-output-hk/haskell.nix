@@ -1,0 +1,87 @@
+Only pass `-static-external` to a GHC that has it.
+
+`executable-static: True` reaches Cabal as `withFullyStaticExe`, and the
+stable-haskell Cabal fork turns that into GHC's `-static-external` (a
+fork-only flag; see `docs/users_guide/phases.rst` in the GHC fork).
+haskell.nix builds every v2 slice with this one cabal-install whatever
+the compiler is, and `modules/cabal-project.nix` sets
+
+    package *
+      executable-static: True
+
+for every musl host -- so a musl slice on a MAINLINE GHC gets a flag that
+GHC does not know and the link dies before it starts:
+
+    aarch64-unknown-linux-musl-ghc: unrecognised flag: -static-external
+    Usage: For basic information, try the `--help' option.
+    <no location info>: error:
+        `cc' failed in phase `Linker'. (Exit code: 1)
+
+(That is `x86_64-linux.unstable.ghc9124.aarch64-multiplatform-musl.tests.check-datadir.run-v2`
+and every other musl v2 slice that links an executable.)
+
+Ask the compiler instead of assuming.  The fork brands its `ghc --info`
+with `("Edition","Stable Haskell")` and upstream emits no such field, so
+that is the discriminator; haskell.nix already relies on it in
+`lib/dummy-ghc.nix`, and `tests.dummy-ghc-info` keeps the two in step.
+
+Compilers without the flag fall back to upstream Cabal's spelling of the
+same request, `ghcOptLinkOptions = ["-static"]` (i.e. `-optl-static`) --
+which is also what haskell.nix's v1 builder passes for musl, so the two
+builders now agree on what `executable-static` means.
+
+--- a/src/Distribution/Simple/GHC/Build/Link.hs	2026-08-24 12:42:38
++++ b/src/Distribution/Simple/GHC/Build/Link.hs	2026-08-24 12:42:52
+@@ -9,6 +9,7 @@
+ import Control.Monad
+ import Control.Monad.IO.Class
+ import qualified Data.ByteString.Lazy.Char8 as BS
++import qualified Data.Map as Map
+ import qualified Data.Set as Set
+ import Distribution.Backpack
+ import Distribution.Compat.Binary (encode)
+@@ -114,6 +115,16 @@
+         | src <- extraSources
+         ]
+ 
++      -- `-static-external` is a stable-haskell GHC flag; upstream GHC has no
++      -- such option and rejects the whole command line.  This Cabal is used
++      -- with both (haskell.nix builds every v2 slice with it, whatever the
++      -- compiler), so ask the compiler which spelling of `executable-static`
++      -- it understands.  The fork brands its `ghc --info` with `Edition`;
++      -- upstream emits no such field.
++      ghcHasStaticExternal =
++        Map.lookup "Edition" (compilerProperties (compiler lbi))
++          == Just "Stable Haskell"
++
+       -- TODO: Shouldn't we use withStaticLib for libraries and something else
+       -- for foreign libs in the three cases where we use `withFullyStaticExe` below?
+       linkerOpts rpaths =
+@@ -121,14 +132,21 @@
+           { ghcOptExtraDefault =
+               [ "-static-external"
+               | withFullyStaticExe lbi
++              , ghcHasStaticExternal
+               ]
+           , ghcOptLinkOptions =
+-              -- Pass extra `ld-options` given
+-              -- through to GHC's linker.
+-              maybe
+-                []
+-                programOverrideArgs
+-                (lookupProgram ldProgram (withPrograms lbi))
++              -- Upstream's spelling of the same request, for compilers
++              -- without `-static-external`.
++              [ "-static"
++              | withFullyStaticExe lbi
++              , not ghcHasStaticExternal
++              ]
++                -- Pass extra `ld-options` given
++                -- through to GHC's linker.
++                ++ maybe
++                  []
++                  programOverrideArgs
++                  (lookupProgram ldProgram (withPrograms lbi))
+           , ghcOptLinkLibs =
+               if withFullyStaticExe lbi
+                 then extraLibsStatic bi

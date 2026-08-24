@@ -1246,6 +1246,12 @@ final: prev: {
                   ../builder/cabal-install-patches/setup-build-num-jobs-env.patch
                   ../builder/cabal-install-patches/inlibrary-build-stage-exe-platform.patch
                 ];
+                # The Cabal LIBRARY, not the tool: `v2-build` links it in and
+                # uses it as the build system for `build-type: Simple`, so a
+                # patch here is what reaches the actual link command.
+                packages.Cabal.patches = [
+                  ../builder/cabal-install-patches/static-external-only-when-supported.patch
+                ];
               }];
             };
             byEvalSystem = final.lib.mapAttrs (evalSystem: _evalPackages:
