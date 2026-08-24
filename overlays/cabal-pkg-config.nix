@@ -187,9 +187,16 @@ in
     baseBinName = attrs.baseBinName
                or attrs.env.baseBinName
                or attrs.passthru.baseBinName;
-    metaVersionCases = final.lib.concatStrings
+    # Assoc-array entries rather than `case` branches: the lookup used to
+    # be `v=$(metaversion "$name")`, and a command substitution FORKS.
+    # cabal asks for every name in this universe (~3.5k), so that was 3.5k
+    # forks on top of the pkg-config spawns -- and a 3.5k-branch `case` is
+    # a linear scan, making the whole thing quadratic.  An array is loaded
+    # once and indexed in O(1) with no subshell.
+    metaVersionEntries = final.lib.concatStrings
       (final.lib.mapAttrsToList (name: ps:
-        "    ${name}) echo ${final.lib.escapeShellArg (getVersion (__head ps))} ;;\n")
+        "    [${final.lib.escapeShellArg name}]=${
+          final.lib.escapeShellArg (getVersion (__head ps))}\n")
         pkgconfigPkgs);
     metaNames = final.lib.concatMapStrings (n: n + "\n") (__attrNames pkgconfigPkgs);
     # `writeScript`, not `builtins.toFile`: the script references
@@ -197,11 +204,14 @@ in
     hybrid = final.writeScript "cabal-pkg-config-hybrid" (''
       #!${final.stdenv.shell}
       real="$(dirname "$0")/${targetPrefix}${baseBinName}-wrapped"
-      metaversion() {
-        case "$1" in
-      '' + metaVersionCases + ''
-          *) return 1 ;;
-        esac
+      # Loaded lazily: `--libs` / `--cflags` and the catch-all `exec` path
+      # never need it, and this is the hot script in every slice's plan.
+      hsnix_load_meta() {
+        [ -n "''${hsnix_meta_loaded:-}" ] && return 0
+        declare -gA hsnix_meta=(
+      '' + metaVersionEntries + ''
+        )
+        hsnix_meta_loaded=1
       }
       case "''${1:-}" in
         --list-all)
@@ -223,11 +233,40 @@ in
           ;;
         --modversion)
           shift
+          # Ask the real pkg-config ONCE which modules it actually has.
+          #
+          # cabal follows `--list-all` with `--modversion` for every name
+          # it just received, and the list we hand it is the whole
+          # `pkgconf-nixpkgs-map.nix` universe (~3.5k names) rather than
+          # the handful with a real `.pc`.  Shelling out per name then
+          # spawns thousands of processes that are certain to fail --
+          # each one a nixpkgs wrapper script plus the binary it execs.
+          # Measured on a cross-musl slice for a package with NO
+          # pkgconfig-depends at all: the real pkg-config knew 0 modules,
+          # cabal asked for 3490, and the resulting 6988 spawns were 63 of
+          # the plan's 65 seconds.  Consulting `--list-all` first turns
+          # that into one process.
+          #
+          # Answer order is unchanged where it can matter: a real `.pc`
+          # still wins over metadata (a slice's UnitId folds the resolved
+          # version into `pkgHashPkgConfigDeps`, so the two must agree),
+          # metadata answers what the real one does not have, and the real
+          # one is still tried as a last resort for the corner case of a
+          # module that `--modversion` resolves but `--list-all` omits.
+          declare -A hsnix_real=()
+          while IFS= read -r line; do
+            [ -n "$line" ] || continue
+            hsnix_real[''${line%% *}]=1
+          done < <("$real" --list-all 2>/dev/null)
+          hsnix_load_meta
           status=0
           for name in "$@"; do
-            if v=$("$real" --modversion "$name" 2>/dev/null); then
+            if [ -n "''${hsnix_real[$name]:-}" ] \
+               && v=$("$real" --modversion "$name" 2>/dev/null); then
               printf '%s\n' "$v"
-            elif v=$(metaversion "$name"); then
+            elif [ -n "''${hsnix_meta[$name]+x}" ]; then
+              printf '%s\n' "''${hsnix_meta[$name]}"
+            elif v=$("$real" --modversion "$name" 2>/dev/null); then
               printf '%s\n' "$v"
             else
               echo "Package '$name' not found (no .pc file, no haskell.nix metadata)" >&2
