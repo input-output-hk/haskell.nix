@@ -2105,12 +2105,38 @@ ENDSCRIPT
     # - Tables next to code = NO (WASM separates code/data address spaces;
     #   YES causes linker "symbol type mismatch" on stg_*_info symbols)
     # - Merge objects via wasm-ld -r
+    # - libffi on the linker's search path.  Where libffi lives is a
+    #   property of THIS TOOLCHAIN -- nixpkgs' wasi toolchain ships none, so
+    #   we build `libffiWasm` (the one hadrian's wasm bindists use) -- and
+    #   the rts advertises `extra-libraries: ffi` under `+use-system-libffi`
+    #   for every one of its way sub-libraries.  Carrying the directory only
+    #   in those packages' `library-dirs` makes every downstream link depend
+    #   on which units happen to be in its closure and on cabal having
+    #   recorded the field; when that fell through, the executable link died
+    #   as
+    #     wasm32-unknown-wasi-wasm-ld: error: unable to find library -lffi
+    #   (`wasi32.tests.c-ffi.run` and its neighbours).  A toolchain fact
+    #   belongs in the toolchain, so put it where every wasm link sees it.
+    #   `modules/cabal-project.nix`'s `rtsWasmExtras` keeps the matching
+    #   `extra-include-dirs` / `extra-lib-dirs`: the rts still needs ffi.h
+    #   to compile, and its own shared-lib link uses them directly.
+    #   `tests.dummy-ghc-info` is unaffected -- "C compiler link flags" is
+    #   one of its `ignoredFields` (cabal does not consult it for
+    #   elaboration), so the plan-time dummy needs no matching change.
     sed -i \
       -e 's|("Tables next to code","YES")|("Tables next to code","NO")|' \
       -e 's|("Merge objects command","")|("Merge objects command","${pkgs.buildPackages.llvmPackages.lld}/bin/wasm-ld")|' \
       -e 's|("Merge objects flags","")|("Merge objects flags","-r")|' \
       -e 's|("Merge objects supports response files","NO")|("Merge objects supports response files","YES")|' \
+      -e 's|("C compiler link flags","\([^"]*\)")|("C compiler link flags","\1 -L${libffiWasm}/lib")|' \
       $tdir/lib/settings
+    # Assert it landed: a sed that silently matches nothing would leave the
+    # link exactly as broken as before, only harder to spot.
+    grep -qF -- '-L${libffiWasm}/lib' $tdir/lib/settings || {
+      echo "wasm settings: could not add libffi to the C compiler link flags;" >&2
+      grep -F '"C compiler link flags"' $tdir/lib/settings >&2
+      exit 1
+    }
     ''}
 
     ${lib.optionalString tp.isx86_64 ''
