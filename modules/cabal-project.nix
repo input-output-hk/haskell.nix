@@ -552,6 +552,45 @@ in {
       crossLinkFields = lib.optionalString (!isWasm) ("\n"
         + "  shared: ${if targetSupportsShared then "True" else "False"}\n"
         + "  executable-dynamic: False");
+      # ...but `shared:` above is meant for the TARGET's boot libraries, and a
+      # cabal.project `package *` stanza has no stage qualifier, so it reaches
+      # the BUILD stage too -- the tools cabal builds to run on the build
+      # machine.  Those link against the build compiler's own boot libs, which
+      # arrive as PRE-EXISTING installs with no dynamic way, so asking them for
+      # `-dynamic-too` cannot work:
+      #
+      #   Wanted module build ways(library 'grammar'): [DynWay,StaticWay]
+      #   grammar/src/Happy/Grammar/ExpressionWithHole.hs:1:8: error: [GHC-47808]
+      #       Failed to load dynamic interface file for Prelude:
+      #         .../base-4.22.0.0/Prelude.dyn_hi: does not exist
+      #
+      # which kills `ghc-lib-ghc-<triple>` -- and with it every job on a cross
+      # target whose `targetSupportsShared` is True
+      # (`x86_64-linux…aarch64-multiplatform.tests.coverage.run` &c.).  The
+      # musl / windows / ghcjs targets never saw it because they answer False
+      # and nothing asks for the dyn way at all.
+      #
+      # Turn it back off for the packages that only ever appear in the BUILD
+      # stage.  Enumerated rather than derived: the honest source for "which
+      # units are build-stage" is plan-json, and plan-json is produced FROM
+      # this very project file (the same recursion `pkgsNeedingRts` notes
+      # below).  These five are what a stable-haskell boot plan builds for the
+      # build machine -- everything else in that stage is pre-existing.  If a
+      # project adds another build tool, it announces itself with the error
+      # above naming the package; add it here.
+      #
+      # A HOST-stage instance of one of these (cross-compiling alex itself,
+      # say) loses the dyn way as a side effect.  That matches what the v1
+      # builder does for every cross library anyway
+      # (`comp-builder.nix:44`'s `!haskellLib.isCrossHost`).
+      buildStageOnlyPackages =
+        [ "alex" "happy" "happy-lib" "genprimopcode" "deriveConstants" ];
+      # Gated exactly as the `shared: True` it counteracts: wasm emits no
+      # `shared:` at all (`crossLinkFields` is `!isWasm`-only), so adding
+      # these there would move wasm UnitIds for nothing.
+      buildStageStaticFields = lib.optionalString (!isWasm && targetSupportsShared)
+        (lib.concatMapStrings (n: "\npackage ${n}\n  shared: False")
+          buildStageOnlyPackages);
       # Sourced from `pkgs.haskell-nix.haskellLib` (not the file's own
       # `haskellLib` module argument, which callers of this module don't
       # actually provide — it was declared but never forced before now).
@@ -678,7 +717,7 @@ in {
           ghc-options: -no-rts
 
         package *
-          library-for-ghci: False${crossLinkFields}
+          library-for-ghci: False${crossLinkFields}${buildStageStaticFields}
       '';
       inputMap = {
         "https://github.com/stable-haskell/Cabal.git/stable-haskell/master" =
