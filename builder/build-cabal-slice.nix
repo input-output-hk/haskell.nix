@@ -713,7 +713,32 @@ stdenv.mkDerivation ({
         # included) -- so a leaf slice with no dep slices died on the
         # instrumentation instead of building.
         depSliceCount=$((depSliceCount + 1))
-        lndir -silent "$d/store" "$storeDir"
+        # Compose per top-level entry rather than `lndir`ing `$d/store`
+        # wholesale, so the dep's `build` -> `host` alias can be SKIPPED.
+        # That alias is now kept in every slice's output (see the
+        # installPhase), because cabal bakes `<slice>/dist-newstyle/store/
+        # build/<plat>/lib/<unit>/share` into a BUILD-stage tool's
+        # `Paths_<pkg>` datadir and the binary needs it to resolve forever
+        # after -- `alex` failed with
+        #   .../store/build/.../alex-3.5.4.2-.../share/AlexTemplate.hs:
+        #   openFile: does not exist
+        # when it was dropped.  Following it here instead would relink every
+        # unit a second time (it points at `host`, which we have already
+        # walked) and, worse, materialise `build/` as a REAL directory that
+        # shadows this slice's own alias below -- which is exactly why it
+        # used to be deleted.  Skipping is the cheap half of that trade.
+        local sub b
+        for sub in "$d"/store/*; do
+          [ -e "$sub" ] || continue
+          b=$(basename "$sub")
+          [ "$b" = build ] && continue
+          if [ -d "$sub" ]; then
+            mkdir -p "$storeDir/$b"
+            lndir -silent "$sub" "$storeDir/$b"
+          else
+            ln -sf "$sub" "$storeDir/$b"
+          fi
+        done
       fi
     }
     for dep in "''${pkgsHostTarget[@]}"; do
@@ -1818,22 +1843,33 @@ ${lib.optionalString (metadataSourceFrags != []) ''
     # are ours; symlinks are dep-slice content that we just leave
     # in place so downstream consumers can follow them back to the
     # original dep slices.
-    # Drop the staged-layout compose symlink (`build` → `host`) before
-    # anything walks `$out/store`: it is re-created by every consuming
-    # slice's compose step, and leaving it here would make `lndir`
-    # traverse the store twice downstream (materialising `build/` as a
-    # real directory that then shadows the shared link).
-    if [ -L $out/store/build ]; then
-      rm $out/store/build
-    fi
+    # KEEP the staged-layout alias (`build` → `host`).  It used to be
+    # dropped here, on the grounds that every consuming slice re-creates it
+    # and that leaving it made `lndir` traverse the store twice downstream.
+    # The first half is true of the CONSUMER's store; it is not true of the
+    # paths cabal bakes into artifacts.  A BUILD-stage tool's `Paths_<pkg>`
+    # datadir is spelled `<this slice>/dist-newstyle/store/build/<plat>/
+    # lib/<unit>/share` -- an absolute path into THIS output -- so deleting
+    # the alias left it dangling for good:
+    #   alex: .../store/build/.../alex-3.5.4.2-.../share/AlexTemplate.hs:
+    #         openFile: does not exist
+    # (`ghc-lib-ghc-<triple>`, where genprimopcode's lexer runs alex).  The
+    # host-stage units were never affected -- their baked paths say `host/`,
+    # which is the real directory.
+    # The double-traversal it was avoiding is handled in the buildPhase
+    # instead: the compose step skips a dep's `build` entry by name, so
+    # nothing follows the alias and `build/` is never materialised.
     # The fork's staged install leaves `<unit>.lock` files directly in
     # the store dir (its `storeIncomingDirectory` IS the store dir);
     # they're staging debris like `incoming/` below.
     rm -f $out/store/host/*/*.lock 2>/dev/null || true
     # `host/` was pre-created for the stage-unifying `build` link; with
     # the mainline (ghc-*) layout it stays empty — drop it (rmdir only
-    # removes empty dirs).
-    rmdir $out/store/host 2>/dev/null || true
+    # removes empty dirs), and the alias with it, or the output would ship
+    # a `build` symlink pointing at a directory that is no longer there.
+    if rmdir $out/store/host 2>/dev/null; then
+      rm -f $out/store/build
+    fi
     discoverStore
     if [ -z "$ghcDir" ]; then
       rm -rf $out/store
