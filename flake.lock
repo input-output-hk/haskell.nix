@@ -50,6 +50,23 @@
         "type": "github"
       }
     },
+    "cabal-doctest": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787831028,
+        "narHash": "sha256-YUSquN8tlV59hWoArmP5wxHxK8lIjcmZofxNQTMC4IQ=",
+        "owner": "stable-haskell",
+        "repo": "cabal-doctest",
+        "rev": "641cda5a4590f2384568a9598713f3039b99258d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "stable-haskell",
+        "repo": "cabal-doctest",
+        "rev": "641cda5a4590f2384568a9598713f3039b99258d",
+        "type": "github"
+      }
+    },
     "cardano-shell": {
       "flake": false,
       "locked": {
@@ -606,6 +623,7 @@
         "HTTP": "HTTP",
         "cabal-34": "cabal-34",
         "cabal-36": "cabal-36",
+        "cabal-doctest": "cabal-doctest",
         "cardano-shell": "cardano-shell",
         "flake-compat": "flake-compat",
         "hackage": "hackage",

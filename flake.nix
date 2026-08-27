@@ -92,6 +92,22 @@
       url = "github:bgamari/hackage-overlay-repo-tool";
       flake = false;
     };
+
+    # cabal-doctest 1.0.12 (the newest release on hackage) does not build
+    # against Cabal 3.17: that release split Verbosity into VerbosityFlags and
+    # VerbosityHandles, so `buildVerbosity`'s result no longer typechecks where
+    # the Simple.Utils helpers want a Verbosity.  haskell-gi's custom Setup.hs
+    # depends on it, so the gi-gtk test needs the fixed fork.
+    #
+    # Pinned to the rev rather than the branch on purpose: the same rev is
+    # named as the `tag:` of the source-repository-package in
+    # test/gi-gtk/default.nix, and lib/call-cabal-project-to-nix.nix checks
+    # `inputMap.<url>.rev` against that tag.  Pinning keeps `nix flake update`
+    # from moving one half of that pair.
+    cabal-doctest = {
+      url = "github:stable-haskell/cabal-doctest/641cda5a4590f2384568a9598713f3039b99258d";
+      flake = false;
+    };
   };
 
   outputs =

@@ -182,7 +182,23 @@ let
       && (buildPackages.haskell-nix.compiler.${compiler-nix-name}.emptyGlobalPackageDb or false);
   };
   testCabalProjectLocal = headHackage.cabalProjectLocal;
-  testInputMap = headHackage.inputMap;
+  # inputMap entries are consulted only for `source-repository-package` urls a
+  # project actually names, so carrying the cabal-doctest fork here is inert
+  # for every test except the one that pulls it in (gi-gtk, via haskell-gi's
+  # custom Setup.hs).  It lives here rather than as a new gi-gtk argument
+  # because callPackage applies its third argument unconditionally and the
+  # tests have closed argument sets -- see the note just below.
+  #
+  # Read through `evalPackages.haskell-nix.sources` (overlays/haskell.nix
+  # re-exports the flake inputs there) rather than `haskellNix.sources`: the
+  # hydraJobs path comes via ci.nix, which does not pass `haskellNix`, so that
+  # attribute would fall back to `import ../default.nix` and die on
+  # `builtins.currentSystem` under pure eval.  plan-to-nix runs on the eval
+  # platform, which is why it is evalPackages and not pkgs.
+  testInputMap = headHackage.inputMap // {
+    "https://github.com/stable-haskell/cabal-doctest.git" =
+      evalPackages.haskell-nix.sources.cabal-doctest;
+  };
 
   # `evalSystem` / `testCabalProjectLocal` / `testInputMap` are passed only to
   # tests that ask for them.  callPackage's third argument is applied
