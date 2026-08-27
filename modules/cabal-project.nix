@@ -546,9 +546,35 @@ in {
       # `wasm-ld` rejects the ELF soname flag (`-h <soname>`) GHC emits
       # when linking a boot lib's shared `.so`, so a `shared: True` rts-fs
       # slice fails with `wasm-ld: error: unknown argument: -h`.  Exclude it.
+      # Android is excluded for the same reason as the rest, it just takes
+      # one more step to see: the android block above puts
+      # `ghc-options: -optl-static -optl-ldl` in `package *`, so EVERY link
+      # in the project is a static link -- which is what android wants for
+      # its executables, and is why `lib/check.nix` used to force the same
+      # flags.  A `-shared` link cannot also be `-optl-static`: `ld.lld` in
+      # static mode will not accept a `.so`, so the rts way sub-libraries
+      # die resolving the shared names of their own dependencies,
+      #
+      #   Linking DynWay library...
+      #   ld.lld: error: unable to find library -lHSrts-fs-1.0.0.0-...-ghc9.14
+      #   ld.lld: error: unable to find library -lHSlibffi-clib-3.5.2-...-ghc9.14
+      #
+      # even though both `.so`s were built and correctly registered (their
+      # confs carry `dynamic-library-dirs: ${pkgroot}/lib`, and the files are
+      # there).  Nothing is missing; the link mode is simply contradictory.
+      # That is `rts-lib-*-aarch64-unknown-linux-android` and, through it,
+      # both android clusters -- around a hundred jobs.
+      #
+      # Nothing on android wants the dyn way anyway: the executables are
+      # static by construction, `GHC Dynamic` is NO, and cross TH goes
+      # through iserv-proxy loading static objects.  The alternative --
+      # narrowing `-optl-static` so it reaches only executable links -- is
+      # not expressible in a cabal.project `package` stanza, and
+      # `executable-static: True` (the musl spelling) means something
+      # different again on the fork, which turns it into `-static-external`.
       targetSupportsShared =
         !(tp.isStatic or false) && !(tp.isMusl or false) && !(tp.isWindows or false)
-        && !(tp.isGhcjs or false);
+        && !(tp.isGhcjs or false) && !(tp.isAndroid or false);
       crossLinkFields = lib.optionalString (!isWasm) ("\n"
         + "  shared: ${if targetSupportsShared then "True" else "False"}\n"
         + "  executable-dynamic: False");
