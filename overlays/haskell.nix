@@ -1251,6 +1251,7 @@ final: prev: {
                 # patch here is what reaches the actual link command.
                 packages.Cabal.patches = [
                   ../builder/cabal-install-patches/static-external-only-when-supported.patch
+                  ../builder/cabal-install-patches/no-object-for-unemitted-signature.patch
                 ];
               }];
             };
