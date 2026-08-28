@@ -2179,8 +2179,26 @@ ENDSCRIPT
     #   `tests.dummy-ghc-info` is unaffected -- "C compiler link flags" is
     #   one of its `ignoredFields` (cabal does not consult it for
     #   elaboration), so the plan-time dummy needs no matching change.
+    #
+    # - `-Wno-int-conversion`.  wasi-libc's `clockid_t` is
+    #   `const struct __clockid *`, a POINTER, while `time`'s
+    #   `Data.Time.Clock.Internal.CTimespec` imports `clock_gettime` with a
+    #   `CClockId` = `Word32` argument.  The `capi` shim GHC writes for it
+    #   therefore hands an integer to a pointer parameter, and clang 21
+    #   makes `-Wint-conversion` an ERROR by default:
+    #     ghc_tmp_28_1.c:12:205: error: incompatible integer to pointer
+    #       conversion passing 'HsWord32' to parameter of type 'clockid_t'
+    #     `wasm32-unknown-wasi-cc' failed in phase `C Compiler'
+    #   The value itself round-trips (hsc2hs read the same constants back
+    #   out as integers), so demoting the diagnostic is the fix, and it
+    #   belongs in the toolchain because it is a property of wasi-libc, not
+    #   of `time` -- every capi import of a wasi "handle" typedef hits it.
+    #   `time` is a boot library, so this one error took out most of both
+    #   wasi32 clusters.  "C compiler flags" is in `tests.dummy-ghc-info`'s
+    #   `ignoredFields`, so the plan-time dummy needs no matching change.
     sed -i \
       -e 's|("Tables next to code","YES")|("Tables next to code","NO")|' \
+      -e 's|("C compiler flags","\([^"]*\)")|("C compiler flags","\1 -Wno-int-conversion")|' \
       -e 's|("Merge objects command","")|("Merge objects command","${pkgs.buildPackages.llvmPackages.lld}/bin/wasm-ld")|' \
       -e 's|("Merge objects flags","")|("Merge objects flags","-r")|' \
       -e 's|("Merge objects supports response files","NO")|("Merge objects supports response files","YES")|' \
@@ -2191,6 +2209,12 @@ ENDSCRIPT
     grep -qF -- '-L${libffiWasm}/lib' $tdir/lib/settings || {
       echo "wasm settings: could not add libffi to the C compiler link flags;" >&2
       grep -F '"C compiler link flags"' $tdir/lib/settings >&2
+      exit 1
+    }
+    grep -qF -- '-Wno-int-conversion' $tdir/lib/settings || {
+      echo "wasm settings: could not add -Wno-int-conversion to the C" >&2
+      echo "compiler flags;" >&2
+      grep -F '"C compiler flags"' $tdir/lib/settings >&2
       exit 1
     }
     ''}
