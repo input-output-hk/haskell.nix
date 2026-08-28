@@ -532,6 +532,70 @@ in {
         + "  -- bindists use).\n"
         + "  extra-include-dirs: ${shGhc.libffi-wasm.dev}/include\n"
         + "  extra-lib-dirs: ${shGhc.libffi-wasm.out}/lib");
+      # Undefine `__PIC__` for the wasm boot libraries' C sources.
+      #
+      # Cabal compiles every C source of the VANILLA way with `-fPIC`
+      # unconditionally ("-fPIC is used in case you are using the repl of a
+      # dynamically linked GHC", Distribution.Simple.GHC.Build.ExtraSources),
+      # so `__PIC__` is defined for static objects too.  That collapses a
+      # distinction the wasm JSFFI machinery depends on:
+      #
+      #   * `libraries/ghc-internal/include/RtsIfaceSymbols.h` adds
+      #     `raiseJSException_closure`, `JSVal_con_info` and
+      #     `threadDelay_closure` to the `HsIface` initialiser only under
+      #     `#if defined(wasm32_HOST_ARCH) && defined(__PIC__)`;
+      #   * `rts/wasm/JSFFI.c` instead patches those three fields in from a
+      #     `constructor(100)` only under `#if !defined(__PIC__)`.
+      #
+      # `RtsIface.c`'s `init_ghc_hs_iface` is force-linked into every
+      # executable (`-uinit_ghc_hs_iface`), so with `__PIC__` defined its
+      # initialiser takes the ADDRESS of the three JSFFI closures and drags
+      # `GHC.Internal.Wasm.Prim.{Imports,Types,Conc.Internal}` into every
+      # link -- along with the `ghc_wasm_jsffi` wasm imports their
+      # `foreign import javascript` stubs declare.  wasmtime then refuses to
+      # instantiate the module at all:
+      #   unknown import: `ghc_wasm_jsffi::ZC0ZCghczminternalZCGHCziInternal
+      #     ziWasmziPrimziTypesZC` has not been defined
+      # which is every `*-check-wasm32-unknown-wasi` job.  Note
+      # [threadDelay on wasm] in GHC.Internal.Wasm.Prim.Conc spells out the
+      # invariant this breaks: "don't pay for JavaScript when you don't use
+      # it" -- a wasi module that never touches JSFFI must carry no non-wasi
+      # imports, and the dependency injection through `ghc_hs_iface` is
+      # exactly what keeps it that way.
+      #
+      # Hadrian never adds `-fPIC` on wasm at all
+      # (`enableRelocatedStaticLibs && !targetPlatform.isWasm` in
+      # compiler/ghc/default.nix), which is why the hadrian-built
+      # `ghc9124.wasi32` tests pass while ours do not: their boot libraries
+      # come from the compiler, ours are built here by cabal.
+      #
+      # `-optc-U__PIC__` rather than `-fno-PIC`: `-optc` flags are appended
+      # LAST to the C command line (GHC.SysTools.Tasks.runCc, "we take care
+      # to pass -optc flags in args1 last ... see #14452"), so this beats
+      # GHC's own `-D__PIC__` while touching nothing else.  `-fno-PIC` would
+      # also clear `Opt_PIC` for Haskell compilation, and the wasm NCG reads
+      # it (`pic = ncgPIC ncg_config` in GHC.CmmToAsm.Wasm) to decide
+      # `@GOT` references and symbol visibility -- the dyn way's `.so`s,
+      # which the wasm TH interpreter's dyld loads, would be built non-PIC
+      # and useless.
+      #
+      # Both `rts` and `ghc-internal` get it so the two halves of the
+      # protocol agree: ghc-internal leaves the three fields NULL and the
+      # rts's JSFFI.o constructor fills them if and only if it is linked in.
+      # Applying it to only one half would leave them permanently NULL.
+      # The `HsIface` struct itself is guarded by `wasm32_HOST_ARCH` alone,
+      # not `__PIC__`, so its layout is the same either way and non-wasm
+      # targets are untouched.
+      #
+      # CAVEAT: this also takes `__PIC__` away from the DYN way's C, so
+      # `JSFFI.c` loses its `export_name("__ghc_wasm_jsffi_init")` and
+      # `utils/jsffi/dyld.mjs` (which calls that export) cannot initialise
+      # JSFFI in a dyld-loaded module.  That only affects wasm Template
+      # Haskell / browser hosts, not the wasi32 test suite.  The real fix
+      # belongs one level down -- Cabal should not force `-fPIC` on vanilla
+      # C sources when the target is wasm, exactly as hadrian does not --
+      # after which this line can go.
+      wasmNoPic = lib.optionalString isWasm " -optc-U__PIC__";
       # Whether to build the dynamic/shared way for the TARGET's boot
       # libraries.  This must key off the target platform (`tp`), NOT
       # `shGhc.enableShared`: `shGhc` is the BUILD compiler (selected from
@@ -697,7 +761,7 @@ in {
 
         package ghc-internal
           flags: +bignum-native
-          ghc-options: -no-rts
+          ghc-options: -no-rts${wasmNoPic}
 
         -- directory / file-io / process / unix each carry an automatic
         -- `os-string` flag (default False) that selects, in their .cabal
@@ -733,7 +797,7 @@ in {
           flags: +os-string
 
         package rts
-          ghc-options: -no-rts
+          ghc-options: -no-rts${wasmNoPic}
           flags: ${if isWasm then "+use-system-libffi -tables-next-to-code" else "+tables-next-to-code"}${rtsWasmExtras}
 
         -- `text`'s `simdutf` flag (default True) compiles the bundled
