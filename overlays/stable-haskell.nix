@@ -1794,6 +1794,14 @@ ENDSCRIPT
       then "${targetCC}/share/emscripten/emnm"
       else "${targetCC}/share/emscripten/tools/emnm.py")
     else "${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}nm";
+  # Targets GHC has no native code generator for -- arm32 and friends --
+  # go through the LLVM backend, and then need `llc`/`opt` and the
+  # `llvm-targets` data-layout table.  Same predicate as `useLLVM`'s
+  # default in compiler/ghc/default.nix, so this wrapper agrees with the
+  # hadrian compilers about which targets are LLVM targets.
+  targetNeedsLLVM = !(tp.isx86 || tp.isAarch64
+                   || (tp.isGhcjs or false) || (tp.isWasm or false));
+  llvmForTarget   = pkgs.buildPackages.llvmPackages.llvm;
   targetOBJDUMPPath = if isGhcjsTarget
     then "${pkgs.buildPackages.llvmPackages.llvm}/bin/llvm-objdump"
     else "${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}objdump";
@@ -2062,6 +2070,54 @@ ENDSCRIPT
       $tdir/lib/settings
 
     ${fixRtsWays "$tdir/lib/settings"}
+
+    ${lib.optionalString targetNeedsLLVM ''
+    # ── LLVM backend ─────────────────────────────────────────────────────
+    # Two things the `-target` registration has to supply that a hadrian
+    # bindist gets from its own build, and that nothing else here provides:
+    #
+    #   * `$topdir/llvm-targets`, the triple -> (data layout, cpu, features)
+    #     table GHC reads to build the `llc` command line.  The `-target`
+    #     session's topdir is $tdir/lib, so a copy under the NATIVE tree
+    #     (which `lndir` brings in) is not where GHC looks, and every .hs
+    #     and .cmm compile dies with
+    #       .../targets/<triple>/lib/llvm-targets: openFile: does not exist
+    #     That is one file, and it failed the rts -- so all four rts ways,
+    #     so every armv7a-android job.
+    #
+    #   * absolute `llc`/`opt`/`llvm-as` paths.  ghc-toolchain hard-codes
+    #     the bare names (`llc_cmd = "llc" -- FIXME`, ghc-toolchain's
+    #     exe/Main.hs), GHC execs them from PATH, and nothing puts LLVM on a
+    #     slice build's PATH.  It shows up only as the non-fatal
+    #       Warning: Couldn't figure out LLVM version!
+    #     immediately before the failure above, which is why the missing
+    #     file is the visible symptom.  The hadrian compilers get the same
+    #     absolute paths from `export LLC=/OPT=` in compiler/ghc/default.nix,
+    #     which ./configure bakes into their settings.
+    #
+    # All three names are in `tests.dummy-ghc-info`'s `ignoredFields`, so
+    # the plan-time dummy needs no matching change.
+    cp ${nativeConfiguredSrc}/llvm-targets $tdir/lib/llvm-targets
+    grep -qF '("${targetTriple}",' $tdir/lib/llvm-targets || {
+      echo "llvm-targets has no entry for ${targetTriple}; GHC would fail" >&2
+      echo "with \`Unknown target\`.  Add one the way the hadrian build" >&2
+      echo "does (compiler/ghc/default.nix patches this file)." >&2
+      exit 1
+    }
+    sed -i \
+      -e 's|("LLVM llc command","llc")|("LLVM llc command","${llvmForTarget}/bin/llc")|' \
+      -e 's|("LLVM opt command","opt")|("LLVM opt command","${llvmForTarget}/bin/opt")|' \
+      -e 's|("LLVM llvm-as command","llvm-as")|("LLVM llvm-as command","${llvmForTarget}/bin/llvm-as")|' \
+      $tdir/lib/settings
+    for f in llc opt llvm-as; do
+      grep -qF "${llvmForTarget}/bin/$f" $tdir/lib/settings || {
+        echo "llvm settings: $f was not given an absolute path; the names" >&2
+        echo "ghc-toolchain writes must have changed.  It now says:" >&2
+        grep -F '"LLVM ' $tdir/lib/settings >&2
+        exit 1
+      }
+    done
+    ''}
 
     ${lib.optionalString isGhcjsTarget ''
     # ghc-toolchain-bin resolves every tool command to an absolute path from
