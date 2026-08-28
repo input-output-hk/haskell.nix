@@ -2252,14 +2252,26 @@ let
   # When `coverage: True` is set, cabal stores per-package HPC
   # artifacts under `$out/store/<ghc>/<unit-id>/lib/extra-compilation-artifacts/hpc/`
   # (mangled cabal unit-id name, e.g. `pkg-0.1.0.0-f77c657f`).
-  # The .mix file *content* is derived from source, not unit-id —
-  # so a sibling test slice that rebuilds the lib inplace
-  # (UnitId `<pkg>-<ver>-inplace`) produces byte-identical .mix
-  # files.  Surface the lib slice's mixes under
-  # `$out/share/hpc/<way>/mix/<pkg>-<ver>-inplace/` so HPC matches
-  # the path against `<pkg>-<ver>-inplace/<Module>` references in
-  # tix files dropped by inplace-built test exes.  Tix files don't
-  # land here (they're produced at test-run time by `lib/check.nix`).
+  # The .mix file *content* is derived from source, not unit-id, so the
+  # lib slice's mixes answer for any name a tix file might use.  Surface
+  # them under every such name, because which one it is depends on how
+  # the test exe that dropped the tix saw this library:
+  #
+  #   * `<pkg>-<ver>-inplace` -- an inplace rebuild in a sibling test
+  #     slice, the case this block was originally written for;
+  #   * the real unit-id (`<pkg>-<ver>-<hash>`), cabal's own directory
+  #     name for the installed unit;
+  #   * `<pkg>-<ver>`, which is what the stable-haskell fork's two-stage
+  #     build records -- and the one that was missing:
+  #       hpc: can not find pkgb-0.1.0.0/ConduitExample in
+  #         .../share/hpc/vanilla/mix
+  #     which is where `tests.coverage.run` on ghc914-sh failed once
+  #     `hpc` itself was on PATH.
+  #
+  # Duplicating is safe precisely because the content is source-derived;
+  # a wrong guess is a hard error at report time, a spare copy is a few
+  # kB.  Tix files don't land here (they're produced at test-run time by
+  # `lib/check.nix`).
   hpcCopyForLibrary = lib.optionalString isLibrary ''
     for src_hpc in $out/store/ghc-*/*/lib/extra-compilation-artifacts/hpc \
                    $out/store/host/*/lib/*/extra-compilation-artifacts/hpc; do
@@ -2268,10 +2280,14 @@ let
         [ -d "$way_dir" ] || continue
         way=$(basename "$way_dir")
         if [ -d "$way_dir/mix" ]; then
-          mkdir -p "$out/share/hpc/$way/mix/${pkgName}-${pkgVersion}-inplace"
           for unit_dir in "$way_dir/mix"/*/; do
             [ -d "$unit_dir" ] || continue
-            cp -r "$unit_dir"/. "$out/share/hpc/$way/mix/${pkgName}-${pkgVersion}-inplace/"
+            for mixAlias in "${pkgName}-${pkgVersion}-inplace" \
+                            "${pkgName}-${pkgVersion}" \
+                            "$(basename "$unit_dir")"; do
+              mkdir -p "$out/share/hpc/$way/mix/$mixAlias"
+              cp -r "$unit_dir"/. "$out/share/hpc/$way/mix/$mixAlias/"
+            done
           done
         fi
       done
