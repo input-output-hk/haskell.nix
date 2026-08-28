@@ -1679,6 +1679,15 @@ ENDSCRIPT
     ln -sf ${s2exe "hsc2hs"  "hsc2hs"}  $out/bin/hsc2hs
     ln -sf ${s2exe "runghc"  "runghc"}  $out/bin/runghc
     ln -sf ${s2exe "unlit"   "unlit"}   $out/bin/unlit
+    # `hpc` comes from the `hpc-bin` source-repository-package the fork's
+    # stage2 project lists (srpInputMap above), and a real bindist installs
+    # it next to ghc.  haskell.nix's coverage reports put the compiler on
+    # PATH and then just run `hpc` (lib/cover.nix:94), so without this link
+    # every coverage job dies at the very end with
+    #   line 53: hpc: command not found
+    # -- `tests.coverage.run`, `tests.coverage-no-libs.run`, and the
+    # per-package `*-coverage-report` drvs under them.
+    ln -sf ${s2exe "hpc-bin" "hpc"}     $out/bin/hpc
 
     # Versioned aliases, as in a standard GHC bindist (a real bindist of
     # this source would install ghc-${ghcVersion}).  Tooling relies on the
@@ -1691,6 +1700,7 @@ ENDSCRIPT
     ln -s $out/bin/ghci    $out/bin/ghci-$v
     ln -s $out/bin/ghc-pkg $out/bin/ghc-pkg-$v
     ln -s $out/bin/runghc  $out/bin/runghc-$v
+    ln -s $out/bin/hpc     $out/bin/hpc-$v
     # GHC 9.14 looks for unlit at $topdir/../bin/unlit where topdir = lib/ghc-9.14
     # (set via -B$NIX_GHC_LIBDIR in ghc-for-component-wrapper.nix).
     # lib/ghc-9.14/../bin/ resolves to lib/bin/, so unlit must be there.
