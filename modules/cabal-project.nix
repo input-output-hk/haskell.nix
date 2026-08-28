@@ -736,6 +736,31 @@ in {
           ghc-options: -no-rts
           flags: ${if isWasm then "+use-system-libffi -tables-next-to-code" else "+tables-next-to-code"}${rtsWasmExtras}
 
+        -- `text`'s `simdutf` flag (default True) compiles the bundled
+        -- simdutf C++ and links every `text`-using library against
+        -- libc++.  The fork's own boot-library build turns it off for
+        -- every target (`package text / flags: -simdutf` in
+        -- cabal.project.common), and consumer projects -- which build
+        -- these same boot libraries from source -- have to agree, or
+        -- `text` is a different unit here than in the compiler.
+        --
+        -- On wasm it is not merely an inconsistency.  wasm boot libs are
+        -- built with `shared: True` (the dyn way is what the wasm TH
+        -- interpreter dlopens; see `target RTS linker only supports
+        -- shared libraries` in lib/dummy-ghc.nix), and nixpkgs' wasi
+        -- libc++ is a non-PIC archive, so the DynWay link of `text`
+        -- fails on every C++ object it pulls in:
+        --   wasm-ld: error: libc++.a(private_typeinfo.cpp.o):
+        --     relocation R_WASM_MEMORY_ADDR_SLEB cannot be used against
+        --     symbol `typeinfo for __cxxabiv1::__shim_type_info`;
+        --     recompile with -fPIC
+        -- which took out `text` and everything downstream of it on both
+        -- wasi32 clusters.  text 2.1.3 special-cases `arch(javascript)`
+        -- for its pure-Haskell path but not `arch(wasm32)`, so the flag
+        -- is the only lever.
+        package text
+          flags: -simdutf
+
         package rts-headers
           ghc-options: -no-rts
 
