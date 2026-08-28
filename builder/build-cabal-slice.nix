@@ -292,6 +292,35 @@ let
              then stdenv.cc.targetPrefix else "";
   binPrefix = if stdenv.hasCC or (stdenv.cc != null)
               then stdenv.cc.bintools.targetPrefix else "";
+
+  # nixpkgs' `pkgsStatic` stdenv adapter (`makeStaticBinaries` in
+  # `pkgs/stdenv/adapters.nix`) appends `-static` to the UNSALTED
+  # `NIX_CFLAGS_LINK` of every derivation it builds.  A cc-wrapper only reads
+  # the salted `NIX_CFLAGS_LINK_<targetPlatform.config>`, but `add-flags.sh`
+  # folds the unsalted variable into it for every role the wrapper is
+  # registered under -- and in a `pkgsStatic` slice BOTH wrappers are
+  # registered at host role:
+  #
+  #   NIX_CC_WRAPPER_TARGET_HOST_x86_64_unknown_linux_musl=1   (target cc)
+  #   NIX_CC_WRAPPER_TARGET_HOST_x86_64_unknown_linux_gnu=1    (build cc)
+  #
+  # so `-static` lands on the BUILD-platform gcc as well.  That is harmless
+  # while every build-platform tool comes from a separate (non-static)
+  # derivation, but the stable-haskell two-stage plan links real
+  # build-platform executables -- `alex`, `happy`, `deriveConstants`,
+  # `genprimopcode` -- inside this slice with the build-platform gcc, and
+  # nixpkgs' glibc ships no `libc.a` in its default output:
+  #
+  #   ld.bfd: cannot find -lc: No such file or directory
+  #   ld.bfd: have you installed the static version of the c library ?
+  #
+  # Move the flag from the unsalted variable to the host-salted one (done in
+  # the buildPhase, because the adapter appends via `overrideAttrs` and would
+  # win over anything set in the derivation's `env`).  The target cc still
+  # links `-static`; the build-platform cc no longer does.
+  staticHostSalt = lib.replaceStrings [ "-" "." ] [ "_" "_" ]
+    stdenv.hostPlatform.config;
+
   # On cross, `cabalPkgConfigWrapper` is named
   # `${targetPrefix}pkg-config` (e.g. `x86_64-w64-mingw32-pkg-config`).
   # Cabal calls plain `pkg-config` by default, so for cross we have
@@ -667,7 +696,16 @@ stdenv.mkDerivation ({
     sliceStamp() { while IFS= read -r sliceLine; do
       printf '[slice %5ds] %s\n' "$SECONDS" "$sliceLine"; done; }
     sliceMark "buildPhase start"
-
+    ${lib.optionalString (stdenv.hostPlatform.isStatic or false) ''
+    # See `staticHostSalt` above: keep pkgsStatic's `-static` off the
+    # build-platform C toolchain, which this slice also uses -- to link the
+    # two-stage plan's build-stage executables.  This sits exactly where the
+    # blank line was so that on every other platform it expands to that same
+    # blank line: the buildPhase text, and so every non-static slice's
+    # derivation hash, is unchanged.
+    export NIX_CFLAGS_LINK_${staticHostSalt}="''${NIX_CFLAGS_LINK_${staticHostSalt}:-}''${NIX_CFLAGS_LINK:-}"
+    export NIX_CFLAGS_LINK=""
+    ''}
     # --- Compose starting store --------------------------------------
     # Use $out/store as the cabal store dir from the start so that
     # any path baked into a built binary (e.g. alex's `Paths_alex`
