@@ -284,6 +284,12 @@ let
     in {
       sourceRepos = sourceReposBuild;
       inherit (repoResult) repos extra-hackages;
+      # The input text with every `source-repository-package` block
+      # rewritten to a `file://` minimal git repo in the store.  Only
+      # `plan-to-nix` consumed this before (via `makeFixedProjectFile`);
+      # `fixedCabalProjectLocal` below hands the same rewrite to the v2
+      # shell, which writes the text out for the *user's* cabal to read.
+      fixedProjectFile = sourceRepoFixedProjectFile;
       makeFixedProjectFile = ''
         HOME=$(mktemp -d)
         cp -f ${evalPackages.writeText "cabal.project" sourceRepoFixedProjectFile} ./cabal.project
@@ -316,6 +322,33 @@ let
   # rewrites direct Hackage tarball URLs to local eval-platform store paths.
   fixedProject = replaceSourceRepos
     ((args.cabalProjectRewrite or (p: p)) rawCabalProject);
+
+  # `cabalProjectLocal` alone, with the same `source-repository-package`
+  # rewrite `fixedProject` applies to the whole project.
+  #
+  # The v2 shell writes the project's `cabalProjectLocal` out as
+  # `cabal.project.local` (`cabal.project.<targetPrefix>local` when
+  # cross) so that a plain `cabal build` in the shell sees the same
+  # project settings the slices were built with.  Handing it the *raw*
+  # text hands the user `location: https://github.com/...` blocks, and
+  # cabal then clones them over the network on the first
+  # `cabal build` -- which fails outright inside a nix build (no network:
+  # `fatal: unable to access ...: SSL certificate ... unable to get local
+  # issuer certificate`, tests/cabal-sublib-shell) and, in an interactive
+  # shell, silently re-fetches sources haskell.nix has already fetched.
+  # Worse, a `tag:` naming a branch (the boot-package injection's
+  # `tag: stable-haskell/master`) is not even pinned, so the user can get
+  # different sources than the slices were built from.
+  #
+  # Rewriting through `replaceSourceRepos` points every block at the
+  # minimal git repo in the store that `plan-to-nix` already used, so
+  # the clone is local and resolves to exactly the sources the plan was
+  # computed from.  The rewrite is by-content, so these are the *same*
+  # derivations `fixedProject` builds -- no extra work.
+  fixedCabalProjectLocal =
+    if cabalProjectLocal == null || cabalProjectLocal == ""
+      then cabalProjectLocal
+      else (replaceSourceRepos cabalProjectLocal).fixedProjectFile;
 
   platformString = p: with p.parsed; "${cpu.name}-${vendor.name}-${kernel.name}";
 
@@ -599,6 +632,7 @@ in {
   projectNix = plan-json;
   inherit index-state-max src;
   inherit (fixedProject) sourceRepos extra-hackages;
+  inherit fixedCabalProjectLocal;
   # Zero-length string carrying context from rawCabalProject.
   # Used in load-cabal-plan.nix to add context to URLs referencing store paths
   # without using builtins.appendContext (which fails for non-local paths).

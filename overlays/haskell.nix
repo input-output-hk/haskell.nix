@@ -772,7 +772,15 @@ final: prev: {
                         in if ghc.isHaskellNixCompiler or false then (ghc.evalWith.${evalSystem} or (ghc.override { evalSystem = evalSystem; })) else ghc;
                       compiler.nix-name = final.lib.mkForce config.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
-                      inherit (config) prebuilt-depends builderVersion v2LocalPackageSlices cabalProjectLocal cabalProject;
+                      inherit (config) prebuilt-depends builderVersion v2LocalPackageSlices cabalProject;
+                      # NOT `config.cabalProjectLocal`: the v2 shell writes
+                      # this text out as the user's `cabal.project.local`, so
+                      # its `source-repository-package` blocks have to be the
+                      # `file://` store rewrites plan-to-nix used, not the
+                      # original remote URLs (which cabal would clone over the
+                      # network).  See `fixedCabalProjectLocal` in
+                      # lib/call-cabal-project-to-nix.nix.
+                      cabalProjectLocal = callProjectResults.fixedCabalProjectLocal;
                     } ];
                   extra-hackages = config.extra-hackages or [] ++ callProjectResults.extra-hackages;
                 };
