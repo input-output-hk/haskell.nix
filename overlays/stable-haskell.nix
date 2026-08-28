@@ -2308,7 +2308,47 @@ ENDSCRIPT
       -e "s|TOPDIR|$out/lib/ghc-${ghcVersion}|" \
       -e "s|TARGET|${targetTriple}|" \
       $out/bin/ghc
-    chmod +x $out/bin/ghc
+    chmod +x $out/bin/ghc${lib.optionalString isGhcjsTarget ''
+
+    # The JS backend has exactly ONE rts flavour: rts.cabal marks the three
+    # non-vanilla way sub-libraries `buildable: False` under
+    # `arch(javascript)`, so `rts:nonthreaded-nodebug` is the only one that
+    # ever exists.  GHC nevertheless picks the rts unit from the session's
+    # ways (`rtsWayUnitId`, compiler/GHC/Driver/DynFlags.hs), so the
+    # `-threaded` that almost every cabal `executable` / `test-suite` stanza
+    # carries makes it ask for `rts:threaded-nodebug` and panic:
+    #   The RTS for rts:threaded-nodebug is missing from the package
+    #   database while building unit <exe> ... (GHC/Unit/State.hs:1653)
+    # `-threaded` is a no-op on JS (the JS rts is single-threaded), and
+    # threaded is an RTS-ONLY way (`wayRTSOnly`, GHC/Platform/Ways.hs) so
+    # dropping it changes no library name and no interface -- only which rts
+    # unit gets wired in.  Cancel it with `-single-threaded`
+    # (`removeWayDynP WayThreaded`, GHC/Driver/Session.hs).
+    #
+    # It has to come AFTER "$@": GHC's flag handling is last-wins, and the
+    # package's own ghc-options reach GHC in a cabal response file this
+    # wrapper cannot rewrite.  The `-B` the v2 ghc shim prepends
+    # (builder/ghc-shim.nix, `makeWrapper --add-flags`) still lands before
+    # them, so nothing else moves.
+    #
+    # `-no-rts` -- which the panic message itself suggests -- is NOT an
+    # alternative: it skips the sanity check but the wiring below it still
+    # looks the way's abi hash up in pkgs2 and panics with "rtsWayUnitId not
+    # found in wired-in packages".
+    #
+    # `-debug` would need the same treatment (`rts:nonthreaded-debug` is
+    # equally unbuildable here) but GHC has no `-no-debug` to cancel it with;
+    # no test package uses it, so leave that to the upstream fix, which
+    # belongs in stable-haskell/ghc: `rtsWayUnitId` should ignore the
+    # RTS-only ways when the target platform is JS.
+    sed -i 's|^  "$@"$|  "$@" -single-threaded|' $out/bin/ghc
+    grep -qF -- '"$@" -single-threaded' $out/bin/ghc || {
+      echo "ghcjs ghc wrapper: could not append -single-threaded; the" >&2
+      echo "wrapper script above must have changed.  It now says:" >&2
+      cat $out/bin/ghc >&2
+      exit 1
+    }
+    ''}
 
     ln -s $out/bin/ghc $out/bin/ghci
 
