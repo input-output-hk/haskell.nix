@@ -425,6 +425,41 @@ let
     " --with-build-compiler=${twoStageBuildGhc}/bin/ghc"
     + " --with-build-hc-pkg=${twoStageBuildGhc}/bin/ghc-pkg");
 
+  # The BUILD-stage `setup` executable cabal compiles for each unit is linked
+  # by the BUILD compiler against that compiler's OWN registered `text` -- and
+  # stage2 builds `text` with `+simdutf` deliberately (`overlays/
+  # stable-haskell.nix`, recorded as `enableTextSimdutf = true`).  `+simdutf`
+  # makes `text` depend on `system-cxx-std-lib`, whose conf carries a bare
+  # `extra-libraries: stdc++`, so every `setup` links `-lstdc++`.
+  #
+  # gcc resolves that from its own internal search path, so the LINK succeeds;
+  # what is missing is the RUNPATH.  nixpkgs' cc-wrapper contributes its
+  # `-L`/rpath flags only for the salt it is registered under
+  # (`NIX_LDFLAGS_<config>`), and the compiler's baked-in build cc-wrapper is a
+  # different store path from the slice stdenv's cc.  In a CROSS slice the
+  # stdenv populates the HOST salt, so nothing populates the build one, and
+  # `setup` links fine but dies the moment cabal runs it:
+  #
+  #   setup: error while loading shared libraries: libstdc++.so.6:
+  #   cannot open shared object file: No such file or directory
+  #
+  # -- the `ghc-boot` slice failure every mingwW64 and ghcjs job of eval 2453
+  # propagates from.  Note this is NOT the composed project's `package text /
+  # flags: -simdutf`: that governs the HOST `text` built inside the slice,
+  # while the offender is the build compiler's pre-existing one.
+  #
+  # Give the build salt an explicit `-L` + `-rpath` for the build platform's
+  # C++ runtime.  `twoStage` is tested first so `twoStageBuildGhc` (which has
+  # no `buildGHC` to fall back on for a single-stage compiler) is never forced.
+  buildCxxLib = pkgsBuildBuild.stdenv.cc.cc.lib or pkgsBuildBuild.stdenv.cc.cc;
+  buildSalt = lib.replaceStrings [ "-" "." ] [ "_" "_" ]
+    stdenv.buildPlatform.config;
+  setupNeedsCxxRpath =
+    twoStage
+    && stdenv.buildPlatform.isLinux
+    && stdenv.buildPlatform.config != stdenv.hostPlatform.config
+    && (twoStageBuildGhc.enableTextSimdutf or false);
+
   # Two-stage build-tool source staging, appended verbatim to the
   # own-source block of the build-time slicing repo.  Leads with a newline
   # so it attaches after the own-source `''}` without a standalone line;
@@ -705,6 +740,14 @@ stdenv.mkDerivation ({
     # derivation hash, is unchanged.
     export NIX_CFLAGS_LINK_${staticHostSalt}="''${NIX_CFLAGS_LINK_${staticHostSalt}:-}''${NIX_CFLAGS_LINK:-}"
     export NIX_CFLAGS_LINK=""
+    ''}${lib.optionalString setupNeedsCxxRpath ''
+
+    # See `setupNeedsCxxRpath` above: the build compiler links the build-stage
+    # `setup` exe against `-lstdc++` (its own `text` is `+simdutf`, so it
+    # depends on `system-cxx-std-lib`), but in a cross slice nothing populates
+    # the build salt, so the binary carries no RUNPATH for libstdc++ and dies
+    # at exec.  Append one; the `:-` keeps whatever stdenv already set.
+    export NIX_LDFLAGS_${buildSalt}="''${NIX_LDFLAGS_${buildSalt}:-} -L${buildCxxLib}/lib -rpath ${buildCxxLib}/lib"
     ''}
     # --- Compose starting store --------------------------------------
     # Use $out/store as the cabal store dir from the start so that
