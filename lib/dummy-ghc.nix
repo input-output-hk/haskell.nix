@@ -141,16 +141,41 @@ let
               then "ArchRISCV64"
             else if pkgs.stdenv.targetPlatform.isAarch64
               then "ArchAArch64"
-            # Real GHC reports `ArchARM <ArmArch> [<ArmABI>...] <ArmFloat>`
+            # Real GHC reports `ArchARM <ArmArch> [<ArmISAExt>...] <ArmABI>`
             # for 32-bit ARM targets, with the constructor arguments
-            # spelling out the ISA + ABI + float convention.  For
-            # armv7a (armv7a-android-prebuilt / armv7a-multiplatform)
-            # that's `ArchARM ARMv7 [VFPv3,NEON] SOFTFP`.  Generic
-            # ArchAArch32 (no parameters) is what real GHC emits for
-            # other aarch32 cpus we currently don't have a more
+            # spelling out the ISA + extensions + float convention.
+            # Generic ArchAArch32 (no parameters) is what real GHC emits
+            # for other aarch32 cpus we currently don't have a more
             # specific override for.
+            #
+            # The armv7a value is compiler-family specific, because it is
+            # *detected* rather than derived from the triple:
+            #
+            #   * a configure-built (hadrian / bindist) GHC for
+            #     armv7a-android-prebuilt reports
+            #     `ArchARM ARMv7 [VFPv3,NEON] SOFTFP`;
+            #   * a stable-haskell compiler reports
+            #     `ArchARM ARMv7 [VFPv2] SOFT`, its settings coming from
+            #     `ghc-toolchain-bin` probing the NDK prebuilt cc, which
+            #     is invoked with no `-mfpu=`/`-mfloat-abi=` and so falls
+            #     back to the conservative defaults.
+            #
+            # Both confirmed by CI: mainline ghc9124's
+            # armv7a-android-prebuilt `tests.dummy-ghc-info` passes with
+            # the SOFTFP string (build 2011050), while ghc914-sh's fails
+            # against it (build 2039035, eval 2453).
+            #
+            # NOTE: `SOFT` vs `SOFTFP` is a real ABI claim -- GHC feeds it
+            # to `llc -float-abi=`, and Android's armv7a ABI is softfp.
+            # Keeping the dummy equal to the compiler is what this file is
+            # for (a divergence forks UnitIds), but the *compiler's* value
+            # looks wrong.  Making ghc-toolchain probe with the NDK's
+            # flags, so it agrees with hadrian, would be the better fix
+            # and would collapse this branch back to one string.
             else if pkgs.stdenv.targetPlatform.parsed.cpu.name == "armv7a"
-              then "ArchARM ARMv7 [VFPv3,NEON] SOFTFP"
+              then (if (ghc.isStableHaskell or false)
+                      then "ArchARM ARMv7 [VFPv2] SOFT"
+                      else "ArchARM ARMv7 [VFPv3,NEON] SOFTFP")
             else if pkgs.stdenv.targetPlatform.isAarch32
               then "ArchAArch32"
             else if pkgs.stdenv.targetPlatform.isJavaScript
@@ -174,13 +199,41 @@ let
         # `--info`; cabal-install reads it to drive cross-toolchain
         # detection.
         #
-        # GHC keys "cross" off cpu + kernel, NOT the full triple — a
-        # libc switch (e.g. pkgsCross.musl64: gnu → musl on x86_64-
-        # linux) reports `cross compiling: NO` because the cpu and
-        # kernel both match the build host.  Comparing full
-        # `.config` strings would wrongly mark these as cross.
+        # Two rules, because the two compiler families genuinely answer
+        # this differently.
+        #
+        # A configure-built (hadrian / bindist) GHC keys "cross" off
+        # cpu + kernel, NOT the full triple -- a libc switch (e.g.
+        # pkgsCross.musl64: gnu -> musl on x86_64-linux) reports
+        # `cross compiling: NO` because the cpu and kernel both match
+        # the build host.  Comparing full `.config` strings would
+        # wrongly mark these as cross.
+        #
+        # A stable-haskell CROSS compiler always reports YES.  Its
+        # target settings come from `ghc-toolchain-bin`, which only ever
+        # sees the target triple and so cannot tell the session is
+        # cross, and `crossCompiler` in overlays/stable-haskell.nix
+        # therefore rewrites the field unconditionally --
+        #   sed -i 's|("cross compiling","NO")|("cross compiling","YES")|'
+        # -- deliberately: YES is also what makes GHC default TH
+        # evaluation to the external interpreter rather than loading
+        # target objects in-process.  That rewrite runs for every cross
+        # target, so the dummy must say YES for every cross target too,
+        # libc-only crosses included.
+        #
+        # The rules differ on exactly one shape: x86_64-linux ->
+        # x86_64-linux-musl (`musl64` and `static`), where cpu and
+        # kernel match but the triple does not.  Both of those
+        # `tests.dummy-ghc-info` jobs failed on this field in eval 2453
+        # (builds 2039304 and 2039470) while musl32, mingwW64,
+        # aarch64-multiplatform{,-musl}, wasi32 and native passed; and
+        # the mainline ghc9103/ghc9124 musl64 jobs pass with the
+        # cpu+kernel rule, which is why that rule has to stay for them.
         echo ',("cross compiling","${
-          if pkgs.stdenv.buildPlatform.parsed.cpu.name != pkgs.stdenv.targetPlatform.parsed.cpu.name
+          if (ghc.isStableHaskell or false)
+            then (if pkgs.stdenv.buildPlatform.config != pkgs.stdenv.targetPlatform.config
+                    then "YES" else "NO")
+          else if pkgs.stdenv.buildPlatform.parsed.cpu.name != pkgs.stdenv.targetPlatform.parsed.cpu.name
           || pkgs.stdenv.buildPlatform.parsed.kernel.name != pkgs.stdenv.targetPlatform.parsed.kernel.name
             then "YES" else "NO"}")'${editionInfoLine}
         ${
