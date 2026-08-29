@@ -1,16 +1,56 @@
-Only pass `-static-external` to a GHC that has it.
+Make `executable-static` mean fully static, on every compiler.
 
-`executable-static: True` reaches Cabal as `withFullyStaticExe`, and the
-stable-haskell Cabal fork turns that into GHC's `-static-external` (a
-fork-only flag; see `docs/users_guide/phases.rst` in the GHC fork).
-haskell.nix builds every v2 slice with this one cabal-install whatever
-the compiler is, and `modules/cabal-project.nix` sets
+`executable-static: True` reaches Cabal as `withFullyStaticExe`, and
+`modules/cabal-project.nix` sets
 
     package *
       executable-static: True
 
-for every musl host -- so a musl slice on a MAINLINE GHC gets a flag that
-GHC does not know and the link dies before it starts:
+for every musl host, with the stated intent that "every executable should
+be statically linked" -- matching what haskell.nix's v1 builder does for
+musl, which is `--ghc-option=-optl=-static`.
+
+The stable-haskell Cabal fork turned it into GHC's `-static-external`
+instead.  That is a *different* fork flag, and its own documentation says
+so (`docs/users_guide/phases.rst`):
+
+    Since `-static-external` is not meant for fully static linking [...]
+    this option allows to exclude certain libraries.  By default, these
+    are: `c`, `m`, `rt`, `dl`, `pthread`, `stdc++`, `c++`, `c++abi`,
+    `atomic`.
+
+    You can combine this with `-static` to produce binaries that are only
+    dynamically linked against e.g. libc.
+
+So on ghc914-sh every musl executable came out linked against a *shared*
+libc, which breaks two things:
+
+  * `x86_64-linux.unstable.ghc914-sh.musl32.iserv-proxy-interpreter` (and
+    the ~40 musl32 jobs that depend on it) fails to link.  iserv-proxy's
+    `cbits/symbols.i386-musl.c` takes the address of `__aio_close` so the
+    RTS linker can resolve it in objects loaded at runtime.  musl defines
+    that symbol `hidden`, so it is present in `libc.a` but is NOT exported
+    from `libc.so`:
+
+        ld.bfd: cbits/symbols.i386-musl.o:(.data.rel+0x1134):
+          undefined reference to `__aio_close'
+
+    A plain `-static` link of the same object resolves it from `libc.a`,
+    which is why mainline ghc9103/ghc9124 musl32 pass and this job has
+    never once succeeded in 18 builds.
+
+  * `x86_64-linux.unstable.ghc914-sh.musl64.tests.cabal-simple.run` runs
+    the executable fine and then fails its "checking that executable is
+    statically linked" assertion, for the same reason.
+
+The fork does have a flag that means what `withFullyStaticExe` says --
+`-fully-static`: "Link all libraries statically [...] This includes
+external libraries, Haskell libraries, as well as libc.  Musl is commonly
+used to provide a static libc."  Use that.
+
+Upstream GHC has neither flag and rejects the whole command line, and
+haskell.nix builds every v2 slice with this one cabal-install whatever the
+compiler is:
 
     aarch64-unknown-linux-musl-ghc: unrecognised flag: -static-external
     Usage: For basic information, try the `--help' option.
@@ -25,10 +65,10 @@ with `("Edition","Stable Haskell")` and upstream emits no such field, so
 that is the discriminator; haskell.nix already relies on it in
 `lib/dummy-ghc.nix`, and `tests.dummy-ghc-info` keeps the two in step.
 
-Compilers without the flag fall back to upstream Cabal's spelling of the
-same request, `ghcOptLinkOptions = ["-static"]` (i.e. `-optl-static`) --
-which is also what haskell.nix's v1 builder passes for musl, so the two
-builders now agree on what `executable-static` means.
+Compilers without it fall back to upstream Cabal's spelling of the same
+request, `ghcOptLinkOptions = ["-static"]` (i.e. `-optl-static`) -- which
+is also what the v1 builder passes for musl, so all three now agree on
+what `executable-static` means.
 
 --- a/src/Distribution/Simple/GHC/Build/Link.hs	2026-08-24 12:42:38
 +++ b/src/Distribution/Simple/GHC/Build/Link.hs	2026-08-24 12:42:52
@@ -44,13 +84,13 @@ builders now agree on what `executable-static` means.
          | src <- extraSources
          ]
  
-+      -- `-static-external` is a stable-haskell GHC flag; upstream GHC has no
-+      -- such option and rejects the whole command line.  This Cabal is used
-+      -- with both (haskell.nix builds every v2 slice with it, whatever the
-+      -- compiler), so ask the compiler which spelling of `executable-static`
-+      -- it understands.  The fork brands its `ghc --info` with `Edition`;
-+      -- upstream emits no such field.
-+      ghcHasStaticExternal =
++      -- `withFullyStaticExe` is `executable-static: True`, and it means what
++      -- it says.  The fork's flag for that is `-fully-static`; the fork's
++      -- `-static-external` is a DIFFERENT thing which deliberately leaves
++      -- `c`, `m`, `rt`, `dl`, `pthread` &c. dynamic.  Upstream GHC has
++      -- neither and rejects the command line, so ask: the fork brands its
++      -- `ghc --info` with `Edition`, and upstream emits no such field.
++      ghcHasFullyStatic =
 +        Map.lookup "Edition" (compilerProperties (compiler lbi))
 +          == Just "Stable Haskell"
 +
@@ -59,9 +99,10 @@ builders now agree on what `executable-static` means.
        linkerOpts rpaths =
 @@ -121,14 +132,21 @@
            { ghcOptExtraDefault =
-               [ "-static-external"
+-              [ "-static-external"
++              [ "-fully-static"
                | withFullyStaticExe lbi
-+              , ghcHasStaticExternal
++              , ghcHasFullyStatic
                ]
            , ghcOptLinkOptions =
 -              -- Pass extra `ld-options` given
@@ -71,10 +112,10 @@ builders now agree on what `executable-static` means.
 -                programOverrideArgs
 -                (lookupProgram ldProgram (withPrograms lbi))
 +              -- Upstream's spelling of the same request, for compilers
-+              -- without `-static-external`.
++              -- that have neither fork flag.
 +              [ "-static"
 +              | withFullyStaticExe lbi
-+              , not ghcHasStaticExternal
++              , not ghcHasFullyStatic
 +              ]
 +                -- Pass extra `ld-options` given
 +                -- through to GHC's linker.
