@@ -664,17 +664,35 @@ in {
       # stage.  Enumerated rather than derived: the honest source for "which
       # units are build-stage" is plan-json, and plan-json is produced FROM
       # this very project file (the same recursion `pkgsNeedingRts` notes
-      # below).  These five are what a stable-haskell boot plan builds for the
+      # below).  These are what a stable-haskell boot plan builds for the
       # build machine -- everything else in that stage is pre-existing.  If a
       # project adds another build tool, it announces itself with the error
       # above naming the package; add it here.
+      #
+      # The first five come from the GHC tree itself.  `c2hs` and its two
+      # built dependencies -- `language-c` and `dlist` -- arrive from a
+      # CONSUMER package instead: `libsodium` sets `use-build-tool-depends`,
+      # so its `build-tool-depends: c2hs` puts them in the build stage of any
+      # project that depends on it.  That is `tests.exe-dlls`,
+      # `tests.exe-lib-dlls` and `tests.th-dlls` -- 14 aarch64-multiplatform
+      # jobs -- which failed exactly as the comment above predicts:
+      #
+      #   Failed to load dynamic interface file for Prelude:
+      #     .../base-4.22.0.0/Prelude.dyn_hi: does not exist
+      #   Failed to build build:c2hs-0.28.8-e-c2hs-...
+      #
+      # (eval 2457, build 2044055 step 10, the `libsodium` slice for
+      # aarch64-multiplatform).  Everything else c2hs needs in that stage --
+      # array, bytestring, containers, directory, filepath, pretty, process --
+      # is pre-existing, so only these three had to be named.
       #
       # A HOST-stage instance of one of these (cross-compiling alex itself,
       # say) loses the dyn way as a side effect.  That matches what the v1
       # builder does for every cross library anyway
       # (`comp-builder.nix:44`'s `!haskellLib.isCrossHost`).
       buildStageOnlyPackages =
-        [ "alex" "happy" "happy-lib" "genprimopcode" "deriveConstants" ];
+        [ "alex" "happy" "happy-lib" "genprimopcode" "deriveConstants"
+          "c2hs" "language-c" "dlist" ];
       # Gated exactly as the `shared: True` it counteracts: wasm emits no
       # `shared:` at all (`crossLinkFields` is `!isWasm`-only), so adding
       # these there would move wasm UnitIds for nothing.
