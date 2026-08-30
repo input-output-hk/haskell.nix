@@ -34,7 +34,7 @@ let
     inputMap = testInputMap;
     cabalProjectLocal = testCabalProjectLocal + cabalDoctestSrp + ''
       -- The overloading feature of haskell-gi makes build times very long
-      constraints: haskell-gi-overloading ==0.0
+      constraints: any.haskell-gi-overloading ==0.0
     '';
   };
 
@@ -45,7 +45,7 @@ let
     src = testSrc "gi-gtk";
     inputMap = testInputMap;
     cabalProjectLocal = testCabalProjectLocal + cabalDoctestSrp + ''
-      constraints: haskell-gi-overloading ==0.0
+      constraints: any.haskell-gi-overloading ==0.0
       package *
         library-profiling: True
       package test-gi-gtk
