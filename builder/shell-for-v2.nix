@@ -24,7 +24,7 @@
 , compiler, composeStore, makeGhcShim, cabalProjectLocal ? null
   # The cabal-install the v2 slice builder used, and its version.  See
   # `toolDrvs` below for why the shell's `cabal` has to be that one.
-, v2CabalInstall, v2CabalInstallVersion }:
+, v2CabalInstall, v2CabalInstallVersion, withBuildCompiler ? false }:
 
 { # Same shape as shellFor's `packages`: packages the user works on.
   # Their *dependencies* are composed into the shell's cabal store;
@@ -521,8 +521,32 @@ let
   # differs, show the diff and print a command the user can run
   # to force replacement.  Skipped entirely when the project has
   # no `cabalProjectLocal` content.
+  # A two-stage project (`withBuildCompiler`) is planned with
+  # `--with-build-compiler` / `--with-build-hc-pkg` pointing at the BUILD
+  # platform's compiler -- see `lib/call-cabal-project-to-nix.nix`, which
+  # passes both to `make-install-plan`.  Nothing was passing them in the
+  # shell, so a `cabal build` there saw no build-stage compiler, found
+  # nothing installed for that stage, and resolved it out of hackage
+  # instead: `ghcjs.tests.cabal-sublib-shell` picked
+  # `build:base-4.19.1.0` / `ghc-prim-0.6.1` / `ghc-bignum-1.3` and died
+  # with "Dependency on unbuildable library from ghc-bignum", while the
+  # host stage resolved correctly to the injected `base-4.22.0.0`.
+  #
+  # The fork accepts both as cabal.project fields (verified against
+  # cabal-install 3.17.0.1: an unrecognised field warns "Unknown field",
+  # these two do not), so write them into the generated project-local
+  # rather than into a `cabal` wrapper -- the wrapper is only built when
+  # `targetPrefix != ""`, and the ghcjs cross compiler has no prefix, so
+  # a wrapper would miss exactly the case that showed the bug.
+  buildCompilerFields =
+    let buildGhc = ghc.buildGHC or null;
+    in lib.optionalString (withBuildCompiler && buildGhc != null) ''
+      with-build-compiler: ${buildGhc}/bin/${buildGhc.targetPrefix or ""}ghc
+      with-build-hc-pkg: ${buildGhc}/bin/${buildGhc.targetPrefix or ""}ghc-pkg
+    '';
   cabalProjectLocalContent =
-    lib.optionalString (cabalProjectLocal != null && cabalProjectLocal != "") cabalProjectLocal;
+    lib.optionalString (cabalProjectLocal != null && cabalProjectLocal != "") cabalProjectLocal
+    + buildCompilerFields;
   cabalProjectLocalFile =
     pkgs.pkgsBuildBuild.writeText "cabal.project.local" cabalProjectLocalContent;
   cabalProjectLocalSync = pkgs.pkgsBuildBuild.writeShellScriptBin "haskell-nix-cabal-project-local-sync" ''

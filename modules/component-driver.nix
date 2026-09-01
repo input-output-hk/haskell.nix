@@ -4,7 +4,7 @@ let
     inherit haskellLib;
     ghc = config.ghc.package;
     compiler-nix-name = config.compiler.nix-name;
-    inherit (config) nonReinstallablePkgs hsPkgs compiler evalPackages builderVersion crossTemplateHaskellSupport v2LocalPackageSlices cabalProjectLocal;
+    inherit (config) nonReinstallablePkgs hsPkgs compiler evalPackages builderVersion crossTemplateHaskellSupport v2LocalPackageSlices cabalProjectLocal withBuildCompiler;
   };
 
 in
@@ -24,6 +24,17 @@ in
   options.crossTemplateHaskellSupport = lib.mkOption {
     type = lib.types.bool;
     default = true;
+  };
+  # Propagated from the project-level `withBuildCompiler`: the project
+  # is planned as a two-stage build (the fork's `--with-build-compiler`
+  # / `--with-build-hc-pkg`).  The v2 shell needs to know so it can put
+  # the matching `with-build-compiler:` / `with-build-hc-pkg:` fields in
+  # the `cabal.project.local` it writes -- otherwise a `cabal build` in
+  # the shell has no build-stage compiler and resolves that stage out of
+  # hackage instead of the native compiler's installed packages.
+  options.withBuildCompiler = lib.mkOption {
+    type = lib.types.bool;
+    default = false;
   };
   # Propagated from the project-level `v2LocalPackageSlices`: build v2
   # slices for `style: "local"` plan units in cabal `packages:` mode so

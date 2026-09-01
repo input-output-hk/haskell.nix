@@ -13,7 +13,7 @@
 #
 # tl;dr: the builder must not re-introduce any reference to the build plan.
 
-{ pkgs, buildPackages, pkgsBuildBuild, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, nonReinstallablePkgs, hsPkgs, compiler, builderVersion ? 1, crossTemplateHaskellSupport ? true, v2LocalPackageSlices ? false, cabalProjectLocal ? null }:
+{ pkgs, buildPackages, pkgsBuildBuild, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, nonReinstallablePkgs, hsPkgs, compiler, builderVersion ? 1, crossTemplateHaskellSupport ? true, v2LocalPackageSlices ? false, cabalProjectLocal ? null, withBuildCompiler ? false }:
 
 let
   # Builds a single component of a package.
@@ -175,7 +175,7 @@ let
   };
   shellForV2 = haskellLib.weakCallPackage pkgs ./shell-for-v2.nix {
     inherit hsPkgs haskellLib ghc compiler composeStore makeGhcShim cabalProjectLocal
-            v2CabalInstall v2CabalInstallVersion;
+            v2CabalInstall v2CabalInstallVersion withBuildCompiler;
     inherit (buildPackages) mkShell;
     haskell-nix = pkgs.haskell-nix;
   };
