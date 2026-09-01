@@ -1811,7 +1811,39 @@ ENDSCRIPT
   # hadrian compilers about which targets are LLVM targets.
   targetNeedsLLVM = !(tp.isx86 || tp.isAarch64
                    || (tp.isGhcjs or false) || (tp.isWasm or false));
-  llvmForTarget   = pkgs.buildPackages.llvmPackages.llvm;
+  # LLVM's ARM AsmPrinter reads a `Subtarget` that only `runOnMachineFunction`
+  # ever sets, so it is still null for a module that defines no functions at
+  # all -- and `doFinalization` still walks @llvm.global_ctors for such a
+  # module, so `llc` segfaults:
+  #   #3 llvm::ARMAsmPrinter::emitXXStructor(...)
+  #   #4 llvm::AsmPrinter::emitXXStructorList(...)
+  #   `llc' failed in phase `LLVM Compiler'. (Exit code: -11)
+  # GHC produces exactly that shape: per Note [Initializers and finalizers in
+  # Cmm] the initializers are C functions living in the ForeignStubs, so the
+  # Haskell module carries the ctor array plus a bare declaration.  Six lines
+  # of IR reproduce it and LLVM 17..21 are all affected, so there is no
+  # version to move to.
+  #
+  # `overlays/patches/ghc-armv7a-android-llvm-fix.patch` is the other way out
+  # and is already applied to the bootstrap GHCs (overlays/bootstrap.nix): it
+  # makes `llvm.global_ctors` non-builtin so `aliasify` renames it and LLVM
+  # never sees the special global.  That dodges the crash by not emitting the
+  # initializers at all, which silently drops cost-centre / IPE / ticky / HPC
+  # registration.  Patching llc keeps them working.
+  #
+  # Overriding here rather than in the package set keeps the rebuild to this
+  # one derivation -- nothing else uses this instance, it is only ever the
+  # llc/opt pair named in a cross target's settings.
+  llvmForTarget   = pkgs.buildPackages.llvmPackages.llvm.overrideAttrs (old: {
+    patches = (old.patches or []) ++ [ ./patches/llvm-arm-asmprinter-null-subtarget.patch ];
+    # LLVM's lit suite wedges on the very last of its 59920 tests on this
+    # builder -- 59919 report and every one of them is clean (0 FAIL, 0 XPASS,
+    # 0 UNRESOLVED, including 1522 CodeGen/ARM), then the run never returns.
+    # That is a pre-existing hang, not something the patch above provokes, but
+    # it costs an hour per build for a compiler we only want as the llc/opt
+    # pair.  The patch's own validation is recorded in the commit message.
+    doCheck = false;
+  });
   targetOBJDUMPPath = if isGhcjsTarget
     then "${pkgs.buildPackages.llvmPackages.llvm}/bin/llvm-objdump"
     else "${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}objdump";
