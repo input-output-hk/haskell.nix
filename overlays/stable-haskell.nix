@@ -2086,14 +2086,23 @@ ENDSCRIPT
     # Two things the `-target` registration has to supply that a hadrian
     # bindist gets from its own build, and that nothing else here provides:
     #
-    #   * `$topdir/llvm-targets`, the triple -> (data layout, cpu, features)
-    #     table GHC reads to build the `llc` command line.  The `-target`
-    #     session's topdir is $tdir/lib, so a copy under the NATIVE tree
-    #     (which `lndir` brings in) is not where GHC looks, and every .hs
-    #     and .cmm compile dies with
-    #       .../targets/<triple>/lib/llvm-targets: openFile: does not exist
-    #     That is one file, and it failed the rts -- so all four rts ways,
+    #   * `$topdir/llvm-targets` AND `$topdir/llvm-passes`, the two tables
+    #     `GHC.Driver.Config.LlvmConfigCache` reads: triple -> (data layout,
+    #     cpu, features) for the `llc` command line, and -O level -> `opt`
+    #     `-passes=` string.  The `-target` session's topdir is $tdir/lib, so
+    #     a copy under the NATIVE tree (which `lndir` brings in) is not where
+    #     GHC looks, and the compile dies with
+    #       .../targets/<triple>/lib/llvm-<file>: openFile: does not exist
+    #     That is two files, and they failed the rts -- so all four rts ways,
     #     so every armv7a-android job.
+    #
+    #     Copy BOTH.  `initLlvmConfigCache` reads them under
+    #     `unsafeInterleaveIO`, so they fail at first use rather than at
+    #     startup, and their uses differ: llvm-targets is needed by every
+    #     compile, llvm-passes only once `opt` runs -- i.e. only at -O.  That
+    #     staggering is why fixing llvm-targets alone looked like it worked:
+    #     the rts's unoptimised .cmm files compiled, and the first `-O` one
+    #     then died on llvm-passes instead.
     #
     #   * absolute `llc`/`opt`/`llvm-as` paths.  ghc-toolchain hard-codes
     #     the bare names (`llc_cmd = "llc" -- FIXME`, ghc-toolchain's
@@ -2105,21 +2114,47 @@ ENDSCRIPT
     #     absolute paths from `export LLC=/OPT=` in compiler/ghc/default.nix,
     #     which ./configure bakes into their settings.
     #
+    #     `llvm-as` is NOT llvm-as.  Despite the setting name, GHC runs this
+    #     one through `runGenericAsPhase` -- the same code path as the plain
+    #     C-compiler assembler -- so it hands it `-fPIC -U__PIC__ -D__PIC__`,
+    #     `-x assembler`, `-c`, `-o` and `-I` flags.  Those are clang driver
+    #     flags; LLVM's actual `llvm-as` takes a single positional .ll and
+    #     dies with
+    #       llvm-as: Unknown command line argument '-fPIC'
+    #       `llvm-as' failed in phase `LLVM assembler'. (Exit code: 1)
+    #     ghc-toolchain agrees: it advertises the flag as "Assembler used for
+    #     LLVM backend (typically clang)" and probes for `clang`, then throws
+    #     the result away and emits the literal string via
+    #     `llvm_as_cmd = "llvm-as" -- FIXME`.  So point it at the target cc
+    #     (the same wrapper `--cc` above gets), NOT at ${llvmForTarget}.
+    #
     # All three names are in `tests.dummy-ghc-info`'s `ignoredFields`, so
     # the plan-time dummy needs no matching change.
     cp ${nativeConfiguredSrc}/llvm-targets $tdir/lib/llvm-targets
+    cp ${nativeConfiguredSrc}/llvm-passes  $tdir/lib/llvm-passes
     grep -qF '("${targetTriple}",' $tdir/lib/llvm-targets || {
       echo "llvm-targets has no entry for ${targetTriple}; GHC would fail" >&2
       echo "with \`Unknown target\`.  Add one the way the hadrian build" >&2
       echo "does (compiler/ghc/default.nix patches this file)." >&2
       exit 1
     }
+    # llvm-passes is a Haskell [(Int, String)] literal keyed by -O level;
+    # GHC `read`s it and looks up the level, so a file that parsed but had
+    # no entry for the level in use would fail only at that -O.
+    for lvl in 0 1 2; do
+      grep -qE "^\($lvl, \"-passes=" $tdir/lib/llvm-passes || {
+        echo "llvm-passes has no entry for -O$lvl; GHC would fail with" >&2
+        echo "\`Can't find LLVM opt flags\` when compiling at that level." >&2
+        cat $tdir/lib/llvm-passes >&2
+        exit 1
+      }
+    done
     sed -i \
       -e 's|("LLVM llc command","llc")|("LLVM llc command","${llvmForTarget}/bin/llc")|' \
       -e 's|("LLVM opt command","opt")|("LLVM opt command","${llvmForTarget}/bin/opt")|' \
-      -e 's|("LLVM llvm-as command","llvm-as")|("LLVM llvm-as command","${llvmForTarget}/bin/llvm-as")|' \
+      -e 's|("LLVM llvm-as command","llvm-as")|("LLVM llvm-as command","${targetCCPath}")|' \
       $tdir/lib/settings
-    for f in llc opt llvm-as; do
+    for f in llc opt; do
       grep -qF "${llvmForTarget}/bin/$f" $tdir/lib/settings || {
         echo "llvm settings: $f was not given an absolute path; the names" >&2
         echo "ghc-toolchain writes must have changed.  It now says:" >&2
@@ -2127,6 +2162,13 @@ ENDSCRIPT
         exit 1
       }
     done
+    grep -qF '("LLVM llvm-as command","${targetCCPath}")' $tdir/lib/settings || {
+      echo "llvm settings: the LLVM assembler is not the target cc.  It must" >&2
+      echo "be a clang-compatible driver (GHC passes it -fPIC/-x/-c), not" >&2
+      echo "LLVM's llvm-as.  It now says:" >&2
+      grep -F '"LLVM ' $tdir/lib/settings >&2
+      exit 1
+    }
     ''}
 
     ${lib.optionalString isGhcjsTarget ''
