@@ -843,6 +843,12 @@ final: prev: {
                   args = config;
                   plan-nix = callProjectResults.projectNix;
                   inherit (callProjectResults) index-state-max;
+                  # The offline `.cabal` dir (prepopulated hackage index at
+                  # the project's `index-state`) that plan-to-nix solved
+                  # against.  Exposed so a sandboxed `cabal` -- a v2 shell
+                  # test, say -- can solve against the very same index
+                  # instead of needing the network.
+                  inherit (callProjectResults) dotCabalDir;
                   tool = final.buildPackages.haskell-nix.tool' evalSystem pkg-set.config.compiler.nix-name;
                   tools = final.buildPackages.haskell-nix.tools' evalSystem pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots { compiler-nix-name = pkg-set.config.compiler.nix-name; inherit evalSystem; };

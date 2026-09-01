@@ -431,6 +431,23 @@ let
   dummy-build-ghc = buildDummyGhcPkg.dummy-ghc;
   dummy-build-ghc-pkg = buildDummyGhcPkg.dummy-ghc-pkg;
 
+  # A `.cabal` directory as it would have been at `cached-index-state`,
+  # carrying a PREPOPULATED (offline) hackage index plus any extra hackage
+  # repos the project declares.  `make-install-plan` runs against it below,
+  # and it is re-exported (`dotCabalDir`) so consumers that have to solve
+  # without network access can point cabal at the very same index the plan
+  # was computed from -- notably the v2 shell tests, whose sandbox has no
+  # `~/.cabal` and whose compiler ships an empty global package db, leaving
+  # the solver with no way to resolve boot deps such as `unix`.
+  # We may include some packages that will be excluded by `index-state-max`,
+  # which is what cabal uses (cached-index-state >= index-state-max).
+  dotCabalDir = dotCabal {
+    inherit nix-tools extra-hackage-tarballs prepopulateHackageIndex;
+    extra-hackage-repos = fixedProject.repos;
+    index-state = cached-index-state;
+    sha256 = index-sha256-found;
+  };
+
   plan-json = materialize ({
     inherit materialized;
     sha256 = plan-sha256;
@@ -536,18 +553,7 @@ let
     export SSL_CERT_FILE=${evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
 
-    export CABAL_DIR=${
-      # This creates `.cabal` directory that is as it would have
-      # been at the time `cached-index-state`.  We may include
-      # some packages that will be excluded by `index-state-max`
-      # which is used by cabal (cached-index-state >= index-state-max).
-      dotCabal {
-        inherit nix-tools extra-hackage-tarballs prepopulateHackageIndex;
-        extra-hackage-repos = fixedProject.repos;
-        index-state = cached-index-state;
-        sha256 = index-sha256-found;
-      }
-    }
+    export CABAL_DIR=${dotCabalDir}
 
     make-install-plan ${
           # Setting the desired `index-state` here in case it is not
@@ -633,6 +639,7 @@ in {
   inherit index-state-max src;
   inherit (fixedProject) sourceRepos extra-hackages;
   inherit fixedCabalProjectLocal;
+  inherit dotCabalDir;
   # Zero-length string carrying context from rawCabalProject.
   # Used in load-cabal-plan.nix to add context to URLs referencing store paths
   # without using builtins.appendContext (which fails for non-local paths).
