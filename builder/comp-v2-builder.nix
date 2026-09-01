@@ -1925,6 +1925,24 @@ let
     then templateHaskell.wrapGhc ghc
     else ghc;
 
+  # A slice compiled with the wrapped ghc may spawn the emulator for a
+  # TH splice.  Most survive being emulated inside an emulator; the few
+  # that reliably do not are named in
+  # `haskell-nix.emulatorNativeBuilderPackages`, and only those are
+  # pinned to a builder that can host an emulator -- there is one such
+  # machine, so gating every cross slice on it would serialise the whole
+  # cross job set behind it.  See `overlays/haskell.nix` for the list and
+  # the rule for adding to it.
+  #
+  # Build-stage units are exempt regardless: they compile with
+  # `ghc.buildGHC` for the build platform and never go near iserv.
+  sliceRequiredSystemFeatures =
+    if isBuildStageUnit
+    || templateHaskell == null
+    || !(lib.elem pkgName (templateHaskell.emulatorNativeBuilderPackages or []))
+    then []
+    else templateHaskell.emulatorSystemFeatures or [];
+
   # Stage the package source for local-`packages:` targets so
   # `packages:` can reference it as a local directory — test / bench
   # slices (cabal-7127 requires test / bench targets to be local to the
@@ -2105,6 +2123,7 @@ let
     inherit extraBuildInputs extraNativeBuildInputs withProgFlags
             allowedBuildToolPackages confLibraryDirs
             buildToolBinOverlays;
+    requiredSystemFeatures = sliceRequiredSystemFeatures;
     # Per-component stdenv hardeningDisable (set via haskell.nix
     # `packages.<pkg>.components.<kind>.<name>.hardeningDisable =
     # ["fortify"]`).  Drives `NIX_HARDENING_ENABLE` for the slice's
@@ -2495,6 +2514,9 @@ let
     inherit extraBuildInputs extraNativeBuildInputs withProgFlags
             allowedBuildToolPackages confLibraryDirs
             buildToolBinOverlays solverIncludesGlobalDb;
+    # `cabal v2-haddock` recompiles the modules, splices included, so
+    # the doc slice can spawn the emulator just like the base slice.
+    requiredSystemFeatures = sliceRequiredSystemFeatures;
     # Per-component stdenv hardeningDisable (set via haskell.nix
     # `packages.<pkg>.components.<kind>.<name>.hardeningDisable =
     # ["fortify"]`).  Drives `NIX_HARDENING_ENABLE` for the slice's

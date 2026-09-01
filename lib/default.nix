@@ -246,6 +246,12 @@ in {
   check = import ./check.nix {
     inherit stdenv lib haskellLib;
     inherit (pkgs) pkgsBuildBuild;
+    # A `testWrapper` means the exe cannot run on the build host
+    # unaided (qemu-user / hyper-linux / wine).  Only the packages
+    # named in `emulatorNativeBuilderPackages` are pinned -- see
+    # `overlays/haskell.nix`.
+    emulatorSystemFeatures = pkgs.haskell-nix.emulatorSystemFeatures or [];
+    emulatorNativeBuilderPackages = pkgs.haskell-nix.emulatorNativeBuilderPackages or [];
   };
 
   # Do coverage of a package

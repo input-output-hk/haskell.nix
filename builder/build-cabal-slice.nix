@@ -269,6 +269,15 @@ let outerGhc = ghc; in
                              # affected either: their config hash
                              # records each dep's unit-id, not the
                              # dep's `.conf` content.
+, requiredSystemFeatures ? []
+                             # Nix build-machine features this slice
+                             # needs.  Set by `comp-v2-builder.nix`
+                             # for the cross slices named in
+                             # `haskell-nix.emulatorNativeBuilderPackages`
+                             # -- the ones whose Template Haskell is
+                             # known to crash when the emulator that
+                             # runs it is itself emulated.  Keeps the
+                             # scheduler off those hosts.
 }:
 
 let
@@ -576,6 +585,9 @@ in
 
 stdenv.mkDerivation ({
   inherit pname version hardeningDisable;
+} // lib.optionalAttrs (requiredSystemFeatures != []) {
+  inherit requiredSystemFeatures;
+} // {
   # GHC / hsc2hs / cabal write/read source files; without a UTF-8
   # locale they fall back to the C encoding and crash on non-ASCII
   # input (e.g. `commitBuffer: invalid argument (cannot encode

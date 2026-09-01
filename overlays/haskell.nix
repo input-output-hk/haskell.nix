@@ -30,6 +30,57 @@ final: prev: {
         # reuses one instance instead of re-deriving it per `cabalProject`.
         eval-systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
 
+        # `requiredSystemFeatures` for every derivation that may run a
+        # host-platform binary through an EMULATOR: the `iserv-proxy
+        # --pipe <emulator>` used for Template Haskell on a cross target
+        # (qemu-user / hyper-linux via `overlays/linux-cross.nix`, wine
+        # via `overlays/mingw_w64.nix`), and the `testWrapper` that runs
+        # a cross-built test exe.
+        #
+        # Why this exists: qemu user-mode needs faithful signal, mmap and
+        # TLS semantics, and it does not get them when it is ITSELF being
+        # emulated.  On the zw3rk farm the `x86_64-linux` build slots are
+        # served by the M4s' `nix-linux-builder` VMs, whose kernel is
+        # aarch64 -- so an x86_64 `qemu-aarch64` runs under Rosetta and
+        # then tries to emulate aarch64 on top.  A slice that evaluates a
+        # splice under that stack can die with
+        #   qemu: uncaught target signal 11 (Segmentation fault)
+        # and then hang until nix's 7200s timeout, while the SAME
+        # derivation builds green on a real x86_64 host.
+        #
+        # `recursive-nix` is not what these builds do -- it is a marker of
+        # convenience.  `modules/web-service-hydra.nix` already withholds
+        # it from the darwin hosts' linux `buildMachines` entries (the
+        # external derivation builder cannot implement it) while the one
+        # real linux host advertises it, so requiring it lands these
+        # derivations exactly where an emulator works.  Set this to `[]`
+        # to opt out, or to a purpose-made feature name once the build
+        # farm advertises one.
+        emulatorSystemFeatures = prev.haskell-nix.emulatorSystemFeatures or [ "recursive-nix" ];
+
+        # ...but ONLY for these packages.  There is exactly one native
+        # linux builder, so pinning every emulator-using cross slice to
+        # it would serialise the whole android / aarch64 job set behind
+        # a 4-job machine that is also the Hydra server.  Most cross
+        # slices never evaluate a splice, and of those that do, most
+        # survive the nested emulation; only a few reliably do not.
+        #
+        # So this is a deny-list of known-bad packages, not a blanket
+        # rule.  Add a name here when its slice reproducibly dies with
+        # `qemu: uncaught target signal 11` on a `nix-linux-builder`
+        # host and builds green on a native one -- both halves matter,
+        # since most cross failures in this jobset have nothing to do
+        # with the emulator ([Cabal-7125] link errors, OOM kills, plain
+        # timeouts) and moving those achieves nothing.
+        #
+        #   th-orphans  aarch64-android.  Its `Language.Haskell.TH.
+        #               .Instances` splice segfaults the interpreter
+        #               ~3s in, then hangs until the 7200s timeout;
+        #               the identical derivation builds in ~21s on a
+        #               native x86_64 host.
+        emulatorNativeBuilderPackages =
+          prev.haskell-nix.emulatorNativeBuilderPackages or [ "th-orphans" ];
+
         # nixpkgs used to run `cabal` / `nix-tools`, keyed by eval system
         # and memoised at the fixpoint level.  Non-native systems are
         # imported lazily from the same nixpkgs path and overlays; the
