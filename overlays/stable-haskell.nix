@@ -234,6 +234,32 @@ let
       sed -i 's|Nothing -> do|Nothing -> if True then return "0000000000000000000000000000000000000000" else do|' \
         libraries/ghc-boot/Setup.hs
 
+      # The same Setup.hs generates GHC/Platform/Host.hs by splicing `show`n
+      # Cabal values into source text, unparenthesised:
+      #   , "hostPlatformArch = toArch " ++ show arch
+      # For every arch Cabal has a nullary constructor for that is fine, but an
+      # arch it does not know becomes `OtherArch "<name>"`, and the line comes
+      # out as `toArch OtherArch "armv7"` -- two arguments to a one-argument
+      # function, so ghc-boot does not compile at all:
+      #   • The function `toArch' is applied to two visible arguments,
+      #     but its type `Distribution.System.Arch -> Arch' has only one
+      # armv7a-unknown-linux-androideabi is exactly that case ("armv7" is not
+      # one of Cabal's known arches).  Upstream clearly meant this to work --
+      # the generated code already carries `toArch (OtherArch _) = ArchUnknown`
+      # and the matching `toOS (OtherOS _)` -- so the parentheses are the whole
+      # fix.  `toOS` gets them too: it has the identical shape and would fail
+      # the same way on an OS Cabal does not know.
+      sed -i \
+        -e 's|"hostPlatformArch = toArch " ++ show arch|"hostPlatformArch = toArch (" ++ show arch ++ ")"|' \
+        -e 's|"hostPlatformOS   = toOS " ++ show os|"hostPlatformOS   = toOS (" ++ show os ++ ")"|' \
+        libraries/ghc-boot/Setup.hs
+      grep -qF 'toArch (" ++ show arch ++ ")"' libraries/ghc-boot/Setup.hs || {
+        echo "ghc-boot Setup.hs: the hostPlatformArch generator moved; the" >&2
+        echo "unparenthesised-OtherArch fix did not apply.  It now says:" >&2
+        grep -n 'hostPlatformArch =' libraries/ghc-boot/Setup.hs >&2
+        exit 1
+      }
+
       # configure generates config.status AND all AC_CONFIG_FILES (the .cabal
       # files, ghcversion.h, …).
       ./configure \
