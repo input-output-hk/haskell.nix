@@ -42,9 +42,22 @@ in lib.recurseIntoAttrs ({
 
   # The test spawns a build-tool-depends exe (readProcess) and reads its
   # data-files / a source-relative file — this can't be reproduced when the test
-  # binary runs under an emulator (Windows/wine, Android), which can't reliably
-  # spawn the build-tool.  Disable the whole test there.
-  meta.disabled = stdenv.hostPlatform.isWindows || stdenv.hostPlatform.isAndroid;
+  # binary runs under an emulator (Windows/wine, Android) or a language runtime
+  # (ghcjs/node), none of which can reliably spawn the build-tool.  Disable the
+  # whole test there.
+  #
+  # ghcjs is the same shape as the other two, not a new one: the test binary is
+  # JavaScript run by node, the build-tool it wants is another JavaScript
+  # program, and node has nothing to exec, so the check dies with
+  #   check-datadir-tool: readCreateProcess: does not exist
+  # before it can assert anything about the data-dir.  That is a limitation of
+  # the harness rather than a haskell.nix bug -- what the test exists to prove
+  # (that `lib/check.nix` sets `<pkg>_datadir` for a v2 check) is simply not
+  # observable through a runtime that cannot spawn the tool.  Note this leaves
+  # the v2 data-dir behaviour unverified on ghcjs, as it already is on
+  # Windows/Android (here) and wasm (the `run-v2` guard below).
+  meta.disabled = stdenv.hostPlatform.isWindows || stdenv.hostPlatform.isAndroid
+               || stdenv.hostPlatform.isGhcjs;
 }
 # The v2 check stages data-files as absolute /nix/store symlinks and points
 # Cabal at them via the `<pkg>_datadir` env var, but wasmtime neither forwards
