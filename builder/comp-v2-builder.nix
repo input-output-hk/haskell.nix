@@ -17,6 +17,8 @@
 # Optional cross-TH plumbing for the host platform.  Currently
 # only set by overlays/windows.nix and exposes `wrapGhc :: ghc -> ghc`.
 , templateHaskell ? null
+, emulatorSystemFeatures ? []
+, emulatorNativeBuilderPackages ? []
 # Project-level switch (see modules/project-common.nix): build slices
 # for `style: "local"` plan units in cabal `packages:` mode instead of
 # `extra-packages:` mode, so the slice's cabal elaborates the SAME
@@ -1925,23 +1927,37 @@ let
     then templateHaskell.wrapGhc ghc
     else ghc;
 
-  # A slice compiled with the wrapped ghc may spawn the emulator for a
-  # TH splice.  Most survive being emulated inside an emulator; the few
-  # that reliably do not are named in
+  # A cross slice may need a builder that can actually run target code --
+  # to spawn the emulator for a TH splice, or just because the cross ghc
+  # itself misbehaves on an emulated host.  The few packages that
+  # reliably do not survive a `nix-linux-builder` are named in
   # `haskell-nix.emulatorNativeBuilderPackages`, and only those are
-  # pinned to a builder that can host an emulator -- there is one such
-  # machine, so gating every cross slice on it would serialise the whole
-  # cross job set behind it.  See `overlays/haskell.nix` for the list and
-  # the rule for adding to it.
+  # pinned -- there is one native linux builder, so gating every cross
+  # slice on it would serialise the whole cross job set behind it.  See
+  # `overlays/haskell.nix` for the list and the rule for adding to it.
   #
-  # Build-stage units are exempt regardless: they compile with
-  # `ghc.buildGHC` for the build platform and never go near iserv.
+  # These two knobs are read from `pkgs.haskell-nix` directly and NOT
+  # from `templateHaskell`.  They used to come from the latter, which
+  # silently disabled the whole mechanism for any project that sets
+  # `crossTemplateHaskellSupport = false` (iserv-proxy, and the boot
+  # packages injected into it) -- `templateHaskell` is null there, so the
+  # guard below short-circuited and the deny-list did nothing.  That is
+  # backwards: where a slice is allowed to build and whether the TH
+  # wrapper is applied to it are independent.  `base` is the case that
+  # proves it -- it stalls for the full 7200s timeout on an emulated
+  # builder with no TH, no iserv and no qemu anywhere in its log, and
+  # builds in 70s when forced native.
+  #
+  # `isCrossHost` keeps this to slices whose output cannot run on the
+  # build machine unaided, which is the same question the pinning
+  # answers.  Build-stage units are exempt regardless: they compile with
+  # `ghc.buildGHC` for the build platform.
   sliceRequiredSystemFeatures =
     if isBuildStageUnit
-    || templateHaskell == null
-    || !(lib.elem pkgName (templateHaskell.emulatorNativeBuilderPackages or []))
+    || !haskellLib.isCrossHost
+    || !(lib.elem pkgName emulatorNativeBuilderPackages)
     then []
-    else templateHaskell.emulatorSystemFeatures or [];
+    else emulatorSystemFeatures;
 
   # Stage the package source for local-`packages:` targets so
   # `packages:` can reference it as a local directory — test / bench

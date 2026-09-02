@@ -66,20 +66,33 @@ final: prev: {
         # survive the nested emulation; only a few reliably do not.
         #
         # So this is a deny-list of known-bad packages, not a blanket
-        # rule.  Add a name here when its slice reproducibly dies with
-        # `qemu: uncaught target signal 11` on a `nix-linux-builder`
-        # host and builds green on a native one -- both halves matter,
-        # since most cross failures in this jobset have nothing to do
-        # with the emulator ([Cabal-7125] link errors, OOM kills, plain
-        # timeouts) and moving those achieves nothing.
+        # rule.  The test for adding a name is an A/B on the SAME
+        # derivation: it fails on a `nix-linux-builder` host and builds
+        # green when forced native with `nix build --builders ""`.  That
+        # A/B is the whole criterion, and it is worth actually running --
+        # most cross failures in this jobset have nothing to do with the
+        # emulator ([Cabal-7125] link errors, OOM kills, genuine compiler
+        # bugs) and moving those achieves nothing.
+        #
+        # Do NOT use the presence of `qemu: uncaught target signal 11` as
+        # the test.  That catches only one of the two shapes, and reading
+        # a host name is not evidence at all:
         #
         #   th-orphans  aarch64-android.  Its `Language.Haskell.TH.
         #               .Instances` splice segfaults the interpreter
         #               ~3s in, then hangs until the 7200s timeout;
         #               the identical derivation builds in ~21s on a
         #               native x86_64 host.
+        #
+        #   base        armv7a-android.  The silent shape: no iserv, no
+        #               qemu, no `uncaught target signal` anywhere in the
+        #               log -- the cross ghc itself stalls under Rosetta
+        #               and burns the full 7200s timeout.  Forced native
+        #               the same derivation completes in 70s.  A ~100x
+        #               gap, and nothing in the log names the emulator,
+        #               which is exactly why the A/B is the criterion.
         emulatorNativeBuilderPackages =
-          prev.haskell-nix.emulatorNativeBuilderPackages or [ "th-orphans" ];
+          prev.haskell-nix.emulatorNativeBuilderPackages or [ "th-orphans" "base" ];
 
         # nixpkgs used to run `cabal` / `nix-tools`, keyed by eval system
         # and memoised at the fixpoint level.  Non-native systems are
