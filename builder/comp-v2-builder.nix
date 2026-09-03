@@ -1633,9 +1633,26 @@ let
   # `source-repository-package` block gets a BuildAndInstall (hashed)
   # elaboration from the fork — so they take the local-`packages:`
   # path too (their staged source replaces the srp block).
+  #
+  # Backpack is the exception.  An instantiated unit's plan id carries the
+  # instantiation hash after a `+` (`backpack-0.1.0.0-consumer+638VlFpH...`,
+  # alongside the indefinite `backpack-0.1.0.0-consumer`), and local mode
+  # does not produce it: cabal keeps the instantiation inplace and captures
+  # only the indefinite units, so the slice registers `-consumer` / `-sig`
+  # and the plan's `+`-suffixed id is simply missing -- `tests.backpack.build`
+  # on every boot-injected target.  Extra-packages mode does reproduce it.
+  # Gated per PACKAGE, not per component: mixing the two modes inside one
+  # package would have its sublib slices register ids under one scheme while
+  # a sibling re-solves them under the other.
+  hasBackpackInstantiation =
+    lib.any
+      (id: lib.hasInfix "+" id
+           && ((planJsonByPlanId.${id}.pkg-name or null) == pkgName))
+      (lib.attrNames planJsonByPlanId);
   isLocalPackageSlice =
     v2LocalPackageSlices
     && !isLocalTestOrBench
+    && !hasBackpackInstantiation
     && ctype == "lib"
     && builtins.elem (thisPlanEntry.style or null) [ "local" "inplace" ];
   # Either flavour of local-`packages:` slicing — drives source staging
