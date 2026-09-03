@@ -2232,9 +2232,22 @@ let
          else uid;
     # Local-mode slices necessarily also build required SIBLING
     # components of their (local) package in-slice — tolerated by the
-    # unit-id check via this prefix (see build-cabal-slice.nix).
+    # unit-id check via this prefix (see build-cabal-slice.nix), which
+    # also drives the eviction of the target package's composed twins.
+    #
+    # Keyed on `useLocalPackagesMode`, not `isLocalPackageSlice`: a
+    # local test/bench slice (cabal-7127) builds its package's library
+    # in-slice too, and once the LIBRARY slice registers the plan's
+    # deterministic id rather than a hashed one, the two collide on the
+    # composed store's read-only receipt:
+    #   .../units/js-template-haskell-0.1.0.0:
+    #     withFile: permission denied (Permission denied)
+    # -- `tests.js-template-haskell.check` on every boot-injected
+    # target.  Latent until `v2LocalPackageSlices` reached these
+    # projects; before that the composed twin was
+    # `<pkgid>-<hash>` and nothing clashed.
     allowedSiblingUnitPrefix =
-      if isLocalPackageSlice then "${pkgName}-${pkgVersion}" else null;
+      if useLocalPackagesMode then "${pkgName}-${pkgVersion}" else null;
     inherit solverIncludesGlobalDb;
     # Plan-json entry for this slice's expected unit-id, written to
     # disk so the unit-id-mismatch diagnostic can diff what plan-nix
