@@ -1714,6 +1714,22 @@ ENDSCRIPT
     # -- `tests.coverage.run`, `tests.coverage-no-libs.run`, and the
     # per-package `*-coverage-report` drvs under them.
     ln -sf ${s2exe "hpc-bin" "hpc"}     $out/bin/hpc
+    # `haddock` likewise: a real bindist installs it next to ghc, and that
+    # is the only place Cabal looks -- `guessHaddockFromGhcPath` probes
+    # `haddock{,-<ver>,-ghc-<ver>}` in the *configured compiler's* bin/
+    # (build-cabal-slice mirrors that dir into its solver-tools farm for
+    # exactly this reason).  Without the link any component built with
+    # `documentation: True` dies after compiling, in the haddock phase:
+    #   Error: [Cabal-7620]
+    #   The program 'haddock' version >=2.0 is required but it could not
+    #   be found.
+    # -- `tests.sublib-docs.run` and every other doc-enabled slice.  The
+    # exe is already built (utils/haddock is in the fork's stage2
+    # project, and `haddock` is in pkgsNeedingRts above); it was just
+    # never linked in.
+    ${lib.optionalString (s2 ? haddock) ''
+    ln -sf ${s2exe "haddock" "haddock"} $out/bin/haddock
+    ''}
 
     # Versioned aliases, as in a standard GHC bindist (a real bindist of
     # this source would install ghc-${ghcVersion}).  Tooling relies on the
@@ -1727,6 +1743,9 @@ ENDSCRIPT
     ln -s $out/bin/ghc-pkg $out/bin/ghc-pkg-$v
     ln -s $out/bin/runghc  $out/bin/runghc-$v
     ln -s $out/bin/hpc     $out/bin/hpc-$v
+    ${lib.optionalString (s2 ? haddock) ''
+    ln -s $out/bin/haddock $out/bin/haddock-ghc-$v
+    ''}
     # GHC 9.14 looks for unlit at $topdir/../bin/unlit where topdir = lib/ghc-9.14
     # (set via -B$NIX_GHC_LIBDIR in ghc-for-component-wrapper.nix).
     # lib/ghc-9.14/../bin/ resolves to lib/bin/, so unlit must be there.
