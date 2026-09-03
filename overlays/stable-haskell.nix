@@ -1735,6 +1735,18 @@ ENDSCRIPT
     mkdir -p $out/lib/bin
     ln -sf ${s2exe "unlit"   "unlit"}   $out/lib/bin/unlit
     ln -sf ${s2exe "hsc2hs"  "hsc2hs"} $out/lib/bin/hsc2hs
+    # ghc-iserv lands here for the same reason, and is found the same way:
+    # GHC resolves the external interpreter as $topdir/../bin/ghc-iserv, so
+    # `-fexternal-interpreter` (and anything that implies it) dies with
+    #   .../lib/ghc-9.14/../bin/ghc-iserv: createProcess: posix_spawnp:
+    #   does not exist (No such file or directory)
+    # unless lib/bin/ghc-iserv exists.  utils/ghc-iserv is a package in the
+    # fork's cabal.project.stage2, so the exe is already built -- it was just
+    # never linked into the compiler.  A real bindist installs it in libexec
+    # (= lib/bin here), not in bin/, so it goes only here.
+    ${lib.optionalString (s2 ? ghc-iserv) ''
+    ln -sf ${s2exe "ghc-iserv" "ghc-iserv"} $out/lib/bin/ghc-iserv
+    ''}
 
     # ── settings + support files ─────────────────────────────────────────────
     # Copy settings BEFORE ghc-pkg init/recache — the stage2 ghc-pkg binary
