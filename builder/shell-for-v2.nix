@@ -544,9 +544,31 @@ let
       with-build-compiler: ${buildGhc}/bin/${buildGhc.targetPrefix or ""}ghc
       with-build-hc-pkg: ${buildGhc}/bin/${buildGhc.targetPrefix or ""}ghc-pkg
     '';
+  # Every hash-affecting line the slices' composed cabal.project carries
+  # has to appear here too.  A UnitId is a hash of cabal-install's
+  # `PackageHashInputs`, and `pkgHashProgramArgs` is one of them: a
+  # `<prog>-options` field changes the UnitId of EVERY package in the
+  # project, including ones that never run that program.  So a stanza
+  # present on one side and not the other makes the shell's cabal compute
+  # ids that match nothing in the composed store, and it rebuilds from
+  # source exactly what the store was there to provide -- silently, since
+  # a from-source build of a dep is not an error.
+  #
+  # `hsc2hs-options: --via-asm` is the one such stanza: Windows-gated, and
+  # not a restatement of a cabal default (the rest of the slices' global
+  # `package *` block -- library-vanilla, optimization, ... -- happens to
+  # match what an unconfigured cabal already does, which is why the shell
+  # agrees on every other target).  It must stay byte-identical to
+  # `hsc2hsViaAsmProject` in `builder/comp-v2-builder.nix`, where the
+  # rationale for `--via-asm` itself lives.
+  hsc2hsViaAsmProject =
+    lib.optionalString (stdenv.hostPlatform.isWindows or false) ''
+      package *
+        hsc2hs-options: --via-asm
+    '';
   cabalProjectLocalContent =
     lib.optionalString (cabalProjectLocal != null && cabalProjectLocal != "") cabalProjectLocal
-    + buildCompilerFields;
+    + buildCompilerFields + hsc2hsViaAsmProject;
   cabalProjectLocalFile =
     pkgs.pkgsBuildBuild.writeText "cabal.project.local" cabalProjectLocalContent;
   cabalProjectLocalSync = pkgs.pkgsBuildBuild.writeShellScriptBin "haskell-nix-cabal-project-local-sync" ''
