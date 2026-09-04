@@ -715,30 +715,6 @@ in {
       # mkDefault) so an explicit `builderVersion = 1` fails loudly
       # instead of building a subtly broken rts.
       builderVersion = 2;
-      # The injection below puts every target boot library in `packages:`,
-      # so the plan elaborates them -- and everything downstream of them --
-      # as `local` / `inplace` units with the fork's deterministic bare ids
-      # (`base-4.22.0.0`, `rts-1.0.3-nonthreaded-nodebug`, ...).  There is
-      # not a single hashed id in such a plan.
-      #
-      # Without this, slices build those units `extra-packages:`-style and
-      # REGISTER hashed ids instead, which nothing catches: `expectedUnitId`
-      # in comp-v2-builder returns null when `isCross`, and the injection
-      # only fires for cross compilers.  The composed store then holds ids
-      # the plan never mentions, so a `cabal build` that re-solves the same
-      # project -- a v2 shell above all -- asks for the plan's bare ids,
-      # finds no receipts, and rebuilds the whole graph from source.  That
-      # is `tests.cabal-sublib-shell` on every ghc914-sh CROSS target (both
-      # natives pass; they have a populated global db and no injection), and
-      # on ghcjs the rebuild goes on to die linking the consumer with
-      # `wasm-ld: error: duplicate symbol: __rts_fopen`.
-      #
-      # Local-`packages:` slicing is the mechanism built for exactly this:
-      # the id a slice registers becomes the id the plan predicts.  (The
-      # equality check itself stays off here -- `isCross` short-circuits
-      # ahead of `isLocalPackageSlice` -- so a residual divergence would
-      # still show up as a rebuild rather than an error.)
-      v2LocalPackageSlices = true;
       cabalProjectLocal = lib.mkBefore ''
         -- Added by the stable-haskell boot-package injection (see the
         -- `injectStableHaskellBootPackages` option): the compiler ships no

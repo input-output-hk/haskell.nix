@@ -1633,26 +1633,9 @@ let
   # `source-repository-package` block gets a BuildAndInstall (hashed)
   # elaboration from the fork — so they take the local-`packages:`
   # path too (their staged source replaces the srp block).
-  #
-  # Backpack is the exception.  An instantiated unit's plan id carries the
-  # instantiation hash after a `+` (`backpack-0.1.0.0-consumer+638VlFpH...`,
-  # alongside the indefinite `backpack-0.1.0.0-consumer`), and local mode
-  # does not produce it: cabal keeps the instantiation inplace and captures
-  # only the indefinite units, so the slice registers `-consumer` / `-sig`
-  # and the plan's `+`-suffixed id is simply missing -- `tests.backpack.build`
-  # on every boot-injected target.  Extra-packages mode does reproduce it.
-  # Gated per PACKAGE, not per component: mixing the two modes inside one
-  # package would have its sublib slices register ids under one scheme while
-  # a sibling re-solves them under the other.
-  hasBackpackInstantiation =
-    lib.any
-      (id: lib.hasInfix "+" id
-           && ((planJsonByPlanId.${id}.pkg-name or null) == pkgName))
-      (lib.attrNames planJsonByPlanId);
   isLocalPackageSlice =
     v2LocalPackageSlices
     && !isLocalTestOrBench
-    && !hasBackpackInstantiation
     && ctype == "lib"
     && builtins.elem (thisPlanEntry.style or null) [ "local" "inplace" ];
   # Either flavour of local-`packages:` slicing — drives source staging
@@ -2232,22 +2215,9 @@ let
          else uid;
     # Local-mode slices necessarily also build required SIBLING
     # components of their (local) package in-slice — tolerated by the
-    # unit-id check via this prefix (see build-cabal-slice.nix), which
-    # also drives the eviction of the target package's composed twins.
-    #
-    # Keyed on `useLocalPackagesMode`, not `isLocalPackageSlice`: a
-    # local test/bench slice (cabal-7127) builds its package's library
-    # in-slice too, and once the LIBRARY slice registers the plan's
-    # deterministic id rather than a hashed one, the two collide on the
-    # composed store's read-only receipt:
-    #   .../units/js-template-haskell-0.1.0.0:
-    #     withFile: permission denied (Permission denied)
-    # -- `tests.js-template-haskell.check` on every boot-injected
-    # target.  Latent until `v2LocalPackageSlices` reached these
-    # projects; before that the composed twin was
-    # `<pkgid>-<hash>` and nothing clashed.
+    # unit-id check via this prefix (see build-cabal-slice.nix).
     allowedSiblingUnitPrefix =
-      if useLocalPackagesMode then "${pkgName}-${pkgVersion}" else null;
+      if isLocalPackageSlice then "${pkgName}-${pkgVersion}" else null;
     inherit solverIncludesGlobalDb;
     # Plan-json entry for this slice's expected unit-id, written to
     # disk so the unit-id-mismatch diagnostic can diff what plan-nix
