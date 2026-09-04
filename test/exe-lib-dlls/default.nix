@@ -1,11 +1,11 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, testCabalProjectLocal, testInputMap }:
+{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
 let
   project = project' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "exe-lib-dlls";
     inputMap = testInputMap;
     cabalProjectLocal = testCabalProjectLocal
@@ -17,7 +17,7 @@ let
   # See `docs/dev/profiling.md` — v2 expects profiling toggles to
   # come from cabal.project so plan-nix records them.
   projectProfiled = project' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "exe-lib-dlls";
     inputMap = testInputMap;
     cabalProjectLocal = testCabalProjectLocal

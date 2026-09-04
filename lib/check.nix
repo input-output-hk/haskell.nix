@@ -1,4 +1,5 @@
-{ stdenv, lib, haskellLib, pkgsBuildBuild }:
+{ stdenv, lib, haskellLib, pkgsBuildBuild
+, emulatorSystemFeatures ? [], emulatorNativeBuilderPackages ? [] }:
 let self = drvOrig:
 
 # v2 slices don't have the v1-specific internals that this check
@@ -28,6 +29,14 @@ if drvOrig.passthru.isSlice or false then
       srcSubDirPath = drvOrig.passthru.srcSubDirPath or null;
   in stdenv.mkDerivation ({
     name = drvOrig.name + "-check";
+  } // lib.optionalAttrs (testWrapper != []
+                          && lib.elem (drvOrig.identifier.name or "")
+                                      emulatorNativeBuilderPackages) {
+    # The exe runs through an emulator, and this package is one of the
+    # few known to break when that emulator is itself emulated -- see
+    # `haskell-nix.emulatorNativeBuilderPackages`.
+    requiredSystemFeatures = emulatorSystemFeatures;
+  } // {
     passthru = { inherit (drvOrig) identifier config exeName meta; };
     inherit (drvOrig) exeName;
     inherit (component) doCheck doCrossCheck;
@@ -57,9 +66,14 @@ if drvOrig.passthru.isSlice or false then
       # `<pkg>_datadir` (the env var Cabal's `Paths_<pkg>` consults before the
       # baked-in path) at that `share` dir.  Done before `preCheck` so a
       # project's own preCheck can still override it.
-      for _conf in ${drvOrig}/store/ghc-*/package.db/*.conf; do
+      for _conf in ${drvOrig}/store/ghc-*/package.db/*.conf \
+                   ${drvOrig}/store/host/*/package.conf.d/*.conf; do
         [ -e "$_conf" ] || continue
-        _share=$(dirname "$(dirname "$_conf")")/$(basename "$_conf" .conf)/share
+        _unitroot=$(dirname "$(dirname "$_conf")")
+        # Mainline layout stages data-files at `<store>/<uid>/share`;
+        # the stable-haskell fork's staged layout at `<store>/lib/<uid>/share`.
+        _share=$_unitroot/$(basename "$_conf" .conf)/share
+        [ -d "$_share" ] || _share=$_unitroot/lib/$(basename "$_conf" .conf)/share
         [ -d "$_share" ] || continue
         _pkgname=$(sed -n 's/^name: *//p' "$_conf" | head -1)
         [ -n "$_pkgname" ] || continue
@@ -166,6 +180,12 @@ in stdenv.mkDerivation ((
   '';
 } // haskellLib.optionalHooks {
   inherit (component) preCheck postCheck;
+}
+// lib.optionalAttrs ((component.testWrapper or []) != []
+                     && lib.elem (drv.identifier.name or "")
+                                 emulatorNativeBuilderPackages) {
+  # v1 counterpart of the slice branch above.
+  requiredSystemFeatures = emulatorSystemFeatures;
 }
 // lib.optionalAttrs (drv ? LOCALE_ARCHIVE) { inherit (drv) LOCALE_ARCHIVE; }
 );
