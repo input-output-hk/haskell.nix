@@ -1703,8 +1703,42 @@ ENDSCRIPT
     chmod +x $out/bin/ghc-pkg
 
     ln -sf ${s2exe "hsc2hs"  "hsc2hs"}  $out/bin/hsc2hs
-    ln -sf ${s2exe "runghc"  "runghc"}  $out/bin/runghc
     ln -sf ${s2exe "unlit"   "unlit"}   $out/bin/unlit
+
+    # ── runghc wrapper ────────────────────────────────────────────────────────
+    # runghc has to be TOLD where ghc is; a bare symlink cannot tell it.
+    # Given no `-f`, runghc calls `getExecPath` and looks for `ghc` -- and
+    # failing that `ghc-stage2` -- next to its own *resolved* executable
+    # (utils/runghc/Main.hs, `findGhc`).  `getExecPath` follows symlinks, so
+    # `ln -s` lands that search in the runghc component's own store dir,
+    # whose bin/ contains nothing but runghc, and every invocation dies with
+    #   runghc: /nix/store/…-runghc-exe-runghc-9.14.0/bin/ghc-stage2:
+    #   executeFile: does not exist (No such file or directory)
+    # A real bindist never hits this: there `ghc` is a real sibling file.
+    # `tests.shell-for.run` and `tests.with-packages.run` are the jobs that
+    # notice (both call `''${env.ghc}/bin/runghc`), on both platforms.
+    #
+    # Callers that pass their own `-f` still win, exactly as with `-B` in the
+    # `ghc` wrapper above: runghc's flag monoid keeps the LAST `-f`
+    # (`RunGhcFlags _ <> right@(RunGhcFlags (Just _)) = right`), and `"$@"`
+    # comes after ours -- so ghc-for-component-wrapper.nix's
+    # `-f $wrappedGhc/bin/ghc` is unaffected.
+    #
+    # It points at `$out/bin/ghc`, not at the bare ghc-bin exe, so the
+    # `-package-db`/`-B` that wrapper supplies still apply.  That is also
+    # what makes the v2 shell work: it exposes deps through GHC_ENVIRONMENT,
+    # an env var, which survives the exec into `$out/bin/ghc` -- the same
+    # composition its own `ghc` wrapper already relies on.
+    cat > $out/bin/runghc << 'ENDSCRIPT'
+#!/bin/sh
+exec RUNGHC_EXE -f RUNGHC_GHC "$@"
+ENDSCRIPT
+    sed -i \
+      -e "s|RUNGHC_EXE|${s2exe "runghc" "runghc"}|" \
+      -e "s|RUNGHC_GHC|$out/bin/ghc|" \
+      $out/bin/runghc
+    chmod +x $out/bin/runghc
+
     # `hpc` comes from the `hpc-bin` source-repository-package the fork's
     # stage2 project lists (srpInputMap above), and a real bindist installs
     # it next to ghc.  haskell.nix's coverage reports put the compiler on
