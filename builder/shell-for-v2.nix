@@ -566,8 +566,77 @@ let
       package *
         hsc2hs-options: --via-asm
     '';
+  # --- The boot-package injection, as the SHELL needs it ------------------
+  #
+  # `modules/cabal-project.nix`'s `injectStableHaskellBootPackages` writes
+  # two stanzas that are right for a slice and wrong here, each delimited by
+  # a marker pair (the rationale for both lives beside the markers there):
+  #
+  #   haskell.nix:boot-packages  a `packages:` block listing every boot
+  #                              library's source dir.  A slice has to build
+  #                              them; the shell already has them, as
+  #                              `installed` units in the composed store.
+  #   haskell.nix:boot-pins      `base source, rts source, ...` constraints,
+  #                              telling the solver NOT to use an installed
+  #                              instance.  Here we want exactly the opposite.
+  #
+  # Left alone they cost the shell far more than a few redundant rebuilds.
+  # `improveInstallPlanWithStoreUnits` (the fork's store-entry reuse, live at
+  # ProjectPlanning.hs:635 and driven from `phaseImprovePlan`) only promotes a
+  # unit to Installed when it has a receipt, is NOT local, AND every one of
+  # its dependencies is itself pre-existing/installed/improved.  A local boot
+  # library fails that third guard for everything above it, so the sibling
+  # library `tests/cabal-sublib-shell` exists to check gets rebuilt too --
+  # then the freshly built rts collides with the store's at link time
+  # (`wasm-ld: error: duplicate symbol: __rts_fopen`).
+  #
+  # Neither edit touches a unit-id: `PackageHashInputs` contains no field
+  # derived from `packages:` or from a solver pin, so the ids the shell
+  # computes stay bit-identical to the slices' -- which is the whole point,
+  # since reuse is keyed on them.  (`package-db:` would NOT be safe here:
+  # `pkgHashPackageDbs` IS a hash input.  See `solverShim` below for how the
+  # composed db is made visible without naming it in the project.)
+  #
+  # Gated on `withBuildCompiler`, which `modules/cabal-project.nix` sets in
+  # exactly one place -- this injection -- so no other project is affected.
+  stripBootPackages = text:
+    let
+      parts = lib.splitString "-- >>> haskell.nix:boot-packages\n" text;
+    in if builtins.length parts < 2 then text
+      else builtins.head parts
+        + lib.concatMapStrings
+            (p: let tail' = lib.splitString "-- <<< haskell.nix:boot-packages\n" p;
+                in if builtins.length tail' < 2 then p
+                   else lib.concatStringsSep "" (builtins.tail tail'))
+            (builtins.tail parts);
+  installBootPins = text:
+    let
+      parts = lib.splitString "-- >>> haskell.nix:boot-pins\n" text;
+    in if builtins.length parts < 2 then text
+      else builtins.head parts
+        + lib.concatMapStrings
+            (p: let tail' = lib.splitString "-- <<< haskell.nix:boot-pins\n" p;
+                in if builtins.length tail' < 2 then p
+                   else builtins.replaceStrings [" source"] [" installed"]
+                          (builtins.head tail')
+                        + lib.concatStringsSep "" (builtins.tail tail'))
+            (builtins.tail parts);
+  # Both halves of this fix have to arrive together or not at all: the
+  # `installed` pins are unsatisfiable without `solverShim` making the
+  # composed db the solver's global db, and the shim only reaches cabal
+  # through `crossCabalWrapper`, which exists only when `targetPrefix != ""`.
+  # ghcjs is the one cross target with an empty prefix, so it gets neither
+  # and is left exactly as it is today -- pinning it `installed` on its own
+  # would just trade its link-time failure for an unsatisfiable solve.
+  # Giving ghcjs the same treatment means giving it a `cabal` wrapper that
+  # cannot simply `exec cabal` (it would find itself on PATH); that is a
+  # separate change.
+  applyShellBootFix = withBuildCompiler && targetPrefix != "";
+  shellProjectLocal = text:
+    if applyShellBootFix then installBootPins (stripBootPackages text) else text;
   cabalProjectLocalContent =
-    lib.optionalString (cabalProjectLocal != null && cabalProjectLocal != "") cabalProjectLocal
+    lib.optionalString (cabalProjectLocal != null && cabalProjectLocal != "")
+      (shellProjectLocal cabalProjectLocal)
     + buildCompilerFields + hsc2hsViaAsmProject;
   cabalProjectLocalFile =
     pkgs.pkgsBuildBuild.writeText "cabal.project.local" cabalProjectLocalContent;
@@ -643,10 +712,68 @@ let
       done
     ''}
   '';
+  # --- Making the composed store visible to the SHELL's solver ------------
+  #
+  # `shellProjectLocal` above pins the boot libraries `installed` instead of
+  # `source`.  That pin is unsatisfiable on its own: this compiler ships an
+  # empty global package db (`emptyGlobalPackageDb` -- the very reason the
+  # injection exists), and cabal builds its installed-package index from
+  # `ghc-pkg dump --global`, so the solver would reject every pin with
+  # "requires installed instance".  The units it needs ARE on disk, in the
+  # composed store, but cabal only consults that AFTER solving
+  # (`improveInstallPlanWithStoreUnits`).
+  #
+  # The composed db therefore has to reach the solver as the GLOBAL db.  It
+  # cannot be named in the project: `pkgHashPackageDbs` is a unit-id hash
+  # input rendered as `package-dbs:`, so a `package-db:` field would move
+  # every id and miss the store it was pointing at.  `GHC_PACKAGE_PATH` is no
+  # use either -- `--global` ignores it.  What works is the trick
+  # `build-cabal-slice.nix` already uses for slices: a `ghc-pkg` that carries
+  # `--global-package-db <composedDb>`.  ghc-pkg's flag handling is last-wins
+  # and the compiler's own wrapper puts its baked flag before "$@", so ours
+  # overrides it -- and the db stack stays `[GlobalPackageDB]`, leaving the
+  # hash untouched.
+  #
+  # Mirror `ghcShim` (the dir cabal actually uses) rather than the raw
+  # compiler bin/, because on cross cabal gets an ABSOLUTE `--with-compiler=`
+  # and takes `ghc-pkg` from that path's own bin/, so a PATH-only override
+  # would be inert.  `ghc` must be a real file, not a symlink: Cabal's
+  # `guessToolFromGhcPath` canonicalizes the configured ghc path and probes
+  # the REAL directory's ghc-pkg first (cabal#7390), which would find the
+  # compiler's own ghc-pkg and skip the override.
+  solverShim = pkgs.pkgsBuildBuild.runCommand "${ghc.name}-v2-solver-shim" {
+    preferLocalBuild = true;
+  } ''
+    ${discoverDbs}
+    mkdir -p $out/bin
+    for f in ${ghcShim}/bin/*; do
+      ln -sf "$f" "$out/bin/$(basename "$f")"
+    done
+    for g in ${ghcShim}/bin/${targetPrefix}ghc ${ghcShim}/bin/${targetPrefix}ghc-${ghc.version}; do
+      [ -e "$g" ] || continue
+      gName=$(basename "$g")
+      rm -f "$out/bin/$gName"
+      printf '#!/bin/sh\nexec %s "$@"\n' "$g" > "$out/bin/$gName"
+      chmod +x "$out/bin/$gName"
+    done
+    # Cabal's near-compiler lookup asks for `ghc-pkg`, not `<prefix>ghc-pkg`
+    # (the shim exposes both), so the unprefixed alias needs the override too.
+    for gp in ${ghcShim}/bin/${targetPrefix}ghc-pkg* ${ghcShim}/bin/ghc-pkg*; do
+      [ -e "$gp" ] || continue
+      gpName=$(basename "$gp")
+      rm -f "$out/bin/$gpName"
+      printf '#!/bin/sh\nexec %s --global-package-db %s "$@"\n' \
+        "$gp" "$composedPkgDb" > "$out/bin/$gpName"
+      chmod +x "$out/bin/$gpName"
+    done
+  '';
+  # Only the injected (two-stage) projects need the override; everything else
+  # keeps the plain shim, so no currently-working shell changes behaviour.
+  cabalCompilerDir = if applyShellBootFix then solverShim else ghcShim;
   crossCabalWrapper = lib.optional (targetPrefix != "")
     (pkgs.pkgsBuildBuild.writeShellScriptBin "${targetPrefix}cabal" ''
       exec cabal \
-        --with-compiler=${ghcShim}/bin/${targetPrefix}ghc \
+        --with-compiler=${cabalCompilerDir}/bin/${targetPrefix}ghc \
         --with-hsc2hs=${ghcShim}/bin/${targetPrefix}hsc2hs \
         $(builtin type -P "${targetPrefix}pkg-config" &> /dev/null \
           && echo "--with-pkg-config=${targetPrefix}pkg-config") \

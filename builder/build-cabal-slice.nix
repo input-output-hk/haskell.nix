@@ -1078,9 +1078,21 @@ stdenv.mkDerivation ({
     fi
 
     # --- Solver visibility of composed units (staged store layout) ---
-    # The stable-haskell fork dropped cabal's store-entry reuse
-    # (Store.hs is dead code in it): a unit only avoids `(requires
-    # build)` if the SOLVER already sees it as INSTALLED in the
+    # The fork DOES reuse store entries, but only as a post-solve
+    # improvement pass, so the solver still has to see the units.
+    # `improveInstallPlanWithStoreUnits` (ProjectPlanning.hs, driven from
+    # `phaseImprovePlan`) walks the plan bottom-up and promotes a unit to
+    # Installed when it has a receipt under
+    # `<store>/<stage>/<platform>/units/<unit-id>`, is not a local
+    # (`LocalUnpackedPackage`) package, and every one of its dependencies
+    # is itself pre-existing, installed, or being improved.  It reads the
+    # receipt dirs directly rather than through Store.hs's
+    # `getStoreEntries`, which is why that module looks unused from here.
+    #
+    # That pass cannot rescue a unit the SOLVER already chose to build from
+    # source, and being bottom-up, one local package low in the graph fails
+    # the third guard for everything above it.  So a unit still only avoids
+    # `(requires build)` if the SOLVER already sees it as INSTALLED in the
     # toolchain's package db — the same mechanism the fork's stage
     # system uses for boot libraries.  GHC itself needs no help
     # (cabal passes the dist store db — our composed store, through

@@ -719,9 +719,28 @@ in {
         -- Added by the stable-haskell boot-package injection (see the
         -- `injectStableHaskellBootPackages` option): the compiler ships no
         -- target boot libraries, so the plan builds them from source.
+        --
+        -- The two `haskell.nix:boot-*` marker pairs below delimit the parts
+        -- of this injection that are right for a SLICE build but wrong for
+        -- the v2 SHELL, which strips/rewrites them (`shellProjectLocal` in
+        -- builder/shell-for-v2.nix).  A slice starts from nothing and must
+        -- build the boot libraries; the shell starts from the composed
+        -- store, which already holds them -- with the very unit-ids the
+        -- slices computed.  Left in, they make the shell's cabal treat
+        -- every boot library as a LOCAL package and rebuild it, which then
+        -- denies `improveInstallPlanWithStoreUnits` its `depOk` guard for
+        -- everything downstream (the sibling library the shell was supposed
+        -- to reuse included).
+        --
+        -- Keep each marker on its own line and byte-identical to the
+        -- pattern the shell matches.  They survive `replaceSourceRepos`,
+        -- which rewrites only `source-repository-package` blocks and
+        -- concatenates the surrounding text verbatim.
+        -- >>> haskell.nix:boot-packages
         packages:
         ${lib.concatMapStrings (d: "  ${shSrc}/${d}\n        ") shSubdirs}
         ${lib.optionalString (tp.isWindows or false) "  ${win32Src}\n        "}
+        -- <<< haskell.nix:boot-packages
         -- Forked boot packages that live outside the GHC tree.
         source-repository-package
           type: git
@@ -751,7 +770,10 @@ in {
           build:any.ghc-internal installed
           -- The solver otherwise believes these are installed for the
           -- target although they only exist in the build compiler's db
-          -- (mirrors cabal.project.stage3).
+          -- (mirrors cabal.project.stage3).  In the v2 shell every one of
+          -- these IS installed -- in the composed store -- so the shell
+          -- rewrites ` source` to ` installed` between these markers.
+          -- >>> haskell.nix:boot-pins
           , Cabal source, Cabal-syntax source, array source, base source
           , binary source, bytestring source, containers source
           , deepseq source, directory source, exceptions source
@@ -761,6 +783,7 @@ in {
           , rts-fs source, stm source, system-cxx-std-lib source
           , template-haskell source, text source, time source
           , transformers source, unix source, xhtml source, Win32 source
+          -- <<< haskell.nix:boot-pins
           -- Exact versions of the hackage-resolved boot deps, matching the
           -- compiler's own stage2 pins.
           ${lib.concatMapStrings (p: ", ${p.name} ==${p.version}\n  ") shUrlBootPkgs}
