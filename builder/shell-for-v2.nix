@@ -763,18 +763,88 @@ let
   # exposes not just the main library of each dep but also its
   # public sublibs (which GHC hides by default when you only stack
   # the package-db via `GHC_PACKAGE_PATH`).
-  # cabal's per-compiler store dir is `ghc-<version>-<abi>` (or just
-  # `ghc-<version>` when abi is empty).  GHC ≥ 9.8 reports
-  # `Project Unit Id: ghc-<version>-inplace`, from which cabal infers
-  # `compiler-abi: inplace`; earlier GHCs omit the field, so cabal
-  # records an empty abi and the dir name has no `-inplace` suffix.
-  # Mirror that here, otherwise the composedStore lookup misses the
-  # actual dir (`/shell-store/ghc-9.6.7/package.db` exists but we'd
-  # look at `/shell-store/ghc-9.6.7-inplace/package.db`).
-  ghcDirName = "ghc-${ghc.version}"
-    + lib.optionalString (builtins.compareVersions ghc.version "9.8" >= 0) "-inplace";
-  composedPkgDb = "${composedStore}/${ghcDirName}/package.db";
-  globalPkgDb = "${ghc}/lib/ghc-${ghc.version}/lib/package.conf.d";
+  # Locating the two package dbs the shell has to stack.  BOTH come in
+  # more than one layout and NEITHER can be spelled reliably during
+  # eval, so discover them at build time from what is actually on disk
+  # — the same way `build-cabal-slice.nix`'s `discoverStore` does.
+  #
+  # Composed store (`compose-store.nix` already handles both when it
+  # recaches):
+  #
+  #   mainline cabal       <store>/ghc-<ver>[-inplace]/package.db
+  #   stable-haskell fork  <store>/host/<platform>/package.conf.d
+  #
+  # Mainline names that dir `ghc-<version>-<abi>` (just `ghc-<version>`
+  # when abi is empty): GHC ≥ 9.8 reports `Project Unit Id:
+  # ghc-<version>-inplace`, from which cabal infers `compiler-abi:
+  # inplace`, while earlier GHCs omit the field.  The fork instead
+  # takes its layout from `distStoreDirLayout`, so for ghc914-sh no
+  # `ghc-<ver>-inplace` dir exists at all and pointing
+  # GHC_PACKAGE_PATH at one makes `ghc-pkg list` die with
+  # `getDirectoryContents:openDirStream: does not exist`.
+  #
+  # The fork's platform dir is named after the compiler's own `--info`
+  # "Target platform" (DistDirLayout.hs `betterPlatform`), which is NOT
+  # nixpkgs' `hostPlatform.config`: GHC says `x86_64-unknown-linux`
+  # where nixpkgs says `x86_64-unknown-linux-gnu`.  That is why the
+  # name comes from `--info` rather than a nix string — and why it must
+  # be matched BY NAME: on cross the composed store also carries the
+  # BUILD platform's dir (build-stage units, reached through the
+  # `build` -> `host` link), so taking the first entry under `host/`
+  # could silently pick the wrong platform.  Fail loudly instead.
+  #
+  # Compiler global db:
+  #
+  #   nixpkgs GHC ≥ 9.6   <ghc>/lib/ghc-<ver>/lib/package.conf.d
+  #   assembled sh ghc    <ghc>/lib/ghc-<ver>/package.conf.d
+  #   older layouts       <ghc>/lib/package.conf.d
+  #
+  # Getting this one wrong is SILENT: stdenv sets `shopt -s nullglob`,
+  # so a missing dir just makes the `*.conf` walk below yield nothing
+  # and the env file ends up listing no boot packages whatsoever.
+  #
+  # Mainline shapes are probed first throughout, so nothing changes for
+  # the compilers that already work.
+  discoverDbs = ''
+    composedPkgDb=
+    for d in ${composedStore}/ghc-*; do
+      [ -d "$d/package.db" ] || continue
+      composedPkgDb=$d/package.db
+      break
+    done
+    if [ -z "$composedPkgDb" ] && [ -d ${composedStore}/host ]; then
+      hostPlatformDir=$(${ghc}/bin/${ghc.targetPrefix or ""}ghc --info 2>/dev/null \
+        | sed -n 's/.*("Target platform","\([^"]*\)").*/\1/p' | head -1)
+      if [ -z "$hostPlatformDir" ]; then
+        echo "shell-for-v2: ${ghc.targetPrefix or ""}ghc --info gave no Target platform," >&2
+        echo "  so the host dir under ${composedStore}/host cannot be identified" >&2
+        exit 1
+      fi
+      if [ ! -d "${composedStore}/host/$hostPlatformDir/package.conf.d" ]; then
+        echo "shell-for-v2: no package.conf.d for target platform '$hostPlatformDir'" >&2
+        echo "  under ${composedStore}/host" >&2
+        exit 1
+      fi
+      composedPkgDb=${composedStore}/host/$hostPlatformDir/package.conf.d
+    fi
+    if [ -z "$composedPkgDb" ]; then
+      echo "shell-for-v2: no package db found under ${composedStore}" >&2
+      exit 1
+    fi
+
+    globalPkgDb=
+    for d in ${ghc}/lib/ghc-${ghc.version}/lib/package.conf.d \
+             ${ghc}/lib/ghc-${ghc.version}/package.conf.d \
+             ${ghc}/lib/package.conf.d; do
+      [ -d "$d" ] || continue
+      globalPkgDb=$d
+      break
+    done
+    if [ -z "$globalPkgDb" ]; then
+      echo "shell-for-v2: no global package db found under ${ghc}" >&2
+      exit 1
+    fi
+  '';
   # Use `pkgsBuildBuild.runCommand` (build-build stdenv) rather
   # than `pkgs.runCommand` (cross stdenv).  `packageEnv` and
   # `wrappedGhc` end up in the shell's `nativeBuildInputs`; if
@@ -787,10 +857,11 @@ let
   packageEnv = pkgs.pkgsBuildBuild.runCommand "${ghc.name}-v2-shell-env-file"
     { preferLocalBuild = true; } ''
       mkdir -p $out
+      ${discoverDbs}
       {
         echo "clear-package-db"
         echo "global-package-db"
-        echo "package-db ${composedPkgDb}"
+        echo "package-db $composedPkgDb"
         # A package-env file explicitly lists which packages are
         # visible — listed dbs alone aren't enough to expose them,
         # unlike plain `-package-db`.  Walk both the boot db
@@ -798,7 +869,7 @@ let
         # and emit `package-id <id>` for every unit.  Cabal pretty-
         # prints long `id:` values onto the next line indented;
         # short boot ids fit on the same line — handle both.
-        for conf in ${globalPkgDb}/*.conf ${composedPkgDb}/*.conf; do
+        for conf in "$globalPkgDb"/*.conf "$composedPkgDb"/*.conf; do
           [ -e "$conf" ] || continue
           awk '
             /^id:/ {
@@ -829,6 +900,7 @@ let
       };
     } ''
       mkdir -p $out/bin
+      ${discoverDbs}
       prefix="${ghc.targetPrefix or ""}"
       # Symlink every shim binary so PATH-driven invocations
       # (alex, happy, hsc2hs, unlit, ...) still find them.
@@ -856,7 +928,7 @@ let
           makeWrapper \
             ${baseShim}/bin/$prefix$prg \
             $out/bin/$prefix$prg \
-            --set GHC_PACKAGE_PATH "${composedPkgDb}:"
+            --set GHC_PACKAGE_PATH "$composedPkgDb:"
         fi
       done
     '';
