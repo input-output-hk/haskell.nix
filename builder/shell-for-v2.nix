@@ -996,14 +996,45 @@ let
         # and emit `package-id <id>` for every unit.  Cabal pretty-
         # prints long `id:` values onto the next line indented;
         # short boot ids fit on the same line — handle both.
-        for conf in "$globalPkgDb"/*.conf "$composedPkgDb"/*.conf; do
-          [ -e "$conf" ] || continue
+        emit_package_id() {
           awk '
             /^id:/ {
               if (NF >= 2) { print "package-id " $2; exit }
               getline; print "package-id " $1; exit
             }
-          ' "$conf"
+          ' "$1"
+        }
+        # ...but never list an RTS way.  GHC links one RTS into every
+        # process and GHCi carries its symbols as built-ins, so exposing
+        # another copy makes the interpreter load a second one:
+        #
+        #   GHC runtime linker: fatal error: I found a duplicate
+        #   definition for symbol hs_atomic_xor32
+        #   whilst processing object file .../HSrts-1.0.3-threaded-nodebug.o
+        #   The symbol was previously defined in (GHCi built-in symbols)
+        #
+        # ghc914-sh registers the RTS once per way, each way a public
+        # sub-library of `rts`: the package NAME is therefore the
+        # mangled `z-rts-z-threaded-nodebug`, the id is
+        # `rts-1.0.3-threaded-nodebug`, and each carries its own
+        # `hs-libraries: HSrts-1.0.3-<way>`.  All four are dropped, not
+        # just the way ghc itself was built with -- every way exports
+        # the same symbols, so any of them collides.
+        #
+        # Matching on the mangled name is what makes this safe for the
+        # compilers that are green today: only a fork that registers
+        # per-way RTS sub-libraries has a `z-rts-z-*` to match, so every
+        # mainline env file comes out byte-identical.  The plain `rts`
+        # conf stays listed either way -- it declares no `hs-libraries`
+        # (it is the header/shim package GHC special-cases) so it loads
+        # nothing -- and so do `rts-fs` and `rts-headers`, which are
+        # ordinary libraries that merely share the prefix.
+        for conf in "$globalPkgDb"/*.conf "$composedPkgDb"/*.conf; do
+          [ -e "$conf" ] || continue
+          case "$(awk '/^name:/ { print $2; exit }' "$conf")" in
+            z-rts-z-*) continue ;;
+          esac
+          emit_package_id "$conf"
         done
       } > $out/env
     '';
