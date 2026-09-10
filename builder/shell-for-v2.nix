@@ -599,47 +599,134 @@ let
   #
   # Gated on `withBuildCompiler`, which `modules/cabal-project.nix` sets in
   # exactly one place -- this injection -- so no other project is affected.
-  stripBootPackages = text:
-    let
-      parts = lib.splitString "-- >>> haskell.nix:boot-packages\n" text;
-    in if builtins.length parts < 2 then text
-      else builtins.head parts
-        + lib.concatMapStrings
-            (p: let tail' = lib.splitString "-- <<< haskell.nix:boot-packages\n" p;
-                in if builtins.length tail' < 2 then p
-                   else lib.concatStringsSep "" (builtins.tail tail'))
-            (builtins.tail parts);
-  installBootPins = text:
-    let
-      parts = lib.splitString "-- >>> haskell.nix:boot-pins\n" text;
-    in if builtins.length parts < 2 then text
-      else builtins.head parts
-        + lib.concatMapStrings
-            (p: let tail' = lib.splitString "-- <<< haskell.nix:boot-pins\n" p;
-                in if builtins.length tail' < 2 then p
-                   else builtins.replaceStrings [" source"] [" installed"]
-                          (builtins.head tail')
-                        + lib.concatStringsSep "" (builtins.tail tail'))
-            (builtins.tail parts);
-  # Both halves of this fix have to arrive together or not at all: the
-  # `installed` pins are unsatisfiable without `solverShim` making the
-  # composed db the solver's global db, and the shim only reaches cabal
-  # through `crossCabalWrapper`, which exists only when `targetPrefix != ""`.
-  # ghcjs is the one cross target with an empty prefix, so it gets neither
-  # and is left exactly as it is today -- pinning it `installed` on its own
-  # would just trade its link-time failure for an unsatisfiable solve.
-  # Giving ghcjs the same treatment means giving it a `cabal` wrapper that
-  # cannot simply `exec cabal` (it would find itself on PATH); that is a
-  # separate change.
-  applyShellBootFix = withBuildCompiler && targetPrefix != "";
-  shellProjectLocal = text:
-    if applyShellBootFix then installBootPins (stripBootPackages text) else text;
+  # The pins are rewritten to `installed` -- but only for the packages the
+  # composed store ACTUALLY holds, and that set is not knowable at eval time.
+  #
+  # Two independent reasons a blanket flip cannot work:
+  #
+  #   * The store holds the dependency CLOSURE of the packages the shell was
+  #     asked for, not the whole boot set.  For `test/cabal-sublib-shell` that
+  #     is base, ghc-prim, ghc-internal, rts + its ways, rts-fs, rts-headers,
+  #     libffi-clib and provider -- no `unix`, no `array`, no `Cabal`.  An
+  #     `installed` pin for a unit the store lacks fails the solve outright
+  #     (`rejecting: host:unix ... requires installed instance`).
+  #   * `Cabal` and `Cabal-syntax` arrive as a `source-repository-package`,
+  #     which cabal treats as a LOCAL package -- a user target -- and therefore
+  #     requires from source at exactly the SRP's version.  `Cabal installed`
+  #     contradicts that in EVERY project, including ones that never depend on
+  #     Cabal, because the solver resolves all local packages and not just the
+  #     build targets.
+  #
+  # Dropping the pins instead is also wrong: they carry the boot libraries'
+  # VERSIONS as well as their provenance, and without them the solver happily
+  # takes an older hackage `ghc-prim-0.13.0` over the store's 0.13.1, moving
+  # every downstream unit-id off the store it was supposed to reuse.
+  #
+  # So the flip is done at BUILD time, from the composed db itself, which is
+  # exact by construction.  `compose-store.nix` deliberately keeps the slice
+  # closure out of nix eval (it follows `nix-support/transitive-deps` in bash),
+  # so `depSlices` here lists only the DIRECT deps -- three entries for the
+  # sublib test, against thirteen units in the store.  Reading the db is the
+  # only way to get the real set, and it is the same trick `discoverDbs`
+  # already uses.
+  # Gated on `withBuildCompiler`, which `modules/cabal-project.nix` sets in
+  # exactly one place -- the boot-package injection this undoes -- so no other
+  # project is affected.
+  #
+  # NOT additionally gated on `targetPrefix != ""`, as an earlier version of
+  # this was: ghc914-sh is a `-target` compiler (one ghc with `targets/<triple>/`
+  # subdirs), not a prefixed cross compiler, so `targetPrefix` is EMPTY for
+  # every one of its targets and that conjunct made the whole mechanism dead
+  # code on all of them.  The same mistake is why `crossCabalWrapper` below is
+  # never created here, and why the shim has to reach cabal by PATH order
+  # instead (`solverShim` comes first in `nativeBuildInputs`).
+  applyShellBootFix = withBuildCompiler;
   cabalProjectLocalContent =
     lib.optionalString (cabalProjectLocal != null && cabalProjectLocal != "")
-      (shellProjectLocal cabalProjectLocal)
+      cabalProjectLocal
     + buildCompilerFields + hsc2hsViaAsmProject;
+  # Raw text, both marker blocks intact; the rewrite happens at build time.
+  cabalProjectLocalRaw =
+    pkgs.pkgsBuildBuild.writeText "cabal.project.local.in" cabalProjectLocalContent;
   cabalProjectLocalFile =
-    pkgs.pkgsBuildBuild.writeText "cabal.project.local" cabalProjectLocalContent;
+    if !applyShellBootFix then cabalProjectLocalRaw
+    else pkgs.pkgsBuildBuild.runCommand "cabal.project.local" {
+      preferLocalBuild = true;
+    } ''
+      ${discoverDbs}
+      # Every package name registered in the composed store.  Parsed straight
+      # out of the confs rather than via `ghc-pkg list` so hidden units (the
+      # `z-rts-z-<way>` sub-libraries) are seen too, and so this needs no
+      # working compiler on PATH.  Boot package names are alphanumerics and
+      # hyphens, so each is its own regex.
+      : > names
+      for conf in "$composedPkgDb"/*.conf; do
+        [ -e "$conf" ] || continue
+        awk '/^name:/ { print $2; exit }' "$conf" >> names
+      done
+      sort -u names -o names
+      # Both marker blocks are rewritten AGAINST THAT SET, per package:
+      #
+      #   in the store  ->  drop it from `packages:` (so it is not local, and
+      #                     `improveInstallPlanWithStoreUnits` can promote the
+      #                     units above it) and pin it `installed`.
+      #   not in store  ->  leave it in `packages:` and leave the pin `source`.
+      #
+      # Doing only the first half for everything is what an earlier attempt
+      # did, and it cannot work: the store holds the dependency CLOSURE of the
+      # packages the shell was asked for, not the whole boot set.  An
+      # `installed` pin for a unit the store lacks fails the solve
+      # (`rejecting: host:unix ... requires installed instance`), and `Cabal`
+      # is worse -- it arrives as a `source-repository-package`, which cabal
+      # treats as a LOCAL user target requiring the SRP's exact version from
+      # source, so `Cabal installed` is unsatisfiable in every project,
+      # including ones that never depend on Cabal.
+      #
+      # Dropping the pins wholesale instead is also wrong: they carry the boot
+      # libraries' VERSIONS, and without them the solver takes an older
+      # hackage `ghc-prim-0.13.0` over the store's 0.13.1 and every downstream
+      # unit-id moves off the store it was meant to reuse.
+      #
+      # It has to be done here rather than in nix because the store's contents
+      # are not knowable at eval time: `compose-store.nix` deliberately follows
+      # `nix-support/transitive-deps` in bash to keep the slice closure out of
+      # eval, so `depSlices` lists only the DIRECT deps -- three entries for
+      # the sublib test, against thirteen units in the store.
+      #
+      # `packages:` and its entries live inside the marker block together, so
+      # the block is buffered and re-emitted; if nothing survives, the
+      # `packages:` keyword is dropped too rather than left with no entries.
+      awk -v namesfile=names '
+        function flushPkgs(   i) {
+          # Re-emit the ORIGINAL `packages:` line, not a constructed one: nix
+          # strips the common indentation of an indented string, so its real
+          # column is not the one it has in modules/cabal-project.nix, and an
+          # indented `packages:` reads to cabal as a continuation of the
+          # previous field rather than a new one.
+          if (nkept > 0) { print pkgsHeader
+                           for (i = 1; i <= nkept; i++) print kept[i] }
+          nkept = 0
+        }
+        BEGIN { while ((getline n < namesfile) > 0) if (n != "") have[n] = 1 }
+
+        /-- <<< haskell.nix:boot-packages/ { flushPkgs(); inpkgs = 0; print; next }
+        inpkgs {
+          line = $0
+          sub(/^[ \t]+/, "", line); sub(/[ \t]+$/, "", line)
+          if (line == "packages:") { pkgsHeader = $0; next }
+          if (line == "") next
+          base = line; sub(/.*\//, "", base)
+          if (!(base in have)) kept[++nkept] = $0
+          next
+        }
+        /-- >>> haskell.nix:boot-packages/ { inpkgs = 1; print; next }
+
+        /-- <<< haskell.nix:boot-pins/ { inpins = 0 }
+        inpins { for (n in have) gsub(n " source", n " installed") }
+        /-- >>> haskell.nix:boot-pins/ { inpins = 1 }
+        { print }
+      ' ${cabalProjectLocalRaw} > $out
+    '';
   cabalProjectLocalSync = pkgs.pkgsBuildBuild.writeShellScriptBin "haskell-nix-cabal-project-local-sync" ''
     set -eu
 
@@ -714,7 +801,7 @@ let
   '';
   # --- Making the composed store visible to the SHELL's solver ------------
   #
-  # `shellProjectLocal` above pins the boot libraries `installed` instead of
+  # `cabalProjectLocalFile` above pins the boot libraries `installed` instead of
   # `source`.  That pin is unsatisfiable on its own: this compiler ships an
   # empty global package db (`emptyGlobalPackageDb` -- the very reason the
   # injection exists), and cabal builds its installed-package index from
@@ -746,19 +833,34 @@ let
   } ''
     ${discoverDbs}
     mkdir -p $out/bin
-    for f in ${ghcShim}/bin/*; do
+    for f in ${shellGhc}/bin/*; do
       ln -sf "$f" "$out/bin/$(basename "$f")"
     done
-    for g in ${ghcShim}/bin/${targetPrefix}ghc ${ghcShim}/bin/${targetPrefix}ghc-${ghc.version}; do
+    for g in ${shellGhc}/bin/${targetPrefix}ghc ${shellGhc}/bin/${targetPrefix}ghc-${ghc.version}; do
       [ -e "$g" ] || continue
       gName=$(basename "$g")
       rm -f "$out/bin/$gName"
-      printf '#!/bin/sh\nexec %s "$@"\n' "$g" > "$out/bin/$gName"
+      # cabal does NOT learn the global db from `ghc-pkg`: it asks the
+      # COMPILER -- `ghc --print-global-package-db` -- and builds its
+      # installed-package index from whatever that prints.  This compiler
+      # ships an empty global db, so without this interception the solver
+      # sees no installed instance for anything and every `installed` boot
+      # pin fails; the `ghc-pkg --global-package-db` override just below is
+      # necessary but was never sufficient on its own.
+      #
+      # Safe for unit-ids: `pkgHashPackageDbs` is rendered by PackageHash.hs
+      # as `unwords . map show` over the db STACK, and `show GlobalPackageDB`
+      # is the constructor name with no path in it.  The stack stays
+      # `[GlobalPackageDB]`, so pointing `global` at the composed db moves no
+      # hash -- which is why this is legal where a `package-db:` field in the
+      # project would not be.
+      printf '#!/bin/sh\nfor a in "$@"; do\n  [ "$a" = "--print-global-package-db" ] || continue\n  echo %s\n  exit 0\ndone\nexec %s "$@"\n' \
+        "$composedPkgDb" "$g" > "$out/bin/$gName"
       chmod +x "$out/bin/$gName"
     done
     # Cabal's near-compiler lookup asks for `ghc-pkg`, not `<prefix>ghc-pkg`
     # (the shim exposes both), so the unprefixed alias needs the override too.
-    for gp in ${ghcShim}/bin/${targetPrefix}ghc-pkg* ${ghcShim}/bin/ghc-pkg*; do
+    for gp in ${shellGhc}/bin/${targetPrefix}ghc-pkg* ${shellGhc}/bin/ghc-pkg*; do
       [ -e "$gp" ] || continue
       gpName=$(basename "$gp")
       rm -f "$out/bin/$gpName"
@@ -1105,7 +1207,12 @@ let
 in
 mkShell {
   nativeBuildInputs =
-       [ shellGhc
+       # The solver shim must precede `shellGhc`: it mirrors it and adds a
+       # `ghc-pkg` carrying `--global-package-db <composedStore>`, which is
+       # how the injected boot pins below become satisfiable.  There is no
+       # cabal wrapper to route it through -- see `applyShellBootFix`.
+       lib.optional applyShellBootFix solverShim
+    ++ [ shellGhc
          # Also include the raw `ghc` so its
          # `depsTargetTargetPropagated` chain reaches the shell's
          # build env — slices already get this via their own
