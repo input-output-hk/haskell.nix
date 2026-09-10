@@ -430,8 +430,59 @@ let
   # passthru doesn't carry buildGHC — fall back to the unwrapped outer
   # compiler.
   twoStageBuildGhc = ghc.buildGHC or outerGhc.buildGHC;
+  # The BUILD compiler must not inherit the HOST platform's C flags.
+  #
+  # This nixpkgs' cc-wrapper suffixes its env vars by dependency ROLE, not by
+  # platform salt -- a cross slice's env has no `NIX_CFLAGS_COMPILE_<platform>`
+  # at all, only `NIX_CFLAGS_COMPILE` (host role) and `..._FOR_BUILD`.  So the
+  # plain `NIX_CFLAGS_COMPILE` carries `-isystem` for every HOST C dep, and the
+  # build compiler's own baked-in cc-wrapper -- built as a host compiler in its
+  # own context, and a different store path from the slice stdenv's cc (see
+  # `setupNeedsCxxRpath` below for the mirror-image bug) -- reads that very
+  # variable.  Every BUILD-stage C compile in a cross slice therefore picks up
+  # the host include path.
+  #
+  # `-isystem` is searched before the default system directories, so on a
+  # windows cross mingw's `pthread.h` shadows glibc's the moment GHC compiles
+  # its link stub -- which includes the NATIVE `Rts.h` -> `rts/OSThreads.h` ->
+  # `<pthread.h>` -- and the build dies on a header that mingw's pthread.h
+  # itself needs but the native sysroot has no reason to carry:
+  #
+  #   mingw_w64-pthreads/include/pthread.h:66:10:
+  #     fatal error: process.h: No such file or directory
+  #
+  # -- while building the build-stage `hsc2hs` of the `Win32` slice, which
+  # every mingwW64 and ucrt64 job propagates from.
+  #
+  # Clearing the host role for the build compiler is safe: the build cc reads
+  # nothing else from it, and the build role's own `..._FOR_BUILD` is left
+  # alone.  Gated on host /= build so a native slice -- where the two roles are
+  # the same variable -- keeps flags it is entitled to.  Exec'ing the real ghc
+  # keeps `/proc/self/exe` (and so GHC's `getBaseDir` topdir) pointing at the
+  # compiler rather than at this shim.
+  buildStageNeedsHostFlagsCleared =
+    twoStage && stdenv.hostPlatform.config != stdenv.buildPlatform.config;
+  twoStageBuildGhcBin =
+    if !buildStageNeedsHostFlagsCleared
+    then "${twoStageBuildGhc}/bin/ghc"
+    else "${pkgs.pkgsBuildBuild.runCommand "build-stage-ghc" {
+             preferLocalBuild = true;
+           } ''
+             mkdir -p $out/bin
+             # Mirror the whole bin/ first: cabal's near-compiler lookup
+             # (`guessToolFromGhcPath`) canonicalizes the configured ghc and
+             # probes ITS directory for ghc-pkg/hsc2hs, and a script is a real
+             # file, so that directory is this one.
+             for f in ${twoStageBuildGhc}/bin/*; do
+               ln -sf "$f" "$out/bin/$(basename "$f")"
+             done
+             rm -f $out/bin/ghc
+             printf '#!/bin/sh\nunset NIX_CFLAGS_COMPILE NIX_LDFLAGS\nexec %s "$@"\n' \
+               ${twoStageBuildGhc}/bin/ghc > $out/bin/ghc
+             chmod +x $out/bin/ghc
+           ''}/bin/ghc";
   twoStageFlags = lib.optionalString twoStage (
-    " --with-build-compiler=${twoStageBuildGhc}/bin/ghc"
+    " --with-build-compiler=${twoStageBuildGhcBin}"
     + " --with-build-hc-pkg=${twoStageBuildGhc}/bin/ghc-pkg");
 
   # The BUILD-stage `setup` executable cabal compiles for each unit is linked
