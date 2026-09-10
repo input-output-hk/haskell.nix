@@ -954,15 +954,39 @@ in {
           "parsec" "pretty" "process" "semaphore-compat" "stm" "text"
           "time" "transformers" "unix"
         ];
+        # `rtsWasmExtras` (above) puts libffi-wasm's include/lib dirs on the
+        # rts slices' command line -- and that is not enough on its own.  By
+        # the time a slice materialises its cabal.project, those dirs are
+        # plain strings: the project text travels through plan-to-nix's IFD,
+        # which round-trips it through a FILE and so drops nix's string
+        # context.  The FLAG survives; the DEPENDENCY does not.  The store
+        # path is then simply absent from the build sandbox, and the rts dies
+        # compiling Interpreter.c with
+        #   include/rts/ghc_ffi.h:28:10: fatal error: 'ffi.h' file not found
+        # while `-I<libffi-wasm-dev>/include` sits right there in the response
+        # file.  (Confirmed: the hash does not appear anywhere in the slice's
+        # .drv.)  Naming it as a component `lib` re-attaches the dependency
+        # from the nix side, where the context still exists.
+        #
+        # `libs` is the correct knob precisely because it feeds
+        # `extraBuildInputs` -- hence the slice's `buildInputs`, hence the
+        # sandbox -- and nothing that cabal hashes.  The emitted
+        # `extra-lib-dirs:` / `extra-include-dirs:` block is built from
+        # `perPackageOptionOf "extraLibDirs"`, i.e. from the PLAN, not from
+        # `libs` (`extraLibDirsBlockFor` in builder/comp-v2-builder.nix), so
+        # no unit-id moves and the slice still matches plan-nix.
+        rtsWasmLibs = lib.optionalAttrs isWasm {
+          libs = [ shGhc.libffi-wasm.dev shGhc.libffi-wasm.out ];
+        };
       in {
         packages =
           (lib.optionalAttrs (config.packages ? rts) {
             rts.components = {
-              library.build-tools = shGhc.bootPkgTools or [];
+              library = { build-tools = shGhc.bootPkgTools or []; } // rtsWasmLibs;
               sublibs = lib.genAttrs
                 [ "nonthreaded-nodebug" "threaded-nodebug"
                   "nonthreaded-debug" "threaded-debug" ]
-                (_: { build-tools = shGhc.bootPkgTools or []; });
+                (_: { build-tools = shGhc.bootPkgTools or []; } // rtsWasmLibs);
             };
           })
           # Package-level (inherited by all component types) so the rts ways
