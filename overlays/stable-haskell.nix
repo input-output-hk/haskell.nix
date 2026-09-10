@@ -421,9 +421,36 @@ let
   # `fixRtsWays` advertises; without that rewrite Cabal's `waySupported` refuses
   # profiling for the `build-type: Custom` boot libs (ghc, ghc-boot) outright.
   # See lib/stable-haskell-rts-ways.nix.
+  # `profiling-detail: none` is not a size or build-time tweak -- it keeps the
+  # two ways' INTERFACES identical, which profiled Template Haskell depends on.
+  #
+  # cabal's default for a library is `exported-functions`, i.e.
+  # `-fprof-auto-exported`.  The SCC annotations that inserts act as inlining
+  # barriers, so the profiled build retains -- and exports -- instance-auxiliary
+  # bindings that the vanilla build at `-O` optimises away.  `ghc-internal` ends
+  # up with `$fQuasiQ1..26` in `GHC/Internal/TH/Syntax.p_hi` against `1..23` in
+  # `Syntax.hi` (mainline GHC's own ghc-internal has 1..23 in BOTH).
+  #
+  # That divergence is fatal for TH: a consumer compiled `-prof` reads the
+  # PROFILED interface and so refers to `$fQuasiQ26`, but its splices run in
+  # GHC's in-process interpreter, which is vanilla and loads the VANILLA
+  # objects -- where the binding was optimised away:
+  #
+  #   ghc: ^^ Could not load 'ghczminternal_GHCziInternalziTHziSyntax_
+  #        zdfQuasiQ26_closure', dependency unresolved
+  #   GHC.ByteCode.Linker.lookupCE ... closure:$fQuasiQ26
+  #
+  # -- `th-orphans`, and through it every `*.build-profiled` /
+  # `*.check-profiled` job.  Note this is NOT an iserv problem: it reproduces
+  # on native, where there is no external interpreter (and this compiler ships
+  # no iserv binaries at all).
+  #
+  # Cost-centre detail is worth nothing in the boot libraries anyway -- nobody
+  # profiles into `base` -- so `none` gives up nothing real.
   bootLibProfiling = lib.concatMapStrings (p: ''
     package ${p}
       library-profiling: True
+      profiling-detail: none
   '') bootLibraries;
 
   # ── Dump source for plan-time "installed packages" ────────────────────────
