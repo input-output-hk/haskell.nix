@@ -1542,6 +1542,15 @@ ENDSCRIPT
   # Convenience: path to a stage2 executable.
   s2exe = pkg: exe: s2.${pkg}.components.exes.${exe}.exePath;
 
+  # haddock-api's library slice, which carries haddock's resource
+  # directory (`share/{html,latex,doc}`) under its cabal-store unit dir.
+  # `null` when the stage2 plan has no haddock-api (then the `haddock`
+  # link below stays a plain symlink).
+  haddockApiLib =
+    if s2 ? haddock-api && s2.haddock-api.components ? library
+    then s2.haddock-api.components.library
+    else null;
+
   # For each boot library, the path to its registered .conf file(s).
   # We check `s2 ? name` first to handle any packages missing from the plan.
   # Look a boot library up in a project's hsPkgs by VERSIONED key when we
@@ -1788,9 +1797,53 @@ ENDSCRIPT
     # exe is already built (utils/haddock is in the fork's stage2
     # project, and `haddock` is in pkgsNeedingRts above); it was just
     # never linked in.
-    ${lib.optionalString (s2 ? haddock) ''
+    ${lib.optionalString (s2 ? haddock) (if haddockApiLib == null then ''
     ln -sf ${s2exe "haddock" "haddock"} $out/bin/haddock
-    ''}
+    '' else ''
+    # ...but a bare symlink is not enough, for the same reason `runghc`
+    # above needs a wrapper: the stage2 haddock-api is built with
+    # `+in-ghc-tree` (see the `flags:` fragment in its slice), so
+    # `Haddock.getHaddockLibDir` takes the `#ifdef IN_GHC_TREE` branch and
+    # asks GHC's `getBaseDir` where the resources are -- i.e.
+    # `dirname(dirname(realpath(argv0)))/lib` -- instead of consulting the
+    # Cabal-generated `Paths_haddock_api` datadir.  `getExecutablePath`
+    # follows the symlink, so that resolves inside the *haddock exe's own
+    # slice*, which has no `lib/`, and haddock dies just before writing
+    # html with
+    #   Haddock's resource directory does not exist!
+    # (only the last two fallbacks -- the relative `resources` and
+    # `haddock-api/resources` of a source checkout -- are tried, and both
+    # miss).  cabal reports that as `Warning: Failed to build documentation
+    # for <unit>` and then does NOT install the unit, so the slice's
+    # unit-id check fails with "Missing (in plan but not produced)"
+    # -- `tests.sublib-docs.run` and every other doc-enabled slice.
+    #
+    # A real bindist has haddock next to ghc with the resources in
+    # `lib/`, which is precisely what we reconstruct here: copy the
+    # resource dir out of haddock-api's slice and pass it as `--lib`.
+    # Callers that supply their own `--lib` still win: `getHaddockLibDir`
+    # keeps the LAST `Flag_Lib`, and `"$@"` comes after ours.
+    haddockRes=
+    for d in ${haddockApiLib}/store/*/*/lib/haddock-api-*/share; do
+      if [ -d "$d/html" ]; then haddockRes=$d; break; fi
+    done
+    if [ -z "$haddockRes" ]; then
+      echo "ERROR: haddock resources not found under ${haddockApiLib}" >&2
+      exit 1
+    fi
+    mkdir -p $out/lib/haddock
+    cp -RL "$haddockRes"/. $out/lib/haddock/
+    chmod -R u+w $out/lib/haddock
+    cat > $out/bin/haddock << 'ENDSCRIPT'
+#!/bin/sh
+exec HADDOCK_EXE --lib=HADDOCK_LIB "$@"
+ENDSCRIPT
+    sed -i \
+      -e "s|HADDOCK_EXE|${s2exe "haddock" "haddock"}|" \
+      -e "s|HADDOCK_LIB|$out/lib/haddock|" \
+      $out/bin/haddock
+    chmod +x $out/bin/haddock
+    '')}
 
     # Versioned aliases, as in a standard GHC bindist (a real bindist of
     # this source would install ghc-${ghcVersion}).  Tooling relies on the
