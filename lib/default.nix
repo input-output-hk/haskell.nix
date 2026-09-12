@@ -455,14 +455,25 @@ in {
       }]) (packageNames coverageProject));
 
   # Flake package names that are flat and match the cabal component names.
+  # Only expose components that are actually part of the cabal install plan.
+  # `plan-to-nix` sets `planned = true` for every component in `plan.json`
+  # (set project-wide for stack projects); a component that is not planned
+  # — e.g. a private sub-library that exists only to serve a disabled test
+  # suite — should not be built by `hydraJobs.packages` (see #2028).  This
+  # mirrors the `buildable && planned` filter already used for
+  # `config.allComponent` (modules/package.nix) and `applyComponents`.
+  flakeComponentIsPlanned = component:
+    (component.config.buildable or true) && (component.config.planned or false);
+
   mkFlakePackages =
     foldrAttrVals
       (package: acc:
         foldComponents
           subComponentTypes
-          (component: a: a // {
-            ${component.passthru.identifier.component-id} = component;
-          })
+          (component: a:
+            if flakeComponentIsPlanned component
+            then a // { ${component.passthru.identifier.component-id} = component; }
+            else a)
           acc
           package)
       { };
@@ -473,13 +484,16 @@ in {
       (package: acc:
         foldComponents
           [ "exes" "tests" "benchmarks" ]
-          (component: a: a // {
-            ${component.passthru.identifier.component-id} = {
-              type = "app";
-              program = component.exePath;
-              inherit (component) meta;
-            };
-          })
+          (component: a:
+            if flakeComponentIsPlanned component
+            then a // {
+              ${component.passthru.identifier.component-id} = {
+                type = "app";
+                program = component.exePath;
+                inherit (component) meta;
+              };
+            }
+            else a)
           acc
           package)
       { };
