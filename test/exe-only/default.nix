@@ -1,11 +1,11 @@
 # Test a package set
-{ stdenv, lib, util, haskell-nix, haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages, testCabalProjectLocal, testInputMap }:
+{ stdenv, lib, util, haskell-nix, haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
 let
   project = haskell-nix.cabalProject' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "exe-only";
     inputMap = testInputMap;
     cabalProjectLocal = testCabalProjectLocal

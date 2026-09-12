@@ -18,6 +18,7 @@
     ];
   }
 , evalPackages ? import pkgs.path nixpkgsArgs
+, evalSystem ? evalPackages.stdenv.hostPlatform.system
 , ifdLevel ? 1000
 , compiler-nix-name
 , CADerivationsEnabled ? false
@@ -163,24 +164,60 @@ let
   # testSrc = subDir: testSrcRoot + "/${subDir}";
   testSrcRootWithGitDir = evalPackages.haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; includeSiblings = true; keepGitDir = true; };
   testSrcWithGitDir = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRootWithGitDir; inherit subDir; includeSiblings = true; };
-  headHackage = import ./head-hackage.nix { inherit evalPackages; };
+  headHackage = import ./head-hackage.nix {
+    inherit evalPackages;
+    # A stable-haskell `-target` compiler registers no target boot libraries
+    # (`emptyGlobalPackageDb`), so every project using one builds them from
+    # source with the boot-dep versions pinned by
+    # `injectStableHaskellBootPackages`.  Those pins and the ghcjs overlay's
+    # `:override` are mutually exclusive -- see head-hackage.nix.  Keyed on the
+    # capability rather than the compiler name, like the `? dwarf` guard in
+    # test/cabal-simple-debug, so the next such compiler needs no edit.
+    #
+    # Also gated on the host actually being ghcjs.  The lines this rewrites sit
+    # inside `if os(ghcjs)` blocks, so dropping them changes nothing for any
+    # other target -- but it would still change the cabal.project.local TEXT,
+    # and with it every one of those targets' plan-nix hashes, for no reason.
+    bootLibsFromSource = stdenv.hostPlatform.isGhcjs
+      && (buildPackages.haskell-nix.compiler.${compiler-nix-name}.emptyGlobalPackageDb or false);
+  };
   testCabalProjectLocal = headHackage.cabalProjectLocal;
-  testInputMap = headHackage.inputMap;
+  # inputMap entries are consulted only for `source-repository-package` urls a
+  # project actually names, so carrying the cabal-doctest fork here is inert
+  # for every test except the one that pulls it in (gi-gtk, via haskell-gi's
+  # custom Setup.hs).  It lives here rather than as a new gi-gtk argument
+  # because callPackage applies its third argument unconditionally and the
+  # tests have closed argument sets -- see the note just below.
+  #
+  # Read through `evalPackages.haskell-nix.sources` (overlays/haskell.nix
+  # re-exports the flake inputs there) rather than `haskellNix.sources`: the
+  # hydraJobs path comes via ci.nix, which does not pass `haskellNix`, so that
+  # attribute would fall back to `import ../default.nix` and die on
+  # `builtins.currentSystem` under pure eval.  plan-to-nix runs on the eval
+  # platform, which is why it is evalPackages and not pkgs.
+  testInputMap = headHackage.inputMap // {
+    "https://github.com/stable-haskell/cabal-doctest.git" =
+      evalPackages.haskell-nix.sources.cabal-doctest;
+  };
 
-  # `testCabalProjectLocal` / `testInputMap` are passed only to tests that ask
-  # for them.  callPackage's third argument is applied unconditionally, and a
-  # test with a closed argument set rejects anything it does not declare --
-  # "function 'anonymous lambda' called with unexpected argument
-  # 'testCabalProjectLocal'" -- which broke every test that does not use
-  # cabal.project.local.  The other three have always been passed to everything
-  # and every test declares them, so they stay unconditional.
+  # `evalSystem` / `testCabalProjectLocal` / `testInputMap` are passed only to
+  # tests that ask for them.  callPackage's third argument is applied
+  # unconditionally, and a test with a closed argument set rejects anything it
+  # does not declare -- "function 'anonymous lambda' called with unexpected
+  # argument 'testCabalProjectLocal'" -- which broke every test that does not
+  # use cabal.project.local.  `evalSystem` (the platform plan-to-nix runs on) is
+  # optional for the same reason: a project selects the eval platform with
+  # `evalSystem` rather than the now read-only `evalPackages` option (see
+  # modules/project-common.nix), but not every test builds a project.  The other
+  # three have always been passed to everything and every test declares them, so
+  # they stay unconditional.
   callTest = x: args:
     let
-      headHackageArgs = { inherit testCabalProjectLocal testInputMap; };
+      optionalArgs = { inherit evalSystem testCabalProjectLocal testInputMap; };
     in
     haskell-nix.callPackage x (args
       // { inherit testSrc compiler-nix-name evalPackages; }
-      // builtins.intersectAttrs (builtins.functionArgs (import x)) headHackageArgs);
+      // builtins.intersectAttrs (builtins.functionArgs (import x)) optionalArgs);
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.
@@ -212,7 +249,8 @@ let
     stack-remote-resolver = callTest ./stack-remote-resolver {};
     stack-symlink-yaml = callTest ./stack-symlink-yaml {};
     shell-for-setup-deps = callTest ./shell-for-setup-deps {};
-    setup-deps = import ./setup-deps { inherit pkgs evalPackages compiler-nix-name testCabalProjectLocal testInputMap; };
+    setup-deps = import ./setup-deps { inherit pkgs evalPackages evalSystem compiler-nix-name testCabalProjectLocal testInputMap; };
+    setup-deps-boot-cabal = callTest ./setup-deps-boot-cabal {};
     callStackToNix = callTest ./call-stack-to-nix {};
     callCabalProjectToNix = callTest ./call-cabal-project-to-nix { inherit evalPackages; };
     cabal-source-repo = callTest ./cabal-source-repo {};
@@ -226,6 +264,7 @@ let
     stack-source-repo = callTest ./stack-source-repo {};
     ghc-lib-reinstallable-cabal = callTest ./ghc-lib-reinstallable/cabal.nix {};
     ghc-lib-reinstallable-stack = callTest ./ghc-lib-reinstallable/stack.nix {};
+    generated-light = callTest ./generated-light {};
     cabal-doctests = callTest ./cabal-doctests { inherit util; };
     extra-hackage = callTest ./extra-hackage {};
     ghcjs-overlay = callTest ./ghcjs-overlay {};

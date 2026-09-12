@@ -72,6 +72,15 @@
       url = "github:stable-haskell/iserv-proxy?ref=iserv-syms";
       flake = false;
     };
+    # hyper-linux (`hl`, github:zw3rk/hyper-linux) runs Linux ELFs on Apple
+    # Silicon macOS via Hypervisor.framework.  It fills the qemu-user-mode slot
+    # (which doesn't exist on macOS) when cross-compiling darwin -> linux, so
+    # Template Haskell / tests can run the target binary.  This is a real flake
+    # (we want its `hl` package); keep its nixpkgs on ours.
+    hyper-linux = {
+      url = "github:zw3rk/hyper-linux";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # head.hackage's patches, plus the tool its CI uses to turn them into a
     # package repository.  We build the repository ourselves rather than
     # downloading the published one -- see overlays/head-hackage.nix.
@@ -81,6 +90,22 @@
     };
     hackage-overlay-repo-tool = {
       url = "github:bgamari/hackage-overlay-repo-tool";
+      flake = false;
+    };
+
+    # cabal-doctest 1.0.12 (the newest release on hackage) does not build
+    # against Cabal 3.17: that release split Verbosity into VerbosityFlags and
+    # VerbosityHandles, so `buildVerbosity`'s result no longer typechecks where
+    # the Simple.Utils helpers want a Verbosity.  haskell-gi's custom Setup.hs
+    # depends on it, so the gi-gtk test needs the fixed fork.
+    #
+    # Pinned to the rev rather than the branch on purpose: the same rev is
+    # named as the `tag:` of the source-repository-package in
+    # test/gi-gtk/default.nix, and lib/call-cabal-project-to-nix.nix checks
+    # `inputMap.<url>.rev` against that tag.  Pinning keeps `nix flake update`
+    # from moving one half of that pair.
+    cabal-doctest = {
+      url = "github:stable-haskell/cabal-doctest/641cda5a4590f2384568a9598713f3039b99258d";
       flake = false;
     };
   };
@@ -95,6 +120,24 @@
     }@inputs:
     let
       callFlake = import flake-compat;
+      # TEMPORARY: walking this back up one level at a time.  At level 3 the
+      # eval runs plan-to-nix (and the rest) as eval-time IFDs, and because
+      # this branch invalidates plan-nix for every compiler none of them
+      # substitute -- the attempts before this ran past hydra-eval-watchdog's
+      # 18h limit and were killed.  So far: level 0 in 163s / 166 jobs (eval
+      # 2332), level 1 in 274s / 879 jobs (eval 2334), against 15412s / 6640
+      # jobs for the last level-3 run to finish (eval 2096).
+      #
+      # Level 2 is where it falls over, and the step is a cliff rather than a
+      # slope: the whole test suite appears for the first time there
+      # (test/default.nix's `optionalIfdTests` is empty at 0 and 1), each test
+      # contributing its plan-nix IFD for every compiler x cross system, and
+      # `ci.nix` adds `iserv-proxy-exes` per cross system on top.  Every one of
+      # those plans is built and then imported into the evaluator's heap.  Two
+      # attempts, no eval record from either: 98f4984f9 ended in "evaluation
+      # failed due to signal 9 (Killed)", and 416b04a4b was still going 8h in.
+      #
+      # Back to 1 while that is sorted out.  Restore to 3 before merging.
       ifdLevel = 3;
       runningHydraEvalTest = false;
       # The system that evaluation-time derivations (plan-to-nix, dummy-ghc,

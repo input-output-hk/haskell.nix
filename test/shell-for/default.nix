@@ -1,14 +1,17 @@
-{ stdenv, lib, haskellLib, testSrc, compiler-nix-name, evalPackages, project', testCabalProjectLocal, testInputMap }:
+# `evalPackages` is unused but always supplied by `callTest`.
+{ stdenv, lib, haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, project', testCabalProjectLocal, testInputMap }:
 
 with lib;
 
 let
   project = project' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "shell-for";
     inputMap = testInputMap;
     cabalProjectLocal = testCabalProjectLocal;
-    modules = [{ inherit evalPackages; }];
+    # No `evalPackages` module: it is read-only (derived from `evalSystem`,
+    # which is already set above), so defining it here would be a second
+    # definition and error out once the option is forced.
   };
 
   packages = project.hsPkgs;
