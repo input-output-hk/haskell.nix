@@ -482,12 +482,17 @@ final: prev: {
         # This handles private repositories with the `is-private` argument
         # (with `builtins.fetchGit`), as well as handling stack-based projects
         # with the `type` argument.
-        mkCacheLine = { name, url, rev, ref ? null, subdir ? ".", sha256 ? null, cabal-file ? "${name}.cabal", type ? "cabal", is-private ? false }:
+        mkCacheLine = { name, url, rev, ref ? null, subdir ? ".", sha256 ? null, cabal-file ? "${name}.cabal", type ? "cabal", is-private ? false, input ? null }:
           let
             # Fetch the entire repo, using either pkgs.fetchgit or
             # builtins.fetchGit depending on whether the repo is private.
+            # When the repo was resolved via `inputMap`
+            # (see `lib/stack-cache-generator.nix`) use the mapped local
+            # path / flake input directly instead of fetching it.
             entireRepo =
-              if is-private
+              if input != null
+              then input
+              else if is-private
               then
                 # It doesn't make sense to specify sha256 on a private repo
                 # because it is not used by buitins.fetchGit.
@@ -578,10 +583,16 @@ final: prev: {
             # TODO: this should be moved into `call-stack-to-nix`
             { packages =
                 let
-                  repoToAttr = { name, url, rev, ref ? null, sha256 ? null, subdir ? null, is-private ? false, ... }: {
+                  repoToAttr = { name, url, rev, ref ? null, sha256 ? null, subdir ? null, is-private ? false, input ? null, ... }: {
                     ${name} = {
                       src =
-                        if is-private
+                        # When a dependency url was resolved via `inputMap`
+                        # (see `lib/stack-cache-generator.nix`) use the mapped
+                        # local path / flake input directly instead of
+                        # fetching it again.
+                        if input != null
+                        then input
+                        else if is-private
                         then
                           builtins.fetchGit
                             ({ inherit url rev; } //
