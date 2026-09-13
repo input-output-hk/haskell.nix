@@ -70,6 +70,17 @@ in lib.recurseIntoAttrs {
     #   in tmp/nix/store/kgprix3jn2w320flxpf7yr29f7dczykr-libsodium-aarch64-unknown-linux-musl-1.0.18/lib/libsodium.a
     #   (#103:librdrand_la-randombytes_internal_random.o) for relocation 4 in section 1 of kind: 0
     || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl && !stdenv.buildPlatform.isAarch64)
+    # aarch64-multiplatform (gnu) cross: the TH splice runs
+    # iserv-proxy-interpreter under qemu-user, which fails to resolve the C++
+    # personality/guard symbols it needs (__cxa_guard_acquire, _Unwind_Resume,
+    # __gxx_personality_v0), "optimistically continues", and then dies with
+    #   qemu: uncaught target signal 11 (Segmentation fault) - core dumped
+    # after which the slice sits out its full 7200s silence timeout.  The
+    # x86_64-linux builders are themselves emulated (aarch64 VMs), so this is
+    # an emulation limitation, not a code bug.
+    || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isLinux
+        && !stdenv.hostPlatform.isMusl && !stdenv.hostPlatform.isAndroid
+        && !stdenv.buildPlatform.isAarch64)
     # Not sure why this is failing with a seg fault
     || (builtins.elem compiler-nix-name ["ghc9102" "ghc9102llvm" "ghc9103" "ghc9103llvm" "ghc9124" "ghc9124llvm" "ghc9141" "ghc9141llvm"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
     # unhandled ELF relocation(Rel) type 10
