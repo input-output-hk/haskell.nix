@@ -466,8 +466,17 @@ in {
         "libraries/template-haskell"
         "utils/genprimopcode"
         "utils/deriveConstants"
-        "utils/ghc-iserv"
-      ];
+      ]
+      # utils/ghc-iserv builds the TARGET's external interpreter, and GHC runs
+      # it on the BUILD machine (it resolves it as $topdir/../bin/ghc-iserv).
+      # That only works when the build platform can execute target binaries --
+      # true for musl64/static (same arch), false for e.g. android or windows,
+      # where cross TH goes through iserv-proxy + an emulator instead.  Build it
+      # only where it is usable: otherwise it is dead weight, and worse, GHC
+      # would find it and fail with "Exec format error" rather than falling
+      # back to the proxy.  The compiler assembly links it if and only if the
+      # package set has it, so this one predicate governs both.
+      ++ lib.optional (pkgs.stdenv.buildPlatform.canExecute tp) "utils/ghc-iserv";
       tp = pkgs.stdenv.hostPlatform;
       isWasm = tp.isWasm or false;
       # libffi contradicts itself on Android, and the link says so:
