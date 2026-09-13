@@ -348,6 +348,37 @@ let
       # modules/cabal-project.nix, where the build dummy's dump satisfies it.)
       sed -i '/build:any\.ghc-internal/d' cabal.project.stage2.merged
 
+      # ── ghc-iserv-prof ────────────────────────────────────────────────────
+      # GHC picks the external interpreter by way: `ghc-iserv` (vanilla),
+      # `ghc-iserv-prof` (-prof), `ghc-iserv-dyn` (-dynamic).  Without the prof
+      # flavour, `-fexternal-interpreter` together with profiling dies with
+      #   .../lib/ghc-9.14/../bin/ghc-iserv-prof: createProcess: execvp:
+      #   does not exist (No such file or directory)
+      # which is every `tests.th-dlls.build-profiled-ei` job.
+      #
+      # utils/ghc-iserv builds exactly one executable and carries no flags, so
+      # the prof flavour has to be a SECOND build of the same package -- which
+      # is exactly how GHC's own bindist produces it (hadrian builds iserv
+      # three times, once per way).  Duplicate the package directory under a
+      # new name and add it to the stage2 project so both get built.
+      cp -r utils/ghc-iserv utils/ghc-iserv-prof
+      mv utils/ghc-iserv-prof/ghc-iserv.cabal utils/ghc-iserv-prof/ghc-iserv-prof.cabal
+      # The generated .cabal capitalises its field names (`Name:`,
+      # `Executable`), so match case-insensitively.
+      sed -i -E -e 's|^([Nn]ame:[[:space:]]*)ghc-iserv[[:space:]]*$|\1ghc-iserv-prof|' \
+                -e 's|^([Ee]xecutable[[:space:]]+)ghc-iserv[[:space:]]*$|\1ghc-iserv-prof|' \
+        utils/ghc-iserv-prof/ghc-iserv-prof.cabal
+      grep -qE '^[Nn]ame:[[:space:]]*ghc-iserv-prof$' \
+        utils/ghc-iserv-prof/ghc-iserv-prof.cabal \
+        || { echo "ghc-iserv-prof: package rename failed" >&2; exit 1; }
+      # Add it to the EXISTING packages: stanza -- a second `packages:` field
+      # does not accumulate, it replaces, which silently drops every other
+      # local package from the plan.
+      sed -i 's|^\([[:space:]]*\)utils/ghc-iserv$|\1utils/ghc-iserv\n\1utils/ghc-iserv-prof|' \
+        cabal.project.stage2.merged
+      printf '\npackage ghc-iserv-prof\n  profiling: True\n  executable-profiling: True\n' \
+        >> cabal.project.stage2.merged
+
     '';
 
     installPhase = "cp -r . $out";
@@ -1879,6 +1910,14 @@ ENDSCRIPT
     # (= lib/bin here), not in bin/, so it goes only here.
     ${lib.optionalString (s2 ? ghc-iserv) ''
     ln -sf ${s2exe "ghc-iserv" "ghc-iserv"} $out/lib/bin/ghc-iserv
+    ''}
+    # ...and the profiling flavour.  GHC resolves the external interpreter as
+    # $topdir/../bin/ghc-iserv-prof whenever the splice is compiled -prof, so
+    # `-fexternal-interpreter` + profiling needs this one too.  Built from the
+    # duplicated utils/ghc-iserv-prof package (see mkConfiguredSrc) because
+    # utils/ghc-iserv has a single exe and no flags.
+    ${lib.optionalString (s2 ? ghc-iserv-prof) ''
+    ln -sf ${s2exe "ghc-iserv-prof" "ghc-iserv-prof"} $out/lib/bin/ghc-iserv-prof
     ''}
 
     # ── settings + support files ─────────────────────────────────────────────
