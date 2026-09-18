@@ -16,6 +16,19 @@
       default = [];
     };
 
+    buildJobs = lib.mkOption {
+      description = ''
+        Number of jobs to pass to `Setup build` as `-jN` for this component.
+        `null` (the default) keeps the standard behaviour of `-j` capped at
+        `min(NIX_BUILD_CORES, 4)`.  Set to `1` to build sequentially (useful
+        for memory-hungry packages that OOM under parallel builds), or to any
+        other positive integer to pin the parallelism.  Only affects the v1
+        (`builderVersion = 1`) builder.
+      '';
+      type = lib.types.nullOr lib.types.ints.positive;
+      default = null;
+    };
+
     testFlags = lib.mkOption {
       type = haskellLib.types.listOfFilteringNulls lib.types.str;
       default = [];
