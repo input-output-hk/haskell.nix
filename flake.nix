@@ -153,7 +153,13 @@
       # but leaves any evaluator without darwin builders unable to evaluate
       # *anything* -- including the linux jobs.  CI on GitHub-hosted runners
       # overrides this to "x86_64-linux" (see .github/workflows/pipeline.yml).
-      evalSystem = "aarch64-darwin";
+      #
+      # Keep the `or` fallback so an IMPURE evaluation (`nix build --impure`)
+      # picks the evaluator's own system: that makes the linux jobs buildable
+      # on a machine with no darwin builders, which is how they get tested
+      # outside CI.  Pure evaluation is unaffected -- `currentSystem` is not in
+      # scope there, so it still resolves to the "aarch64-darwin" literal.
+      evalSystem = builtins.currentSystem or "aarch64-darwin";
       defaultCompiler = "ghc967";
       config = import ./config.nix;
 
