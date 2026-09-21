@@ -477,6 +477,11 @@ in {
       # back to the proxy.  The compiler assembly links it if and only if the
       # package set has it, so this one predicate governs both.
       ++ lib.optional (pkgs.stdenv.buildPlatform.canExecute tp) "utils/ghc-iserv";
+      # Package names of the boot subdirs injected above; `compiler` builds
+      # package `ghc`, everything else is named after its directory.
+      bootPkgNames =
+        map (d: let b = baseNameOf d; in if b == "compiler" then "ghc" else b) shSubdirs
+        ++ lib.optional (tp.isWindows or false) "Win32";
       tp = pkgs.stdenv.hostPlatform;
       isWasm = tp.isWasm or false;
       # libffi contradicts itself on Android, and the link says so:
@@ -750,6 +755,34 @@ in {
         ${lib.concatMapStrings (d: "  ${shSrc}/${d}\n        ") shSubdirs}
         ${lib.optionalString (tp.isWindows or false) "  ${win32Src}\n        "}
         -- <<< haskell.nix:boot-packages
+        -- The boot libraries injected above are REBUILT in this slice, while
+        -- every other boot library comes from the compiler -- whose stage2
+        -- built them with `profiling-detail: none` (`bootLibProfiling` in
+        -- overlays/stable-haskell.nix).  The two must agree.
+        --
+        -- Cabal's default for a library is `exported-functions`, i.e.
+        -- `-fprof-auto-exported`, and the SCC that puts on a binding BLOCKS
+        -- the worker/wrapper split.  So a boot library rebuilt here at the
+        -- default detail has NO `$w` workers in its profiled interface, while
+        -- the compiler's copy of the same library does.  Mixing them is fatal:
+        -- `containers` (compiler-provided, never rebuilt in a slice) carries
+        -- an unfolding referring to `GHC.Internal.Read.$wparens`, and against
+        -- a slice-built `ghc-internal` GHC dies with
+        --
+        --   Can't find interface-file declaration for variable $wparens
+        --     Probable cause: bug in .hi-boot file, or inconsistent .hi file
+        --   Cannot continue after interface file error
+        --
+        -- which took out every `*.build-profiled` job that rebuilds a boot
+        -- library (libsodium -> exe-dlls, and friends).  Only the PROFILED way
+        -- is affected, which is why the vanilla jobs stayed green.
+        --
+        -- Setting the detail here is a no-op unless the project enables
+        -- profiling, so this costs nothing for ordinary builds.
+        ${lib.concatMapStrings (p: ''
+        package ${p}
+          profiling-detail: none
+        '') bootPkgNames}
         -- Forked boot packages that live outside the GHC tree.
         source-repository-package
           type: git
