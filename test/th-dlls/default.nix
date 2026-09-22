@@ -81,8 +81,19 @@ in lib.recurseIntoAttrs {
     || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isLinux
         && !stdenv.hostPlatform.isMusl && !stdenv.hostPlatform.isAndroid
         && !stdenv.buildPlatform.isAarch64)
-    # Not sure why this is failing with a seg fault
-    || (builtins.elem compiler-nix-name ["ghc9102" "ghc9102llvm" "ghc9103" "ghc9103llvm" "ghc9124" "ghc9124llvm" "ghc9141" "ghc9141llvm"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
+    # android armv7a (aarch32): the TH splice runs iserv-proxy-interpreter
+    # under qemu-arm, which segfaults before the splice completes:
+    #   ---> Starting iserv-proxy with piped iserv-proxy-interpreter (qemu-arm)
+    #   qemu: uncaught target signal 11 (Segmentation fault) - core dumped
+    #   <no location info>: error: External interpreter terminated (1)
+    # It dies in `th-orphans` -- a dependency with no C libraries at all -- so
+    # this is 32-bit-ARM user-mode emulation falling over rather than anything
+    # compiler-specific (the x86_64-linux builders are themselves emulated).
+    # This was an explicit compiler-name list, which meant every compiler added
+    # since (ghc914-sh, sghc914) re-discovered the same segfault as a CI
+    # failure; key it off the platform instead.  No compiler has ever had this
+    # job succeed on armv7a-android.  `exe-dlls` is unaffected and stays on.
+    || (stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
     # unhandled ELF relocation(Rel) type 10
     || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_32)
 
