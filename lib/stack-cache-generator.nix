@@ -15,6 +15,14 @@
   if branchMap != null
     then { location, tag, ...}: branchMap."${location}"."${tag}" or null
     else _: null
+, inputMap    ? {}
+                     # An alternative to providing a `sha256`, handy for flakes
+                     # and for private repos (which ignore `sha256map`):
+                     #   inputs.pandoc-citeproc.url = "github:jgm/pandoc-citeproc/0.17";
+                     #   inputs.pandoc-citeproc.flake = false;
+                     #   outputs = inputs:
+                     #     ...
+                     #     inputMap."https://github.com/jgm/pandoc-citeproc" = inputs.pandoc-citeproc;
 , resolverSha256 ? null
 , nix-tools
 , evalPackages
@@ -95,8 +103,11 @@ concatMap (dep:
               location = dep.url;
               tag = dep.rev;
             };
+            input = haskellLib.lookupInputMap inputMap dep;
             pkgsrc =
-              if !is-private && sha256 != null
+              if input != null
+                then input
+              else if !is-private && sha256 != null
                 then evalPackages.fetchgit {
                   inherit (dep) url rev;
                   inherit sha256;

@@ -224,6 +224,7 @@ let
     ghc-options-stack = callTest ./ghc-options/stack.nix {};
     exe-only = callTest ./exe-only { inherit util; };
     stack-source-repo = callTest ./stack-source-repo {};
+    stack-source-repo-input-map = callTest ./stack-source-repo-input-map {};
     ghc-lib-reinstallable-cabal = callTest ./ghc-lib-reinstallable/cabal.nix {};
     ghc-lib-reinstallable-stack = callTest ./ghc-lib-reinstallable/stack.nix {};
     cabal-doctests = callTest ./cabal-doctests { inherit util; };

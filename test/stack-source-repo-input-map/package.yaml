@@ -1,0 +1,8 @@
+name: stack-source-repo-input-map
+
+dependencies:
+- base
+- cabal-simple
+
+library:
+  source-dirs: src
