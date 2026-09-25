@@ -268,10 +268,20 @@ in {
     # Forcing `shared: True` at the project level keeps plan-nix's
     # recorded UnitIds matching what a downstream cabal v2-build
     # against the real wasm GHC would compute.
+    #
+    # Not for stable-haskell compilers.  Their plans are two-stage, and
+    # `package *` reaches the Build stage too, where the native compiler
+    # has no dyn way: the Build-stage build tools then need `.dyn_hi`
+    # files the Build-stage boot libraries don't have.  The fork's
+    # cabal (nix-tools-sh, and the v2 builder's cabal) instead defaults
+    # `shared` on per stage from the stage compiler's `target RTS linker
+    # only supports shared libraries`, so the wasm Host gets shared
+    # libraries without any project configuration.
     (lib.mkIf (
       let ghc = (config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name};
       in pkgs.stdenv.hostPlatform.isWasm
          && builtins.compareVersions ghc.version "9.12" >= 0
+         && !(ghc.isStableHaskell or false)
     ) {
       cabalProjectLocal = lib.mkBefore ''
         package *

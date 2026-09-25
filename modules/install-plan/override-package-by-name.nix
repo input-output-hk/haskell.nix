@@ -66,8 +66,7 @@
     inherit (pkgs) lib;
   } {
     planJson = config.plan-json.install-plan;
-    isWasm = pkgs.stdenv.hostPlatform.isWasm;
-    ghcVersion = config.compiler.version;
+    inherit (pkgs.haskell-nix.haskellLib) planUnitStage;
     # Assembled project text for the `documentation:` scan; null (=
     # unknown) when neither piece was threaded into this pkg-set
     # (stack / legacy instantiations).
