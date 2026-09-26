@@ -632,6 +632,11 @@ let
                 " --with-ld=${binPrefix}ld")
     )
   );
+  # The build-platform C compiler for build-stage tool sources; see
+  # `depsBuildBuild` below for why its placement depends on the target.
+  buildStageCc = [ pkgsBuildBuild.stdenv.cc pkgsBuildBuild.libiconv ];
+  buildCcInDepsBuildBuild =
+    stdenv.hostPlatform != stdenv.buildPlatform && !stdenv.hostPlatform.isGhcjs;
 in
 
 stdenv.mkDerivation ({
@@ -730,9 +735,21 @@ stdenv.mkDerivation ({
     # sub-build inside a ghcjs-target slice gets no native `-L` for it
     # ("ld: library not found for -liconv").  Adding it as a build-platform
     # native input puts `-L<libiconv>/lib` into the build wrapper's search.
-    ++ lib.optionals (buildToolSourceFrags != [])
-         [ pkgsBuildBuild.stdenv.cc pkgsBuildBuild.libiconv ]
+    ++ lib.optionals (buildToolSourceFrags != [] && !buildCcInDepsBuildBuild)
+         buildStageCc
     ++ extraNativeBuildInputs;
+  # ...but on a C-capable cross target the build compiler must go in
+  # `depsBuildBuild`, not `nativeBuildInputs`.  In `nativeBuildInputs` the
+  # cc-wrapper setup hook gives it the HOST role, so it collects `-isystem`
+  # for this slice's `buildInputs` — the target's C libraries.  On mingw that
+  # hands the native `cc` the mingw-w64 pthreads headers, and a build-stage
+  # tool's link (GHC compiles a stub that includes Rts.h → OSThreads.h →
+  # <pthread.h>) dies with "process.h: No such file or directory".  In
+  # `depsBuildBuild` it only sees build-platform deps.  Native slices keep the
+  # old placement (build == host, so no difference and no rebuild), and so
+  # does ghcjs, which has no target C libraries to leak.
+  depsBuildBuild = lib.optionals (buildToolSourceFrags != [] && buildCcInDepsBuildBuild)
+    buildStageCc;
   # `depSlices` go in `propagatedBuildInputs` so stdenv chains each
   # slice's `nix-support/propagated-build-inputs` transitively.
   # Concretely: `cardano-lmdb:lib:ffi` declares `pkgconfig = [lmdb]`
