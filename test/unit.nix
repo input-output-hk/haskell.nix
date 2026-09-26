@@ -32,6 +32,27 @@ let
     rev = "487eea1c249537d34c27f6143dff2b9d5586c657";
     sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
   };
+
+  # Built-component-shaped fixture for the `mkFlakePackages` filter (#2028):
+  # each component carries `passthru.identifier.component-id` and a `config`
+  # with the `buildable`/`planned` flags (as comp-builder exposes via
+  # `passthru.config`).  `priv` is a private sub-library that is not in the
+  # install plan; `disabled` is an unbuildable test suite.
+  mkFakeComponent = id: buildable: planned: {
+    passthru.identifier.component-id = id;
+    config = { inherit buildable planned; };
+  };
+  flakePackagesInput = {
+    nnn = {
+      components = {
+        library         = mkFakeComponent "nnn:lib:nnn"        true  true;
+        sublibs.used    = mkFakeComponent "nnn:lib:used"       true  true;
+        sublibs.priv    = mkFakeComponent "nnn:lib:priv"       true  false;
+        exes.eee        = mkFakeComponent "nnn:exe:eee"        true  true;
+        tests.disabled  = mkFakeComponent "nnn:test:disabled"  false false;
+      };
+    };
+  };
 in
 lib.runTests {
   # identity function for applyComponents
@@ -55,6 +76,28 @@ lib.runTests {
   testId = {
     expr = lib.id 1;
     expected = 1;
+  };
+
+  # `flakeComponentIsPlanned` keeps only buildable components that are in the
+  # install plan; `buildable` defaults to true and `planned` to false when a
+  # config omits them (see #2028).
+  test-flakeComponentIsPlanned = {
+    expr = map haskellLib.flakeComponentIsPlanned [
+      { config = { buildable = true;  planned = true;  }; }
+      { config = { buildable = true;  planned = false; }; }
+      { config = { buildable = false; planned = true;  }; }
+      { config = { }; }                    # planned defaults false -> excluded
+      { config = { planned = true; }; }    # buildable defaults true  -> included
+    ];
+    expected = [ true false false false true ];
+  };
+
+  # `mkFlakePackages` must drop the unplanned private sub-library and the
+  # disabled test suite, keeping the planned library, sub-library and exe.
+  test-mkFlakePackages-filters-unplanned = {
+    expr = lib.sort (a: b: a < b)
+      (builtins.attrNames (haskellLib.mkFlakePackages flakePackagesInput));
+    expected = [ "nnn:exe:eee" "nnn:lib:nnn" "nnn:lib:used" ];
   };
 
   testParseBlock1 = {
