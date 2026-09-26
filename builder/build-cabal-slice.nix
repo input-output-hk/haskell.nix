@@ -632,6 +632,11 @@ let
                 " --with-ld=${binPrefix}ld")
     )
   );
+  # The build-platform C compiler for build-stage tool sources; see
+  # `depsBuildBuild` below for why its placement depends on the target.
+  buildStageCc = [ pkgsBuildBuild.stdenv.cc pkgsBuildBuild.libiconv ];
+  buildCcInDepsBuildBuild =
+    stdenv.hostPlatform != stdenv.buildPlatform && !stdenv.hostPlatform.isGhcjs;
 in
 
 stdenv.mkDerivation ({
@@ -730,9 +735,21 @@ stdenv.mkDerivation ({
     # sub-build inside a ghcjs-target slice gets no native `-L` for it
     # ("ld: library not found for -liconv").  Adding it as a build-platform
     # native input puts `-L<libiconv>/lib` into the build wrapper's search.
-    ++ lib.optionals (buildToolSourceFrags != [])
-         [ pkgsBuildBuild.stdenv.cc pkgsBuildBuild.libiconv ]
+    ++ lib.optionals (buildToolSourceFrags != [] && !buildCcInDepsBuildBuild)
+         buildStageCc
     ++ extraNativeBuildInputs;
+  # ...but on a C-capable cross target the build compiler must go in
+  # `depsBuildBuild`, not `nativeBuildInputs`.  In `nativeBuildInputs` the
+  # cc-wrapper setup hook gives it the HOST role, so it collects `-isystem`
+  # for this slice's `buildInputs` — the target's C libraries.  On mingw that
+  # hands the native `cc` the mingw-w64 pthreads headers, and a build-stage
+  # tool's link (GHC compiles a stub that includes Rts.h → OSThreads.h →
+  # <pthread.h>) dies with "process.h: No such file or directory".  In
+  # `depsBuildBuild` it only sees build-platform deps.  Native slices keep the
+  # old placement (build == host, so no difference and no rebuild), and so
+  # does ghcjs, which has no target C libraries to leak.
+  depsBuildBuild = lib.optionals (buildToolSourceFrags != [] && buildCcInDepsBuildBuild)
+    buildStageCc;
   # `depSlices` go in `propagatedBuildInputs` so stdenv chains each
   # slice's `nix-support/propagated-build-inputs` transitively.
   # Concretely: `cardano-lmdb:lib:ffi` declares `pkgconfig = [lmdb]`
@@ -1004,7 +1021,42 @@ stdenv.mkDerivation ({
         fi
       done
     fi
-    # Every composed platform db must be writable AND carry a real
+    ${lib.optionalString (stdenv.hostPlatform != stdenv.buildPlatform) ''
+      # Cross slice: evict composed BUILD-stage library units.  On cross the
+      # solver's installed index is the HOST db only (see "Solver visibility"
+      # below), so a build-stage library a custom setup needs — e.g. the
+      # Cabal-syntax that entropy's Setup.hs imports, composed from its
+      # setup-dep slice — is always planned `(requires build)` and rebuilt
+      # in-slice under the same deterministic id.  Its composed receipt and
+      # conf are read-only symlinks, so the fork's staged install then dies
+      # writing the receipt (`withFile: permission denied` on
+      # `units/<pkgid>`).  They can never be reused here, and build-stage
+      # byproducts are evicted from $out anyway (below), so drop them up
+      # front and let the rebuild install cleanly.  Only symlinked receipts
+      # that have a conf (libraries composed from dep slices) go; composed
+      # build-tool exes (alex, hsc2hs) are left for the PATH overlays.
+      # (Only with a known host dir: without it every dir would qualify.)
+      # This runs BEFORE the loop below that drops each db's composed
+      # `package.cache` symlink and recaches it, so the BUILD-platform db --
+      # which nothing recaches later -- gets a cache without the evicted
+      # units rather than one still listing them.
+      [ -n "$hostPlatformDir" ] && for platDir in $storeDir/host/*/; do
+        platDir=''${platDir%/}
+        [ "''${platDir##*/}" = "$hostPlatformDir" ] && continue
+        [ -d "$platDir/units" ] || continue
+        for receipt in "$platDir"/units/*; do
+          [ -L "$receipt" ] || continue
+          uid=''${receipt##*/}
+          [ -e "$platDir/package.conf.d/$uid.conf" ] || continue
+          echo "evicting composed build-stage unit: $uid"
+          rm -f "$receipt" "$platDir/package.conf.d/$uid.conf"
+          if [ -d "$platDir/lib/$uid" ]; then
+            chmod -R u+w "$platDir/lib/$uid" 2>/dev/null || true
+            rm -rf "$platDir/lib/$uid"
+          fi
+        done
+      done
+    ''}# Every composed platform db must be writable AND carry a real
     # `package.cache`:
     #  * Build-stage tools built from source in-slice (happy/happy-lib, staged
     #    via `buildToolSourceFrags`) get registered by `ghc-pkg recache` into

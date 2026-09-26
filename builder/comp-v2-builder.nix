@@ -1086,6 +1086,22 @@ let
     (lib.filter (x: x != null)
       (libs ++ frameworks ++ pkgconfig ++ transitiveDepLibs ++ iservRuntimeLibs));
 
+  # Store paths named in this package's own `extra-lib-dirs:` /
+  # `extra-include-dirs:` (from `cabalProjectLocal`; re-emitted verbatim by
+  # `extraLibDirsBlockFor`).  They reach us through plan-nix's JSON, which
+  # carries no string context, so without this the slice's cabal.project
+  # names a path its sandbox does not contain — e.g. a vendored SDK's
+  # headers: "fatal error: WebView2.h: No such file or directory".
+  # Re-attach context to each path's store root so it becomes an input.
+  # Only this package's slice changes (and only if it names such a path).
+  extraDirInputs =
+    let
+      roots = lib.unique (lib.concatMap (d:
+        let m = builtins.match "(${builtins.storeDir}/[^/]+).*" d;
+        in if m == null then [] else m)
+        (extraLibDirsOf pkgName ++ extraIncludeDirsOf pkgName));
+    in map (r: builtins.appendContext r { ${r} = { path = true; }; }) roots;
+
   # Mirror v1's `make-config-files.nix:65-85`: emit cabal.project
   # `extra-include-dirs:` and `extra-lib-dirs:` for every C-lib /
   # framework / pkgconfig dep so cabal's foreign-library check at
@@ -2136,7 +2152,8 @@ let
     localRepo = null;
     preBuild = slicePreBuildV2;
     target = targetSelector;
-    inherit extraBuildInputs extraNativeBuildInputs withProgFlags
+    extraBuildInputs = extraBuildInputs ++ extraDirInputs;
+    inherit extraNativeBuildInputs withProgFlags
             allowedBuildToolPackages confLibraryDirs
             buildToolBinOverlays;
     requiredSystemFeatures = sliceRequiredSystemFeatures;
@@ -2448,7 +2465,8 @@ let
     localRepo = null;
     preBuild = slicePreBuildV2;
     target = targetSelector;
-    inherit extraBuildInputs extraNativeBuildInputs withProgFlags
+    extraBuildInputs = extraBuildInputs ++ extraDirInputs;
+    inherit extraNativeBuildInputs withProgFlags
             allowedBuildToolPackages confLibraryDirs
             buildToolBinOverlays solverIncludesGlobalDb;
     # Per-component stdenv hardeningDisable (set via haskell.nix
@@ -2527,7 +2545,8 @@ let
     localRepo = null;
     preBuild = slicePreBuildV2;
     target = targetSelector;
-    inherit extraBuildInputs extraNativeBuildInputs withProgFlags
+    extraBuildInputs = extraBuildInputs ++ extraDirInputs;
+    inherit extraNativeBuildInputs withProgFlags
             allowedBuildToolPackages confLibraryDirs
             buildToolBinOverlays solverIncludesGlobalDb;
     # `cabal v2-haddock` recompiles the modules, splices included, so

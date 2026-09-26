@@ -70,6 +70,34 @@ let
     ln -s $configFiles/${packageCfgDir} $wrappedGhc/${packageCfgDir}
 
   ''
+  # ... and do both for each target of a multi-target GHC.  Those (the
+  # stable-haskell cross compilers) keep a target's `settings` and global
+  # package db under `<libdir>/targets/<triple>/lib`, and their `ghc` passes
+  # `-target=<triple>`.  The `-B` this wrapper adds points GHC at the copy
+  # made above, which for GHC < 9.15 has just lost `targets/` to the
+  # `rm -rf ${libDir}/*/` -- and then every invocation, `--numeric-version`
+  # included, fails with "Couldn't find specific target".  Restore the
+  # targets, with the component's package db in place of the global one.
+  # Only for stable-haskell cross builds: a native GHC has no `targets/`, and
+  # neither does a mainline cross GHC (which is a single-target, prefixed
+  # compiler), so leaving the script unchanged for both keeps every such
+  # component's derivation (the compilers' own libraries among them) as it
+  # was.  Not keyed on `targetPrefix`: a multi-target GHC is a plain `ghc`
+  # that picks its target with `-target=`, so its prefix is empty.  Tested on
+  # `defaults.ghc`, since the `.dwarf` variant need not carry the passthru.
+  + lib.optionalString (stdenv.hostPlatform != stdenv.buildPlatform
+                        && (defaults.ghc.isStableHaskell or false)) ''
+    if [ -d $unwrappedGhc/${configFiles.libDir}/targets ]; then
+      rm -rf ${libDir}/targets
+      for t in $unwrappedGhc/${configFiles.libDir}/targets/*; do
+        mkdir -p ${libDir}/targets/''${t##*/}
+        ${lndir}/bin/lndir -silent $t ${libDir}/targets/''${t##*/}
+        rm -rf ${libDir}/targets/''${t##*/}/lib/package.conf.d
+        ln -s $configFiles/${packageCfgDir} ${libDir}/targets/''${t##*/}/lib/package.conf.d
+      done
+    fi
+
+  ''
   # Set the GHC_PLUGINS environment variable according to the plugins for the component.
   # GHC will automatically load the relevant symbols from the given libraries and
   # initialize them with the given arguments.
