@@ -78,12 +78,15 @@ let
   # `rm -rf ${libDir}/*/` -- and then every invocation, `--numeric-version`
   # included, fails with "Couldn't find specific target".  Restore the
   # targets, with the component's package db in place of the global one.
-  # Only for cross builds: a native GHC has no `targets/`, and leaving the
-  # script unchanged there keeps every native component's derivation (the
-  # compiler's own libraries among them) as it was.  Not keyed on
-  # `targetPrefix`: a multi-target GHC is a plain `ghc` that picks its target
-  # with `-target=`, so its prefix is empty.
-  + lib.optionalString (stdenv.hostPlatform != stdenv.buildPlatform) ''
+  # Only for stable-haskell cross builds: a native GHC has no `targets/`, and
+  # neither does a mainline cross GHC (which is a single-target, prefixed
+  # compiler), so leaving the script unchanged for both keeps every such
+  # component's derivation (the compilers' own libraries among them) as it
+  # was.  Not keyed on `targetPrefix`: a multi-target GHC is a plain `ghc`
+  # that picks its target with `-target=`, so its prefix is empty.  Tested on
+  # `defaults.ghc`, since the `.dwarf` variant need not carry the passthru.
+  + lib.optionalString (stdenv.hostPlatform != stdenv.buildPlatform
+                        && (defaults.ghc.isStableHaskell or false)) ''
     if [ -d $unwrappedGhc/${configFiles.libDir}/targets ]; then
       rm -rf ${libDir}/targets
       for t in $unwrappedGhc/${configFiles.libDir}/targets/*; do
