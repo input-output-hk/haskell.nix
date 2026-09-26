@@ -57,6 +57,29 @@ lib.runTests {
     expected = 1;
   };
 
+  # `dependToLib` returns the library component of a dependency package.
+  testDependToLibResolvesLibrary = {
+    expr = haskellLib.dependToLib { identifier.name = "foo"; components.library = "the-lib"; };
+    expected = "the-lib";
+  };
+
+  # A sublib `depends` value is already the derivation (no `components`), so it
+  # is passed through unchanged.
+  testDependToLibPassesSublibThrough = {
+    expr = haskellLib.dependToLib "already-a-derivation";
+    expected = "already-a-derivation";
+  };
+
+  # An unplanned package (has `components`, but no planned `library`) must throw
+  # rather than silently vanish or give an opaque `attribute 'library' missing`
+  # (see #1379).  `runTests` can only assert that evaluation fails; the message
+  # wording is checked out of band.
+  testDependToLibThrowsForUnplannedPackage = {
+    expr = (builtins.tryEval
+      (haskellLib.dependToLib { identifier.name = "foo"; components = { }; })).success;
+    expected = false;
+  };
+
   testParseBlock1 = {
     expr = __toJSON (haskellLib.parseSourceRepositoryPackageBlock "cabal.project" {} {} "" ''
         type: git
