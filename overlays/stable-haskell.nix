@@ -2275,7 +2275,23 @@ ENDSCRIPT
       nativeBuildInputs = [ targetCC targetBintools ];
     } ''
     mkdir -p $out/bin
-    mkdir -p $out/lib/ghc-${ghcVersion}
+    mkdir -p $out/lib/ghc-${ghcVersion}${lib.optionalString isGhcjsTarget ("\n" + ''
+    # emcc keeps its cache in EM_CACHE, and nixpkgs' wrapper defaults that to
+    # a fixed directory under /tmp (share/emscripten/locate_cache.sh):
+    # `/tmp/<emscripten>_cache`, or `/tmp/_cache` when emcc is run by
+    # absolute path, as ghc-toolchain-bin does below.  Darwin sandboxes share
+    # /tmp, so whichever build user creates that directory first owns it
+    # (mode 755), and emcc fails for every other `_nixbldN` on that machine --
+    # which surfaced as ghc-toolchain's "checking whether Cc works... Command
+    # failed: emcc -c" on some builders and not others.  Give this build its
+    # own writable cache, as every other emscripten consumer here already does
+    # (compiler/ghc/default.nix, builder/comp-builder.nix,
+    # builder/build-cabal-slice.nix).
+    export EM_CACHE=$(mktemp -d)
+    if [ -d ${targetCC}/share/emscripten/cache ]; then
+      cp -r ${targetCC}/share/emscripten/cache/* $EM_CACHE/
+      chmod +w -R $EM_CACHE
+    fi'')}
 
     # ── Native compiler tree (symlinked) ─────────────────────────────────
     # The wrapper's -B names $out/lib/ghc-${ghcVersion} as the base topdir,
