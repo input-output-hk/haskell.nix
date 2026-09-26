@@ -1,5 +1,5 @@
 { stdenv, lib, pkgs, haskellLib, haskell-nix, buildPackages, runCommand
-, cabalProject', testSrc, compiler-nix-name, evalPackages, testCabalProjectLocal, testInputMap }:
+, cabalProject', testSrc, compiler-nix-name, evalPackages, evalSystem, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -25,7 +25,7 @@ let
   isTargetCompiler = compiler-nix-name == "ghc9141";
 
   project = cabalProject' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "cabal-sublib-shell";
     # Don't `readFile ../cabal.project.local` here — the only
     # thing this test depends on from `test/cabal.project.local`
@@ -64,7 +64,20 @@ in lib.recurseIntoAttrs {
 
     buildCommand = ''
       export HOME=$PWD/home
+      # Seed a writable `~/.cabal` from the project's own offline dot-cabal:
+      # the same prepopulated hackage index plan-to-nix solved against.  The
+      # sandbox has no network, and this project's compiler ships an empty
+      # global package db (`emptyGlobalPackageDb`), so without an
+      # index the solver cannot resolve the boot deps the stable-haskell
+      # boot-package injection pulls in -- it fails with
+      # `unknown package: unix (dependency of Cabal)`.  The composed store
+      # does hold those units, but cabal only consults it AFTER solving
+      # (`improveInstallPlanWithStoreUnits`), so it is no substitute for an
+      # index at solve time.
+      export CABAL_DIR=$HOME/.cabal
       mkdir -p "$HOME/.cabal"
+      cp -R ${project.dotCabalDir}/. "$HOME/.cabal/"
+      chmod -R u+w "$HOME/.cabal"
 
       # Stage consumer, point cabal at a local repo containing
       # provider's tarball so the solver can see provider as a
@@ -88,12 +101,14 @@ in lib.recurseIntoAttrs {
       source ${buildPackages.writeText "v2-shell-hook" env.shellHook}
       cat > cabal.project <<EOF
       packages: .
-      active-repositories: local
       ${lib.optionalString (project.pkg-set.config.ghc.package.targetPrefix or "" != "") ''
       import: cabal.project.${project.pkg-set.config.ghc.package.targetPrefix}local
       ''}
       EOF
-      cat > "$HOME/.cabal/config" <<EOF
+      # Append (not overwrite): dot-cabal's config already declares
+      # hackage.haskell.org and any extra hackage repos, each with its index
+      # prepopulated under `$CABAL_DIR/packages`.
+      cat >> "$HOME/.cabal/config" <<EOF
       repository local
         url: file+noindex://$repoDir
       EOF

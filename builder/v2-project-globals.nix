@@ -17,8 +17,14 @@
 { lib }:
 
 { planJson      # plan.json's `install-plan` array
-, isWasm        # stdenv.hostPlatform.isWasm
-, ghcVersion    # ghc.version
+, planUnitStage # haskellLib.planUnitStage: a plan unit's stage
+                # ("build" / "host")
+, rawCabalProject ? null
+                # assembled cabal.project + cabalProjectLocal text the
+                # plan was made from, or null when the caller can't
+                # provide it (legacy pkg-set instantiations).  Used to
+                # disambiguate the `-haddock` configure-arg marker —
+                # see `projectSetsDocumentation` below.
 }:
 let
   # ---- per-package source-repo flags (was `planFlagsFor`) ----------
@@ -43,19 +49,45 @@ let
   # ---- documentation-enabled package names (was `pkgDocEnabled`) ----
   # `documentation: True` adds `--ghc-option=-haddock` to a unit's
   # configure-args; a name is "doc-enabled" if any of its units carry it.
-  docEnabledNames = lib.listToAttrs (lib.concatMap
-    (e:
-      if lib.elem "--ghc-option=-haddock" (e.configure-args or [])
-      then [ { name = e.pkg-name or ""; value = true; } ]
-      else [])
-    planJson);
+  #
+  # The marker is ambiguous: a plain `ghc-options: -haddock` in the
+  # project (e.g. haskell-language-server's `package *` stanza) leaves
+  # the IDENTICAL configure-arg, but its elaborated units hash with
+  # `pkgHashDocumentation = False` — emitting `documentation: True` for
+  # them forks the slice's UnitId from plan-nix AND makes `cabal
+  # v2-build` run the haddock program (which stable-haskell compilers
+  # don't ship).  plan.json has no truthful per-unit documentation
+  # field (`haddock-args` is always the bare verb), so disambiguate
+  # with the project text: only treat `-haddock` as documentation when
+  # some line of the assembled cabal.project actually turns
+  # `documentation:` on.  Coarse (a doc-True project that ALSO gives
+  # some package plain `ghc-options: -haddock` still misclassifies
+  # that package, and `import:`ed files are not scanned) — the real
+  # fix is make-install-plan emitting `elabBuildHaddocks`, at the cost
+  # of a nix-tools (world-rebuild) change.  With rawCabalProject
+  # unknown (null) keep the old marker-only behaviour.
+  projectSetsDocumentation =
+    rawCabalProject == null
+    || lib.any
+         (l: builtins.isString l
+             && builtins.match "[ \t]*documentation[ \t]*:[ \t]*[Tt]rue[ \t\r]*" l != null)
+         (builtins.split "\n" rawCabalProject);
+  docEnabledNames =
+    if !projectSetsDocumentation then {}
+    else lib.listToAttrs (lib.concatMap
+      (e:
+        if lib.elem "--ghc-option=-haddock" (e.configure-args or [])
+        then [ { name = e.pkg-name or ""; value = true; } ]
+        else [])
+      planJson);
 
   # ---- projectConfigPragmas (was the inline `let` in comp-v2) ------
   # Each plan entry's `configure-args` is per-unit; we group by pkg-name
-  # (union of pragmas across units, since cabal.project only supports
-  # per-package granularity) and emit a `package *` baseline block plus
-  # per-package delta blocks, so the slice's `cabal v2-build` keeps
-  # `pkgHashConfigInputs` aligned with plan-nix.
+  # (since cabal.project only supports per-package granularity) and emit
+  # a `package *` baseline block plus per-package delta blocks, so the
+  # slice's `cabal v2-build` keeps `pkgHashConfigInputs` aligned with
+  # plan-nix.  See `pragmasByName` for how the Build and Host stages of a
+  # two-stage plan are reconciled.
   configuredEntries = lib.filter (p: (p.type or "") == "configured") planJson;
 
   # Whitelist of cabal.project field names that map 1:1 to
@@ -72,30 +104,75 @@ let
     "coverage" "relocatable"
     "profiling-detail" "library-profiling-detail"
   ];
-  # On wasm GHC 9.12+ the RTS linker only supports shared libraries, so
-  # plan-nix's `--disable-shared` would break TH-eval `dyld`; flip it.
-  forceShared = isWasm && builtins.compareVersions ghcVersion "9.12" >= 0;
   pragmaOf = arg:
     let
       en = builtins.match "--enable-([a-z0-9-]+)" arg;
       di = builtins.match "--disable-([a-z0-9-]+)" arg;
       kv = builtins.match "--([a-z0-9-]+)=(.+)" arg;
     in
-      if forceShared && arg == "--disable-shared" then "shared: True"
+      # `debug-info` is a LEVEL (0..3), not a boolean: its cabal.project value is
+      # parsed by `flagToDebugInfoLevel`, which rejects True/False ("Can't parse
+      # debug info level False").  This matters with the stable-haskell Cabal
+      # fork (3.17); older Cabal accepted the boolean form.  Map the enable/
+      # disable Setup flags to the equivalent level (disable → 0 = NoDebugInfo,
+      # matching `--disable-debug-info`; enable → 2 = NormalDebugInfo, the
+      # no-arg default) so `pkgHashConfigInputs` stays aligned with plan-nix.
+      if di != null && builtins.head di == "debug-info" then "debug-info: 0"
+      else if en != null && builtins.head en == "debug-info" then "debug-info: 2"
       else if en != null && isProjectField (builtins.head en) then "${builtins.head en}: True"
       else if di != null && isProjectField (builtins.head di) then "${builtins.head di}: False"
       else if kv != null && isProjectField (builtins.head kv) then "${builtins.head kv}: ${builtins.elemAt kv 1}"
       else null;
   pragmasOf = args: lib.unique (lib.filter (s: s != null) (map pragmaOf args));
 
-  # pkg-name → union of pragmas across every unit of that package.
-  pragmasByName = lib.foldl' (acc: e:
+  # pkg-name → stage → union of pragmas across that stage's units.
+  pragmasByNameStage = lib.foldl' (acc: e:
     let
       name = e.pkg-name or "";
+      stage = planUnitStage e;
       ps = pragmasOf (e.configure-args or []);
+      byStage = acc.${name} or {};
     in if name == "" then acc
-       else acc // { ${name} = lib.unique ((acc.${name} or []) ++ ps); }
+       else acc // {
+         ${name} = byStage // {
+           ${stage} = lib.unique ((byStage.${stage} or []) ++ ps);
+         };
+       }
   ) {} configuredEntries;
+
+  # Fields that cabal itself applies to Host units only, however they are
+  # set (the fork's `withFullyStaticExe` is `solverPkgStage == Host && ...`).
+  hostScopedFields = [ "executable-static" ];
+  fieldOf = p: builtins.head (builtins.match "([^:]+):.*" p);
+
+  # pkg-name → the pragmas to emit for it.
+  #
+  # A package can have units in both stages of a two-stage plan (base,
+  # containers, ...: the Build copies serve the build tools), and
+  # cabal.project has no stage-qualified `package` stanza -- whatever we
+  # emit applies to both.  So:
+  #   * a pragma every stage agrees on is emitted;
+  #   * a Host-scoped field that differs keeps its Host value, which cabal
+  #     will not apply to the Build units anyway;
+  #   * any other field that differs is dropped.
+  # Explicit project configuration is stage-blind, so it cannot make two
+  # stages differ; a field that does differ is one cabal computed per
+  # stage from that stage's compiler -- e.g. `shared`, which defaults on
+  # for a wasm Host (`target RTS linker only supports shared libraries`)
+  # but off for the native Build compiler.  The slice's cabal recomputes
+  # it the same way.  Emitting either value would impose it on the other
+  # stage: that is how a wasm `shared: True` reached the Build-stage
+  # happy-lib and failed for want of `Prelude.dyn_hi` in the Build base.
+  pragmasByName = lib.mapAttrs (_: byStage:
+    let
+      stages = builtins.attrValues byStage;
+      host = byStage.host or [];
+    in if builtins.length stages == 1 then builtins.head stages
+       else lib.filter
+              (p: lib.all (ps: lib.elem p ps) stages
+                  || (lib.elem (fieldOf p) hostScopedFields && lib.elem p host))
+              (lib.unique (lib.concatLists stages))
+  ) pragmasByNameStage;
   allPkgNames = builtins.attrNames pragmasByName;
 
   # Baseline: pragmas present in *every* pkg-name's union.

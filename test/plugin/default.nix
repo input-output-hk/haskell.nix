@@ -1,10 +1,10 @@
-{ stdenv, lib, haskellLib, project', testSrc, compiler-nix-name, evalPackages, buildPackages, testCabalProjectLocal, testInputMap }:
+{ stdenv, lib, haskellLib, project', testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
 let
   project = project' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "plugin";
     inputMap = testInputMap;
     cabalProjectLocal = testCabalProjectLocal + ''
