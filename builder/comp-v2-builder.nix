@@ -2060,10 +2060,18 @@ let
       (lib.concatMap (u: u.components.setup.depends or []) thisPkgUnits);
     operator = item:
       let q = planJsonByPlanIdBuild'.${item.key} or null;
+          # Not a dep's own `setup` component: that is a separate setup
+          # scope (`<dep>:setup.*`), solved on its own.  Pinning its deps
+          # under THIS package's `setup.` qualifier merges two resolutions,
+          # and when they disagree the slice cannot solve at all — e.g.
+          # gi-gdk4 pinned `setup.gi-glib` to both 2.0.30 (its own setup)
+          # and 2.0.29 (gi-gio's setup), and so on down the haskell-gi
+          # family, once Hackage carried both versions.
           deps = if q == null then []
                  else (q.depends or [])
                       ++ lib.concatMap (c: c.depends or [])
-                           (lib.attrValues (q.components or {}));
+                           (lib.attrValues
+                             (removeAttrs (q.components or {}) [ "setup" ]));
       in map (id: { key = id; }) deps;
   });
   ownSetupConstraints =
