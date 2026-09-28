@@ -1034,7 +1034,8 @@ stdenv.mkDerivation ({
       # byproducts are evicted from $out anyway (below), so drop them up
       # front and let the rebuild install cleanly.  Only symlinked receipts
       # that have a conf (libraries composed from dep slices) go; composed
-      # build-tool exes (alex, hsc2hs) are left for the PATH overlays.
+      # build-tool exes (alex, hsc2hs) are left for the PATH overlays, with
+      # their receipts made writable in case they are rebuilt.
       # (Only with a known host dir: without it every dir would qualify.)
       # This runs BEFORE the loop below that drops each db's composed
       # `package.cache` symlink and recaches it, so the BUILD-platform db --
@@ -1047,7 +1048,19 @@ stdenv.mkDerivation ({
         for receipt in "$platDir"/units/*; do
           [ -L "$receipt" ] || continue
           uid=''${receipt##*/}
-          [ -e "$platDir/package.conf.d/$uid.conf" ] || continue
+          if [ ! -e "$platDir/package.conf.d/$uid.conf" ]; then
+            # A composed build-tool exe (no conf).  Keep it -- the PATH
+            # overlays use it -- but it can be rebuilt in-slice too, e.g.
+            # exe:hspec-discover once the lib it links (evicted just
+            # below) is rebuilt, and the fork then rewrites its receipt by
+            # opening it, which fails through the read-only symlink
+            # (`withFile: permission denied`, build 2153839).  Make the
+            # receipt a writable copy of itself.  The exe and its docs need
+            # nothing: cabal copies those into place.
+            cp --remove-destination "$(readlink -f "$receipt")" "$receipt"
+            chmod u+w "$receipt"
+            continue
+          fi
           echo "evicting composed build-stage unit: $uid"
           rm -f "$receipt" "$platDir/package.conf.d/$uid.conf"
           if [ -d "$platDir/lib/$uid" ]; then
