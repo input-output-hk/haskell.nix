@@ -27,8 +27,19 @@ let
   # test exercises the actual code path.
   # lib/dummy-ghc.nix now returns the { dummy-ghc, dummy-ghc-pkg } pair; this
   # test exercises the `ghc` half.
+  #
+  # One deliberate difference: plan-to-nix runs the dummy on the EVAL
+  # platform, but this test runs it here, at build time, on the BUILD
+  # platform.  With `evalPackages` the script's shebang is the eval
+  # platform's bash -- on Hydra an x86_64-linux ELF -- which darwin cannot
+  # exec.  Most darwin jobs got away with it only because the calling bash
+  # falls back to interpreting an ENOEXEC file itself; the ghc914-sh ghcjs
+  # one crashed instead (`Segmentation fault: 11` on `--info`, build
+  # 2153544).  The `--info` text under test does not depend on whose bash
+  # prints it, so build the dummy with the test's own build packages.
   dummyGhc = (import ../../lib/dummy-ghc.nix {
-    inherit pkgs evalPackages;
+    inherit pkgs;
+    evalPackages = buildPackages;
     ghc = realGhc;
   }).dummy-ghc;
 
