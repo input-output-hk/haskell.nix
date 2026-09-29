@@ -148,21 +148,18 @@ let
   # pkg-name → the pragmas to emit for it.
   #
   # A package can have units in both stages of a two-stage plan (base,
-  # containers, ...: the Build copies serve the build tools), and
-  # cabal.project has no stage-qualified `package` stanza -- whatever we
-  # emit applies to both.  So:
+  # containers, ...: the Build copies serve the build tools), and a
+  # `package <name>` stanza applies to both -- the fork's cabal has
+  # stage-qualified stanzas only for whole stages (`package build:*`), and
+  # a per-package stanza overrides them.  So per package:
   #   * a pragma every stage agrees on is emitted;
   #   * a Host-scoped field that differs keeps its Host value, which cabal
   #     will not apply to the Build units anyway;
-  #   * any other field that differs is dropped.
-  # Explicit project configuration is stage-blind, so it cannot make two
-  # stages differ; a field that does differ is one cabal computed per
-  # stage from that stage's compiler -- e.g. `shared`, which defaults on
-  # for a wasm Host (`target RTS linker only supports shared libraries`)
-  # but off for the native Build compiler.  The slice's cabal recomputes
-  # it the same way.  Emitting either value would impose it on the other
-  # stage: that is how a wasm `shared: True` reached the Build-stage
-  # happy-lib and failed for want of `Prelude.dyn_hi` in the Build base.
+  #   * any other field that differs is left out here, and carried by the
+  #     `package <stage>:*` stanzas instead (see `stageBlocks`).
+  # Emitting either value per package would impose it on the other stage:
+  # that is how a wasm `shared: True` reached the Build-stage happy-lib and
+  # failed for want of `Prelude.dyn_hi` in the Build base.
   pragmasByName = lib.mapAttrs (_: byStage:
     let
       stages = builtins.attrValues byStage;
@@ -190,6 +187,52 @@ let
     else "package *\n"
        + lib.concatMapStrings (p: "  " + p + "\n") baseline;
 
+  # Stage-qualified stanzas for the fields `pragmasByName` leaves out.
+  #
+  # A field that differs between a package's stages is either computed per
+  # stage by cabal (e.g. `shared`, which defaults on for a wasm Host --
+  # `target RTS linker only supports shared libraries` -- and off for the
+  # native Build compiler) or set per stage by the project, now that the
+  # fork's cabal accepts `package build:*` / `package host:*`.  Either way
+  # the plan recorded one value per stage.  For every such field, emit each
+  # stage's value in `package <stage>:*` wherever all of that stage's
+  # packages agree on it, so the slice reproduces it explicitly.  Where a
+  # stage is not uniform the field stays unset there, and the slice's cabal
+  # recomputes it the way plan-nix's did.  Per-package stanzas override
+  # these, and only ever carry values that hold in all of a package's
+  # stages, so every package still sees its own value.
+  #
+  # Single-stage plans have no such fields, so they get no stage stanzas
+  # and their text is unchanged.  Host-scoped fields keep their special
+  # handling above.
+  stageNames = lib.unique (lib.concatMap builtins.attrNames
+    (builtins.attrValues pragmasByNameStage));
+  differingFields = lib.unique (lib.concatLists (lib.mapAttrsToList
+    (_: byStage:
+      let lists = builtins.attrValues byStage;
+      in if builtins.length lists < 2 then []
+         else map fieldOf (lib.filter
+                (p: !(lib.all (ps: lib.elem p ps) lists))
+                (lib.unique (lib.concatLists lists))))
+    pragmasByNameStage));
+  stageBlockPragmas = stage:
+    let
+      inStage = lib.filter (n: pragmasByNameStage.${n} ? ${stage})
+                  (builtins.attrNames pragmasByNameStage);
+      listsOf = map (n: pragmasByNameStage.${n}.${stage}) inStage;
+    in if inStage == [] then []
+       else lib.filter
+              (p: lib.elem (fieldOf p) differingFields
+                  && !(lib.elem (fieldOf p) hostScopedFields)
+                  && lib.all (ps: lib.elem p ps) listsOf)
+              (builtins.head listsOf);
+  stageBlocks = lib.concatMapStrings (stage:
+    let ps = stageBlockPragmas stage;
+    in if ps == [] then ""
+       else "package ${stage}:*\n"
+          + lib.concatMapStrings (p: "  " + p + "\n") ps
+  ) stageNames;
+
   perPkgBlocks = lib.concatMapStrings (name:
     let delta = lib.filter (p: !(baselineSet ? ${p})) pragmasByName.${name};
     in if delta == [] then ""
@@ -197,7 +240,7 @@ let
           + lib.concatMapStrings (p: "  " + p + "\n") delta
   ) allPkgNames;
 
-  projectConfigPragmas = baselineBlock + perPkgBlocks;
+  projectConfigPragmas = baselineBlock + stageBlocks + perPkgBlocks;
 in {
   inherit projectConfigPragmas docEnabledNames flagsByName;
 }
