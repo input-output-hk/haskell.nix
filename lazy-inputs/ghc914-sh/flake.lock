@@ -3,16 +3,16 @@
     "ghc914-sh": {
       "flake": false,
       "locked": {
-        "lastModified": 1790644647,
-        "narHash": "sha256-/beRMwToVTzB4E3j6idnV4Gs2ad0XL5qZPupnIFFI1o=",
-        "ref": "hkm/pic-jump-table-split-sections",
-        "rev": "cbd79fd7c68da7745f4cdbc856663bdfa6bf9b39",
-        "revCount": 68550,
+        "lastModified": 1790647004,
+        "narHash": "sha256-aH2dSt++QbC3z+QOSkhQa2qaTZHaaTBws0NHfjkYe1Q=",
+        "ref": "stable-ghc-9.14-hn",
+        "rev": "e57be3138c11bbae750d49daec7791423e4f74ca",
+        "revCount": 68788,
         "type": "git",
         "url": "https://github.com/stable-haskell/ghc"
       },
       "original": {
-        "ref": "hkm/pic-jump-table-split-sections",
+        "ref": "stable-ghc-9.14-hn",
         "type": "git",
         "url": "https://github.com/stable-haskell/ghc"
       }

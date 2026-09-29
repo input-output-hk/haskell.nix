@@ -797,7 +797,7 @@ in {
         source-repository-package
           type: git
           location: https://github.com/stable-haskell/Cabal.git
-          tag: stable-haskell/master
+          tag: f2e0a89e15cf6604cec9d93e26a4b3caf459b076
           subdir: Cabal Cabal-syntax
 
         -- hsc2hs with batch cross-compilation support (a build-stage tool).
@@ -928,7 +928,7 @@ in {
           library-for-ghci: False${crossLinkFields}${buildStageStaticFields}
       '';
       inputMap = {
-        "https://github.com/stable-haskell/Cabal.git/stable-haskell/master" =
+        "https://github.com/stable-haskell/Cabal.git/f2e0a89e15cf6604cec9d93e26a4b3caf459b076" =
           pkgs.haskell-nix.sources.ghc914-sh-cabal;
         "https://github.com/stable-haskell/hsc2hs.git/d07eea1260894ce5fe456f881fbc62366c9eb1b7" =
           pkgs.haskell-nix.sources.ghc914-sh-hsc2hs;

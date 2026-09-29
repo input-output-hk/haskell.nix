@@ -653,7 +653,7 @@ let
 
   # ── source-repository-packages ────────────────────────────────────────────
   # The stable-haskell GHC source lists Cabal (from the stable-haskell fork,
-  # tracking the moving stable-haskell/master branch), hpc-bin and hsc2hs as
+  # pinned by SHA in the stage cabal.project files), hpc-bin and hsc2hs as
   # source-repository-packages in its stage1 / stage2 cabal.project files.
   # Rather than let cabal fetch them during evaluation (which fails in pure
   # mode — especially for the branch-tagged Cabal), map each to a pinned
@@ -667,7 +667,7 @@ let
   hsc2hsSrc = pkgs.haskell-nix.sources.ghc914-sh-hsc2hs;
 
   srpInputMap = {
-    "https://github.com/stable-haskell/Cabal.git/stable-haskell/master" =
+    "https://github.com/stable-haskell/Cabal.git/f2e0a89e15cf6604cec9d93e26a4b3caf459b076" =
       pkgs.haskell-nix.sources.ghc914-sh-cabal;
     "https://github.com/stable-haskell/hpc-bin.git/5923da3fe77993b7afc15b5163cffcaa7da6ecf5" =
       pkgs.haskell-nix.sources.ghc914-sh-hpc-bin;
