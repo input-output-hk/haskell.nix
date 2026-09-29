@@ -19,7 +19,13 @@
       # an rts-only way, so `-prof` links stopped asking for `libHSfoo_p.a`,
       # silently picked up the vanilla archives instead -- which resolve every
       # ordinary symbol -- and failed on `pushCostCentre` and friends.
-      url = "git+https://github.com/stable-haskell/ghc?ref=stable-ghc-9.14-hn";
+      #
+      # TESTING: temporarily on `hkm/pic-jump-table-split-sections`, which is
+      # `stable-ghc-9.14-hn` plus the x86 NCG fix for PIC jump tables under
+      # -split-sections ("can't resolve .text..L..._info - .L...", e.g.
+      # prettyprinter's Prettyprinter.Internal).  Move back to
+      # `stable-ghc-9.14-hn` once that branch has the fix.
+      url = "git+https://github.com/stable-haskell/ghc?ref=hkm/pic-jump-table-split-sections";
     };
   };
 
