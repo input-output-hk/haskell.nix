@@ -137,6 +137,41 @@ let
     sed -i 's|("RTS ways","${shRtsWays.fromToolchain}")|("RTS ways","${shRtsWaysValue}")|' \
       ${settingsFile}
   '';
+  # Since stable-ghc-9.14 b666dfd2bc, `ghc --info`'s `GHC Dynamic`,
+  # `GHC Profiled` and `Support dynamic-too` come from four per-target settings
+  # keys, not from the RTS the ghc binary links:
+  #
+  #   GHC Dynamic         = target is dynamic  && target ships dynamic libraries
+  #   GHC Profiled        = target is profiled && target ships profiling libraries
+  #   Support dynamic-too = not Windows        && target is dynamic
+  #
+  # Each defaults to YES when absent.  The fork's Makefile appends them to
+  # every settings file it writes; ghc-toolchain-bin does not, so without this
+  # every compiler here said `GHC Dynamic: YES`.  That disagreed with the
+  # plan-time dummy (tests.dummy-ghc-info), and cabal took it to mean the
+  # compiler is dynamic, so it compiled TH-using libraries -dynamic-too
+  # against boot libraries that have no .dyn_hi ("Failed to load dynamic
+  # interface file for Prelude ... base-4.22.1.0/Prelude.dyn_hi",
+  # integer-logarithms).
+  #
+  # These values reproduce what the compilers reported before that change,
+  # so plans stay as they were: dynamic-capable (keeps `Support dynamic-too`
+  # YES) but shipping no dynamic libraries (`GHC Dynamic` NO: the stage2 build
+  # is static, see `enableSharedStage2`), and not profiled (`GHC Profiled` NO,
+  # as the Makefile also writes).
+  addTargetDials = settingsFile: ''
+    if grep -qF '"target is dynamic"' ${settingsFile}; then
+      echo "the settings file already has the per-target dials; update" >&2
+      echo "addTargetDials in overlays/stable-haskell.nix" >&2
+      exit 1
+    fi
+    sed -i 's/\]$/,("target is dynamic","YES"),("target ships dynamic libraries","NO"),("target is profiled","NO"),("target ships profiling libraries","NO")]/' \
+      ${settingsFile}
+    grep -qF '("target ships dynamic libraries","NO")' ${settingsFile} || {
+      echo "could not append the per-target dials to ${settingsFile}" >&2
+      exit 1
+    }
+  '';
 
   # ── Configured source ──────────────────────────────────────────────────────
   # Runs autoconf/configure to generate .cabal files from .cabal.in,
@@ -1095,6 +1130,7 @@ ENDSCRIPT
       -o $out/lib/ghc-${ghcVersion}/settings
 
     ${fixRtsWays "$out/lib/ghc-${ghcVersion}/settings"}
+    ${addTargetDials "$out/lib/ghc-${ghcVersion}/settings"}
 
     ${lib.optionalString hp.isx86_64 ''
     # On x86_64, the RTS includes XXHash3 which uses 256-bit AVX2 vectors.
@@ -2338,6 +2374,7 @@ ENDSCRIPT
       $tdir/lib/settings
 
     ${fixRtsWays "$tdir/lib/settings"}
+    ${addTargetDials "$tdir/lib/settings"}
 
     ${lib.optionalString targetNeedsLLVM ''
     # ── LLVM backend ─────────────────────────────────────────────────────

@@ -251,6 +251,13 @@ let
             then ''echo ',("Project Unit Id","${ghc.projectUnitId or "ghc-${ghc.version}-inplace"}")' ''
             else ""
         }
+        ${
+          # stable-ghc-9.14 (semaphore-compat 2) reports the `-jsem` protocol
+          # version it speaks; mainline 9.14.1 prints no such field.
+          if ghc.isStableHaskell or false
+            then ''echo ',("Semaphore version","2")' ''
+            else ""
+        }
         ${ let
           # Every stable-haskell (ghc914-sh) compiler — native AND every cross
           # — is the SAME stage-2 `ghc-bin` binary (each cross "compiler" is a
