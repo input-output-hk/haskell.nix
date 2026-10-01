@@ -258,6 +258,19 @@ let
             then ''echo ',("Semaphore version","2")' ''
             else ""
         }
+        ${
+          # stable-ghc-9.14 `ghc --info` also echoes the per-target settings
+          # dials that overlays/stable-haskell.nix `addTargetDials` writes
+          # (the same constants for every target).
+          if ghc.isStableHaskell or false
+            then ''
+              echo ',("target is dynamic","YES")'
+              echo ',("target ships dynamic libraries","NO")'
+              echo ',("target is profiled","NO")'
+              echo ',("target ships profiling libraries","NO")'
+            ''
+            else ""
+        }
         ${ let
           # Every stable-haskell (ghc914-sh) compiler — native AND every cross
           # — is the SAME stage-2 `ghc-bin` binary (each cross "compiler" is a
