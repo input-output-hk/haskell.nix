@@ -665,6 +665,14 @@ let
         awk '/^name:/ { print $2; exit }' "$conf" >> names
       done
       sort -u names -o names
+      # Except the packages of the forked-Cabal source-repository-package
+      # (modules/cabal-project.nix): an SRP is LOCAL, so the solver must take
+      # it from source whatever the store holds, and `Cabal installed` is
+      # unsatisfiable (`rejecting: host:Cabal == host:source:Cabal-3.17.0.1
+      # (... requires installed instance)`).  The store does hold them
+      # whenever the shell's closure needs Cabal (ghcjs does).
+      grep -vxE 'Cabal|Cabal-syntax' names > names.keep || true
+      mv names.keep names
       # Both marker blocks are rewritten AGAINST THAT SET, per package:
       #
       #   in the store  ->  drop it from `packages:` (so it is not local, and
