@@ -20,7 +20,9 @@
       #     `pushCostCentre` and friends.
       #   * x86 NCG: keep PIC jump-table shortcuts within the proc; with
       #     -split-sections they could name another proc's section ("can't
-      #     resolve .text..L..._info - .L...", e.g. prettyprinter).
+      #     resolve .text..L..._info - .L...", e.g. prettyprinter), keeping
+      #     the tail-call trampolines those entries then name ("can't
+      #     resolve .L... - .L...", with or without -split-sections).
       #   * RTS linker fixes (aarch64 ELF section pool, PEi386 import symbol
       #     types, ELF visibility macros, ARM PREL31, skip libc.a), MinGW
       #     symbol exports, bare `android` in GHC_CONVERT_OS, AVX flags on
