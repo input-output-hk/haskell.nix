@@ -1087,7 +1087,13 @@ final: prev: {
                 name = "iserv-proxy";
                 inherit compiler-nix-name;
 
-                src = sources.iserv-proxy;
+                # Patch before planning so Cabal records the proxy's direct
+                # process and unix dependencies in both native and cross plans.
+                src = final.pkgsBuildBuild.applyPatches {
+                  name = "iserv-proxy-source";
+                  src = sources.iserv-proxy;
+                  patches = [ ./patches/iserv-proxy-process-lifecycle.patch ];
+                };
 
                 modules = [{
                   config = {

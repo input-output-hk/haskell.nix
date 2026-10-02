@@ -246,6 +246,7 @@ let
     c-ffi = callTest ./c-ffi { inherit util; };
     th-dlls = callTest ./th-dlls { inherit util; };
     th-dlls-minimal = callTest ./th-dlls-minimal { inherit util; };
+    iserv-proxy-lifecycle = callTest ./iserv-proxy-lifecycle.nix {};
     external-static-plugin = callTest ./external-static-plugin {};
     exe-dlls = callTest ./exe-dlls { inherit util; };
     exe-lib-dlls = callTest ./exe-lib-dlls { inherit util; };
