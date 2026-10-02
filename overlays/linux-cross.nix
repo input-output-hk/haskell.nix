@@ -31,7 +31,7 @@ let
     # Unset configure flags as configure should have run already
     unset configureFlags
     (>&2 echo "---> Starting iserv-proxy with piped ${interpreter.exeName} (qemu: ${qemu}/bin/qemu-${qemuSuffix})")
-    # GHC must track the proxy PID so cancellation reaches its child cleanup.
+    # GHC must track the proxy PID so cancellation signals reach the proxy.
     exec ${iserv-proxy}/bin/iserv-proxy "$@" --pipe ${qemu}/bin/qemu-${qemuSuffix} ${interpreter}/bin/${interpreter.exeName} tmp --stdio $ISERV_ARGS
     '';
   qemuIservWrapper = symlinkJoin { name = "iserv-wrapper"; paths = [ (qemuIservWrapperScript false) (qemuIservWrapperScript true) ]; };

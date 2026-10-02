@@ -3,6 +3,7 @@
 { qemu, lib, buildPlatform, qemuSuffix }:
 let
   supported = buildPlatform.isLinux
+    && buildPlatform.isx86_64
     && lib.versionAtLeast qemu.version "9.1"
     && lib.versionOlder qemu.version "12";
 in

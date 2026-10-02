@@ -11,8 +11,13 @@
 }:
 
 let
+  # --argstr overrides have no dependency context. Retain their store input.
+  qemuPackage =
+    if builtins.isString qemu && builtins.getContext qemu == {}
+    then builtins.storePath qemu
+    else qemu;
   guest = guestPkgs.runCommandCC "qemu-linux-user-aarch64-guest" {
-    nativeBuildInputs = [ guestPkgs.coreutils ];
+    nativeBuildInputs = [ guestPkgs.buildPackages.coreutils ];
   } ''
     mkdir -p "$out/bin"
     timeout -k 2 30 "$CC" -std=c11 -Werror=vla -pedantic -Wall -Wextra \
@@ -28,6 +33,6 @@ pkgs.runCommand "qemu-linux-user-${pkgs.stdenv.hostPlatform.system}" {
   passthru = { inherit guest; };
 } ''
   timeout -k 2 30 bash ${./qemu-linux-user.sh} \
-    ${qemu}/bin/qemu-aarch64 ${guest}/bin/qemu-linux-user "$out" \
+    ${qemuPackage}/bin/qemu-aarch64 ${guest}/bin/qemu-linux-user "$out" \
     ${if check then "check" else "probe"}
 ''

@@ -13,8 +13,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/prctl.h>
-#include <sys/resource.h>
 #include <sys/auxv.h>
 #include <sys/mman.h>
 #include <stdint.h>
@@ -99,38 +97,23 @@ int main(int argc, char **argv) {
         return 0;
     }
     struct sigaction act;
-    struct rlimit core;
     int sig = argc > 2 ? atoi(argv[2]) : SIGSEGV;
     const char *mode = argc > 1 ? argv[1] : "qemu";
-    if (strcmp(mode, "dumpable1") == 0 && prctl(PR_SET_DUMPABLE, 1) != 0) { perror("prctl"); return 2; }
-    if (strcmp(mode, "dumpable0") == 0 && prctl(PR_SET_DUMPABLE, 0) != 0) { perror("prctl"); return 2; }
-    if (getrlimit(RLIMIT_CORE, &core) != 0) { perror("getrlimit"); return 2; }
-    printf("START pid=%ld sig=%d mode=%s dumpable=%d core=%llu/%llu\n", (long)getpid(), sig, mode, prctl(PR_GET_DUMPABLE), (unsigned long long)core.rlim_cur, (unsigned long long)core.rlim_max);
+    if (strcmp(mode, "qemu") != 0 && strcmp(mode, "blocked") != 0 && strcmp(mode, "unblock-before") != 0) return 2;
+    printf("START pid=%ld sig=%d mode=%s\n", (long)getpid(), sig, mode);
     fflush(stdout);
     memset(&act, 0, sizeof(act));
     act.sa_handler = SIG_DFL;
     sigfillset(&act.sa_mask);
     if (sigaction(sig, &act, NULL) != 0) { perror("sigaction"); return 2; }
-    if ((strcmp(mode, "blocked") == 0 || strcmp(mode, "unblock-before") == 0 || strcmp(mode, "unblock-after") == 0 || strcmp(mode, "raise-blocked") == 0 || strcmp(mode, "native-send") == 0) && sigprocmask(SIG_SETMASK, &act.sa_mask, NULL) != 0) { perror("sigprocmask"); return 2; }
+    if (strcmp(mode, "qemu") != 0 && sigprocmask(SIG_SETMASK, &act.sa_mask, NULL) != 0) { perror("sigprocmask"); return 2; }
     if (strcmp(mode, "unblock-before") == 0) {
         sigset_t one;
         sigemptyset(&one); sigaddset(&one, sig);
         if (sigprocmask(SIG_UNBLOCK, &one, NULL) != 0) { perror("unblock-before"); return 2; }
     }
-    if (strcmp(mode, "native-send") == 0) {
-        puts("WAIT_FOR_NATIVE_SIGNAL"); fflush(stdout);
-    } else if (strcmp(mode, "raise") == 0 || strcmp(mode, "raise-blocked") == 0) {
-        if (raise(sig) != 0) { perror("raise"); return 2; }
-    } else {
-        if (kill(getpid(), sig) != 0) { perror("kill"); return 2; }
-    }
+    if (kill(getpid(), sig) != 0) { perror("kill"); return 2; }
     puts("AFTER_SELF_SIGNAL"); fflush(stdout);
-    if (strcmp(mode, "unblock-after") == 0) {
-        sigset_t one;
-        sigemptyset(&one); sigaddset(&one, sig);
-        if (sigprocmask(SIG_UNBLOCK, &one, NULL) != 0) { perror("unblock-after"); return 2; }
-        puts("AFTER_UNBLOCK"); fflush(stdout);
-    }
     sigdelset(&act.sa_mask, sig);
     if (sigsuspend(&act.sa_mask) < 0) { perror("sigsuspend"); return 3; }
     return 4;
