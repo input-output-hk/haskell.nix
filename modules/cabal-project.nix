@@ -288,7 +288,19 @@ in {
           shared: True
       '';
     })
-    (lib.mkIf config.useLocalGhcLib (
+    # Not when the stable-haskell boot-package injection below is active: it
+    # already makes `compiler` (lib:ghc), `utils/genprimopcode` and
+    # `utils/deriveConstants` LOCAL `packages:` of the project.  Exposing the
+    # same tree again as source-repository-packages gives plan.json units
+    # with `style: local` but `pkg-src: source-repo`, a shape
+    # lib/load-cabal-plan.nix assigns no `src` -- so the package fell back to
+    # `modules/package.nix`'s `mirror://hackage/ghc-9.14.tar.gz` (build
+    # 2203736, tests.ghc-lib-reinstallable-cabal).
+    (lib.mkIf (config.useLocalGhcLib && !(
+      let shGhc = (config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name};
+      in if config.injectStableHaskellBootPackages != null
+           then config.injectStableHaskellBootPackages
+           else shGhc.emptyGlobalPackageDb or false)) (
     let
       ghc = (config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name};
       ghcFullSrc = pkgs.buildPackages.symlinkJoin {
