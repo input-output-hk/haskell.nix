@@ -63,6 +63,20 @@ with types;
               = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; };
       '';
     };
+    inputMap = mkOption {
+      type = unspecified;
+      default = {};
+      description = ''
+        An alternative to `sha256map`, handy for flakes and for private repos
+        (which always take the `builtins.fetchGit` path and so ignore `sha256map`).
+        Maps a repo url to an already-fetched source, which is used as-is:
+          inputs.pandoc-citeproc.url = "github:jgm/pandoc-citeproc/0.17";
+          inputs.pandoc-citeproc.flake = false;
+          outputs = inputs:
+            ...
+            inputMap."https://github.com/jgm/pandoc-citeproc" = inputs.pandoc-citeproc;
+      '';
+    };
     branchMap = mkOption {
       type = nullOr unspecified;
       default = null;

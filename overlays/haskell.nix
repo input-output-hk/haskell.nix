@@ -482,12 +482,16 @@ final: prev: {
         # This handles private repositories with the `is-private` argument
         # (with `builtins.fetchGit`), as well as handling stack-based projects
         # with the `type` argument.
-        mkCacheLine = { name, url, rev, ref ? null, subdir ? ".", sha256 ? null, cabal-file ? "${name}.cabal", type ? "cabal", is-private ? false }:
+        mkCacheLine = inputMap: { name, url, rev, ref ? null, subdir ? ".", sha256 ? null, cabal-file ? "${name}.cabal", type ? "cabal", is-private ? false }:
           let
             # Fetch the entire repo, using either pkgs.fetchgit or
             # builtins.fetchGit depending on whether the repo is private.
+            # An `inputMap` entry short-circuits both: the source is already fetched.
+            input = final.haskell-nix.haskellLib.lookupInputMap inputMap { inherit url rev; };
             entireRepo =
-              if is-private
+              if input != null
+              then input
+              else if is-private
               then
                 # It doesn't make sense to specify sha256 on a private repo
                 # because it is not used by buitins.fetchGit.
@@ -543,13 +547,13 @@ final: prev: {
         # The cache contains only local paths to nix files so that it can
         # the results of `stack-to-nix` can be imported in restricted eval
         # mode.
-        mkCacheFile = repos:
+        mkCacheFile = inputMap: repos:
           final.buildPackages.pkgs.runCommand "cache-file" {} ''
               mkdir -p $out
               touch $out/.stack-to-nix.cache
               ${final.lib.concatStrings (
                 final.lib.lists.zipListsWith (n: repo:
-                  let l = mkCacheLine repo;
+                  let l = mkCacheLine inputMap repo;
                   in ''
                     cp ${l.nix-expr} $out/.stack-to-nix.cache.${toString n}
                     echo ${l.line} .stack-to-nix.cache.${toString n} >> $out/.stack-to-nix.cache
@@ -561,7 +565,7 @@ final: prev: {
 
         genStackCache = import ../lib/stack-cache-generator.nix;
 
-        mkCacheModule = cache:
+        mkCacheModule = inputMap: cache:
             # for each item in the `cache`, set
             #   packages.$name.src = fetchgit ...
             # and
@@ -581,7 +585,11 @@ final: prev: {
                   repoToAttr = { name, url, rev, ref ? null, sha256 ? null, subdir ? null, is-private ? false, ... }: {
                     ${name} = {
                       src =
-                        if is-private
+                        let input = final.haskell-nix.haskellLib.lookupInputMap inputMap { inherit url rev; };
+                        in
+                        if input != null
+                        then input
+                        else if is-private
                         then
                           builtins.fetchGit
                             ({ inherit url rev; } //
@@ -981,7 +989,7 @@ final: prev: {
                 { stack-pkgs = importAndFilterProject callProjectResults;
                   pkg-def-extras = (config.pkg-def-extras or []);
                   modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; }
-                      (mkCacheModule cache) ]
+                      (mkCacheModule config.inputMap cache) ]
                     ++ (config.modules or [])
                     ++ final.lib.optional (config.ghc != null) { ghc.package = config.ghc.override { ghcEvalPackages = evalPackages; }; }
                     ++ final.lib.optional (config.compiler-nix-name != null)
