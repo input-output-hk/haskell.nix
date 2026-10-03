@@ -36,7 +36,8 @@ let
     # Unset configure flags as configure should have run already
     unset configureFlags
     (>&2 echo "---> Starting iserv-proxy with piped ${interpreter.exeName} (emulator: ${pipeCommand})")
-    ${iserv-proxy}/bin/iserv-proxy $@ --pipe ${pipeCommand} ${interpreter}/bin/${interpreter.exeName} tmp --stdio $ISERV_ARGS
+    # GHC must track the proxy PID so cancellation signals reach the proxy.
+    exec ${iserv-proxy}/bin/iserv-proxy "$@" --pipe ${pipeCommand} ${interpreter}/bin/${interpreter.exeName} tmp --stdio $ISERV_ARGS
     '';
   qemuIservWrapper = symlinkJoin { name = "iserv-wrapper"; paths = [ (qemuIservWrapperScript false) (qemuIservWrapperScript true) ]; };
   configureFlags = lib.optional (hostPlatform.isAarch32 || hostPlatform.isAndroid) "--disable-split-sections";

@@ -28,7 +28,12 @@ in
           inherit (final) stdenv lib;
           inherit (final.pkgsBuildBuild) writeShellScriptBin symlinkJoin runCommand makeWrapper;
           inherit (final.haskell-nix) haskellLib;
-          qemu = final.pkgsBuildBuild.qemu;
+          qemu = import ./qemu-linux-user.nix {
+            qemu = final.pkgsBuildBuild.qemu;
+            inherit (final) lib;
+            buildPlatform = final.pkgsBuildBuild.stdenv.hostPlatform;
+            qemuSuffix = final.haskell-nix.haskellLib.qemuByHostPlatform final.stdenv.hostPlatform;
+          };
           inherit (final) gmp;
           inherit (exes) iserv-proxy iserv-proxy-interpreter iserv-proxy-interpreter-prof;
         } // final.lib.optionalAttrs final.stdenv.buildPlatform.isDarwin {
