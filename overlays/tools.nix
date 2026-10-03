@@ -73,11 +73,14 @@ in { haskell-nix = prev.haskell-nix // {
             config = {
               # Disable benchmarks and tests by default (since we only want the exe component)
               configureArgs = "--disable-benchmarks --disable-tests";
-              # Tools default to the v1 builder: every v2 slice lists
-              # the v2 `cabal-install` tool as a nativeBuildInput, so
-              # building tools themselves via v2 would cycle.  Users
-              # can still opt in explicitly per-tool via a module.
-              builderVersion = lib.mkDefault 1;
+              # No `builderVersion` default here: the option default is
+              # already 1, and stable-haskell compilers NEED the
+              # `mkDefault 2` from modules/cabal-project.nix (v1 cannot
+              # build with the fork's boot packages) — a second
+              # `mkDefault 1` at equal priority would conflict with it.
+              # There is no v2 self-cycle: v2 slices use the hoisted
+              # `v2-cabal-install`, which pins `builderVersion = 1` and
+              # a nixpkgs compiler (overlays/haskell.nix).
             };
           })
         ]);
@@ -91,13 +94,15 @@ in { haskell-nix = prev.haskell-nix // {
         ++ [(lib.mapAttrs (_: lib.mkOverride 1100) { inherit compiler-nix-name name; })]
       );
 
-  # tool with a default evalPackages to use.
-  tool' = evalPackages: compiler-nix-name: name: versionOrMod:
+  # tool with an explicit `evalSystem` to use (the platform plan-to-nix runs
+  # on).  Takes a system string, not a nixpkgs — the project derives its
+  # `evalPackages` from it (see modules/project-common.nix).
+  tool' = evalSystem: compiler-nix-name: name: versionOrMod:
       final.haskell-nix.hackage-tool (
            final.haskell-nix.haskellLib.versionOrModToMods versionOrMod
-        ++ [(lib.mapAttrs (_: lib.mkOverride 1100) { inherit evalPackages compiler-nix-name name; })]
+        ++ [(lib.mapAttrs (_: lib.mkOverride 1100) { inherit evalSystem compiler-nix-name name; })]
       );
 
   tools = compiler-nix-name: lib.mapAttrs (final.haskell-nix.tool compiler-nix-name);
-  tools' = evalPackages: compiler-nix-name: lib.mapAttrs (final.haskell-nix.tool' evalPackages compiler-nix-name);
+  tools' = evalSystem: compiler-nix-name: lib.mapAttrs (final.haskell-nix.tool' evalSystem compiler-nix-name);
 }; }

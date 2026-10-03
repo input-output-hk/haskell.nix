@@ -50,6 +50,23 @@
         "type": "github"
       }
     },
+    "cabal-doctest": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787831028,
+        "narHash": "sha256-YUSquN8tlV59hWoArmP5wxHxK8lIjcmZofxNQTMC4IQ=",
+        "owner": "stable-haskell",
+        "repo": "cabal-doctest",
+        "rev": "641cda5a4590f2384568a9598713f3039b99258d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "stable-haskell",
+        "repo": "cabal-doctest",
+        "rev": "641cda5a4590f2384568a9598713f3039b99258d",
+        "type": "github"
+      }
+    },
     "cardano-shell": {
       "flake": false,
       "locked": {
@@ -419,14 +436,34 @@
         "type": "github"
       }
     },
+    "hyper-linux": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1773548649,
+        "narHash": "sha256-041m8HOyieDscFuzbgC764K+LTi4pSJH5+HwTSveJT8=",
+        "owner": "zw3rk",
+        "repo": "hyper-linux",
+        "rev": "41cea39c8d8243d729991d0c26515f6bfe7be7fb",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zw3rk",
+        "repo": "hyper-linux",
+        "type": "github"
+      }
+    },
     "iserv-proxy": {
       "flake": false,
       "locked": {
-        "lastModified": 1786665587,
-        "narHash": "sha256-wyc/2cAic/m+xXVbjiJJe3XICe5yHUg1lGWoylFw/Dg=",
+        "lastModified": 1788183136,
+        "narHash": "sha256-jdT0WtFCJK/ug/fA/QE+GORLDR0W4Wq6QtByZ0Wk2zY=",
         "owner": "stable-haskell",
         "repo": "iserv-proxy",
-        "rev": "6278b39451f6ddd81e1926389a99bfbcdb3f6c1c",
+        "rev": "0e22186481bb960c42061bedc0c9c023ae8b90be",
         "type": "github"
       },
       "original": {
@@ -586,6 +623,7 @@
         "HTTP": "HTTP",
         "cabal-34": "cabal-34",
         "cabal-36": "cabal-36",
+        "cabal-doctest": "cabal-doctest",
         "cardano-shell": "cardano-shell",
         "flake-compat": "flake-compat",
         "hackage": "hackage",
@@ -608,6 +646,7 @@
         "hls-2.8": "hls-2.8",
         "hls-2.9": "hls-2.9",
         "hpc-coveralls": "hpc-coveralls",
+        "hyper-linux": "hyper-linux",
         "iserv-proxy": "iserv-proxy",
         "nixpkgs": [
           "nixpkgs-unstable"
