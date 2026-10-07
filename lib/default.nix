@@ -248,10 +248,12 @@ in {
     inherit (pkgs) pkgsBuildBuild;
     # A `testWrapper` means the exe cannot run on the build host
     # unaided (qemu-user / hyper-linux / wine).  Only the packages
-    # named in `emulatorNativeBuilderPackages` are pinned -- see
+    # named in `emulatorNativeBuilderPackages`, or every check for a host
+    # matching `emulatorNativeBuilderCheck`, are pinned -- see
     # `overlays/haskell.nix`.
     emulatorSystemFeatures = pkgs.haskell-nix.emulatorSystemFeatures or [];
     emulatorNativeBuilderPackages = pkgs.haskell-nix.emulatorNativeBuilderPackages or [];
+    emulatorNativeBuilderCheck = pkgs.haskell-nix.emulatorNativeBuilderCheck or (_: false);
   };
 
   # Do coverage of a package

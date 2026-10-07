@@ -94,6 +94,21 @@ final: prev: {
         emulatorNativeBuilderPackages =
           prev.haskell-nix.emulatorNativeBuilderPackages or [ "th-orphans" "base" ];
 
+        # ...and EVERY test exe run (`haskellLib.check`) for a host platform
+        # matching this predicate, whatever the package.  32-bit ARM Android
+        # is the case: bionic's startup calls `personality(PER_LINUX32)`,
+        # which qemu-arm passes to the host kernel, and the kernel of a
+        # `nix-linux-builder` VM on Apple silicon (no AArch32 EL0) rejects
+        # it, so every exe dies before `main`:
+        #   libc: error setting PER_LINUX32 personality: Invalid argument
+        #   qemu: uncaught target signal 6 (Aborted) - core dumped
+        # The A/B holds: the cabal-simple check that aborted on
+        # aarch64-darwin-b prints `Hello, Haskell!` forced native.  Only
+        # checks are pinned -- they are small, and they are what fails.
+        emulatorNativeBuilderCheck =
+          prev.haskell-nix.emulatorNativeBuilderCheck
+            or (platform: platform.isAndroid && platform.isAarch32);
+
         # nixpkgs used to run `cabal` / `nix-tools`, keyed by eval system
         # and memoised at the fixpoint level.  Non-native systems are
         # imported lazily from the same nixpkgs path and overlays; the

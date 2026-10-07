@@ -1,6 +1,15 @@
 { stdenv, lib, haskellLib, pkgsBuildBuild
-, emulatorSystemFeatures ? [], emulatorNativeBuilderPackages ? [] }:
-let self = drvOrig:
+, emulatorSystemFeatures ? [], emulatorNativeBuilderPackages ? []
+, emulatorNativeBuilderCheck ? (_: false) }:
+let
+  # Whether a check that runs its exe through an emulator must build on a
+  # native builder -- see `haskell-nix.emulatorNativeBuilderPackages` and
+  # `haskell-nix.emulatorNativeBuilderCheck`.
+  needsNativeBuilder = testWrapper: drv:
+    testWrapper != []
+    && (lib.elem (drv.identifier.name or "") emulatorNativeBuilderPackages
+        || emulatorNativeBuilderCheck stdenv.hostPlatform);
+  self = drvOrig:
 
 # v2 slices don't have the v1-specific internals that this check
 # wrapper relies on (drv.source, drv.drvAttrs, drv.configFiles,
@@ -29,12 +38,9 @@ if drvOrig.passthru.isSlice or false then
       srcSubDirPath = drvOrig.passthru.srcSubDirPath or null;
   in stdenv.mkDerivation ({
     name = drvOrig.name + "-check";
-  } // lib.optionalAttrs (testWrapper != []
-                          && lib.elem (drvOrig.identifier.name or "")
-                                      emulatorNativeBuilderPackages) {
-    # The exe runs through an emulator, and this package is one of the
-    # few known to break when that emulator is itself emulated -- see
-    # `haskell-nix.emulatorNativeBuilderPackages`.
+  } // lib.optionalAttrs (needsNativeBuilder testWrapper drvOrig) {
+    # The exe runs through an emulator, and this package or host platform
+    # is known to break when that emulator is itself emulated.
     requiredSystemFeatures = emulatorSystemFeatures;
   } // {
     passthru = { inherit (drvOrig) identifier config exeName meta; };
@@ -220,9 +226,7 @@ in stdenv.mkDerivation ((
 } // haskellLib.optionalHooks {
   inherit (component) preCheck postCheck;
 }
-// lib.optionalAttrs ((component.testWrapper or []) != []
-                     && lib.elem (drv.identifier.name or "")
-                                 emulatorNativeBuilderPackages) {
+// lib.optionalAttrs (needsNativeBuilder (component.testWrapper or []) drv) {
   # v1 counterpart of the slice branch above.
   requiredSystemFeatures = emulatorSystemFeatures;
 }
