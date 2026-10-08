@@ -2,13 +2,15 @@
 , emulatorSystemFeatures ? [], emulatorNativeBuilderPackages ? []
 , emulatorNativeBuilderCheck ? (_: false) }:
 let
-  # Whether a check that runs its exe through an emulator must build on a
-  # native builder -- see `haskell-nix.emulatorNativeBuilderPackages` and
-  # `haskell-nix.emulatorNativeBuilderCheck`.
+  # Whether a check must build on a native builder: one that runs its exe
+  # through an emulator for a package on
+  # `haskell-nix.emulatorNativeBuilderPackages`, or any check for a host
+  # matching `haskell-nix.emulatorNativeBuilderCheck` -- with or without a
+  # `testWrapper`, since an i686 exe runs directly on an x86_64 builder.
   needsNativeBuilder = testWrapper: drv:
-    testWrapper != []
-    && (lib.elem (drv.identifier.name or "") emulatorNativeBuilderPackages
-        || emulatorNativeBuilderCheck stdenv.hostPlatform);
+    (testWrapper != []
+     && lib.elem (drv.identifier.name or "") emulatorNativeBuilderPackages)
+    || emulatorNativeBuilderCheck stdenv.hostPlatform;
   self = drvOrig:
 
 # v2 slices don't have the v1-specific internals that this check

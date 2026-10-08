@@ -103,11 +103,19 @@ final: prev: {
         #   libc: error setting PER_LINUX32 personality: Invalid argument
         #   qemu: uncaught target signal 6 (Aborted) - core dumped
         # The A/B holds: the cabal-simple check that aborted on
-        # aarch64-darwin-b prints `Hello, Haskell!` forced native.  Only
+        # aarch64-darwin-b prints `Hello, Haskell!` forced native.
+        #
+        # 32-bit x86 Linux (musl32) is the other: its exes need no emulator
+        # on a real x86_64 host, but under Rosetta in a `nix-linux-builder`
+        # VM an i686 ELF cannot be executed at all --
+        #   check-datadir-tool: readCreateProcess: posix_spawnp: invalid
+        #   argument (Exec format error)
+        # -- while the same check passes forced native on linux-0.  Only
         # checks are pinned -- they are small, and they are what fails.
         emulatorNativeBuilderCheck =
           prev.haskell-nix.emulatorNativeBuilderCheck
-            or (platform: platform.isAndroid && platform.isAarch32);
+            or (platform: (platform.isAndroid && platform.isAarch32)
+                       || (platform.isLinux && platform.isx86_32));
 
         # nixpkgs used to run `cabal` / `nix-tools`, keyed by eval system
         # and memoised at the fixpoint level.  Non-native systems are
