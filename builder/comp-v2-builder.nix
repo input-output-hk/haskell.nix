@@ -1931,6 +1931,26 @@ let
     in if m == null then null else builtins.head m;
   isBuildStageUnit = isTwoStagePlan && planStage == "build";
 
+  # A `build-type: Custom` package's `setup` runs on the BUILD machine, so it
+  # must be compiled by the build compiler.  A single-stage cross slice
+  # (mainline GHC cross: ghc9124, ghc9141, ...) gives cabal only the cross
+  # compiler, and cabal compiles the setup with it -- a target binary that
+  # the build machine cannot run (android entropy: `setup: line 1: syntax
+  # error`).  It only ever worked where the builder happened to execute the
+  # target natively (aarch64 on the aarch64 `nix-linux-builder` VMs).  Give
+  # such slices the fork cabal's `--with-build-compiler` too: the setup
+  # scope then resolves against the native compiler, whose boot packages
+  # have the same versions the plan's `<pkg>:setup.*` pins name.
+  #
+  # The setup deps enter the Custom unit's hash, so every slice whose closure
+  # holds one must plan the same way or it would not recognise the composed
+  # unit (cross slices skip the unit-id check, `expectedUnitId` below).
+  crossCustomSetup =
+    isCross && !isTwoStagePlan && !isBuildStageUnit
+    && lib.any (p: (p.components or {}) ? setup)
+         (thisPkgUnits ++ map (e: e.entry) allDepClosure);
+  sliceTwoStage = (isTwoStagePlan && !isBuildStageUnit) || crossCustomSetup;
+
   # On targets that need a wrapped ghc (currently just windows
   # cross, where TH compiles route through the wineIservWrapper),
   # `templateHaskell.wrapGhc` is set by the host-platform overlay.
@@ -2153,7 +2173,7 @@ let
     inherit buildToolSourceFrags;
     inherit metadataSourceFrags;
     ghc = sliceGhc;
-    twoStage = isTwoStagePlan && !isBuildStageUnit;
+    twoStage = sliceTwoStage;
     # Repo + cabal.project are composed at build time from `v2Fragment`;
     # `localRepo`/the full Nix `cabalProject` are intentionally NOT
     # referenced here so the per-slice closure walk stays out of eval.
@@ -2469,7 +2489,7 @@ let
     inherit depSlices;
     inherit v2Fragment;
     ghc = sliceGhc;
-    twoStage = isTwoStagePlan && !isBuildStageUnit;
+    twoStage = sliceTwoStage;
     localRepo = null;
     preBuild = slicePreBuildV2;
     target = targetSelector;
@@ -2549,7 +2569,7 @@ let
                      depSlices);
     inherit v2Fragment;
     ghc = sliceGhc;
-    twoStage = isTwoStagePlan && !isBuildStageUnit;
+    twoStage = sliceTwoStage;
     localRepo = null;
     preBuild = slicePreBuildV2;
     target = targetSelector;
