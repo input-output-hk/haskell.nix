@@ -674,7 +674,10 @@ stdenv.mkDerivation ({
   # JS module and executing it via node at compile-time, so node has
   # to be on PATH inside this build env (just like haskellLib.check
   # for ghcjs binaries).  Mirrors the same `optional isGhcjs nodejs`
-  # in lib/check.nix.
+  # in lib/check.nix.  The wasm backend's TH needs it too: GHC runs
+  # splices under its JSFFI dynamic linker (`$topdir/dyld.mjs`), a node
+  # script, and looks `node` up on PATH
+  # (compiler/GHC/Runtime/Interpreter/Wasm.hs).
   #
   # `lndir` is used in the buildPhase to compose dep slices into
   # `$out/store` as a symlink tree — see comments there.
@@ -718,7 +721,7 @@ stdenv.mkDerivation ({
                         (if haskellLib.isNativeMusl
                          then pkgs.pkgsHostHost.gitReallyMinimal
                          else pkgsBuildBuild.gitReallyMinimal) ]
-    ++ lib.optional stdenv.hostPlatform.isGhcjs pkgsBuildBuild.nodejs
+    ++ lib.optional (stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm) pkgsBuildBuild.nodejs
     # Two-stage build-tool source builds (e.g. happy + happy-lib, hsc2hs,
     # staged via `buildToolSourceFrags`) compile with the native BUILD
     # compiler, whose settings invoke bare `ar` and a wrapped `cc`/`ld`.  On a
