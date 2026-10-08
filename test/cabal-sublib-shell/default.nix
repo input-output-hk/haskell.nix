@@ -61,6 +61,11 @@ in lib.recurseIntoAttrs {
     passthru = { inherit project; };
 
     nativeBuildInputs = env.nativeBuildInputs;
+    # The host libraries the shell hands the cc wrapper, as `nix develop`
+    # does: on windows the rts links `-lpthread`, which only resolves with
+    # `mingw_w64_pthreads` (from the slices' `runtimeLibs`) here
+    # (`x86_64-w64-mingw32-ld.bfd: cannot find -lpthread`).
+    buildInputs = env.buildInputs;
 
     buildCommand = ''
       export HOME=$PWD/home
