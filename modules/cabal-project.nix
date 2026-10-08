@@ -675,66 +675,33 @@ in {
       targetSupportsShared =
         !(tp.isStatic or false) && !(tp.isMusl or false) && !(tp.isWindows or false)
         && !(tp.isGhcjs or false) && !(tp.isAndroid or false);
-      crossLinkFields = lib.optionalString (!isWasm) ("\n"
-        + "  shared: ${if targetSupportsShared then "True" else "False"}\n"
-        + "  executable-dynamic: False");
-      # ...but `shared:` above is meant for the TARGET's boot libraries, and a
-      # cabal.project `package *` stanza has no stage qualifier, so it reaches
-      # the BUILD stage too -- the tools cabal builds to run on the build
-      # machine.  Those link against the build compiler's own boot libs, which
-      # arrive as PRE-EXISTING installs with no dynamic way, so asking them for
-      # `-dynamic-too` cannot work:
+      crossLinkFields = lib.optionalString (!isWasm) "\n  executable-dynamic: False";
+      # `shared:` is meant for the TARGET's boot libraries only, so it goes in
+      # a `package host:*` stanza.  A plain `package *` has no stage and
+      # reaches the BUILD stage too -- the tools cabal builds to run on the
+      # build machine -- whose units link against the build compiler's own
+      # boot libraries.  Those arrive as PRE-EXISTING installs with no dynamic
+      # way, so `-dynamic-too` there cannot work:
       #
       #   Wanted module build ways(library 'grammar'): [DynWay,StaticWay]
       #   grammar/src/Happy/Grammar/ExpressionWithHole.hs:1:8: error: [GHC-47808]
       #       Failed to load dynamic interface file for Prelude:
       #         .../base-4.22.0.0/Prelude.dyn_hi: does not exist
       #
-      # which kills `ghc-lib-ghc-<triple>` -- and with it every job on a cross
-      # target whose `targetSupportsShared` is True
-      # (`x86_64-linux…aarch64-multiplatform.tests.coverage.run` &c.).  The
-      # musl / windows / ghcjs targets never saw it because they answer False
-      # and nothing asks for the dyn way at all.
-      #
-      # Turn it back off for the packages that only ever appear in the BUILD
-      # stage.  Enumerated rather than derived: the honest source for "which
-      # units are build-stage" is plan-json, and plan-json is produced FROM
-      # this very project file (the same recursion `pkgsNeedingRts` notes
-      # below).  These are what a stable-haskell boot plan builds for the
-      # build machine -- everything else in that stage is pre-existing.  If a
-      # project adds another build tool, it announces itself with the error
-      # above naming the package; add it here.
-      #
-      # The first five come from the GHC tree itself.  `c2hs` and its two
-      # built dependencies -- `language-c` and `dlist` -- arrive from a
-      # CONSUMER package instead: `libsodium` sets `use-build-tool-depends`,
-      # so its `build-tool-depends: c2hs` puts them in the build stage of any
-      # project that depends on it.  That is `tests.exe-dlls`,
-      # `tests.exe-lib-dlls` and `tests.th-dlls` -- 14 aarch64-multiplatform
-      # jobs -- which failed exactly as the comment above predicts:
-      #
-      #   Failed to load dynamic interface file for Prelude:
-      #     .../base-4.22.0.0/Prelude.dyn_hi: does not exist
-      #   Failed to build build:c2hs-0.28.8-e-c2hs-...
-      #
-      # (eval 2457, build 2044055 step 10, the `libsodium` slice for
-      # aarch64-multiplatform).  Everything else c2hs needs in that stage --
-      # array, bytestring, containers, directory, filepath, pretty, process --
-      # is pre-existing, so only these three had to be named.
-      #
-      # A HOST-stage instance of one of these (cross-compiling alex itself,
-      # say) loses the dyn way as a side effect.  That matches what the v1
-      # builder does for every cross library anyway
-      # (`comp-builder.nix:44`'s `!haskellLib.isCrossHost`).
-      buildStageOnlyPackages =
-        [ "alex" "happy" "happy-lib" "genprimopcode" "deriveConstants"
-          "c2hs" "language-c" "dlist" ];
-      # Gated exactly as the `shared: True` it counteracts: wasm emits no
-      # `shared:` at all (`crossLinkFields` is `!isWasm`-only), so adding
-      # these there would move wasm UnitIds for nothing.
-      buildStageStaticFields = lib.optionalString (!isWasm && targetSupportsShared)
-        (lib.concatMapStrings (n: "\npackage ${n}\n  shared: False")
-          buildStageOnlyPackages);
+      # It used to be `package *`, turned back off per package for a
+      # hand-kept list of build-stage-only tools (alex, happy, c2hs, ...).
+      # The list could never be complete: any package can land in the build
+      # stage -- `hspec-discover` via `build-tool-depends`, `Cabal-syntax`
+      # via a custom `Setup` -- and those failed the same way on
+      # aarch64-multiplatform (eval 2827: `tests.setup-deps-boot-cabal`'s
+      # entropy Setup, `tests.cabal-22`'s hspec-discover), while naming a
+      # package that ALSO has host units would have taken the host's dyn way
+      # away.  The fork's cabal (plan time and slice time, ad937de5b)
+      # accepts stage-qualified stanzas, which override `package *` and are
+      # overridden by per-package ones; the build stage keeps the build
+      # compiler's own default (no `GHC Dynamic`, no `dyn` way: off).
+      hostStageFields = lib.optionalString (!isWasm)
+        "\n\npackage host:*\n  shared: ${if targetSupportsShared then "True" else "False"}";
       # Sourced from `pkgs.haskell-nix.haskellLib` (not the file's own
       # `haskellLib` module argument, which callers of this module don't
       # actually provide — it was declared but never forced before now).
@@ -937,7 +904,7 @@ in {
           ghc-options: -no-rts
 
         package *
-          library-for-ghci: False${crossLinkFields}${buildStageStaticFields}
+          library-for-ghci: False${crossLinkFields}${hostStageFields}
       '';
       inputMap = {
         "https://github.com/stable-haskell/Cabal.git/f2e0a89e15cf6604cec9d93e26a4b3caf459b076" =

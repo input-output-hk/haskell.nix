@@ -335,6 +335,13 @@ in {
   #     configure-arg (every configured unit);
   #   * the `dist-dir` (`./dist-newstyle/build/<stage>/<platform>/...`,
   #     local/inplace units only).
+  # Both are relative to where plan-to-nix ran, so for a project in a
+  # subdirectory they carry it first (`./test/cabal-22/dist-newstyle/...`,
+  # every test project); match any leading path.  Anchoring on
+  # `./dist-newstyle` sent every unit of such a plan to "host", which merged
+  # the two stages' configure-args in the slice project
+  # (builder/v2-project-globals.nix) and let a Host `shared: True` reach the
+  # Build-stage tools.
   # Pre-existing units carry neither; callers treat them per context
   # (in a two-stage plan they are all build-stage — the target db is
   # empty).  Defaults to "host": mainline plans are single-stage.
@@ -342,13 +349,13 @@ in {
     let
       fromArgs =
         let ms = builtins.concatMap (a:
-              let m = builtins.match "--prefix=[.]/dist-newstyle/store/([a-z]+)/.*" (toString a);
-              in if m == null then [] else m)
+              let m = builtins.match "--prefix=(.*/)?dist-newstyle/store/([a-z]+)/.*" (toString a);
+              in if m == null then [] else [ (builtins.elemAt m 1) ])
               (p.configure-args or []);
         in if ms == [] then null else builtins.head ms;
       fromDist =
-        let m = builtins.match "[.]/dist-newstyle/build/([a-z]+)/.*" (p.dist-dir or "");
-        in if m == null then null else builtins.head m;
+        let m = builtins.match "(.*/)?dist-newstyle/build/([a-z]+)/.*" (p.dist-dir or "");
+        in if m == null then null else builtins.elemAt m 1;
     in if fromArgs != null then fromArgs
        else if fromDist != null then fromDist
        else "host";
