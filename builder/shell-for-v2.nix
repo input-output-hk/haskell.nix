@@ -671,7 +671,45 @@ let
       # unsatisfiable (`rejecting: host:Cabal == host:source:Cabal-3.17.0.1
       # (... requires installed instance)`).  The store does hold them
       # whenever the shell's closure needs Cabal (ghcjs does).
-      grep -vxE 'Cabal|Cabal-syntax' names > names.keep || true
+      #
+      # And, transitively, every installed unit that depends on them: cabal
+      # hides ALL installed instances of a local package, so an installed
+      # unit built against one is "broken" to the solver (`rejecting:
+      # host:ghc-boot == host:installed:ghc-boot-9.14-... (package is broken,
+      # missing dependency Cabal-syntax-3.17.0.0-...)`), and pinning it
+      # `installed` fails the solve.  Those stay `source` too.
+      for conf in "$composedPkgDb"/*.conf; do
+        [ -e "$conf" ] || continue
+        # One line per unit: name, id, then the ids it depends on.  Any
+        # field's value may sit on the following indented lines (`id:` does
+        # in a `ghc-pkg register`ed conf), so collect each field whole.
+        awk '
+          /^[^ \t]/ { f = $1; sub(/:$/, "", f)
+                      v = $0; sub(/^[^:]*:/, "", v); val[f] = val[f] " " v
+                      next }
+          { val[f] = val[f] " " $0 }
+          END { split(val["name"], nm, " "); split(val["id"], ui, " ")
+                print nm[1], ui[1], val["depends"] }
+        ' "$conf"
+      done > units
+      awk '
+        { n++; uname[n] = $1; uid[n] = $2; udeps[n] = ""
+          for (i = 3; i <= NF; i++) udeps[n] = udeps[n] " " $i }
+        END {
+          excl["Cabal"] = 1; excl["Cabal-syntax"] = 1
+          do {
+            changed = 0
+            for (i = 1; i <= n; i++) if (uname[i] in excl) exclId[uid[i]] = 1
+            for (i = 1; i <= n; i++) if (!(uname[i] in excl)) {
+              m = split(udeps[i], ds, " ")
+              for (k = 1; k <= m; k++)
+                if (ds[k] in exclId) { excl[uname[i]] = 1; changed = 1; break }
+            }
+          } while (changed)
+          for (x in excl) print x
+        }
+      ' units > excluded
+      grep -vxFf excluded names > names.keep || true
       mv names.keep names
       # Both marker blocks are rewritten AGAINST THAT SET, per package:
       #
