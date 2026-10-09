@@ -2233,6 +2233,12 @@ ENDSCRIPT
         # `ghc-boot-packages-src-and-nix` to skip the source-tree boot-package
         # machinery (see the comment there).
         isStableHaskell      = true;
+        # This `-target` wrapper links only ghc, ghc-pkg, hsc2hs and
+        # friends from the native stage2: there is no target haddock, so
+        # nothing built with it can have `documentation: True` (a slice
+        # asking for docs warns `The program 'haddock' ... could not be
+        # found`, skips the install and ships an empty unit).
+        hasHaddock           = false;
         libDir               = "lib/ghc-${ghcVersion}";
         # The GHC JavaScript backend is static-only: emscripten's wasm-ld
         # rejects GHC's ELF shared-lib link flags (e.g. `-h <soname>`), so a

@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, testCabalProjectLocal, testInputMap }:
+{ stdenv, lib, util, cabalProject', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, testCabalProjectLocal, testInputMap, buildPackages }:
 
 with lib;
 
@@ -18,8 +18,11 @@ let
   packages = project.hsPkgs;
 
 in lib.recurseIntoAttrs {
-  # Haddock is not included with cross compilers currently
-  meta.disabled = haskellLib.isCrossHost || stdenv.hostPlatform.isStatic;
+  # Haddock is not included with cross compilers currently -- nor with a
+  # stable-haskell `-target` compiler, which ghc914-sh uses for any target
+  # other than the native one (musl64 too, though that is not a cross host).
+  meta.disabled = haskellLib.isCrossHost || stdenv.hostPlatform.isStatic
+    || !(buildPackages.haskell-nix.compiler.${compiler-nix-name}.hasHaddock or true);
   ifdInputs = {
     inherit (project) plan-nix;
   };
