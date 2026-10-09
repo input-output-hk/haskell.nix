@@ -38,8 +38,12 @@ in lib.recurseIntoAttrs {
   };
 
   meta.disabled = builtins.elem compiler-nix-name ["ghc91320241204"]
-    # Not sure why this is failing with a seg fault
-    || (builtins.elem compiler-nix-name ["ghc9102" "ghc9102llvm" "ghc9103" "ghc9103llvm" "ghc9124" "ghc9124llvm" "ghc9141" "ghc9141llvm"] && stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
+    # armv7a android: th-orphans' splice segfaults the interpreter under
+    # qemu-arm (`qemu: uncaught target signal 11`), on a native x86_64
+    # builder too.  This was a compiler list, so every compiler added since
+    # (ghc914-sh) re-discovered it as a CI failure; key it off the platform,
+    # as `th-dlls` does.
+    || (stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
     # unhandled ELF relocation(Rel) type 10
     || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_32)
 
