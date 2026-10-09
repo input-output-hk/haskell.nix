@@ -19,6 +19,7 @@
 , templateHaskell ? null
 , emulatorSystemFeatures ? []
 , emulatorNativeBuilderPackages ? []
+, emulatorNativeBuilderTH ? (_: false)
 # Project-level switch (see modules/project-common.nix): build slices
 # for `style: "local"` plan units in cabal `packages:` mode instead of
 # `extra-packages:` mode, so the slice's cabal elaborates the SAME
@@ -1988,10 +1989,17 @@ let
   # build machine unaided, which is the same question the pinning
   # answers.  Build-stage units are exempt regardless: they compile with
   # `ghc.buildGHC` for the build platform.
+  #
+  # A component that declares `usesTemplateHaskell` is pinned too, when its
+  # host is one whose splices run through an emulator
+  # (`haskell-nix.emulatorNativeBuilderTH`).  Whether a slice will evaluate
+  # a splice cannot be told from the plan, so the project says so.
   sliceRequiredSystemFeatures =
     if isBuildStageUnit
     || !haskellLib.isCrossHost
-    || !(lib.elem pkgName emulatorNativeBuilderPackages)
+    || !(lib.elem pkgName emulatorNativeBuilderPackages
+         || ((component.usesTemplateHaskell or false)
+             && emulatorNativeBuilderTH stdenv.hostPlatform))
     then []
     else emulatorSystemFeatures;
 

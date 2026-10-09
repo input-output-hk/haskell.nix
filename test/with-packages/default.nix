@@ -18,6 +18,7 @@ let
       # vary component config for tests
       {
         packages.test-with-packages.components.library.doExactConfig = doExactConfig;
+        packages.test-with-packages.components.library.usesTemplateHaskell = true;
       }
     ];
   };

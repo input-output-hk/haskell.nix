@@ -38,6 +38,8 @@ let
         export PROSY_ARGS=-v
       '';
       packages.test-lib.components.library.libs = mkForce [ test-clib ];
+      packages.th-dlls-minimal.components.library.usesTemplateHaskell = true;
+      packages.th-dlls-minimal.components.exes.just-template-haskell.usesTemplateHaskell = true;
      })
      ({pkgs, ...}: lib.optionalAttrs externalInterpreter {
       packages.th-dlls-minimal.ghcOptions = [ "-fexternal-interpreter" ];

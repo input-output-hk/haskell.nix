@@ -23,7 +23,11 @@ let
       package *
         library-profiling: True
     '';
-    modules = import ../modules.nix ++ [({pkgs, ...}: lib.optionalAttrs externalInterpreter {
+    modules = import ../modules.nix ++ [{
+      # Components whose build runs splices (see `usesTemplateHaskell`).
+      packages.th-dlls.components.library.usesTemplateHaskell = true;
+      packages.th-dlls.components.exes.just-template-haskell.usesTemplateHaskell = true;
+    } ({pkgs, ...}: lib.optionalAttrs externalInterpreter {
       package-keys = [ "HsOpenSSL" ];
       packages.th-dlls.ghcOptions = [ "-fexternal-interpreter" ];
       # Static openssl seems to fail to load in iserv for musl

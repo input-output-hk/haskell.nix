@@ -58,6 +58,7 @@ let
     cabalProjectLocal = testCabalProjectLocal;
     modules = [{
       packages.githash-test.components.exes.githash-test.build-tools = mkForce [ git ];
+      packages.githash-test.components.exes.githash-test.usesTemplateHaskell = true;
     }];
     inherit compiler-nix-name evalSystem;
   };

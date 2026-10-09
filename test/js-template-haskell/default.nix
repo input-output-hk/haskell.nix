@@ -8,6 +8,11 @@ let
     inherit compiler-nix-name evalSystem;
     src = testSrc "js-template-haskell";
     inputMap = testInputMap;
+    # Components whose build runs splices (see `usesTemplateHaskell`).
+    modules = [{
+      packages.js-template-haskell.components.library.usesTemplateHaskell = true;
+      packages.th-orphans.components.library.usesTemplateHaskell = true;
+    }];
     cabalProjectLocal = testCabalProjectLocal
       + ''
       if arch(javascript)

@@ -103,6 +103,7 @@ let
     # `sliceRequiredSystemFeatures` in comp-v2-builder.nix.
     emulatorSystemFeatures = pkgs.haskell-nix.emulatorSystemFeatures or [];
     emulatorNativeBuilderPackages = pkgs.haskell-nix.emulatorNativeBuilderPackages or [];
+    emulatorNativeBuilderTH = pkgs.haskell-nix.emulatorNativeBuilderTH or (_: false);
   };
 
   haddockBuilder = haskellLib.weakCallPackage pkgs ./haddock-builder.nix {

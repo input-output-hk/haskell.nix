@@ -117,6 +117,19 @@ final: prev: {
             or (platform: (platform.isAndroid && platform.isAarch32)
                        || (platform.isLinux && platform.isx86_32));
 
+        # ...and every slice of a component that declares
+        # `usesTemplateHaskell` (modules/component-options.nix), for a
+        # host platform matching this predicate: one whose splices run
+        # through an emulator (qemu-user / wine via iserv-proxy) or as
+        # i686 code, which Rosetta cannot run at all.  ghcjs and wasm
+        # run their splices in node, natively, and an x86_64 Linux host
+        # (musl64, static) runs them directly, so those are left out.
+        emulatorNativeBuilderTH =
+          prev.haskell-nix.emulatorNativeBuilderTH
+            or (platform: !platform.isGhcjs && !platform.isWasm
+                       && (platform.isWindows
+                           || (platform.isLinux && !platform.isx86_64)));
+
         # nixpkgs used to run `cabal` / `nix-tools`, keyed by eval system
         # and memoised at the fixpoint level.  Non-native systems are
         # imported lazily from the same nixpkgs path and overlays; the
