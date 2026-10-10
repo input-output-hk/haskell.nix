@@ -18,6 +18,10 @@ let
       if arch(javascript)
         extra-packages: ghci
         constraints: ghcjs installed
+      -- GHC's wasm interpreter also resolves the "ghci" unit at
+      -- Template-Haskell time (GHC/Runtime/Interpreter/Wasm.hs).
+      if arch(wasm32)
+        extra-packages: ghci
       constraints: text -simdutf, text source
     ''
     # See `docs/dev/profiling.md` — v2 expects profiling toggles

@@ -2134,6 +2134,44 @@ ENDSCRIPT
       wasm-opt --low-memory-unused --debuginfo -Os libffi.so -o $out/lib/libffi.so
     '';
 
+  # GHC runs utils/jsffi/dyld.mjs as the wasm Template Haskell interpreter and
+  # hands it ONE library directory: the last `libraries:` entry of the C
+  # compiler's `-print-search-dirs`.  Upstream that is the wasi-sdk sysroot's
+  # lib dir, where ghc-wasm-meta installs libffi.so next to libc.so, so the
+  # dyld finds every system library there.  nixpkgs' wasilibc and our
+  # libffi-wasm are separate store paths, so the dir GHC passes holds neither
+  # (`findSystemLibrary(libffi.so): not found in /lib/wasm32-wasi`).  Do what
+  # compiler/ghc/default.nix does for the mainline wasm GHCs: flatten both
+  # into one dir (`wasmDyldLib`) and run dyld.mjs through a node wrapper
+  # (`wasmDyldNode`) that substitutes that dir for GHC's argument.  The
+  # wrapper also replaces dyld.mjs's `#!/usr/bin/env -S node` shebang, which
+  # names a path the nix build sandbox does not have.
+  wasmDyldLib = pkgs.buildPackages.runCommand "lib-wasm" { } ''
+    mkdir -p $out/lib
+    for d in ${pkgs.targetPackages.wasilibc}/lib ${pkgs.targetPackages.wasilibc}/lib/wasm32-wasi ${libffiWasm}/lib; do
+      [ -d "$d" ] || continue
+      for f in "$d"/*; do
+        # -f skips the per-target subdirectory and its `wasm32-wasip1` alias.
+        [ -f "$f" ] || continue
+        ln -sfn "$f" "$out/lib/$(basename "$f")"
+      done
+    done
+  '';
+  wasmDyldNode = pkgs.buildPackages.writeShellScriptBin "node" ''
+    SCRIPT=$1
+    shift
+    # GHC's libdir argument; replaced by the flattened wasmDyldLib.
+    shift
+    exec ${pkgs.buildPackages.nodejs_24}/bin/node \
+      --disable-warning=ExperimentalWarning \
+      --max-old-space-size=65536 \
+      --no-turbo-fast-api-calls \
+      --wasm-lazy-validation \
+      "$SCRIPT" \
+      "${wasmDyldLib}/lib" \
+      "$@"
+  '';
+
   # ── Native tools for cross boot-package builds ────────────────────────────
   # Boot packages (rts, …) build from source inside each cross project's own
   # plan (see the boot-package injection in modules/cabal-project.nix).
@@ -2625,6 +2663,11 @@ ENDSCRIPT
     for f in ${nativeConfiguredSrc}/utils/jsffi/*.mjs; do
       [ -e "$f" ] && cp "$f" $tdir/lib/
     done
+    # Run dyld.mjs through `wasmDyldNode` (see there): its own
+    # `#!/usr/bin/env -S node` is not in the build sandbox, and GHC's libdir
+    # argument does not hold libffi.so / libc.so.
+    chmod u+w $tdir/lib/dyld.mjs
+    sed -i '1s|^#!.*$|#!${wasmDyldNode}/bin/node|' $tdir/lib/dyld.mjs
     ''}
     ${lib.optionalString isGhcjsTarget ''
     # Template Haskell on the JS backend runs each splice by executing it with

@@ -967,7 +967,9 @@ in {
         # very units the splice code links — propagates with it) into every
         # host package's starting store db, exactly like the rts ways
         # above.  Unit-ids agree by construction; nothing loads twice.
-        ghciPrebuilt = lib.optionals (tp.isGhcjs or false)
+        # wasm's interpreter does the same lookup (GHC/Runtime/Interpreter/
+        # Wasm.hs: `Just ghci_unit_id`), so it needs the same composition.
+        ghciPrebuilt = lib.optionals ((tp.isGhcjs or false) || isWasm)
           (lib.filter (x: x != null)
             [ (config.hsPkgs.ghci.components.library or null) ]);
         # ghci's own dependency closure (by package name, a verified
