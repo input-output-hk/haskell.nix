@@ -1334,8 +1334,8 @@ final: prev: {
                 source-repository-package
                     type: git
                     location: https://github.com/stable-haskell/Cabal.git
-                    tag: ad937de5b7cf2140ba55130d60b06f83af7fab90
-                    --sha256: sha256-khDkYbQMgm0Cj0DBJStkagj147Nh9+QLAOnk4eRyEXc=
+                    tag: f3482d8abc62e93e58574ef1be7cdc51d5d8d146
+                    --sha256: sha256-i8eSe3NvUsaHjYmStDhGYa6byZYFJt6xwyFwhlFETfM=
                     subdir: Cabal
                             Cabal-syntax
                             cabal-install
