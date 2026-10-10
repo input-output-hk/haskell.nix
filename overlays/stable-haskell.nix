@@ -2665,9 +2665,13 @@ ENDSCRIPT
     done
     # Run dyld.mjs through `wasmDyldNode` (see there): its own
     # `#!/usr/bin/env -S node` is not in the build sandbox, and GHC's libdir
-    # argument does not hold libffi.so / libc.so.
+    # argument does not hold libffi.so / libc.so.  The wrapper is a shell
+    # script, so name the shell as the interpreter and the wrapper as its
+    # argument: Linux follows a `#!` that points at another script, but
+    # macOS refuses it (ENOEXEC) and the exec fallback then runs dyld.mjs
+    # itself with sh ("dyld.mjs: line 3: //: is a directory").
     chmod u+w $tdir/lib/dyld.mjs
-    sed -i '1s|^#!.*$|#!${wasmDyldNode}/bin/node|' $tdir/lib/dyld.mjs
+    sed -i '1s|^#!.*$|#!${pkgs.buildPackages.runtimeShell} ${wasmDyldNode}/bin/node|' $tdir/lib/dyld.mjs
     ''}
     ${lib.optionalString isGhcjsTarget ''
     # Template Haskell on the JS backend runs each splice by executing it with
