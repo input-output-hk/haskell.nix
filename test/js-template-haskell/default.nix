@@ -59,6 +59,15 @@ in lib.recurseIntoAttrs {
   check = packages.js-template-haskell.checks.test;
 } // optionalAttrs (!(
          stdenv.hostPlatform.isGhcjs
+      # wasm runs splices in dyld, which loads only shared code, so a `-prof`
+      # module's splices need profiled-dynamic (`.p_dyn_hi`) boot libraries
+      # and a profiled interpreter; no wasm GHC has either.  The mainline wasm
+      # GHCs are built `+no_profiled_libs`, so their "profiled" build here
+      # produced no profiled objects at all -- it passed without testing
+      # anything -- while ghc914-sh, which does ship `p` ways, failed with
+      #   Failed to load dynamic interface file for Language.Haskell.TH.Syntax:
+      #     .../template-haskell-2.24.0.0-.../Language/Haskell/TH/Syntax.p_dyn_hi
+      || stdenv.hostPlatform.isWasm
       || (builtins.elem compiler-nix-name ["ghc984" "ghc9122" "ghc9122llvm" "ghc91320250523"] && stdenv.buildPlatform.isx86_64 && stdenv.hostPlatform.isAarch64)
       || (stdenv.hostPlatform.isAarch64
           && stdenv.hostPlatform.isMusl
