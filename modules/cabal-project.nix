@@ -506,6 +506,39 @@ in {
         ++ lib.optional (tp.isWindows or false) "Win32";
       tp = pkgs.stdenv.hostPlatform;
       isWasm = tp.isWasm or false;
+      # Where each injected boot subdir comes from: the configured tree,
+      # except system-cxx-std-lib on Android.  Its .cabal names the C++
+      # runtime for the interpreter as
+      #   if os(windows) || os(linux)
+      #     extra-libraries: stdc++
+      # and to cabal the ghc914-sh Android target IS `os(linux)` (its plan
+      # says `"os":"linux"`), so Android gets `stdc++` too.  That is wrong
+      # twice over there: Android's C++ runtime is libc++ (bionic's
+      # libstdc++ is only operator new/delete), and bionic ships it as a
+      # `libstdc++.so`, which GHC's RTS linker prefers to an archive -- and
+      # the statically linked Android `iserv-proxy-interpreter` cannot
+      # dlopen anything, so every splice that pulls in system-cxx-std-lib
+      # (th-dlls, via double-conversion) died with
+      #   libdl.a is a stub --- use libdl.so instead
+      # Keep the Windows half, which is what it was added for (a wine hang
+      # on `__cxa_guard_acquire`), and name nothing on Android, as before.
+      shSubdirSrc = d:
+        if d == "libraries/system-cxx-std-lib" && (tp.isAndroid or false)
+          then androidCxxStdLibSrc
+          else "${shSrc}/${d}";
+      androidCxxStdLibSrc = pkgs.buildPackages.runCommand "system-cxx-std-lib-android-src" { } ''
+        cp -r ${shSrc}/libraries/system-cxx-std-lib $out
+        chmod -R u+w $out
+        sed -i 's/^\([[:space:]]*if\) os(windows) || os(linux)[[:space:]]*$/\1 os(windows)/' \
+          $out/system-cxx-std-lib.cabal
+        # A sed that silently matched nothing would leave Android exactly as
+        # broken as before.
+        if grep -q 'os(linux)' $out/system-cxx-std-lib.cabal; then
+          echo "system-cxx-std-lib: could not drop the os(linux) C++ runtime" >&2
+          cat $out/system-cxx-std-lib.cabal >&2
+          exit 1
+        fi
+      '';
       # libffi contradicts itself on Android, and the link says so:
       #
       #   ld.lld: error: undefined hidden symbol: open_temp_exec_file
@@ -677,7 +710,7 @@ in {
         -- concatenates the surrounding text verbatim.
         -- >>> haskell.nix:boot-packages
         packages:
-        ${lib.concatMapStrings (d: "  ${shSrc}/${d}\n        ") shSubdirs}
+        ${lib.concatMapStrings (d: "  ${shSubdirSrc d}\n        ") shSubdirs}
         ${lib.optionalString (tp.isWindows or false) "  ${win32Src}\n        "}
         -- <<< haskell.nix:boot-packages
         -- The boot libraries injected above are REBUILT in this slice, while
