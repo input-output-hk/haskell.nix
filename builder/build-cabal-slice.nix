@@ -2672,6 +2672,7 @@ ${lib.optionalString (metadataSourceFrags != []) ''
          && ! { [ ''${#own_uids[@]} -eq 1 ] && [ -z "''${own_uids[0]}" ]; }; then
         side=$buildRoot/keep
         mkdir -p "$side/$storePkgDb" "$side/lib" "$side/bin" "$side/units"
+        kept_tool_uids=()
         shopt -s nullglob
         for keep in "''${own_uids[@]}"; do
           [ -n "$keep" ] || continue
@@ -2700,6 +2701,31 @@ ${lib.optionalString (metadataSourceFrags != []) ''
             bn=$(basename "$b")
             if ! grep -qx -- "$bn" $buildRoot/bin-before 2>/dev/null; then
               mv "$b" "$side/bin/$bn"
+              # ...and the exe unit's `lib/<uid>/`, which holds its
+              # data-files.  A kept exe is not necessarily one of
+              # `own_uids` -- a BUILD-stage tool built in-slice (alex,
+              # for a cross `Cabal-syntax`) lands in this same flat bin
+              # through the `build` -> `host` alias -- and its
+              # `Paths_<pkg>` datadir is baked as an absolute path into
+              # this output.  Wiping the dir below while shipping the
+              # binary left a tool that fails when a downstream slice
+              # runs it:
+              #   alex: .../store/build/.../alex-3.5.4.2-.../share/
+              #         AlexTemplate.hs: openFile: does not exist
+              # (ghc914-sh musl64/static `ghc-lib-reinstallable-cabal`).
+              if [ -f "$distDir/cache/plan.json" ]; then
+                while IFS= read -r tuid; do
+                  [ -n "$tuid" ] || continue
+                  if [ -e "$ghcDir/lib/$tuid" ] && [ ! -e "$side/lib/$tuid" ]; then
+                    mv "$ghcDir/lib/$tuid" "$side/lib/$tuid"
+                    kept_tool_uids+=("$tuid")
+                  fi
+                done < <(jq -r --arg exe "exe:$bn" \
+                  '.["install-plan"][]
+                   | select(.["component-name"] == $exe)
+                   | .id | sub("^(host|build):"; "")' \
+                  "$distDir/cache/plan.json" 2>/dev/null)
+              fi
             fi
           done
         fi
@@ -2731,6 +2757,12 @@ ${lib.optionalString (metadataSourceFrags != []) ''
             mv "$f" "$ghcDir/lib/$(basename "$f")"
           done
         fi
+        for tuid in "''${kept_tool_uids[@]}"; do
+          if [ -e "$side/lib/$tuid" ]; then
+            mkdir -p "$ghcDir/lib"
+            mv "$side/lib/$tuid" "$ghcDir/lib/$tuid"
+          fi
+        done
         kept_bins=("$side/bin"/*)
         if [ ''${#kept_bins[@]} -gt 0 ]; then
           mkdir -p "$ghcDir/bin"
