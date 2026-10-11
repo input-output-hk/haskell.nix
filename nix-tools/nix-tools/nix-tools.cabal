@@ -59,7 +59,7 @@ library
                      , StackRepos
                      , StackRepos.CLI
                      , Stack2nix
-                     , Stack2nix.Cache
+                     , NixTools.Cache
                      , Stack2nix.CLI
                      , Stack2nix.External.Resolve
                      , Stack2nix.Project
@@ -141,7 +141,6 @@ executable plan-to-nix
                      , vector
   main-is:             Main.hs
   other-modules:       Plan2Nix
-                     , Plan2Nix.Cache
                      , Plan2Nix.CLI
                      , Plan2Nix.Project
                      , Plan2Nix.Plan
