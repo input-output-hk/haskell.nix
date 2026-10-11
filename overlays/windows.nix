@@ -39,7 +39,14 @@ final: prev:
 
    haskell-nix = prev.haskell-nix // final.lib.optionalAttrs final.stdenv.hostPlatform.isWindows ({
      templateHaskell = builtins.mapAttrs (_compiler-nix-name: iserv-proxy-exes:
-        import ./mingw_w64.nix {
+        # As in `overlays/armv6l-linux.nix`: wine is an emulator too, so
+        # carry the same two knobs.  (No windows package is on the list
+        # today; this keeps the two paths symmetric so one can be added
+        # without another round of plumbing.)
+        let mkTH = exes:
+          { inherit (final.haskell-nix)
+              emulatorSystemFeatures emulatorNativeBuilderPackages; }
+          // import ./mingw_w64.nix {
           inherit (final.stdenv) hostPlatform;
           inherit (final.pkgsBuildBuild) lib writeShellScriptBin;
           # `runCommand` and `makeWrapper` are used by `wrapGhc`
@@ -51,12 +58,22 @@ final: prev:
           inherit (final.pkgsBuildBuild) symlinkJoin;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
-          inherit (iserv-proxy-exes) iserv-proxy iserv-proxy-interpreter iserv-proxy-interpreter-prof;
+          inherit (exes) iserv-proxy iserv-proxy-interpreter iserv-proxy-interpreter-prof;
+        };
+        # Per-eval-system variants mirroring `iserv-proxy-exes.evalWith`:
+        # forcing the default variant's exes runs the iserv-proxy
+        # plan-to-nix IFD on the pkgsBuildBuild system, so consumers with
+        # a different `evalSystem` must select their variant instead.
+        in mkTH iserv-proxy-exes // {
+          evalWith = builtins.mapAttrs (_evalSystem: mkTH) iserv-proxy-exes.evalWith;
         }) final.haskell-nix.iserv-proxy-exes;
      defaultModules = prev.haskell-nix.defaultModules ++ [
       ({ pkgs, buildModules, config, lib, ... }:
       let
-        withTH = final.haskell-nix.templateHaskell.${config.compiler.nix-name};
+        # This is the pkg-set config (no `evalSystem` option); derive the
+        # eval platform from its `evalPackages` instead.
+        withTH = final.haskell-nix.templateHaskell.${config.compiler.nix-name}
+          .evalWith.${config.evalPackages.stdenv.hostPlatform.system};
       in prev.haskell-nix.haskellLib.addPackageKeys {
         inherit (withTH) configureFlags testWrapper;
 

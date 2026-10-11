@@ -34,21 +34,20 @@ only affects the within-package solve.
 
 --- a/src/Distribution/Solver/Modular/IndexConversion.hs
 +++ b/src/Distribution/Solver/Modular/IndexConversion.hs
-@@ -9,7 +9,10 @@ import qualified Data.List as L
- import qualified Data.Map.Strict as M
+@@ -10,6 +10,9 @@
  import qualified Distribution.Compat.NonEmptySet as NonEmptySet
  import qualified Data.Set as S
-
+ 
 +import qualified System.Environment as Env
 +import qualified System.IO.Unsafe as Unsafe
 +
  import qualified Distribution.InstalledPackageInfo as IPI
  import Distribution.Compiler
  import Distribution.Package                          -- from Cabal
-@@ -189,9 +192,32 @@
-
+@@ -213,9 +216,32 @@
+ 
      initDR = DependencyReason pn M.empty S.empty
-
+ 
 +    -- haskell.nix: drop sublibs unreachable from main-lib / exes so an
 +    -- unrelated sublib's missing deps can't fail the whole package solve.
 +    -- A slice that targets one of `pn`'s sublibs directly (e.g.
@@ -79,11 +78,10 @@ only affects the within-package solve.
         ++ concatMap (\(nm, ds) -> conv (ComponentFLib nm)   foreignLibBuildInfo initDR ds) flibs
         ++ concatMap (\(nm, ds) -> conv (ComponentExe nm)    buildInfo           initDR ds) exes
         ++ prefix (Stanza (SN pn TestStanzas))
-@@ -239,6 +265,54 @@
-         isPrivate LibraryVisibilityPublic  = False
-
+@@ -264,6 +290,54 @@
+ 
    in PInfo flagged_deps components fds fr
-+
+ 
 +-- | Sublib components reachable from the main library or any executable of
 +-- a package by walking same-package `build-depends` edges.  Unreachable
 +-- sublibs are safely prunable from `flagged_deps`: nothing in this package
@@ -131,6 +129,7 @@ only affects the within-package solve.
 +splitOn c s = case break (== c) s of
 +    (a, [])     -> [a]
 +    (a, _:rest) -> a : splitOn c rest
-
++
  -- | Applies the given predicate (for example, testing buildability or
  -- visibility) to the given component and environment. Values are combined with
+ -- AND. This function returns 'Nothing' when the result cannot be determined
