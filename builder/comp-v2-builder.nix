@@ -1981,12 +1981,26 @@ let
   # `templateHaskell.wrapGhc` does, so the unit-id is unaffected.
   #
   # Only for a package that asks for the external interpreter in its own
-  # `ghcOptions`: that keeps the wrapper (and with it the ghc-iserv exe)
-  # out of every slice in ghc-iserv's own dependency closure.
+  # `ghcOptions`, or -- on a dynamically linked musl host -- a component
+  # declared `usesTemplateHaskell`: that keeps the wrapper (and with it the
+  # ghc-iserv exe) out of every slice in ghc-iserv's own dependency closure.
+  #
+  # The second case is because the in-process interpreter cannot work
+  # there.  The compiler is a glibc process, and a splice that reaches a C
+  # library makes it dlopen the musl shared object
+  # (libsodium / openssl for th-dlls):
+  #   Failed to build th-dlls-0.1.0.0-... The build process segfaulted
+  # Static targets link those libraries as archives, which the RTS linker
+  # loads itself, so the same splices run in-process there.
+  forceExternalInterpreter =
+    (pkgs.stdenv.hostPlatform.isMusl or false)
+    && !(pkgs.stdenv.hostPlatform.isStatic or false)
+    && (component.usesTemplateHaskell or false);
   projectIserv =
     if isTwoStageCross
        && pkgName != "ghc-iserv"
-       && lib.elem "-fexternal-interpreter" (ghcOptionsOf pkgName)
+       && (lib.elem "-fexternal-interpreter" (ghcOptionsOf pkgName)
+           || forceExternalInterpreter)
     then hsPkgs.ghc-iserv.components.exes.ghc-iserv or null
     else null;
   # GHC runs `<-pgmi path>-prof` when the splice is compiled -prof (and
@@ -2030,7 +2044,7 @@ let
         for prog in ghc ghci ghc-${ghc.version} ghci-${ghc.version}; do
           if [ -x ${ghc}/bin/$prefix$prog ]; then
             makeWrapper ${ghc}/bin/$prefix$prog $out/bin/$prefix$prog \
-              --add-flags "-pgmi ${projectIservDir}/bin/ghc-iserv"
+              --add-flags "${lib.optionalString forceExternalInterpreter "-fexternal-interpreter "}-pgmi ${projectIservDir}/bin/ghc-iserv"
           fi
         done
         for f in ${ghc}/bin/$prefix*; do

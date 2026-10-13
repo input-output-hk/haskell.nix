@@ -28,8 +28,15 @@ let
       packages.th-dlls.components.library.usesTemplateHaskell = true;
       packages.th-dlls.components.exes.just-template-haskell.usesTemplateHaskell = true;
     } ({pkgs, ...}: lib.optionalAttrs externalInterpreter {
-      package-keys = [ "HsOpenSSL" ];
       packages.th-dlls.ghcOptions = [ "-fexternal-interpreter" ];
+    }) ({pkgs, ...}: lib.optionalAttrs (externalInterpreter
+        # ghc914-sh on dynamically linked musl runs these splices in the
+        # external interpreter even without `-fexternal-interpreter` (see
+        # `forceExternalInterpreter` in builder/comp-v2-builder.nix), so
+        # it needs the same shared openssl.
+        || (compiler-nix-name == "ghc914-sh" && stdenv.hostPlatform.isMusl
+            && !stdenv.hostPlatform.isStatic)) {
+      package-keys = [ "HsOpenSSL" ];
       # Static openssl seems to fail to load in iserv for musl
       packages.HsOpenSSL.components.library.libs = lib.optional pkgs.stdenv.hostPlatform.isMusl (pkgs.openssl.override { static = false; });
     })]
