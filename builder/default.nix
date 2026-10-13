@@ -96,6 +96,16 @@ let
   comp-v2-builder = haskellLib.weakCallPackage pkgs ./comp-v2-builder.nix {
     inherit ghc hsPkgs buildCabalStoreSlice templateHaskell haskellLib composeStore
       v2LocalPackageSlices;
+    # The host platform's iserv-proxy executables (eval-platform variant,
+    # as for `templateHaskell` above), for the `-pgmi` bridge's profiled
+    # interpreter in comp-v2-builder.nix.  Lazy: only forced for a slice
+    # that runs `-fexternal-interpreter` with profiling.
+    iservProxyExes =
+      if !crossTemplateHaskellSupport then null
+      else
+        let e = pkgs.haskell-nix.iserv-proxy-exes.${compiler-nix-name} or null;
+        in if e == null then null
+           else e.evalWith.${evalPackages.stdenv.hostPlatform.system} or e;
     # Deliberately NOT routed through `templateHaskell`: that is null
     # whenever a project sets `crossTemplateHaskellSupport = false`, which
     # would silently disable the native-builder pinning for exactly the

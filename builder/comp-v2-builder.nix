@@ -20,6 +20,9 @@
 , emulatorSystemFeatures ? []
 , emulatorNativeBuilderPackages ? []
 , emulatorNativeBuilderTH ? (_: false)
+# Host-platform iserv-proxy executables (see builder/default.nix), used by
+# the `-pgmi` bridge for the profiled external interpreter.
+, iservProxyExes ? null
 # Project-level switch (see modules/project-common.nix): build slices
 # for `style: "local"` plan units in cabal `packages:` mode instead of
 # `extra-packages:` mode, so the slice's cabal elaborates the SAME
@@ -1986,6 +1989,34 @@ let
        && lib.elem "-fexternal-interpreter" (ghcOptionsOf pkgName)
     then hsPkgs.ghc-iserv.components.exes.ghc-iserv or null
     else null;
+  # GHC runs `<-pgmi path>-prof` when the splice is compiled -prof (and
+  # `-dyn` with -dynamic), so `-pgmi` names a directory holding both
+  # flavours.  The project builds only the vanilla ghc-iserv: adding the
+  # prof one as a boot package would make every musl project build
+  # profiled boot libraries.  For a profiled slice, run the profiled
+  # iserv-proxy-interpreter -- which the iserv-proxy project already
+  # builds, against its own profiled closure -- behind iserv-proxy, with
+  # no emulator (the build machine runs the target).  That is the
+  # linux-cross wrapper (overlays/linux-cross.nix) with `env` for qemu.
+  sliceProfiled = lib.any (u:
+      lib.any (a: a == "--enable-profiling" || a == "--enable-library-profiling"
+                  || a == "--enable-executable-profiling")
+        (u.configure-args or []))
+    thisPkgUnits;
+  projectIservDir =
+    pkgs.buildPackages.runCommand "project-iserv" { } (''
+      mkdir -p $out/bin
+      ln -s ${projectIserv}/bin/ghc-iserv $out/bin/ghc-iserv
+    '' + lib.optionalString (sliceProfiled && iservProxyExes != null) (
+      let interp = iservProxyExes.iserv-proxy-interpreter-prof; in ''
+      cat > $out/bin/ghc-iserv-prof <<EOF
+      #!${pkgs.buildPackages.runtimeShell}
+      exec ${iservProxyExes.iserv-proxy}/bin/iserv-proxy "\$@" \\
+        --pipe ${pkgs.buildPackages.coreutils}/bin/env \\
+        ${interp}/bin/${interp.exeName} tmp --stdio
+      EOF
+      chmod +x $out/bin/ghc-iserv-prof
+    ''));
   withProjectIserv = ghc:
     pkgs.buildPackages.runCommand "${ghc.name}-with-project-iserv"
       { nativeBuildInputs = [ pkgs.buildPackages.makeWrapper ];
@@ -1999,7 +2030,7 @@ let
         for prog in ghc ghci ghc-${ghc.version} ghci-${ghc.version}; do
           if [ -x ${ghc}/bin/$prefix$prog ]; then
             makeWrapper ${ghc}/bin/$prefix$prog $out/bin/$prefix$prog \
-              --add-flags "-pgmi ${projectIserv}/bin/ghc-iserv"
+              --add-flags "-pgmi ${projectIservDir}/bin/ghc-iserv"
           fi
         done
         for f in ${ghc}/bin/$prefix*; do
