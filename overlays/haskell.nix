@@ -1492,6 +1492,37 @@ final: prev: {
                         pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isAarch32 " -optl-no-pie"
                       }
                   ''
+                  # stable-haskell musl host: link the interpreter's libc
+                  # dynamically.  `executable-static: True` (every musl
+                  # host, modules/cabal-project.nix) is `-fully-static` on
+                  # the fork since 571f1a2ac, and a fully static musl
+                  # interpreter has no dlsym, so the RTS linker could not
+                  # resolve a single libc symbol for the archives a splice
+                  # loads -- every ghc914-sh aarch64-musl TH build since
+                  # then has died with
+                  #   iserv-proxy-interpreter: Failed to lookup symbol: strlen
+                  # (the mainline GHCs get them by loading libc.a, which
+                  # the fork's RTS linker now skips).  The interpreter only
+                  # ever runs on the build machine (directly or under
+                  # qemu), so nothing needs it static.  Haskell libraries
+                  # stay static; only libc &c. are shared.  The C++
+                  # runtime is linked in up front for the same reason as
+                  # ghc-iserv's (see its stanza in modules/cabal-project.nix):
+                  # dlopening nixpkgs' libstdc++.so cannot find its
+                  # libgcc_s.so.1.
+                  #
+                  # Not i386: its symbol table names musl's hidden
+                  # `__aio_close`, which only links fully static (see
+                  # 571f1a2ac).
+                  + pkgs.lib.optionalString (
+                       pkgs.stdenv.hostPlatform.isMusl
+                    && !pkgs.stdenv.hostPlatform.isx86_32
+                    && (final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.emptyGlobalPackageDb or false)
+                  ) ''
+                    package iserv-proxy
+                      executable-static: False
+                      ghc-options: -optl-Wl,--no-as-needed -optl-lstdc++ -optl-lgcc_s
+                  ''
                   # Build the iserv-proxy executables with profiling
                   # for the `-prof` variant.  GHC selects the iserv
                   # to spawn at TH-eval time by appending `-prof` to
