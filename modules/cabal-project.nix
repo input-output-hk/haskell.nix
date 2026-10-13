@@ -880,7 +880,29 @@ in {
 
         package rts-fs
           ghc-options: -no-rts
+        ${lib.optionalString ((tp.isMusl or false) && lib.elem "utils/ghc-iserv" shSubdirs) ''
 
+        -- The external interpreter runs on the BUILD machine and loads
+        -- code at run time, so it must not be a fully static executable:
+        -- musl's static libc has no dlopen and no symbol table for dlsym,
+        -- so the musl `executable-static: True` (-fully-static on the
+        -- fork) left it failing on the first library it touched --
+        --   <no location info>: error: Dynamic loading not supported
+        --   ghc-iserv: Failed to lookup symbol: memcmp
+        -- Haskell libraries stay static; only libc is linked dynamically.
+        --
+        -- Link the C++ runtime in up front too.  system-cxx-std-lib names
+        -- `stdc++`, so a splice touching a C++-using package makes the
+        -- interpreter dlopen nixpkgs' libstdc++.so -- whose RUNPATH names
+        -- only musl's lib dir, not its own, so musl cannot find its
+        -- libgcc_s.so.1 dependency:
+        --   Error loading shared library libgcc_s.so.1: No such file or
+        --   directory (needed by .../libstdc++.so)
+        -- Already loaded through ghc-iserv's own RUNPATH, both resolve.
+        package ghc-iserv
+          executable-static: False
+          ghc-options: -optl-Wl,--no-as-needed -optl-lstdc++ -optl-lgcc_s
+        ''}
         package *
           library-for-ghci: False${crossLinkFields}${hostStageFields}
       '';

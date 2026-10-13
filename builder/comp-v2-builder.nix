@@ -1962,7 +1962,54 @@ let
     if isBuildStageUnit then ghc.buildGHC
     else if templateHaskell != null && templateHaskell.wrapGhc or null != null
     then templateHaskell.wrapGhc ghc
+    else if projectIserv != null then withProjectIserv ghc
     else ghc;
+
+  # A stable-haskell cross compiler for a target the build machine can run
+  # (musl64 / static on x86_64-linux) has no `templateHaskell` wrapper --
+  # haskell.nix counts same-arch musl as native -- so `-fexternal-interpreter`
+  # makes GHC look for `targets/<triple>/bin/ghc-iserv` inside the compiler:
+  #   .../targets/x86_64-unknown-linux-musl/lib/../bin/ghc-iserv:
+  #   createProcess: posix_spawnp: does not exist
+  # A cross compiler cannot ship that binary (the target's boot libraries
+  # are built by each project), so the project builds it instead
+  # (`utils/ghc-iserv` in the boot injection, modules/cabal-project.nix).
+  # Point GHC at that one with `-pgmi`, through a ghc wrapper as
+  # `templateHaskell.wrapGhc` does, so the unit-id is unaffected.
+  #
+  # Only for a package that asks for the external interpreter in its own
+  # `ghcOptions`: that keeps the wrapper (and with it the ghc-iserv exe)
+  # out of every slice in ghc-iserv's own dependency closure.
+  projectIserv =
+    if isTwoStageCross
+       && pkgName != "ghc-iserv"
+       && lib.elem "-fexternal-interpreter" (ghcOptionsOf pkgName)
+    then hsPkgs.ghc-iserv.components.exes.ghc-iserv or null
+    else null;
+  withProjectIserv = ghc:
+    pkgs.buildPackages.runCommand "${ghc.name}-with-project-iserv"
+      { nativeBuildInputs = [ pkgs.buildPackages.makeWrapper ];
+        passthru = {
+          inherit (ghc) version meta;
+          targetPrefix = ghc.targetPrefix or "";
+        };
+      } ''
+        mkdir -p $out/bin
+        prefix="${ghc.targetPrefix or ""}"
+        for prog in ghc ghci ghc-${ghc.version} ghci-${ghc.version}; do
+          if [ -x ${ghc}/bin/$prefix$prog ]; then
+            makeWrapper ${ghc}/bin/$prefix$prog $out/bin/$prefix$prog \
+              --add-flags "-pgmi ${projectIserv}/bin/ghc-iserv"
+          fi
+        done
+        for f in ${ghc}/bin/$prefix*; do
+          base=$(basename "$f")
+          [ -e "$out/bin/$base" ] || ln -s "$f" "$out/bin/$base"
+        done
+        for d in lib share; do
+          if [ -d ${ghc}/$d ]; then ln -s ${ghc}/$d $out/$d; fi
+        done
+      '';
 
   # A cross slice may need a builder that can actually run target code --
   # to spawn the emulator for a TH splice, or just because the cross ghc
