@@ -140,6 +140,18 @@ with lib.types;
         `builderVersion = 2`.
       '';
     };
+    v2LocalPackageSliceNames = mkOption {
+      type = listOf str;
+      default = [];
+      description = ''
+        Package names whose LIBRARY slices are built in cabal `packages:`
+        mode, as `v2LocalPackageSlices` does for every local unit, but
+        without that option's other project-wide effects (the solver's
+        view of the compiler's global db).  Set by the stable-haskell
+        boot injection for `ghc`, whose unit id GHC itself hard-codes.
+        Only meaningful with `builderVersion = 2`.
+      '';
+    };
     useLocalGhcLib = mkOption {
       type = bool;
       default = false;

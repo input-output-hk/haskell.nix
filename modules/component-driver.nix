@@ -4,7 +4,7 @@ let
     inherit haskellLib;
     ghc = config.ghc.package;
     compiler-nix-name = config.compiler.nix-name;
-    inherit (config) nonReinstallablePkgs hsPkgs compiler evalPackages builderVersion crossTemplateHaskellSupport v2LocalPackageSlices cabalProjectLocal withBuildCompiler;
+    inherit (config) nonReinstallablePkgs hsPkgs compiler evalPackages builderVersion crossTemplateHaskellSupport v2LocalPackageSlices v2LocalPackageSliceNames cabalProjectLocal withBuildCompiler;
   };
 
 in
@@ -43,6 +43,12 @@ in
   options.v2LocalPackageSlices = lib.mkOption {
     type = lib.types.bool;
     default = false;
+  };
+  # Propagated from the project-level `v2LocalPackageSliceNames`: the same
+  # local-`packages:` slicing, for the named packages only.
+  options.v2LocalPackageSliceNames = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+    default = [];
   };
   # Project-level `cabalProjectLocal`, threaded into pkg-set's
   # module config so the v2 shell can write it out as a

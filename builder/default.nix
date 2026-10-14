@@ -13,7 +13,7 @@
 #
 # tl;dr: the builder must not re-introduce any reference to the build plan.
 
-{ pkgs, buildPackages, pkgsBuildBuild, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, nonReinstallablePkgs, hsPkgs, compiler, builderVersion ? 1, crossTemplateHaskellSupport ? true, v2LocalPackageSlices ? false, cabalProjectLocal ? null, withBuildCompiler ? false }:
+{ pkgs, buildPackages, pkgsBuildBuild, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, nonReinstallablePkgs, hsPkgs, compiler, builderVersion ? 1, crossTemplateHaskellSupport ? true, v2LocalPackageSlices ? false, v2LocalPackageSliceNames ? [], cabalProjectLocal ? null, withBuildCompiler ? false }:
 
 let
   # Builds a single component of a package.
@@ -95,7 +95,7 @@ let
 
   comp-v2-builder = haskellLib.weakCallPackage pkgs ./comp-v2-builder.nix {
     inherit ghc hsPkgs buildCabalStoreSlice templateHaskell haskellLib composeStore
-      v2LocalPackageSlices;
+      v2LocalPackageSlices v2LocalPackageSliceNames;
     # The host platform's iserv-proxy executables (eval-platform variant,
     # as for `templateHaskell` above), for the `-pgmi` bridge's profiled
     # interpreter in comp-v2-builder.nix.  Lazy: only forced for a slice

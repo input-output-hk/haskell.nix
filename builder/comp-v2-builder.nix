@@ -32,7 +32,10 @@
 # the compiler's global package db — consumer plan-time dummy dumps
 # must be able to predict them (an extra-packages slice registers an
 # unpredictable `<pkgid>-<hash>` id instead).
-, v2LocalPackageSlices ? false }:
+, v2LocalPackageSlices ? false
+# The same local-`packages:` slicing for the named packages only (see
+# modules/project-common.nix).
+, v2LocalPackageSliceNames ? [] }:
 
 { componentId, component, package, name, src, flags ? {}, patches ? [], cabalFile ? null, pkgSet
 , cabal-generator ? null # "hpack" if the package ships only `package.yaml`
@@ -1654,7 +1657,7 @@ let
   # elaboration from the fork — so they take the local-`packages:`
   # path too (their staged source replaces the srp block).
   isLocalPackageSlice =
-    v2LocalPackageSlices
+    (v2LocalPackageSlices || builtins.elem pkgName v2LocalPackageSliceNames)
     && !isLocalTestOrBench
     && ctype == "lib"
     && builtins.elem (thisPlanEntry.style or null) [ "local" "inplace" ];

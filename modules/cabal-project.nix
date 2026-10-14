@@ -687,6 +687,24 @@ in {
       # mkDefault) so an explicit `builderVersion = 1` fails loudly
       # instead of building a subtly broken rts.
       builderVersion = 2;
+      # Slice lib:ghc in local-`packages:` mode, so it registers the plan's
+      # deterministic id `ghc-9.14` rather than an extra-packages hashed
+      # `ghc-9.14-<hash>`.  GHC resolves `GHC.Driver.Plugins` through its
+      # baked-in `cProjectUnitId` -- the bare `ghc-9.14` -- when it
+      # typechecks a `-fplugin`, so with the hashed id every plugin died
+      # with
+      #   Failed to load interface for 'GHC.Driver.Plugins'.
+      #   no unit id matching 'ghc-9.14' was found
+      # (musl64 / static `tests.external-static-plugin`).
+      #
+      # Only `ghc`.  2d3479a18 did this for every injected package via
+      # `v2LocalPackageSlices` and was reverted (6c78576c0): Backpack
+      # instantiations have no local-mode elaboration, local test/bench
+      # slices collided with their own package's composed units, and that
+      # option also changes how every slice's solver sees the global db.
+      # `ghc` has no Backpack, tests or benchmarks, and is the one package
+      # whose id the compiler hard-codes.
+      v2LocalPackageSliceNames = [ "ghc" ];
       cabalProjectLocal = lib.mkBefore ''
         -- Added by the stable-haskell boot-package injection (see the
         -- `injectStableHaskellBootPackages` option): the compiler ships no
