@@ -880,7 +880,7 @@ in {
 
         package rts-fs
           ghc-options: -no-rts
-        ${lib.optionalString ((tp.isMusl or false) && lib.elem "utils/ghc-iserv" shSubdirs) ''
+        ${lib.optionalString ((tp.isMusl or false) && !(tp.isStatic or false) && lib.elem "utils/ghc-iserv" shSubdirs) ''
 
         -- The external interpreter runs on the BUILD machine and loads
         -- code at run time, so it must not be a fully static executable:

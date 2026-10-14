@@ -1517,6 +1517,7 @@ final: prev: {
                   + pkgs.lib.optionalString (
                        pkgs.stdenv.hostPlatform.isMusl
                     && !pkgs.stdenv.hostPlatform.isx86_32
+                    && !pkgs.stdenv.hostPlatform.isStatic
                     && (final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.emptyGlobalPackageDb or false)
                   ) ''
                     package iserv-proxy
