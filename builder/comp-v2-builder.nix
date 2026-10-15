@@ -2114,7 +2114,30 @@ let
   # — that's what keeps the per-slice dependency-closure walk (the six
   # `sliceCanonicalNames` block-assemblies, `depConstraints`,
   # `slicingRepo`, …) out of the evaluator.
-  slicePreBuildV2 = stageLocalTestBenchSrc;
+  slicePreBuildV2 = stageLocalTestBenchSrc + lib.optionalString iservDynamicLibc ''
+
+    # See `iservDynamicLibc`: link this slice's executables against libc.so.
+    export NIX_CFLAGS_LINK_${staticHostSalt}="''${NIX_CFLAGS_LINK_${staticHostSalt}//-static/}"
+  '';
+  # ghc-iserv is the project's external interpreter (see `projectIserv`),
+  # and iserv-proxy-interpreter the one for profiled splices: they run on
+  # the build machine and resolve libc symbols for the code they load
+  # through dlsym.  A fully static musl executable has no dlsym, so
+  # on pkgsStatic (`static`) every splice failed with
+  #   ghc-iserv: Failed to lookup symbol: memcmp
+  # `executable-static: False` (modules/cabal-project.nix) is not enough
+  # there: the pkgsStatic stdenv adds `-static` to every host link, which
+  # build-cabal-slice.nix keeps in the host-salted NIX_CFLAGS_LINK.  Drop it
+  # for these packages only.  musl-static still ships libc.so and ld-musl, and
+  # this is how hadrian's static cross ghc-iserv is linked too (NEEDED
+  # libc.so, RUNPATH musl-static/lib).
+  iservDynamicLibc =
+    lib.elem pkgName [ "ghc-iserv" "iserv-proxy" ]
+    && isTwoStageCross
+    && (pkgs.stdenv.hostPlatform.isMusl or false)
+    && (pkgs.stdenv.hostPlatform.isStatic or false);
+  staticHostSalt = lib.replaceStrings [ "-" "." ] [ "_" "_" ]
+    pkgs.stdenv.hostPlatform.config;
 
   # ---- Per-package fragment for build-time composition -------------
   # Each slice writes its OWN contribution into `$out` (source tarball +

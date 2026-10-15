@@ -898,7 +898,7 @@ in {
 
         package rts-fs
           ghc-options: -no-rts
-        ${lib.optionalString ((tp.isMusl or false) && !(tp.isStatic or false) && lib.elem "utils/ghc-iserv" shSubdirs) ''
+        ${lib.optionalString ((tp.isMusl or false) && lib.elem "utils/ghc-iserv" shSubdirs) ''
 
         -- The external interpreter runs on the BUILD machine and loads
         -- code at run time, so it must not be a fully static executable:
@@ -917,9 +917,15 @@ in {
         --   Error loading shared library libgcc_s.so.1: No such file or
         --   directory (needed by .../libstdc++.so)
         -- Already loaded through ghc-iserv's own RUNPATH, both resolve.
+        --
+        -- pkgsStatic (`static`) is the exception: it has no libgcc_s, so
+        -- there ghc-iserv links only libc dynamically -- musl-static still
+        -- ships libc.so and ld-musl -- which is what hadrian's static
+        -- cross ghc-iserv does too.
         package ghc-iserv
-          executable-static: False
-          ghc-options: -optl-Wl,--no-as-needed -optl-lstdc++ -optl-lgcc_s
+          executable-static: False${lib.optionalString (!(tp.isStatic or false)) ''
+
+          ghc-options: -optl-Wl,--no-as-needed -optl-lstdc++ -optl-lgcc_s''}
         ''}
         package *
           library-for-ghci: False${crossLinkFields}${hostStageFields}

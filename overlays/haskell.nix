@@ -1514,16 +1514,22 @@ final: prev: {
                   # Not i386: its symbol table names musl's hidden
                   # `__aio_close`, which only links fully static (see
                   # 571f1a2ac).
+                  #
+                  # pkgsStatic (`static`) has no libgcc_s, so there only
+                  # libc is linked dynamically (musl-static still ships
+                  # libc.so); the slice builder also drops the stdenv's
+                  # `-static` for this package (`iservDynamicLibc` in
+                  # builder/comp-v2-builder.nix).
                   + pkgs.lib.optionalString (
                        pkgs.stdenv.hostPlatform.isMusl
                     && !pkgs.stdenv.hostPlatform.isx86_32
-                    && !pkgs.stdenv.hostPlatform.isStatic
                     && (final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.emptyGlobalPackageDb or false)
-                  ) ''
+                  ) (''
                     package iserv-proxy
                       executable-static: False
+                  '' + pkgs.lib.optionalString (!pkgs.stdenv.hostPlatform.isStatic) ''
                       ghc-options: -optl-Wl,--no-as-needed -optl-lstdc++ -optl-lgcc_s
-                  ''
+                  '')
                   # Build the iserv-proxy executables with profiling
                   # for the `-prof` variant.  GHC selects the iserv
                   # to spawn at TH-eval time by appending `-prof` to
