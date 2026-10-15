@@ -923,9 +923,8 @@ in {
         -- ships libc.so and ld-musl -- which is what hadrian's static
         -- cross ghc-iserv does too.
         package ghc-iserv
-          executable-static: False${lib.optionalString (!(tp.isStatic or false)) ''
-
-          ghc-options: -optl-Wl,--no-as-needed -optl-lstdc++ -optl-lgcc_s''}
+          executable-static: False${lib.optionalString (!(tp.isStatic or false))
+            "\n  ghc-options: -optl-Wl,--no-as-needed -optl-lstdc++ -optl-lgcc_s"}
         ''}
         package *
           library-for-ghci: False${crossLinkFields}${hostStageFields}

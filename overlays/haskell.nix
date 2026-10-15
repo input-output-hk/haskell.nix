@@ -1524,12 +1524,11 @@ final: prev: {
                        pkgs.stdenv.hostPlatform.isMusl
                     && !pkgs.stdenv.hostPlatform.isx86_32
                     && (final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.emptyGlobalPackageDb or false)
-                  ) (''
+                  ) ''
                     package iserv-proxy
-                      executable-static: False
-                  '' + pkgs.lib.optionalString (!pkgs.stdenv.hostPlatform.isStatic) ''
-                      ghc-options: -optl-Wl,--no-as-needed -optl-lstdc++ -optl-lgcc_s
-                  '')
+                      executable-static: False${pkgs.lib.optionalString (!pkgs.stdenv.hostPlatform.isStatic)
+                        "\n  ghc-options: -optl-Wl,--no-as-needed -optl-lstdc++ -optl-lgcc_s"}
+                  ''
                   # Build the iserv-proxy executables with profiling
                   # for the `-prof` variant.  GHC selects the iserv
                   # to spawn at TH-eval time by appending `-prof` to
