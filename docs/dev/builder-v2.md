@@ -239,12 +239,14 @@ and avoids the O(N²) heap blow-up the previous nix-side
 
 ## UnitId stability
 
-`cabal v2-build` hashes a fixed set of inputs to compute each
-component's UnitId (`pkgHashConfigInputs`):
+`cabal v2-build` hashes `PackageHashInputs` to compute each
+component's UnitId, including:
 
+- Source archive hash (`pkgHashSourceHash`),
+- Dependency component IDs,
 - `pkgHashCompilerId` (`with-compiler:` text in cabal.project),
 - `pkgHashFlagAssignment` (per-package `flags:`),
-- `pkgHashProgramArgs` (`--with-PROG=` flags + per-package
+- `pkgHashProgramArgs` (program option arguments, including per-package
   `ghc-options:`),
 - `pkgHashConfigureScriptArgs` (per-package `configure-options:`),
 - `pkgHashExtra(Include|Lib)Dirs` (per-package
@@ -297,6 +299,15 @@ against `expectedPackage` and exits early if cabal is about to
 build any package other than the slice's target — that almost
 always means a hash input has drifted.  After the build, the
 captured unit-ids must equal `[expectedUnitId]` exactly.
+
+Patching a Hackage archive after project planning can still violate this
+check: the slice uses a repacked archive while the project plan records the
+upstream archive's hash. A native AArch64 Darwin/GHC 9.14 build of patched
+`crypton-x509-system-1.6.8` reproduces this failure both before and after the
+Cabal-override ordering fix, with identical direct dependency IDs. Keeping
+the effective Cabal file in the slice's indexes does not resolve this
+planning/source consistency limit. Supply consistent sources before project
+planning; do not disable the unit-ID check to accept a different result.
 
 ## `checkAgainstPlan` — diagnosing divergence
 
