@@ -82,18 +82,17 @@ let
             inherit (nix-tools-pkgs) nix-tools nix-tools-set;
             # either nix-tools from its overlay or from the tarball.
             #
-            # Keep this a prebuilt bundle.  Pointing it at a from-source build
-            # of ../nix-tools (so `make-install-plan` links the stable-haskell
-            # cabal fork) applies to EVERY compiler, and because plan-nix is
-            # the universal IFD it turns one prebuilt bundle into three
+            # Keep these prebuilt bundles.  plan-nix is the universal IFD, so a
+            # from-source nix-tools turns one prebuilt bundle into three
             # per-component builds in every plan-nix derivation across the
             # whole compiler x platform matrix -- measured at 6x-89x the
             # per-job eval time on the mainline compilers (ghc967 124.8s/job
             # vs 1.4s).
             #
-            # The fork ships as its own static bundle instead: ghc9.6 .. ghc9.14
-            # use the shared 3.16 tarball, and only stable-haskell compilers
-            # get the fork.  See `nix-tools-unchecked-sh` below.
+            # v2 projects (and every stable-haskell compiler's) plan with
+            # `nix-tools-unchecked-sh`, the stable-haskell cabal fork, to match
+            # the v2 builder's cabal; v1 projects keep this mainline 3.16
+            # bundle.  See modules/cabal-project.nix.
             nix-tools-unchecked = static-nix-tools // {
               exes =  static-nix-tools.exes // {
                 inherit (static-nix-tools-for-default-setup.exes) default-setup default-setup-ghcjs;

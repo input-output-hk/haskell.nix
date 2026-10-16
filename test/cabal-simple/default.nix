@@ -25,6 +25,13 @@ let
 
   packages = project.hsPkgs;
 
+  # The same project through the v2 (slice) builder.  For a stable-haskell
+  # compiler `project` already is one; for the rest this is the only test
+  # where a v2 slice builds an ordinary hackage dependency (aeson and its
+  # closure), so the plan-nix / slice UnitId agreement is checked: a plan
+  # made by a different cabal-install than the slices fails here.
+  projectV2 = project.appendModule { builderVersion = 2; };
+
 in lib.recurseIntoAttrs {
   ifdInputs = {
     inherit (project) plan-nix;
@@ -44,6 +51,8 @@ in lib.recurseIntoAttrs {
         disabled = broken;
       };
     });
+
+  build-v2 = projectV2.hsPkgs.cabal-simple.components.exes.cabal-simple;
 
   run = stdenv.mkDerivation {
     name = "cabal-simple-test";

@@ -84,6 +84,8 @@ let
   # lazy enough to avoid infinite recursion issues.
   # Using null as the default also improves performance as they are not forced by the
   # nix module system for `nix-tools-unchecked`.
+  # (v2 projects and the stable-haskell compilers set it to the fork's
+  # bundle instead -- see modules/cabal-project.nix.)
   nix-tools = if args.nix-tools or null != null
     then args.nix-tools
     else evalPackages.haskell-nix.nix-tools-unchecked;
@@ -471,10 +473,11 @@ let
       # The C-compiler identity is not part of pkgHashConfigInputs (cabal-install
       # PackageHash.hs hashes compiler-id/platform/program-args, not cc), so this
       # does not shift UnitIds.
-      # Gated on the fork: adding it unconditionally puts an extra input
-      # derivation on EVERY project's plan-nix, so no plan-nix built before this
-      # change can be substituted for any compiler.
-      ++ pkgs.lib.optionals (ghc.isStableHaskell or false)
+      # Gated on the fork (v2 projects and stable-haskell compilers, the ones
+      # modules/cabal-project.nix gives it): adding it unconditionally puts
+      # an extra input derivation on EVERY project's plan-nix, so no plan-nix
+      # built before this change could be substituted for any compiler.
+      ++ pkgs.lib.optionals ((args.builderVersion or 1) == 2 || (ghc.isStableHaskell or false))
            [ (evalPackages.writeShellScriptBin "gcc" ''exec ${evalPackages.stdenv.cc}/bin/cc "$@"'') ]
       # The build-platform dummy pair for the fork's cross stage system.
       # Appended AFTER the target dummy-ghc/dummy-ghc-pkg so the target pair

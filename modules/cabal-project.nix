@@ -402,20 +402,29 @@ in {
     (lib.mkIf
       ((config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name}.isStableHaskell or false)
       { builderVersion = lib.mkDefault 2; })
-    # ...and to the stable-haskell nix-tools bundle.  `make-install-plan` has
-    # to link the fork's cabal to see the cross-compilation "stage" system
-    # (--with-build-compiler / build:/host: stage-qualified constraints); the
-    # shared 3.16 tarball cannot express it.  Only these compilers get it:
-    # plan-to-nix and make-install-plan generate plan-nix for whatever compiler
-    # they are pointed at, so making the fork the global default is what cost
-    # 6x-89x per job to evaluate on ghc9.6 .. ghc9.14 (see overlays/default.nix).
+    # ...and, like every v2 project, plan with the stable-haskell nix-tools
+    # bundle.  Its `make-install-plan` links the same cabal-install fork the
+    # v2 builder (`haskell-nix.v2-cabal-install`) builds slices with, and
+    # the two have to agree: a UnitId is a hash of cabal-install's own
+    # rendering of a unit's build inputs, so a plan made by mainline cabal
+    # 3.16 names UnitIds no 3.17-built slice reproduces, and a v2 slice of
+    # any ordinary hackage package then fails its plan-nix check.  The fork
+    # is also what understands the stable-haskell compilers' cross "stage"
+    # system (--with-build-compiler, build:/host: constraints).
+    #
+    # v1 projects keep the mainline bundle (the default, in
+    # lib/call-cabal-project-to-nix.nix): nothing in a v1 build reproduces a
+    # cabal-install UnitId, and the fork's plan for a mainline single-stage
+    # cross project does not line up with the native project's
+    # (iserv-proxy's `network` -> `hsc2hs` build tool stops resolving).
     #
     # `mkDefault` so an explicit per-project `nix-tools` still wins, and
     # `mkIf` rather than an option `default` for the same reason
     # `builderVersion` above uses one -- the option default is forced too
     # eagerly by the module system and recurses.
     (lib.mkIf
-      ((config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name}.isStableHaskell or false)
+      (config.builderVersion == 2
+       || ((config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name}.isStableHaskell or false))
       { nix-tools = lib.mkDefault config.evalPackages.haskell-nix.nix-tools-unchecked-sh; })
     # stable-haskell `-target` cross compilers (ghc914-sh for a cross
     # target) ship NO boot libraries: the compiler's target package db is
