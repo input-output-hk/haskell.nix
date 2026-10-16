@@ -48,15 +48,21 @@ final: prev: {
         # and then hang until nix's 7200s timeout, while the SAME
         # derivation builds green on a real x86_64 host.
         #
-        # `recursive-nix` is not what these builds do -- it is a marker of
-        # convenience.  `modules/web-service-hydra.nix` already withholds
-        # it from the darwin hosts' linux `buildMachines` entries (the
-        # external derivation builder cannot implement it) while the one
-        # real linux host advertises it, so requiring it lands these
-        # derivations exactly where an emulator works.  Set this to `[]`
-        # to opt out, or to a purpose-made feature name once the build
-        # farm advertises one.
-        emulatorSystemFeatures = prev.haskell-nix.emulatorSystemFeatures or [ "recursive-nix" ];
+        # Empty by default: this is build-farm policy, and requiring a
+        # feature the user's nix does not advertise would make these
+        # derivations unbuildable.  A farm that mixes real hosts with
+        # emulated ones opts in with an overlay that names a feature only
+        # its real hosts advertise.  haskell.nix's own CI (`ci.nix`) sets
+        # `[ "recursive-nix" ]`: not what these builds do, but a marker of
+        # convenience -- the zw3rk Hydra withholds it from the darwin
+        # hosts' linux `buildMachines` entries (the external derivation
+        # builder cannot implement it) while the one real linux host
+        # advertises it, so requiring it lands these derivations exactly
+        # where an emulator works.
+        #
+        # The three knobs below choose WHICH derivations get these
+        # features; with this list empty they have no effect.
+        emulatorSystemFeatures = prev.haskell-nix.emulatorSystemFeatures or [];
 
         # ...but ONLY for these packages.  There is exactly one native
         # linux builder, so pinning every emulator-using cross slice to

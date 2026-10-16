@@ -260,8 +260,10 @@ in {
   # through its component's `testWrapper` itself, rather than via `check`
   # (e.g. test/cabal-simple-prof's `run`).  Merge into its attrs.
   emulatorRunAttrs =
-    lib.optionalAttrs ((pkgs.haskell-nix.emulatorNativeBuilderCheck or (_: false)) stdenv.hostPlatform) {
-      requiredSystemFeatures = pkgs.haskell-nix.emulatorSystemFeatures or [];
+    let features = pkgs.haskell-nix.emulatorSystemFeatures or [];
+    in lib.optionalAttrs (features != []
+        && (pkgs.haskell-nix.emulatorNativeBuilderCheck or (_: false)) stdenv.hostPlatform) {
+      requiredSystemFeatures = features;
     };
 
   # Do coverage of a package

@@ -33,6 +33,9 @@
       (final: prev: {
         haskell-nix = prev.haskell-nix // {
           inherit checkMaterialization;
+          # Pin emulator-sensitive derivations to the zw3rk farm's one real
+          # linux host -- see `emulatorSystemFeatures` in overlays/haskell.nix.
+          emulatorSystemFeatures = [ "recursive-nix" ];
         };
       })
       (import ./test/overlay.nix)

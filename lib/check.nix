@@ -7,10 +7,12 @@ let
   # `haskell-nix.emulatorNativeBuilderPackages`, or any check for a host
   # matching `haskell-nix.emulatorNativeBuilderCheck` -- with or without a
   # `testWrapper`, since an i686 exe runs directly on an x86_64 builder.
+  # Nothing is pinned while `emulatorSystemFeatures` is empty (the default).
   needsNativeBuilder = testWrapper: drv:
+    emulatorSystemFeatures != [] && (
     (testWrapper != []
      && lib.elem (drv.identifier.name or "") emulatorNativeBuilderPackages)
-    || emulatorNativeBuilderCheck stdenv.hostPlatform;
+    || emulatorNativeBuilderCheck stdenv.hostPlatform);
   self = drvOrig:
 
 # v2 slices don't have the v1-specific internals that this check
