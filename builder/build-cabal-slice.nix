@@ -82,23 +82,6 @@ let outerGhc = ghc; in
                              # `metadataSourceFrags`.
 , preBuild                   # stage sources, write cabal.project, cd into project dir
 , target ? "all"
-, extraSublibSeeds ? []      # list of `{ pkg = ...; sublib = ...; }`
-                             # records that the patched
-                             # `prune-unreachable-sublibs.patch` should
-                             # add as extra reachability seeds in
-                             # cabal's solver index — required when
-                             # the slice's `target` is itself a sublib
-                             # of `pkg` (otherwise the unreachable-from-
-                             # main-lib pruning drops it and cabal
-                             # raises [Cabal-7127] "package does not
-                             # contain a library with that name").
-                             # Set automatically by `comp-v2-builder.nix`
-                             # for sublib slices.  Only the targeted
-                             # sublib (and its transitively-required
-                             # sublibs) are kept — unrelated sublibs
-                             # like `lib:testlib` are still pruned, so
-                             # their deps (e.g. QuickCheck) don't
-                             # leak into the install plan.
 , passthru ? {}              # extra attrs to attach to the derivation
 , extraBuildInputs ? []      # e.g. component.libs / frameworks — things ld needs at link time
 , extraNativeBuildInputs ? [] # e.g. build-tools — tools on PATH at build time
@@ -653,13 +636,6 @@ stdenv.mkDerivation ({
   LC_ALL = "en_US.UTF-8";
 } // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
   LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive";
-} // lib.optionalAttrs (extraSublibSeeds != []) {
-  # Read by the patched `prune-unreachable-sublibs.patch` to add
-  # extra reachability seeds when walking each package's sublib graph.
-  # Format: comma-separated `pkg/sublib` entries.  Set by
-  # `comp-v2-builder.nix` for slices whose `target` is itself a sublib.
-  HASKELLNIX_EXTRA_SUBLIB_SEEDS =
-    lib.concatMapStringsSep "," (s: "${s.pkg}/${s.sublib}") extraSublibSeeds;
 } // lib.optionalAttrs (buildToolSourceFrags != [] && stdenv.buildPlatform.isDarwin) {
   # A build-stage build-tool (happy/hsc2hs) compiled from source inside a
   # ghcjs-target slice links `-static -liconv` with the NATIVE build compiler,
@@ -1470,8 +1446,6 @@ stdenv.mkDerivation ({
       cp ${builtins.toFile "program-options"   v2Fragment.programOptionsBlock}   $selfFrag/nix-support/v2-frag/program-options
       cp ${builtins.toFile "doc"               v2Fragment.docBlock}              $selfFrag/nix-support/v2-frag/doc
       cp ${builtins.toFile "extra-lib-dirs"    v2Fragment.extraLibDirsBlock}     $selfFrag/nix-support/v2-frag/extra-lib-dirs
-      cp ${builtins.toFile "sublib-seeds" (lib.concatMapStrings (s: s + "\n") v2Fragment.sublibSeeds)} \
-        $selfFrag/nix-support/v2-frag/sublib-seeds
       cp ${builtins.toFile "setup-constraints" (lib.concatMapStrings (s: s + "\n") v2Fragment.setupConstraints)} \
         $selfFrag/nix-support/v2-frag/setup-constraints
       cp ${pkgs.writeText "source-repo-block" v2Fragment.sourceRepoBlock} \
@@ -1618,20 +1592,6 @@ ${lib.optionalString (metadataSourceFrags != []) ''
       cat ${builtins.toFile "local-cabal-project" v2Fragment.localCabalProject} > cabal.project
       cat cabal.project.closure >> cabal.project
 
-      # Sublib reachability seeds for the prune-unreachable-sublibs patch
-      # (HASKELLNIX_EXTRA_SUBLIB_SEEDS): this slice's own target sublib
-      # plus every `pkg/sublib` referenced across the all-dep closure
-      # (each fragment's `sublib-seeds`).  Composed here, not in Nix.
-      {
-        ${lib.optionalString (v2Fragment.selfTargetSublibSeed != "")
-          "echo ${lib.escapeShellArg v2Fragment.selfTargetSublibSeed}"}
-        for f in "''${blkFrags[@]}"; do
-          # `|| true`: a missing/empty sublib-seeds must not fail the
-          # loop (and, under `pipefail`, the whole pipe + `set -e`).
-          [ -f "$f/nix-support/v2-frag/sublib-seeds" ] && cat "$f/nix-support/v2-frag/sublib-seeds" || true
-        done
-      } | sort -u | sed '/^$/d' > sublib-seeds.txt
-      export HASKELLNIX_EXTRA_SUBLIB_SEEDS="$(paste -sd, sublib-seeds.txt)"
     ''}
 
     # --- Build -------------------------------------------------------
@@ -2443,8 +2403,6 @@ ${lib.optionalString (metadataSourceFrags != []) ''
       cp ${builtins.toFile "doc"               v2Fragment.docBlock}              $out/nix-support/v2-frag/doc
       cp ${builtins.toFile "extra-lib-dirs"    v2Fragment.extraLibDirsBlock}     $out/nix-support/v2-frag/extra-lib-dirs
       printf '%s' ${lib.escapeShellArg v2Fragment.constraintLine} > $out/nix-support/v2-frag/constraint
-      cp ${builtins.toFile "sublib-seeds" (lib.concatMapStrings (s: s + "\n") v2Fragment.sublibSeeds)} \
-        $out/nix-support/v2-frag/sublib-seeds
       cp ${builtins.toFile "setup-constraints" (lib.concatMapStrings (s: s + "\n") v2Fragment.setupConstraints)} \
         $out/nix-support/v2-frag/setup-constraints
       cp ${pkgs.writeText "source-repo-block" v2Fragment.sourceRepoBlock} \

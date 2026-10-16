@@ -1369,16 +1369,11 @@ final: prev: {
                     subdir: hackage-security
               '';
               modules = [{
-                # TODO(cabal-fork): the prune-unreachable-sublibs patches
-                # (solver + installplan companion) are temporarily dropped for
-                # the 3.17 fork.  Their `reachableSubLibs`/`reachablePDSubLibs`
-                # helpers walk `CondNode _ ds branches` to collect the per-node
-                # `[Dependency]` constraints, but Cabal-syntax 3.17 removed the
-                # constraint field from CondNode (deps now come from each
-                # component's BuildInfo) — so they need a data-model rewrite, not
-                # just an arity fix.  They only matter for sublib-heavy hackage
-                # packages (e.g. vector's benchmarks-O2 sublib needing tasty);
-                # the cabal tool and the stable-haskell boot libs don't hit that.
+                # (No sublib-pruning patch: a slice's solve needs the deps of
+                # every sublib in a package, even unused ones like vector's
+                # `benchmarks-O2` -> tasty, and it gets them -- plan-nix comes
+                # from an unpruned solve, so they are already in the slice's
+                # dep closure, as slices or as metadata-only index entries.)
                 packages.cabal-install.patches = [
                   ../builder/cabal-install-patches/skip-installed-revdeps-in-completed.patch
                   ../builder/cabal-install-patches/setup-build-num-jobs-env.patch

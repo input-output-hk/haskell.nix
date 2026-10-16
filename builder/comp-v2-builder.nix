@@ -1791,11 +1791,6 @@ let
     then ":pkg:${pkgName}"
     else ":pkg:${pkgName}:${targetPrefix}${cname}";
 
-  # Sublib reachability seeds (for the `prune-unreachable-sublibs`
-  # patch) are composed at build time from the per-package fragments'
-  # `sublib-seeds` across the all-dep closure, plus this slice's own
-  # target sublib (`v2Fragment.selfTargetSublibSeed`) — see
-  # build-cabal-slice.nix.  No Nix-side closure walk.
 
   # The per-slice hackage-style slicing repo (00-index.tar.gz +
   # package/<pkg>-<ver>.tar.gz) is assembled at build time from the
@@ -2156,19 +2151,6 @@ let
       (map (id: planJsonByPlanId.${id})
         (lib.filter (id: planJsonByPlanId ? ${id})
           (packageIdsByName.${pkgName} or [])));
-  # Sublib reachability seeds contributed by THIS package: the `lib:<n>`
-  # component deps among its own plan units' `depends`.  (The whole-repo
-  # union is reconstructed at build time across the all-dep closure.)
-  ownSublibSeeds =
-    let prefix = "lib:"; prefixLen = builtins.stringLength prefix; in
-    lib.concatMap (id:
-      let q  = planJsonByPlanId.${id} or null;
-          pn = if q == null then "" else q.pkg-name or "";
-          cn = if q == null then "" else q.component-name or "";
-      in if pn != "" && lib.hasPrefix prefix cn
-         then [ "${pn}/${builtins.substring prefixLen (builtins.stringLength cn - prefixLen) cn}" ]
-         else []
-    ) (lib.concatMap (u: u.depends or []) thisPkgUnits);
   # Per-package custom-setup dependency pins.  A `build-type: Custom`
   # package's unit-id hashes its setup configuration, so the slice must
   # solve its setup against the SAME deps plan-nix recorded — notably
@@ -2248,17 +2230,11 @@ let
       if isLocalPackageSlice
       then "${pkgName} ==${pkgVersion}"
       else "${pkgName} ==${pkgVersion}, ${pkgName} source";
-    sublibSeeds = ownSublibSeeds;
     setupConstraints = ownSetupConstraints;
     # `source-repository-package` block (non-empty only for source-repo
     # packages).  Composed across the closure at build time; such
     # packages are also skipped from `extra-packages:`.
     sourceRepoBlock = ownSourceRepoBlock;
-    # When this slice's *target* is itself a sublib, it must be kept as
-    # a reachability seed too (the `prune-unreachable-sublibs` patch
-    # otherwise drops it).  Composed into HASKELLNIX_EXTRA_SUBLIB_SEEDS
-    # at build time alongside the closure's sublib seeds.
-    selfTargetSublibSeed = lib.optionalString isSublib "${pkgName}/${cname}";
     # Direct library-`depends` slices — the seed for the build-time
     # depends-closure walk (constraints scope; see `dependsSlices`).
     # The source + blocks scope rides the existing `transitive-deps`
