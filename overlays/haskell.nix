@@ -56,6 +56,10 @@ final: prev: {
         # derivations exactly where an emulator works.  Set this to `[]`
         # to opt out, or to a purpose-made feature name once the build
         # farm advertises one.
+        # The Android ARM32 personality fix removes one emulator failure.
+        # It does not fix the unrelated cross-compiler stalls described below.
+        # Keep this default conservative; projects verified with the patched
+        # emulator can opt out in their target package set.
         emulatorSystemFeatures = prev.haskell-nix.emulatorSystemFeatures or [ "recursive-nix" ];
 
         # ...but ONLY for these packages.  There is exactly one native
@@ -74,6 +78,7 @@ final: prev: {
         # emulator ([Cabal-7125] link errors, OOM kills, genuine compiler
         # bugs) and moving those achieves nothing.
         #
+        # These historical A/B failures explain the fallback policy.
         # Do NOT use the presence of `qemu: uncaught target signal 11` as
         # the test.  That catches only one of the two shapes, and reading
         # a host name is not evidence at all:
@@ -95,8 +100,8 @@ final: prev: {
           prev.haskell-nix.emulatorNativeBuilderPackages or [ "th-orphans" "base" ];
 
         # ...and EVERY test exe run (`haskellLib.check`) for a host platform
-        # matching this predicate, whatever the package.  32-bit ARM Android
-        # is the case: bionic's startup calls `personality(PER_LINUX32)`,
+        # matching this predicate, whatever the package. Without the Android
+        # ARM32 patch, bionic's startup calls `personality(PER_LINUX32)`,
         # which qemu-arm passes to the host kernel, and the kernel of a
         # `nix-linux-builder` VM on Apple silicon (no AArch32 EL0) rejects
         # it, so every exe dies before `main`:

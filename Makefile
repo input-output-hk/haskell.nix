@@ -7,7 +7,7 @@ TEST_SUITE ?= unit-tests
 SYSTEM ?= x86_64-linux
 QEMU_ARG = $(if $(QEMU),--argstr qemu "$(QEMU)",)
 
-.PHONY: help check test test-linux-cross-wrapper test-qemu-linux-user probe-rosetta-signals test-rosetta-signals verify
+.PHONY: help check test test-linux-cross-wrapper test-qemu-linux-user test-qemu-arm32-personality probe-rosetta-signals test-rosetta-signals verify
 
 ##@ Verification
 check: ## Check whitespace, Nix syntax, emulator selection, and dependencies
@@ -15,9 +15,13 @@ check: ## Check whitespace, Nix syntax, emulator selection, and dependencies
 	nix-instantiate --parse overlays/linux-cross.nix >/dev/null
 	nix-instantiate --parse overlays/armv6l-linux.nix >/dev/null
 	nix-instantiate --parse overlays/qemu-linux-user.nix >/dev/null
+	nix-instantiate --parse overlays/haskell.nix >/dev/null
 	nix-instantiate --parse test/default.nix >/dev/null
+	nix-instantiate --parse test/annotations/default.nix >/dev/null
 	nix-instantiate --parse test/qemu-linux-user.nix >/dev/null
+	nix-instantiate --parse test/qemu-arm32-personality.nix >/dev/null
 	nix-instantiate --eval --strict test/qemu-selection.nix
+	nix-instantiate --eval --strict test/annotations/selection.nix
 	nix-instantiate --eval --strict test/qemu-linux-user-inputs.nix -A passed
 	nix-instantiate --parse test/rosetta-signals.nix >/dev/null
 
@@ -38,6 +42,9 @@ test-rosetta-signals: ## Require correct Linux host signal behavior (SYSTEM)
 
 test-qemu-linux-user: ## Check guest code updates and real fault exits (SYSTEM, optional QEMU store path)
 	timeout -k 5 $(TIMEOUT) nix-build --no-out-link test/qemu-linux-user.nix --argstr system $(SYSTEM) $(QEMU_ARG)
+
+test-qemu-arm32-personality: ## Check Android ARM32 startup and per-task personality (SYSTEM, optional QEMU store path)
+	timeout -k 5 $(TIMEOUT) nix-build --no-out-link test/qemu-arm32-personality.nix --argstr system $(SYSTEM) $(QEMU_ARG)
 
 ##@ Help
 help: ## Show targets and their parameters

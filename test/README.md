@@ -63,5 +63,39 @@ To rerun an existing output, use `nix-build --check` or `nix build --rebuild`.
 Retain the logs and verify which physical builder executed the tests.
 A cached Hydra result also does not prove execution on the affected builder.
 
+Android ARM32 has a separate startup regression:
+
+```shell
+make test-qemu-arm32-personality SYSTEM=x86_64-linux TIMEOUT=1800
+make test-qemu-arm32-personality SYSTEM=aarch64-linux TIMEOUT=1800
+```
+
+The test compiles a static Bionic payload with the pinned API 26 NDK on an
+x86_64 Linux builder, then runs QEMU on `SYSTEM`. It checks startup,
+personality queries and setter return values, host-backed `UNAME26`, and
+thread/fork inheritance and isolation. A small retained TLS alignment input
+accommodates API 26's older CRT without raising the minimum Android API.
+The Linux cross-TH overlay selects this personality patch only for Android
+ARM32, with QEMU 9.1–11. Bionic initializes the virtual execution domain again
+after an exec; this test does not establish general Linux exec persistence.
+Native ARM64 hosts receive the personality patch without the Rosetta signal
+patch. `QEMU=/nix/store/…` overrides the emulator for a control run.
+
+The fixed Android ARM32 route enables `annotations.build` and
+`annotations.build-profiled` for `ghc914-sh` in the existing compiler test
+matrix. Both compile a module annotation through the target interpreter. These
+test projects opt out of the native-builder marker in their own package set;
+the generic policy stays conservative because it also covers unrelated older
+cross-compiler stalls. Other routes retain their existing exclusions.
+Run both through the public CI attributes (choose an available evaluation system):
+
+```sh
+timeout -k 5 7200 nix-build ci.nix --arg ifdLevel 3 \
+  --argstr system x86_64-linux --argstr evalSystem x86_64-linux \
+  --no-out-link --max-jobs 1 --cores 1 \
+  -A unstable.ghc914-sh.armv7a-android-prebuilt.tests.annotations.build \
+  -A unstable.ghc914-sh.armv7a-android-prebuilt.tests.annotations.build-profiled
+```
+
 For the verified crash and hang mechanism, see
 [the cross-compilation investigation](../docs/tutorials/cross-compilation.md#diagnosing-template-haskell-failures-on-rosetta-builders).
