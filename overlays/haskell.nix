@@ -130,16 +130,19 @@ final: prev: {
         # i686 code, which Rosetta cannot run at all.  ghcjs and wasm
         # run their splices in node, natively, and an x86_64 Linux host
         # (musl64, static) runs them directly, so those are left out.
-        # So is aarch64: the `nix-linux-builder` VMs are aarch64 machines,
-        # and aarch64 splices fare better there than under qemu on the x86_64
-        # host -- android th-dlls built on every VM attempt and failed on
-        # linux-0 (`libdl.a is a stub --- use libdl.so instead`).
+        # So is aarch64 Android: the `nix-linux-builder` VMs are aarch64
+        # machines, and android th-dlls built on every VM attempt and failed on
+        # linux-0 (`libdl.a is a stub --- use libdl.so instead`).  aarch64
+        # glibc is the opposite: on a VM ghc914-sh's th-dlls splice segfaulted
+        # in qemu and sat out the 7200s timeout, while every th-dlls variant
+        # (ghc914-sh and ghc9141, with and without -fexternal-interpreter)
+        # builds forced native on an x86_64 host.
         emulatorNativeBuilderTH =
           prev.haskell-nix.emulatorNativeBuilderTH
             or (platform: !platform.isGhcjs && !platform.isWasm
                        && (platform.isWindows
                            || (platform.isLinux && !platform.isx86_64
-                               && !platform.isAarch64)));
+                               && !(platform.isAarch64 && platform.isAndroid))));
 
         # nixpkgs used to run `cabal` / `nix-tools`, keyed by eval system
         # and memoised at the fixpoint level.  Non-native systems are
