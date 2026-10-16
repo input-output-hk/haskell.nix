@@ -990,6 +990,16 @@ final: prev: {
                   # These are functions not packages
                   [ "shellFor" "makeConfigFiles" "ghcWithHoogle" "ghcWithPackages" "buildPackages" ]);
 
+            # The cabal-install the v2 builder (`builderVersion = 2`) builds
+            # this project's slices with.  A v2 shell's `cabal` must be this
+            # one for `cabal build` to reuse them (see `cabalTool` in
+            # builder/shell-for-v2.nix); `shellFor`'s `tools.cabal` picks it
+            # by default, and this is the same derivation for shells made
+            # some other way, e.g. `nativeBuildInputs = [ p.v2-cabal-install ]`.
+            v2-cabal-install =
+              let v2ci = final.pkgsBuildBuild.haskell-nix.v2-cabal-install;
+              in v2ci.evalWith.${rawProject.args.evalSystem or ""} or v2ci;
+
             projectCoverageReport = haskellLib.projectCoverageReport project (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
 
             # `projectCross` is like `pkgsCross`, but for haskell.nix projects.

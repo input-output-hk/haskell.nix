@@ -1,11 +1,13 @@
 # v2 counterpart to shell-for.nix.
 #
 # Unlike the v1 shell — which pre-populates a ghc-pkg database for GHC
-# directly — the v2 shell pre-populates the user's cabal store
-# (typically `~/.cabal/store/ghc-X.Y.Z`).  That's where cabal v2-build
-# looks for already-installed units, so once the store has the deps the
-# user works on, plain `cabal build` inside the shell reuses them
-# instead of rebuilding from source.
+# directly — the v2 shell pre-populates the project's cabal store.  The
+# v2 builder's cabal-install (`haskell-nix.v2-cabal-install`, the
+# stable-haskell fork) keeps that store under the build dir
+# (`<project root>/dist-newstyle/store`), not in `~/.cabal/store`.
+# That's where cabal v2-build looks for already-installed units, so once
+# the store has the deps the user works on, plain `cabal build` inside
+# the shell reuses them instead of rebuilding from source.
 #
 # The shell hook handles store composition carefully:
 #   * Items are installed via `ln -s` / `lndir` so the user's cabal
@@ -60,8 +62,8 @@
 , allToolDeps ? true
   # How the shell's pre-built library deps are made visible to tools
   # the user runs.  One of:
-  #   "cabal-store" (default) — copy the composed store into
-  #     `~/.cabal/store/<ghc>-inplace/` via a shellHook (or the
+  #   "cabal-store" (default) — link the composed store into the
+  #     project's `dist-newstyle/store` via a shellHook (or the
   #     explicit `haskell-nix-cabal-store-sync` command).  `cabal
   #     v2-build` then reuses the units.  The shell's `ghc` is
   #     plain — `runghc` / `ghci` won't see the deps.
@@ -185,8 +187,8 @@ let
   # adds when `crossPlatforms` is set), each of those carries its
   # own `passthru.depSlices`.  Without merging them in, the main
   # shell's `composedStore` only contains native slices and
-  # `haskell-nix-cabal-store-sync` only seeds those into
-  # `~/.cabal/store` — the cross slices that a downstream
+  # `haskell-nix-cabal-store-sync` only seeds those into the
+  # project's cabal store — the cross slices that a downstream
   # `${prefix}cabal build` needs would be missing.
   inputsFromDepSlices = lib.concatMap
     (d: (d.passthru or {}).depSlices or [])
@@ -233,12 +235,21 @@ let
 
     # The stable-haskell cabal fork keeps a PROJECT-LOCAL store under the build
     # dir (distStoreDirLayout = <builddir>/store), NOT a shared ~/.cabal/store —
-    # so seed that.  BUILDDIR is a positional arg (default `dist-newstyle`, the
-    # fork's own default builddir); a project built with a custom `--builddir`
-    # passes the same value here.  One store per builddir, never shared between
-    # unrelated projects — matching `cabal build`'s own behaviour.
+    # so seed that.  BUILDDIR is a positional arg; a project built with a custom
+    # `--builddir` passes the same value here.  The default is the fork's own
+    # default builddir, `dist-newstyle`, under the PROJECT ROOT -- found the way
+    # cabal finds it, as the nearest directory at or above $PWD holding a
+    # `cabal.project`, else $PWD -- so entering the shell from a subdirectory
+    # seeds the store `cabal build` will actually use.  One store per builddir,
+    # never shared between unrelated projects — matching `cabal build`'s own
+    # behaviour.
     force=0
-    buildDir=dist-newstyle
+    projectRoot=$PWD
+    while [ ! -e "$projectRoot/cabal.project" ] && [ "$projectRoot" != / ]; do
+      projectRoot=$(dirname "$projectRoot")
+    done
+    [ -e "$projectRoot/cabal.project" ] || projectRoot=$PWD
+    buildDir=$projectRoot/dist-newstyle
     for arg in "$@"; do
       case "$arg" in
         --force) force=1 ;;
@@ -264,13 +275,18 @@ let
     # flips to Installed and everything rebuilds.  ($tgt_base is the local
     # <builddir>/store, so this link lives per-builddir alongside the deps.)
     if [ -d "$src/host" ] && [ "$(readlink "$tgt_base/build" 2>/dev/null)" != host ]; then
-      rm -f "$tgt_base/build" 2>/dev/null || true
+      if [ -d "$tgt_base/build" ] && [ ! -L "$tgt_base/build" ]; then
+        echo "haskell-nix-cabal-store-sync: $tgt_base/build is a directory; expected a \`build -> host\` link." >&2
+        echo "  Remove it (it holds build-stage units cabal can rebuild) and re-enter the shell." >&2
+        exit 1
+      fi
+      rm -f "$tgt_base/build"
       ln -s host "$tgt_base/build"
     fi
 
     # ---- Fast path: same composedStore, already synced -----------
     # After a successful run we drop a marker file at
-    # `~/.cabal/store/.haskell-nix-shell-markers/<basename-of-src>`.
+    # `<store>/.haskell-nix-shell-markers/<basename-of-src>`.
     # If that marker is present (and `--force` not set), the cabal
     # store is already in sync with this shell's slices and we can
     # skip the per-file scan entirely.  Different shells (different
@@ -941,9 +957,9 @@ let
   # unit in the store, and rebuilds the world from source.  Silently:
   # nothing errors, the shell just stops being useful.
   #
-  # On this branch `v2CabalInstall` is the stable-haskell fork build
-  # (`haskell-nix.v2-cabal-install`, 3.17.0.1), not mainline's 3.16.1.0,
-  # so that is what `v2CabalInstallVersion` holds.
+  # `v2CabalInstall` is the stable-haskell fork build
+  # (`haskell-nix.v2-cabal-install`), and `v2CabalInstallVersion` is its
+  # version.
   #
   # `tools.cabal = {}` resolves to whatever cabal-install is newest in
   # the project's hackage index, which drifts every time a new one is
@@ -955,20 +971,26 @@ let
   #
   # So when the caller has not pinned a version, hand back the very
   # binary that built the slices rather than an independently-solved
-  # one.  It carries haskell.nix's cabal-install patches (see
-  # `builder/default.nix`); none of them affect hashing, and the
-  # sublib-pruning one only ever relaxes a solve.  A caller who *does*
-  # pin a version still gets exactly what they asked for — with a
+  # one.  `"latest"` counts as not pinning: it is what the templates and
+  # `hix init` write, it means "any recent cabal", and the newest
+  # cabal-install on hackage is never the right one here (it does not
+  # even read the v2 store's `host/` layout).  The binary carries
+  # haskell.nix's cabal-install patches (see `v2-cabal-install` in
+  # overlays/haskell.nix); none of them affect hashing.  A caller who
+  # *does* pin a version still gets exactly what they asked for — with a
   # warning when it isn't the version the slices were built with, since
   # the consequence (a silent from-source rebuild of every dependency)
   # is otherwise indistinguishable from the shell simply not working.
+  #
+  # The same binary is `project.v2-cabal-install`, for a shell built
+  # some other way than `shellFor`.
   cabalTool = versionOrMod:
     let
       pinned = if lib.isString versionOrMod
                  then versionOrMod
                  else versionOrMod.version or null;
     in
-      if pinned == null then v2CabalInstall
+      if pinned == null || pinned == "latest" then v2CabalInstall
       else lib.warnIf (pinned != v2CabalInstallVersion)
         ("shellFor: tools.cabal is pinned to ${pinned}, but this project's v2 "
          + "slices were built with cabal-install ${v2CabalInstallVersion}.  The "
