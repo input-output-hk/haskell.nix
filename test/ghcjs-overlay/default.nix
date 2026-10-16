@@ -5,9 +5,9 @@ with lib;
 let
   project = cabalProject' {
     src = testSrc "ghcjs-overlay";
-    # `evalSystem` is this branch's knob for the eval platform and `evalPackages`
-    # is derived from it, so passing `evalSystem` alone (rather than master's
-    # `evalPackages`) keeps the two from being specified independently.
+    # `evalSystem` is the knob for the eval platform and `evalPackages` is
+    # derived from it, so passing `evalSystem` alone keeps the two from being
+    # specified independently.
     inherit compiler-nix-name evalSystem;
     inputMap = testInputMap;
     cabalProjectLocal = testCabalProjectLocal;

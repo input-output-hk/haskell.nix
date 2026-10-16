@@ -1221,7 +1221,7 @@ ENDSCRIPT
     # False`, or cabal.project.stage2.common).
     #
     # The WHITEHOLE `ghc --make -jN` crash (THREADED_RTS not reaching the RTS
-    # Cmm CPP; see project_ghc914-sh_parallel_make_whitehole) is fixed at the
+    # Cmm CPP) is fixed at the
     # source — rts.cabal's rts-threaded-flags gained `cmm-options:
     # -optc-DTHREADED_RTS` (stable-haskell/ghc#191, merged to stable-ghc-9.14) —
     # so no `package rts` ghc-options workaround is needed here.

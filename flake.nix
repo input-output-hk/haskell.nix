@@ -120,24 +120,6 @@
     }@inputs:
     let
       callFlake = import flake-compat;
-      # TEMPORARY: walking this back up one level at a time.  At level 3 the
-      # eval runs plan-to-nix (and the rest) as eval-time IFDs, and because
-      # this branch invalidates plan-nix for every compiler none of them
-      # substitute -- the attempts before this ran past hydra-eval-watchdog's
-      # 18h limit and were killed.  So far: level 0 in 163s / 166 jobs (eval
-      # 2332), level 1 in 274s / 879 jobs (eval 2334), against 15412s / 6640
-      # jobs for the last level-3 run to finish (eval 2096).
-      #
-      # Level 2 is where it falls over, and the step is a cliff rather than a
-      # slope: the whole test suite appears for the first time there
-      # (test/default.nix's `optionalIfdTests` is empty at 0 and 1), each test
-      # contributing its plan-nix IFD for every compiler x cross system, and
-      # `ci.nix` adds `iserv-proxy-exes` per cross system on top.  Every one of
-      # those plans is built and then imported into the evaluator's heap.  Two
-      # attempts, no eval record from either: 98f4984f9 ended in "evaluation
-      # failed due to signal 9 (Killed)", and 416b04a4b was still going 8h in.
-      #
-      # Back to 1 while that is sorted out.  Restore to 3 before merging.
       ifdLevel = 3;
       runningHydraEvalTest = false;
       # The system that evaluation-time derivations (plan-to-nix, dummy-ghc,

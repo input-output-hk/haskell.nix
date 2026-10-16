@@ -13,8 +13,8 @@
 
 let
   haskell = pkgs.haskell-nix;
-  # Master takes `evalPackages` as an argument; here `evalSystem` is the sole
-  # knob and `evalPackages` is derived from it, via the per-eval-system memoised
+  # `evalSystem` is the sole knob and `evalPackages` is derived from it, via
+  # the per-eval-system memoised
   # nixpkgs in overlays/haskell.nix, so every consumer sharing an `evalSystem`
   # reuses one nixpkgs instance.  Only head-hackage.nix needs it directly.
   evalPackages = pkgs.haskell-nix.evalPackages.${evalSystem};

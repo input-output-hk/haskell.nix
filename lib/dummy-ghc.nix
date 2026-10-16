@@ -73,7 +73,7 @@ let
   # A `<pkg>/<pkg>.cabal.in` fallback for the stable-haskell fork, whose boot
   # packages live outside the GHC source tree layout and ship only the generated
   # `.cabal.in`.  (The `compiler/` and `libraries/` `.cabal.in` branches below
-  # are NOT gated — they predate this and are on master too.)
+  # are NOT gated — they predate the fork and serve every compiler.)
   #
   # Emitted as a whole `elif` branch carrying its own leading newline, and only
   # for the fork.  Written inline it adds 2 lines per boot package (~90 in

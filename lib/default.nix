@@ -737,9 +737,8 @@ in {
   # almost never reflects intent.
   # Warns (but passes) when items share a key but differ structurally --
   # typically a list-merge accident where an explicit override appended to
-  # a default rather than replacing it (use `lib.mkForce`).  Master's
-  # `checkUnique` allowed this silently; bd93f01d3 unintentionally tightened
-  # it to an error; we keep master's tolerance but flag it for visibility.
+  # a default rather than replacing it (use `lib.mkForce`).  That case
+  # used to pass silently; it stays allowed, but is flagged for visibility.
   checkUnique = msg: x:
     let
       grouped = builtins.groupBy uniqueWithNameKey x;

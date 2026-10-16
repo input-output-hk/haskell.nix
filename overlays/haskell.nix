@@ -1734,11 +1734,8 @@ final: prev: {
             # hydra's evaluator that is the nix-eval-jobs hang class.
             // withEvalVariants (planNames (ghcBuild.plan-nixes or {}))
                                 (planNames (ghc.plan-nixes or {}))
-            # (There used to be a `plan-nix-tools` root here, caching the plan
-            # of the from-source nix-tools this branch built for every
-            # compiler.  nix-tools is a prebuilt static bundle again -- it has
-            # no `project` and so no plan to cache -- so the root is gone with
-            # the thing it existed for.)
+            # (nix-tools needs no root: it is a prebuilt static bundle, with
+            # no `project` and so no plan to cache.)
             # The v2 builder's patched cabal-install plan; only
             # stable-haskell compilers use the v2 builder today, so gate on
             # that rather than building the cabal fork for every compiler's

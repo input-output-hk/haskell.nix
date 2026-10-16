@@ -82,21 +82,18 @@ let
             inherit (nix-tools-pkgs) nix-tools nix-tools-set;
             # either nix-tools from its overlay or from the tarball.
             #
-            # This branch used to point this at a from-source build of
-            # ../nix-tools, so `make-install-plan` would link the stable-haskell
-            # cabal fork.  That applied to EVERY compiler, and because plan-nix
-            # is the universal IFD it replaced one prebuilt bundle with three
-            # per-component builds in every plan-nix derivation across the whole
-            # compiler x platform matrix.  Measured against master it cost
-            # 6x-89x per job to evaluate on the PRE-EXISTING compilers (ghc967
-            # 124.8s/job vs 1.4s) -- not on ghc914-sh, which never reached that
-            # path -- and no evaluation of this branch completed between
-            # 2026-07-23 and the change being reverted.
+            # Keep this a prebuilt bundle.  Pointing it at a from-source build
+            # of ../nix-tools (so `make-install-plan` links the stable-haskell
+            # cabal fork) applies to EVERY compiler, and because plan-nix is
+            # the universal IFD it turns one prebuilt bundle into three
+            # per-component builds in every plan-nix derivation across the
+            # whole compiler x platform matrix -- measured at 6x-89x the
+            # per-job eval time on the mainline compilers (ghc967 124.8s/job
+            # vs 1.4s).
             #
-            # The fork now ships as its own static bundle, so ghc9.6 .. ghc9.14
-            # are back on the shared 3.16 tarball exactly as on master, and only
-            # stable-haskell compilers get the fork.  See
-            # `nix-tools-unchecked-sh` below.
+            # The fork ships as its own static bundle instead: ghc9.6 .. ghc9.14
+            # use the shared 3.16 tarball, and only stable-haskell compilers
+            # get the fork.  See `nix-tools-unchecked-sh` below.
             nix-tools-unchecked = static-nix-tools // {
               exes =  static-nix-tools.exes // {
                 inherit (static-nix-tools-for-default-setup.exes) default-setup default-setup-ghcjs;
