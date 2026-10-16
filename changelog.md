@@ -45,10 +45,16 @@ mid-eval.
 
   * Slices are now built with the stable-haskell fork of cabal-install
     (3.17.0.1, `haskell-nix.v2-cabal-install`) for every compiler, not
-    mainline 3.16.1.0.  UnitIds change, so every slice rebuilds once.
+    mainline 3.16.1.0, and v2 projects' plans are made with the matching
+    fork nix-tools (`nix-tools-unchecked-sh`), so the plan's UnitIds are
+    the ones the slices compute.  UnitIds change, so every slice rebuilds
+    once.  v1 projects' plans are unchanged.
   * That cabal keeps a project-local store, `dist-newstyle/store`, and the
     v2 shell now seeds it there (under the project root, found as cabal
-    finds it) rather than `~/.cabal/store`.
+    finds it) rather than `~/.cabal/store`.  The shell's generated
+    `cabal.project.local` also goes to the project root, and names the
+    build compiler, without which the fork cabal resolves its build stage
+    (`base` and all) from hackage.
   * `shellFor`'s `tools.cabal = "latest"` now means the slice builder's
     cabal-install, like `{}` already did: the newest one on hackage cannot
     reuse the slices.  The same derivation is `project.v2-cabal-install`,

@@ -554,9 +554,18 @@ let
   # rather than into a `cabal` wrapper -- the wrapper is only built when
   # `targetPrefix != ""`, and the ghcjs cross compiler has no prefix, so
   # a wrapper would miss exactly the case that showed the bug.
+  #
+  # A native shell needs them too: the fork cabal's build stage otherwise
+  # finds no installed `base` either and plans `build:base-4.18.3.0` from
+  # hackage the same way (seen with ghc9141).  There the build compiler is
+  # the shell's own.  A mainline single-stage cross shell is left alone, as
+  # its slices are.
   buildCompilerFields =
-    let buildGhc = ghc.buildGHC or null;
-    in lib.optionalString (withBuildCompiler && buildGhc != null) ''
+    let buildGhc =
+          if withBuildCompiler then ghc.buildGHC or null
+          else if !haskellLib.isCrossHost then ghc
+          else null;
+    in lib.optionalString (buildGhc != null) ''
       with-build-compiler: ${buildGhc}/bin/${buildGhc.targetPrefix or ""}ghc
       with-build-hc-pkg: ${buildGhc}/bin/${buildGhc.targetPrefix or ""}ghc-pkg
     '';
@@ -799,7 +808,15 @@ let
       *) echo "usage: haskell-nix-cabal-project-local-sync [--force]" >&2; exit 2 ;;
     esac
 
-    target=cabal.project.${ghc.targetPrefix or ""}local
+    # Next to the project's `cabal.project` (found as cabal finds it, and as
+    # `haskell-nix-cabal-store-sync` does), so a shell entered from a
+    # subdirectory still writes the file cabal reads.
+    projectRoot=$PWD
+    while [ ! -e "$projectRoot/cabal.project" ] && [ "$projectRoot" != / ]; do
+      projectRoot=$(dirname "$projectRoot")
+    done
+    [ -e "$projectRoot/cabal.project" ] || projectRoot=$PWD
+    target=$projectRoot/cabal.project.${ghc.targetPrefix or ""}local
     source=${cabalProjectLocalFile}
 
     install_it () {
