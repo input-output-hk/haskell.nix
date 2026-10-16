@@ -87,7 +87,10 @@ in lib.recurseIntoAttrs {
   ifdInputs = {
     inherit (project) plan-nix;
   };
-  run = stdenv.mkDerivation {
+  # The exe runs through `testWrapper` (an emulator on cross hosts), so pin
+  # it the way `haskellLib.check` pins test runs: on armv7a-android a
+  # nix-linux-builder VM's kernel rejects qemu-arm's PER_LINUX32 personality.
+  run = stdenv.mkDerivation (haskellLib.emulatorRunAttrs // {
     name = "cabal-simple-prof-test";
 
     buildCommand = ''
@@ -114,5 +117,5 @@ in lib.recurseIntoAttrs {
       # Used for debugging with nix repl
       inherit project;
     };
-  };
+  });
 }

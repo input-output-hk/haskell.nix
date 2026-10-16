@@ -256,6 +256,14 @@ in {
     emulatorNativeBuilderCheck = pkgs.haskell-nix.emulatorNativeBuilderCheck or (_: false);
   };
 
+  # The same pin for a hand-written derivation that runs a host-platform exe
+  # through its component's `testWrapper` itself, rather than via `check`
+  # (e.g. test/cabal-simple-prof's `run`).  Merge into its attrs.
+  emulatorRunAttrs =
+    lib.optionalAttrs ((pkgs.haskell-nix.emulatorNativeBuilderCheck or (_: false)) stdenv.hostPlatform) {
+      requiredSystemFeatures = pkgs.haskell-nix.emulatorSystemFeatures or [];
+    };
+
   # Do coverage of a package
   coverageReport = import ./cover.nix {
     inherit stdenv lib haskellLib pkgs;
