@@ -41,6 +41,14 @@
 final: prev:
 let
   inherit (final) lib;
+  # `tool'` / `tools'` used to take a nixpkgs (`evalPackages`) where they
+  # now take an `evalSystem` string.
+  toEvalSystem = fn: e:
+    if builtins.isString e then e
+    else lib.warn
+      ("haskell-nix.${fn}: passing a nixpkgs (`evalPackages`) is deprecated; "
+       + "pass its system (\"${e.stdenv.hostPlatform.system}\") instead.")
+      e.stdenv.hostPlatform.system;
 
 in { haskell-nix = prev.haskell-nix // {
 
@@ -95,14 +103,17 @@ in { haskell-nix = prev.haskell-nix // {
       );
 
   # tool with an explicit `evalSystem` to use (the platform plan-to-nix runs
-  # on).  Takes a system string, not a nixpkgs — the project derives its
-  # `evalPackages` from it (see modules/project-common.nix).
-  tool' = evalSystem: compiler-nix-name: name: versionOrMod:
-      final.haskell-nix.hackage-tool (
+  # on).  Takes a system string — the project derives its `evalPackages`
+  # from it (see modules/project-common.nix).  A nixpkgs (`evalPackages`),
+  # which this used to take, is still accepted with a deprecation warning.
+  tool' = evalSystemOrPackages: compiler-nix-name: name: versionOrMod:
+      let evalSystem = toEvalSystem "tool'" evalSystemOrPackages;
+      in final.haskell-nix.hackage-tool (
            final.haskell-nix.haskellLib.versionOrModToMods versionOrMod
         ++ [(lib.mapAttrs (_: lib.mkOverride 1100) { inherit evalSystem compiler-nix-name name; })]
       );
 
   tools = compiler-nix-name: lib.mapAttrs (final.haskell-nix.tool compiler-nix-name);
-  tools' = evalSystem: compiler-nix-name: lib.mapAttrs (final.haskell-nix.tool' evalSystem compiler-nix-name);
+  tools' = evalSystemOrPackages: compiler-nix-name:
+    lib.mapAttrs (final.haskell-nix.tool' (toEvalSystem "tools'" evalSystemOrPackages) compiler-nix-name);
 }; }

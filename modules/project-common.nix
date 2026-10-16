@@ -1,6 +1,12 @@
 { lib, options, config, pkgs, ... }:
 with lib;
 with lib.types;
+let
+  # Whether the project defines `evalPackages` itself (deprecated) rather
+  # than taking the default derived from `evalSystem`.  A default has
+  # priority 1500 (`mkOptionDefault`); any definition beats it.
+  evalPackagesIsSet = options.evalPackages.highestPrio < 1500;
+in
 {
   _file = "haskell.nix/modules/project-common.nix";
   options = {
@@ -45,11 +51,16 @@ with lib.types;
       type = str;
       # `evalSystem` is the single knob for the platform on which `cabal` /
       # `nix-tools` (plan-to-nix, IFD) run.  The `evalPackages` option below is
-      # derived from it (via the memoised `haskell-nix.evalPackages`) and is
-      # read-only, so this default is simple and does NOT reference
-      # `evalPackages` (which would recurse: evalPackages' default references
-      # `config.evalSystem`).
-      default = pkgs.pkgsBuildBuild.stdenv.hostPlatform.system;
+      # derived from it (via the memoised `haskell-nix.evalPackages`).
+      #
+      # The one exception is a project that still SETS `evalPackages`
+      # (deprecated): then its system is the eval system.  Reading the
+      # definition does not recurse -- only `evalPackages`' *default*
+      # references `config.evalSystem`, and a definition replaces it.
+      default =
+        if evalPackagesIsSet
+        then config.evalPackages.stdenv.hostPlatform.system
+        else pkgs.pkgsBuildBuild.stdenv.hostPlatform.system;
       description = ''
         Specifies the system on which `cabal` and `nix-tools` should run.
         If not specified the `pkgsBuildBuild` system will be used.
@@ -66,14 +77,18 @@ with lib.types;
       # dummy-ghc / configured-src / nix-tools artifacts) instead of importing
       # a fresh one per project.  Select the eval platform with `evalSystem`.
       #
-      # Read-only: `evalPackages` is derived from `evalSystem` and can no longer
-      # be set.  `readOnly` forbids *definitions* while still allowing this
-      # `default`, so any attempt to set it errors (pointing at the offending
-      # module); select the eval platform with `evalSystem` instead.  The
-      # default is cycle-free because `evalSystem`'s default does not reference
-      # `evalPackages`.
-      readOnly = true;
+      # Setting it is deprecated (select the eval platform with `evalSystem`)
+      # but still works for now, with a warning: the definition is used as
+      # given, and `evalSystem` follows it.  The default is cycle-free
+      # because `evalSystem` only reads `evalPackages` when it is set.
       default = pkgs.haskell-nix.evalPackages.${config.evalSystem};
+      apply = v:
+        if evalPackagesIsSet
+        then lib.warn
+          ("haskell.nix project option `evalPackages` is deprecated; set "
+           + "`evalSystem = \"${v.stdenv.hostPlatform.system}\";` instead.")
+          v
+        else v;
       description = ''
         Packages used to run `cabal` and `nix-tools`, derived from
         `evalSystem` via the memoised `haskell-nix.evalPackages` attrset.
@@ -81,7 +96,7 @@ with lib.types;
         `pkgsBuildBuild` system (the common case), otherwise a shared
         nixpkgs imported for `evalSystem` from the same path and overlays.
         Select the eval platform with `evalSystem` rather than setting this
-        directly.
+        directly; setting it is deprecated and gives a warning.
       '';
     };
     evalSrc = mkOption {

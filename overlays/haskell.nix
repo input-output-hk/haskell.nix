@@ -1680,13 +1680,22 @@ final: prev: {
         # are tested and cached. Consider using `p.roots` where `p` is a
         # project as it will automatically match the `compiler-nix-name`
         # of the project.
-        roots = { compiler-nix-name, evalSystem ? final.pkgsBuildBuild.stdenv.hostPlatform.system }@args: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
+        roots = { compiler-nix-name, ... }@args: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
           (final.lib.filter (x: x.name != "recurseForDerivations")
             (final.lib.mapAttrsToList (name: path: { inherit name path; })
               (roots' args 2)));
 
-        roots' = { compiler-nix-name, evalSystem ? final.pkgsBuildBuild.stdenv.hostPlatform.system }: ifdLevel:
+        # Takes `evalSystem` (a system string).  `evalPackages` (a nixpkgs),
+        # which it replaced, is still accepted with a deprecation warning.
+        roots' = { compiler-nix-name, ... }@rootsArgs: ifdLevel:
           let
+            evalSystem =
+              if rootsArgs ? evalPackages
+              then final.lib.warn
+                ("haskell-nix.roots: the `evalPackages` argument is deprecated; "
+                 + "pass `evalSystem = \"${rootsArgs.evalPackages.stdenv.hostPlatform.system}\";` instead.")
+                rootsArgs.evalPackages.stdenv.hostPlatform.system
+              else rootsArgs.evalSystem or final.pkgsBuildBuild.stdenv.hostPlatform.system;
             evalPackages = final.haskell-nix.evalPackages.${evalSystem};
             # The default (build-system) compiler variant and the variant for
             # `evalSystem`.  Their final build derivations are identical; they
