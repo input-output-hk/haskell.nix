@@ -1,6 +1,78 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## October 16, 2026
+
+New compiler: `ghc914-sh`, GHC 9.14 from the stable-haskell fork, built
+with the stable-haskell Makefile rather than hadrian, and its boot
+libraries built by haskell.nix's v2 builder.  Projects using it get
+`builderVersion = 2` by default (v1 cannot build against the fork's boot
+packages).  It ships no shared libraries (`enableShared = false`), no
+haddock for cross targets and no DWARF build, and the tests that need
+those are skipped for it.
+
+Breaking changes around the eval platform (the platform `cabal` /
+`nix-tools` run on during plan construction).  Everything that used to
+take a nixpkgs for this now takes a system string, `evalSystem`, and
+reuses one memoised nixpkgs per system:
+
+  * The project option `evalPackages` is deprecated: set
+    `evalSystem = "<system>"` instead.  Setting `evalPackages` still works
+    for now (its system becomes the eval system) but warns.
+  * `haskell-nix.tool'` / `tools'` take an `evalSystem` string as their
+    first argument.  A nixpkgs is still accepted, with a warning.
+  * `haskell-nix.roots` takes `evalSystem`; its `evalPackages` argument is
+    still accepted, with a warning.
+  * The compiler override argument `ghcEvalPackages` is gone.  Compilers
+    now carry memoised per-eval-system variants: select
+    `ghc.evalWith.${evalSystem}` (or `ghc.override { evalSystem = ...; }`).
+  * `haskellLib.isNativeMusl` no longer classifies darwin → linux-musl
+    (same CPU architecture) as *native* musl; it now additionally requires
+    the build platform to be Linux, so those darwin-hosted builds take the
+    cross-compilation path.
+
+`haskell-nix.roots` (and `p.roots`) now also link the plan-nix
+derivations behind the compiler (hadrian, or stage1/stage2 for the
+stable-haskell GHCs; `hadrian-plan` is now `plan-hadrian`), the
+iserv-proxy projects, the v2 builder's `cabal-install`, and the eval-time
+dummy ghc/ghc-pkg pair — each for the build system and, when
+`evalSystem` differs, an `-eval` twin.  Building `roots` in CI therefore
+caches everything a later evaluation needs to realise via IFD, so
+evaluators (e.g. hydra's) substitute the plans instead of building them
+mid-eval.
+
+`builderVersion = 2`:
+
+  * Slices are now built with the stable-haskell fork of cabal-install
+    (3.17.0.1, `haskell-nix.v2-cabal-install`) for every compiler, not
+    mainline 3.16.1.0.  UnitIds change, so every slice rebuilds once.
+  * That cabal keeps a project-local store, `dist-newstyle/store`, and the
+    v2 shell now seeds it there (under the project root, found as cabal
+    finds it) rather than `~/.cabal/store`.
+  * `shellFor`'s `tools.cabal = "latest"` now means the slice builder's
+    cabal-install, like `{}` already did: the newest one on hackage cannot
+    reuse the slices.  The same derivation is `project.v2-cabal-install`,
+    for shells not built with `shellFor`.
+
+Cross compilation:
+
+  * New component option `usesTemplateHaskell`, and new `haskell-nix`
+    knobs `emulatorSystemFeatures`, `emulatorNativeBuilderPackages`,
+    `emulatorNativeBuilderCheck` and `emulatorNativeBuilderTH` (plus
+    `haskellLib.emulatorRunAttrs`), for build farms that need to keep
+    emulator-run derivations (TH splices, test runs) off builders where
+    the emulator is itself emulated.  `emulatorSystemFeatures` is empty
+    by default, which turns the whole mechanism off.
+  * x86_64-linux cross builds use a user-mode-only qemu (9.1 – 11) with a
+    patch for running under Rosetta, and the iserv-proxy input now
+    follows `stable-haskell/iserv-proxy`.
+  * New `hyper-linux` flake input (`pkgs.hyper-linux`): on Apple Silicon
+    it is the emulator for darwin → linux cross builds, running Template
+    Haskell splices and cross-built test exes, where qemu-user does not
+    exist.
+  * The linux-cross and mingw test wrappers now quote their arguments
+    (`"$@"`), so arguments containing spaces reach the test exe intact.
+
 ## August 17, 2026
 
 `builderVersion = 2`: `shellFor`'s `tools.cabal` now defaults to the same
@@ -30,35 +102,6 @@ and `nix build` on *all* of them — not just on Intel macOS.  Generated
 flakes now take a `nixpkgs-2605` input and import it for x86_64-darwin
 only, the same per-system selection haskell.nix's own `flake.nix` and
 `ci.nix` already make.
-
-## July 16, 2026
-
-Breaking changes around the eval platform (the platform `cabal` /
-`nix-tools` run on during plan construction):
-
-  * The project option `evalPackages` is now **read-only** — it is derived
-    from the new single knob `evalSystem` (a system string, e.g.
-    `"aarch64-darwin"`) via a shared, memoised nixpkgs instance per
-    system.  Projects that passed `evalPackages = ...` should pass
-    `evalSystem = "<system>"` instead; setting `evalPackages` now fails
-    evaluation with a module-system read-only error.
-  * The compiler override argument `ghcEvalPackages` is gone.  Compilers
-    now carry memoised per-eval-system variants: select
-    `ghc.evalWith.${evalSystem}` (or `ghc.override { evalSystem = ...; }`).
-  * `haskellLib.isNativeMusl` no longer classifies darwin → linux-musl
-    (same CPU architecture) as *native* musl; it now additionally requires
-    the build platform to be Linux, so those darwin-hosted builds take the
-    cross-compilation path (correcting misclassification).
-
-`haskell-nix.roots` (and `p.roots`) now also link the plan-nix
-derivations behind the compiler (hadrian, or stage1/stage2 for the
-stable-haskell GHCs), the iserv-proxy projects, the from-source
-`nix-tools`, the v2 builder's `cabal-install` fork, and the eval-time
-dummy ghc/ghc-pkg pair — each for the build system and, when
-`evalSystem` differs, an `-eval` twin.  Building `roots` in CI therefore
-caches everything a later evaluation needs to realise via IFD, so
-evaluators (e.g. hydra's) substitute the plans instead of building them
-mid-eval.
 
 ## June 12, 2026
 
