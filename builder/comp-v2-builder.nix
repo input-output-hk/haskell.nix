@@ -461,9 +461,9 @@ let
               cp -rL --no-preserve=mode $srcParent/. $workDir/
               chmod -R u+w $workDir
               target=$workDir/$pkgSubDir
+              ${cabalFileOverride}
               ${patchApplyScript}
               ${hpackScript}
-              ${cabalFileOverride}
               # Rename the package subdir to match the tarball convention
               # so cabal sees `<name>-<version>/` when unpacking.
               mv $target $workDir/${pkgName}-${pkgVersion}
@@ -477,9 +477,9 @@ let
               ${if package.isLocal
                 then "cp -rL ${src}/. $target/"
                 else "tar -xzf ${src} --strip-components=1 -C $target"}
+              ${cabalFileOverride}
               ${patchApplyScript}
               ${hpackScript}
-              ${cabalFileOverride}
               tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
                   -czf $out -C $workDir ${pkgName}-${pkgVersion}
             '');
@@ -1895,12 +1895,12 @@ let
     active-repositories: hackage.haskell-nix
     ${packagesLine}${solverRelaxations}${projectConfigPragmas}${hsc2hsViaAsmProject}${extraProject}${extraIncludeAndLibDirs}'';
 
-  # X-revised .cabal as a /nix/store path (or null if no override).
-  # Staged into this package's repo fragment (build-cabal-slice) so the
-  # slicing repo's index carries the right .cabal without extracting
-  # from the tarball when an override exists.
+  # Untouched packages keep their revised .cabal separately from the
+  # upstream tarball. Patches/hooks may change that metadata after the
+  # override was copied (as in v1), so publish the effective tarball's
+  # .cabal in every slicing index instead of restoring the old override.
   thisCabalFile =
-    if cabalFile != null
+    if cabalFile != null && resolvedPatches == [] && !pkgHasHook
     then builtins.toFile "${pkgName}.cabal" cabalFile
     else null;
 
@@ -2111,7 +2111,7 @@ let
   v2Fragment = {
     inherit pkgName pkgVersion;
     tarball = pkgTarball;
-    cabalFile = thisCabalFile;            # nullable (revision-0 → extract from tarball)
+    cabalFile = thisCabalFile;            # null → extract effective tarball metadata
     flagsBlock            = flagBlockFor             pkgName;
     ghcOptionsBlock       = ghcOptionsBlockFor       pkgName;
     configureOptionsBlock = configureOptionsBlockFor pkgName;

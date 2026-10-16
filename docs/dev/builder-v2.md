@@ -106,6 +106,14 @@ The captured set in `$out/store/` must equal exactly
    `expectedUnitId` check at the end requires the captured set
    to equal `[expectedUnitId]` exactly.
 
+   Cabal-file overrides are copied before package patches and hooks, matching
+   V1. For patched or hooked sources, every slice index uses the resulting
+   tarball's Cabal file; it must not restore the unpatched override during
+   Cabal's revision update. Untouched Hackage sources retain their original
+   tarball and separate revised Cabal file. Run the source-only regression with
+   `make test-v2-cabal-overrides SYSTEM=aarch64-darwin TIMEOUT=300` (or your native
+   system); it does not build a Haskell compiler or package.
+
 5. **`builder/compose-store.nix`** is a tiny helper that lndirs
    slices into a single cabal-store layout, walking
    `pkgsHostTarget` and following `nix-support/transitive-deps`

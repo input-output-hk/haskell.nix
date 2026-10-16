@@ -281,6 +281,7 @@ let outerGhc = ghc; in
 }:
 
 let
+  stageCabalFile = import ./stage-cabal-file.nix;
   # Cross-aware program names. nixpkgs' cross GHCs prefix every
   # binary with `${ghc.targetPrefix}` (e.g. `javascript-unknown-ghcjs-ghc-pkg`)
   # and don't ship the unprefixed `ghc-pkg`, so plain `ghc-pkg` on
@@ -547,9 +548,12 @@ let
 
       ln -sf ${f.tarball} $v2repo/package/${f.pkgName}-${f.pkgVersion}.tar.gz
       mkdir -p $v2idx/${f.pkgName}/${f.pkgVersion}
-      ${if f.cabalFile != null
-        then "cp -f --no-preserve=mode ${f.cabalFile} $v2idx/${f.pkgName}/${f.pkgVersion}/${f.pkgName}.cabal"
-        else "tar -xOzf ${f.tarball} ${f.pkgName}-${f.pkgVersion}/${f.pkgName}.cabal > $v2idx/${f.pkgName}/${f.pkgVersion}/${f.pkgName}.cabal"}'';
+      ${stageCabalFile {
+        fragment = f;
+        copyOptions = " -f --no-preserve=mode";
+        singleLine = true;
+        target = "$v2idx/${f.pkgName}/${f.pkgVersion}/${f.pkgName}.cabal";
+      }}'';
   # Metadata (solver-only) sources additionally get stripped down to
   # what the SOLVER may see of them: cabal solves a package goal with
   # the deps of all its components, but a metadata candidate's
@@ -1391,13 +1395,10 @@ stdenv.mkDerivation ({
       # This package's own source + .cabal (own fragment not built yet).
       ln -s ${v2Fragment.tarball} $v2repo/package/${v2Fragment.pkgName}-${v2Fragment.pkgVersion}.tar.gz
       mkdir -p $v2idx/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}
-      ${if v2Fragment.cabalFile != null
-        then "cp ${v2Fragment.cabalFile} $v2idx/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal"
-        else ''
-          tar -xOzf ${v2Fragment.tarball} \
-            ${v2Fragment.pkgName}-${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal \
-            > $v2idx/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal
-        ''}${extraFragStaging}
+      ${stageCabalFile {
+        fragment = v2Fragment;
+        target = "$v2idx/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal";
+      }}${extraFragStaging}
       # Dep closure repo-frags (direct + transitive — same walk as store).
       for dep in "''${pkgsHostTarget[@]}"; do
         addRepoFrag "$dep"
@@ -2421,16 +2422,13 @@ ${lib.optionalString (metadataSourceFrags != []) ''
       # Source tarball (symlink — keeps the fragment a tiny set of links).
       ln -s ${v2Fragment.tarball} \
         $out/repo-frag/package/${v2Fragment.pkgName}-${v2Fragment.pkgVersion}.tar.gz
-      # Index `.cabal`: the X-revised override when present, else the
-      # revision-0 .cabal extracted from the tarball (byte-identical, so
+      # Index `.cabal`: the untouched revision override when present,
+      # otherwise the effective tarball metadata (byte-identical, so
       # cabal keeps `pkgHashPkgDescriptionHash` Nothing).
-      ${if v2Fragment.cabalFile != null
-        then "cp ${v2Fragment.cabalFile} $out/repo-frag/index/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal"
-        else ''
-          tar -xOzf ${v2Fragment.tarball} \
-            ${v2Fragment.pkgName}-${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal \
-            > $out/repo-frag/index/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal
-        ''}
+      ${stageCabalFile {
+        fragment = v2Fragment;
+        target = "$out/repo-frag/index/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal";
+      }}
       # Per-package cabal.project blocks (emitted as separate files so a
       # consumer can group by block-type across the closure, matching the
       # current cabal.project byte-layout).  Written via `toFile` so the
