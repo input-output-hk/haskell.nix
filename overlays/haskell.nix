@@ -1394,7 +1394,7 @@ final: prev: {
               # `comp-v2-builder` reads configure-args from plan-nix
               # instead, so the toggle has to live in cabal.project
               # to make it through plan-nix into the v2 slice.
-              proj = evalSystem: profiled: pkgs: pkgs.haskell-nix.cabalProject' ({pkgs, ...}: {
+              proj = evalSystem: profiled: pkgs: pkgs.haskell-nix.cabalProject' ({config, pkgs, ...}: {
                 name = "iserv-proxy";
                 inherit compiler-nix-name evalSystem;
 
@@ -1405,7 +1405,7 @@ final: prev: {
                 src = if compiler-nix-name == "ghc914-sh"
                   && pkgs.stdenv.hostPlatform.isAndroid
                   && pkgs.stdenv.hostPlatform.isAarch32
-                then pkgs.pkgsBuildBuild.applyPatches {
+                then config.evalPackages.applyPatches {
                   name = "android-arm32-iserv-proxy-source";
                   src = sources.iserv-proxy;
                   patches = [
