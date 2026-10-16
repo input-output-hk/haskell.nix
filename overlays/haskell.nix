@@ -1408,7 +1408,10 @@ final: prev: {
                 then pkgs.pkgsBuildBuild.applyPatches {
                   name = "android-arm32-iserv-proxy-source";
                   src = sources.iserv-proxy;
-                  patches = [ ./patches/iserv-proxy-arm32-static-libc.patch ];
+                  patches = [
+                    ./patches/iserv-proxy-arm32-static-libc.patch
+                    ./patches/iserv-proxy-arm32-bionic-symbols.patch
+                  ];
                 } else sources.iserv-proxy;
 
                 modules = [{

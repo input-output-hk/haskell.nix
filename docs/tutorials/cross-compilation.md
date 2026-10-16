@@ -271,6 +271,10 @@ With duplicate definitions allowed by the toolchain, the stub could win and call
 native ARM64 QEMU. The patch removes those false stubs and keeps their symbol
 references, so the interpreter and GHCi use the real libc implementations. The
 API-specific shared-library export list does not describe all static definitions.
+The table also registers Bionic's iconv routines from API28 and `nl_langinfo`
+from API26. Static Bionic's `dlsym` cannot supply those addresses when TH loads
+the core library objects. Projects using GNU iconv instead need registrations
+for that provider's names as well.
 
 The generic `haskell-nix.emulatorSystemFeatures` default still requires the
 native-builder marker. Its package deny-list also covers cross-compiler stalls
