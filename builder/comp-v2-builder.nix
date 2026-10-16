@@ -1401,9 +1401,16 @@ let
       universeDepsOf = q:
         metaDepsOf q ++ setupDepsOfEntry q ++ exeDepsOfEntry q;
       packageDepClosure = mkClosureFrom packagePlanUnits universeDepsOf;
+      # Pre-existing units (the compiler's boot packages) are never
+      # out-of-closure work: the solver takes the installed instance.
+      # Counting them made every sibling whose subtree touches a boot
+      # package unstageable, so all of them fell back to BUILT slices
+      # (vector:lib built tasty, random, optparse-applicative, ... --
+      # ten slices nothing links -- for its sibling `benchmarks-O2`).
       outEntries = lib.filter (e:
           !(closureKeys ? ${e.key})
-          && (e.entry.pkg-name or "") != pkgName)
+          && (e.entry.pkg-name or "") != pkgName
+          && (e.entry.type or "") != "pre-existing")
         packageDepClosure;
       outByKey = lib.listToAttrs (map (e: lib.nameValuePair e.key e) outEntries);
       # Only units with a fetchable, hash-stable hackage sdist
