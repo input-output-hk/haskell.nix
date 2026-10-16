@@ -263,6 +263,15 @@ personality selection is limited to Android ARM32 guests: Bionic initializes
 the virtual domain again on exec, so this does not promise general Linux
 personality persistence across exec.
 
+The `ghc914-sh` ARM32 interpreter also patches its symbol table before Cabal
+planning. Its missing-function stubs included 21 routines supplied by the NDK's
+static `libc.a`, including the private `__libc_shared_globals` startup function.
+With duplicate definitions allowed by the toolchain, the stub could win and call
+`printf` before Bionic had initialized TLS, producing a target `SIGSEGV` even on
+native ARM64 QEMU. The patch removes those false stubs and keeps their symbol
+references, so the interpreter and GHCi use the real libc implementations. The
+API-specific shared-library export list does not describe all static definitions.
+
 The generic `haskell-nix.emulatorSystemFeatures` default still requires the
 native-builder marker. Its package deny-list also covers cross-compiler stalls
 without QEMU, which this patch does not fix. A project verified with the patched

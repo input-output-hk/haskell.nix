@@ -1398,7 +1398,18 @@ final: prev: {
                 name = "iserv-proxy";
                 inherit compiler-nix-name evalSystem;
 
-                src = sources.iserv-proxy;
+                # The ARM32 symbol table includes missing-function stubs for
+                # real static Bionic routines. One shadows libc startup before
+                # TLS exists. Patch before planning so v2 hashes and source
+                # archives describe the same implementation.
+                src = if compiler-nix-name == "ghc914-sh"
+                  && pkgs.stdenv.hostPlatform.isAndroid
+                  && pkgs.stdenv.hostPlatform.isAarch32
+                then pkgs.pkgsBuildBuild.applyPatches {
+                  name = "android-arm32-iserv-proxy-source";
+                  src = sources.iserv-proxy;
+                  patches = [ ./patches/iserv-proxy-arm32-static-libc.patch ];
+                } else sources.iserv-proxy;
 
                 modules = [{
                   config = {
