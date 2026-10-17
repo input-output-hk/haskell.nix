@@ -136,6 +136,10 @@ Wine provider. It checks ISO `swprintf` at exact, spare, and insufficient
 capacity, including bounds and successful termination. The output includes
 the linker map and runtime results. It does not test GHC or Template Haskell.
 
+Run the UCRT regression against the unstable Nixpkgs pin with
+`make test-mingw-stdio SYSTEM=x86_64-linux TIMEOUT=10800`. The first build can
+rebuild the patched CRT and cross compiler; later runs reuse those outputs.
+
 `make check` also checks backport selection and excluded-platform laziness
 without building a compiler, CRT, or Wine. The MinGW 13/14 backport can be
 removed when all supported Nixpkgs pins contain upstream fix
