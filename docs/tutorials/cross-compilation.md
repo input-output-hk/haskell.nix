@@ -237,6 +237,60 @@ retains the old emulator. Confirm the new emulator path in the log and
 execute the guest regressions and full profiled build on the affected
 physical builders. Increasing `max-silent-time` does not repair these faults.
 
+### Android ARM32 startup on ARM64 Linux builders
+
+Bionic requests `personality(PER_LINUX32)` before entering `main`. An ARM64
+kernel without AArch32 EL0 support rejects that execution domain with `EINVAL`,
+even when QEMU can emulate the ARM32 instructions. This produces:
+
+```text
+libc: error setting PER_LINUX32 personality: Invalid argument
+qemu: uncaught target signal 6 (Aborted) - core dumped
+```
+
+Running native ARM64 QEMU avoids nested emulation but does not by itself fix
+the rejected host personality call. The Android ARM32 QEMU selection therefore
+includes a personality fallback on Linux build hosts with QEMU 9.1–11. Only
+after the host rejects `PER_LINUX32` with `EINVAL`, it retries with `PER_LINUX`
+and the same upper flags. QEMU retains the full guest value per task, including
+query and previous-value results, thread inheritance, and fork isolation.
+Other host errors remain errors. Upper flags such as `UNAME26` remain backed by
+the host kernel.
+
+The personality patch is separate from the Rosetta signal patch. Native ARM64
+QEMU receives only the personality patch; x86_64 QEMU receives both. The
+personality selection is limited to Android ARM32 guests: Bionic initializes
+the virtual domain again on exec, so this does not promise general Linux
+personality persistence across exec.
+
+The `ghc914-sh` ARM32 interpreter also patches its symbol table before Cabal
+planning. Its missing-function stubs included 21 routines supplied by the NDK's
+static `libc.a`, including the private `__libc_shared_globals` startup function.
+With duplicate definitions allowed by the toolchain, the stub could win and call
+`printf` before Bionic had initialized TLS, producing a target `SIGSEGV` even on
+native ARM64 QEMU. The patch removes those false stubs and keeps their symbol
+references, so the interpreter and GHCi use the real libc implementations. The
+API-specific shared-library export list does not describe all static definitions.
+The table also registers Bionic's iconv routines from API28 and `nl_langinfo`
+from API26. Static Bionic's `dlsym` cannot supply those addresses when TH loads
+the core library objects. Projects using GNU iconv instead need registrations
+for that provider's names as well.
+
+The generic `haskell-nix.emulatorSystemFeatures` default still requires the
+native-builder marker. Its package deny-list also covers cross-compiler stalls
+without QEMU, which this patch does not fix. A project verified with the patched
+emulator can set `haskell-nix.emulatorSystemFeatures = []` in its Android ARM32
+target package set. Keep that opt-out scoped to the compiler and QEMU versions
+tested by the project. The `ghc914-sh` annotation regressions use such a scoped
+package set without changing the policy for other projects or compilers.
+
+Run `make test-qemu-arm32-personality SYSTEM=aarch64-linux TIMEOUT=1800` on
+the affected ARM64 builder, and repeat with `SYSTEM=x86_64-linux` for Rosetta.
+The test compiles with the pinned Android API 26 NDK. It checks Bionic startup
+and the personality semantics above; it does not substitute for a real
+cross-Template-Haskell build. See [the regression instructions](../../test/README.md)
+for emulator overrides and instructions for rerunning an existing test output.
+
 
 [nh2]: https://github.com/nh2/static-haskell-nix
 [vaibhav]: https://vaibhavsagar.com/blog/2018/01/03/static-haskell-nix/

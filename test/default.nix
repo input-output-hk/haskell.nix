@@ -307,6 +307,12 @@ let
         || lib.versionAtLeast pkgs.pkgsBuildBuild.qemu.version "12";
       run = import ./qemu-linux-user.nix { pkgs = pkgs.pkgsBuildBuild; };
     };
+    qemu-arm32-personality = lib.recurseIntoAttrs {
+      meta.disabled = !pkgs.pkgsBuildBuild.stdenv.hostPlatform.isLinux
+        || lib.versionOlder pkgs.pkgsBuildBuild.qemu.version "9.1"
+        || lib.versionAtLeast pkgs.pkgsBuildBuild.qemu.version "12";
+      run = import ./qemu-arm32-personality.nix { pkgs = pkgs.pkgsBuildBuild; };
+    };
     external-static-plugin = callTest ./external-static-plugin {};
     exe-dlls = callTest ./exe-dlls { inherit util; };
     exe-lib-dlls = callTest ./exe-lib-dlls { inherit util; };

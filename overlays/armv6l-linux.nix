@@ -31,6 +31,7 @@ in
           qemu = import ./qemu-linux-user.nix {
             qemu = final.pkgsBuildBuild.qemu;
             inherit (final) lib;
+            inherit (final.stdenv) hostPlatform;
             buildPlatform = final.pkgsBuildBuild.stdenv.hostPlatform;
             qemuSuffix = final.haskell-nix.haskellLib.qemuByHostPlatform final.stdenv.hostPlatform;
           };

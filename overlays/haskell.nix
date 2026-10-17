@@ -62,6 +62,8 @@ final: prev: {
         #
         # The three knobs below choose WHICH derivations get these
         # features; with this list empty they have no effect.
+        # The Android ARM32 personality fix removes one emulator failure,
+        # but does not fix the cross-compiler stalls described below.
         emulatorSystemFeatures = prev.haskell-nix.emulatorSystemFeatures or [];
 
         # ...but ONLY for these packages.  There is exactly one native
@@ -80,6 +82,7 @@ final: prev: {
         # emulator ([Cabal-7125] link errors, OOM kills, genuine compiler
         # bugs) and moving those achieves nothing.
         #
+        # These historical A/B failures explain the fallback policy.
         # Do NOT use the presence of `qemu: uncaught target signal 11` as
         # the test.  That catches only one of the two shapes, and reading
         # a host name is not evidence at all:
@@ -101,8 +104,8 @@ final: prev: {
           prev.haskell-nix.emulatorNativeBuilderPackages or [ "th-orphans" "base" ];
 
         # ...and EVERY test exe run (`haskellLib.check`) for a host platform
-        # matching this predicate, whatever the package.  32-bit ARM Android
-        # is the case: bionic's startup calls `personality(PER_LINUX32)`,
+        # matching this predicate, whatever the package. Without the Android
+        # ARM32 patch, bionic's startup calls `personality(PER_LINUX32)`,
         # which qemu-arm passes to the host kernel, and the kernel of a
         # `nix-linux-builder` VM on Apple silicon (no AArch32 EL0) rejects
         # it, so every exe dies before `main`:
@@ -1403,11 +1406,25 @@ final: prev: {
               # `comp-v2-builder` reads configure-args from plan-nix
               # instead, so the toggle has to live in cabal.project
               # to make it through plan-nix into the v2 slice.
-              proj = evalSystem: profiled: pkgs: pkgs.haskell-nix.cabalProject' ({pkgs, ...}: {
+              proj = evalSystem: profiled: pkgs: pkgs.haskell-nix.cabalProject' ({config, pkgs, ...}: {
                 name = "iserv-proxy";
                 inherit compiler-nix-name evalSystem;
 
-                src = sources.iserv-proxy;
+                # The ARM32 symbol table includes missing-function stubs for
+                # real static Bionic routines. One shadows libc startup before
+                # TLS exists. Patch before planning so v2 hashes and source
+                # archives describe the same implementation.
+                src = if compiler-nix-name == "ghc914-sh"
+                  && pkgs.stdenv.hostPlatform.isAndroid
+                  && pkgs.stdenv.hostPlatform.isAarch32
+                then config.evalPackages.applyPatches {
+                  name = "android-arm32-iserv-proxy-source";
+                  src = sources.iserv-proxy;
+                  patches = [
+                    ./patches/iserv-proxy-arm32-static-libc.patch
+                    ./patches/iserv-proxy-arm32-bionic-symbols.patch
+                  ];
+                } else sources.iserv-proxy;
 
                 modules = [{
                   config = {
