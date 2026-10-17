@@ -35,7 +35,7 @@ import Cabal2Nix hiding (Git)
 import qualified Cabal2Nix as C2N
 import Cabal2Nix.Util
 
-import Stack2nix.Cache (appendCache, cacheHits)
+import NixTools.Cache (appendCache, cacheHits)
 import Stack2nix.CLI (Args(..))
 import Stack2nix.Project
 import Stack2nix.Stack (Stack(..), Dependency(..), Location(..), PackageFlags, GhcOptions)
