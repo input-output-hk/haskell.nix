@@ -7,7 +7,7 @@ TEST_SUITE ?= unit-tests
 SYSTEM ?= x86_64-linux
 QEMU_ARG = $(if $(QEMU),--argstr qemu "$(QEMU)",)
 
-.PHONY: help check test test-linux-cross-wrapper test-v2-cabal-overrides test-qemu-linux-user test-qemu-arm32-personality probe-rosetta-signals test-rosetta-signals verify
+.PHONY: help check test test-linux-cross-wrapper test-v2-cabal-overrides test-qemu-linux-user test-qemu-arm32-personality test-elf-comdat-functions probe-rosetta-signals test-rosetta-signals verify
 
 ##@ Verification
 check: ## Check whitespace, Nix syntax, emulator selection, and dependencies
@@ -22,6 +22,10 @@ check: ## Check whitespace, Nix syntax, emulator selection, and dependencies
 	nix-instantiate --parse overlays/haskell.nix >/dev/null
 	nix-instantiate --parse test/default.nix >/dev/null
 	nix-instantiate --parse test/annotations/default.nix >/dev/null
+	nix-instantiate --parse modules/cabal-project.nix >/dev/null
+	nix-instantiate --parse modules/stable-haskell-rts-comdat.nix >/dev/null
+	nix-instantiate --parse test/elf-comdat-functions.nix >/dev/null
+	nix-instantiate --extra-experimental-features flakes --eval --strict --expr 'import ./test/elf-comdat-scope.nix {}'
 	nix-instantiate --parse test/qemu-linux-user.nix >/dev/null
 	nix-instantiate --parse test/qemu-arm32-personality.nix >/dev/null
 	nix-instantiate --eval --strict test/qemu-selection.nix
@@ -40,6 +44,9 @@ test-v2-cabal-overrides: ## Check revised metadata survives V2 source patches (S
 	timeout -k 5 $(TIMEOUT) nix-build --no-out-link test/v2-cabal-overrides.nix --argstr system $(SYSTEM)
 
 verify: check test-linux-cross-wrapper ## Run syntax, dependency, and wrapper regressions
+
+test-elf-comdat-functions: ## Test RTS COMDAT selection and duplicate rejection (native x86_64 Linux, TIMEOUT)
+	timeout -k 5 $(TIMEOUT) nix-build --no-out-link test/default.nix --argstr compiler-nix-name ghc914-sh -A elf-comdat-functions.run
 
 ##@ Linux emulator diagnostics
 probe-rosetta-signals: ## Record host signal behavior without requiring compliant Rosetta behavior (SYSTEM)
