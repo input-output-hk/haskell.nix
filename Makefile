@@ -33,6 +33,9 @@ check: ## Check whitespace, Nix syntax, emulator selection, and dependencies
 	nix-instantiate --eval --strict test/iserv-source-platform.nix -A passed
 	nix-instantiate --eval --strict test/qemu-linux-user-inputs.nix -A passed
 	nix-instantiate --parse test/rosetta-signals.nix >/dev/null
+	nix-instantiate --parse overlays/mingw-stdio.nix >/dev/null
+	nix-instantiate --parse test/mingw-stdio/default.nix >/dev/null
+	nix-instantiate --eval --strict test/mingw-stdio/selection.nix
 
 test: ## Run the existing test driver (COMPILER, TEST_SUITE, TIMEOUT)
 	timeout -k 5 $(TIMEOUT) ./test/tests.sh $(COMPILER) $(TEST_SUITE)
