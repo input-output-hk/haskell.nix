@@ -11,6 +11,10 @@ _Static_assert(sizeof(wchar_t) == 2, "Windows wide-character ABI required");
 
 static bool check_capacity(const char *name, size_t capacity,
                            bool expect_success) {
+    if (name == NULL) {
+        return false;
+    }
+
     enum { BUFFER_CAPACITY = 8, EXPECTED_LENGTH = 5 };
     const wchar_t expected[] = L"ab:cd";
     const wchar_t sentinel = (wchar_t)0x5a5a;
