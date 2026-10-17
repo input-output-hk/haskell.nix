@@ -106,6 +106,14 @@ The captured set in `$out/store/` must equal exactly
    `expectedUnitId` check at the end requires the captured set
    to equal `[expectedUnitId]` exactly.
 
+   Cabal-file overrides are copied before package patches and hooks, matching
+   V1. For patched or hooked sources, every slice index uses the resulting
+   tarball's Cabal file; it must not restore the unpatched override during
+   Cabal's revision update. Untouched Hackage sources retain their original
+   tarball and separate revised Cabal file. Run the source-only regression with
+   `make test-v2-cabal-overrides SYSTEM=aarch64-darwin TIMEOUT=300` (or your native
+   system); it does not build a Haskell compiler or package.
+
 5. **`builder/compose-store.nix`** is a tiny helper that lndirs
    slices into a single cabal-store layout, walking
    `pkgsHostTarget` and following `nix-support/transitive-deps`
@@ -231,12 +239,14 @@ and avoids the O(N²) heap blow-up the previous nix-side
 
 ## UnitId stability
 
-`cabal v2-build` hashes a fixed set of inputs to compute each
-component's UnitId (`pkgHashConfigInputs`):
+`cabal v2-build` hashes `PackageHashInputs` to compute each
+component's UnitId, including:
 
+- Source archive hash (`pkgHashSourceHash`),
+- Dependency component IDs,
 - `pkgHashCompilerId` (`with-compiler:` text in cabal.project),
 - `pkgHashFlagAssignment` (per-package `flags:`),
-- `pkgHashProgramArgs` (`--with-PROG=` flags + per-package
+- `pkgHashProgramArgs` (program option arguments, including per-package
   `ghc-options:`),
 - `pkgHashConfigureScriptArgs` (per-package `configure-options:`),
 - `pkgHashExtra(Include|Lib)Dirs` (per-package
@@ -289,6 +299,15 @@ against `expectedPackage` and exits early if cabal is about to
 build any package other than the slice's target — that almost
 always means a hash input has drifted.  After the build, the
 captured unit-ids must equal `[expectedUnitId]` exactly.
+
+Patching a Hackage archive after project planning can still violate this
+check: the slice uses a repacked archive while the project plan records the
+upstream archive's hash. A native AArch64 Darwin/GHC 9.14 build of patched
+`crypton-x509-system-1.6.8` reproduces this failure both before and after the
+Cabal-override ordering fix, with identical direct dependency IDs. Keeping
+the effective Cabal file in the slice's indexes does not resolve this
+planning/source consistency limit. Supply consistent sources before project
+planning; do not disable the unit-ID check to accept a different result.
 
 ## `checkAgainstPlan` — diagnosing divergence
 

@@ -7,11 +7,15 @@ TEST_SUITE ?= unit-tests
 SYSTEM ?= x86_64-linux
 QEMU_ARG = $(if $(QEMU),--argstr qemu "$(QEMU)",)
 
-.PHONY: help check test test-linux-cross-wrapper test-qemu-linux-user probe-rosetta-signals test-rosetta-signals verify
+.PHONY: help check test test-linux-cross-wrapper test-v2-cabal-overrides test-qemu-linux-user probe-rosetta-signals test-rosetta-signals verify
 
 ##@ Verification
 check: ## Check whitespace, Nix syntax, emulator selection, and dependencies
 	git diff --check
+	nix-instantiate --parse builder/comp-v2-builder.nix >/dev/null
+	nix-instantiate --parse builder/build-cabal-slice.nix >/dev/null
+	nix-instantiate --parse builder/stage-cabal-file.nix >/dev/null
+	nix-instantiate --parse test/v2-cabal-overrides.nix >/dev/null
 	nix-instantiate --parse overlays/linux-cross.nix >/dev/null
 	nix-instantiate --parse overlays/armv6l-linux.nix >/dev/null
 	nix-instantiate --parse overlays/qemu-linux-user.nix >/dev/null
@@ -26,6 +30,9 @@ test: ## Run the existing test driver (COMPILER, TEST_SUITE, TIMEOUT)
 
 test-linux-cross-wrapper: ## Test wrapper arguments, process ownership, and profiling selection
 	$(PYTHON) test/linux-cross-wrapper.py
+
+test-v2-cabal-overrides: ## Check revised metadata survives V2 source patches (SYSTEM, TIMEOUT)
+	timeout -k 5 $(TIMEOUT) nix-build --no-out-link test/v2-cabal-overrides.nix --argstr system $(SYSTEM)
 
 verify: check test-linux-cross-wrapper ## Run syntax, dependency, and wrapper regressions
 
