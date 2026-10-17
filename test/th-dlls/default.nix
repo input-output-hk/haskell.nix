@@ -4,6 +4,12 @@
 with lib;
 
 let
+  i386Musl = compiler-nix-name == "ghc914-sh"
+    && stdenv.buildPlatform.isLinux
+    && stdenv.hostPlatform.isLinux
+    && stdenv.hostPlatform.isMusl
+    && stdenv.hostPlatform.isx86_32;
+
   # See `docs/dev/profiling.md` — v2 expects profiling toggles to
   # come from cabal.project so plan-nix records them.  Pass
   # `profiled` here to instantiate a project whose plan-nix has
@@ -24,7 +30,7 @@ let
         library-profiling: True
     '';
     modules = import ../modules.nix ++ [{
-      builderVersion = lib.mkIf (compiler-nix-name == "ghc914-sh") 2;
+      builderVersion = lib.mkIf i386Musl 2;
       # Components whose build runs splices (see `usesTemplateHaskell`).
       packages.th-dlls.components.library.usesTemplateHaskell = true;
       packages.th-dlls.components.exes.just-template-haskell.usesTemplateHaskell = true;
@@ -98,7 +104,7 @@ in lib.recurseIntoAttrs {
     # ghc914-sh's pinned RTS handles the i386 musl GOT relocations.
     || ((stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isMusl
         && stdenv.hostPlatform.isx86_32)
-        && !(compiler-nix-name == "ghc914-sh" && stdenv.buildPlatform.isLinux))
+        && !i386Musl)
 
     ## Old GHC versions (TODO remove)
     # Failed to lookup symbol: __aarch64_swp8_acq_rel

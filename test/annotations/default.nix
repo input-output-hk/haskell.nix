@@ -23,7 +23,7 @@ let
     inherit compiler-nix-name evalSystem;
     src = testSrc "annotations";
     modules = [{
-      builderVersion = lib.mkIf (compiler-nix-name == "ghc914-sh") 2;
+      builderVersion = lib.mkIf i386Musl 2;
       packages.test-annotations.components.library.usesTemplateHaskell = true;
       packages.test-annotations.flags.i386-elf-got-relocations = i386Musl;
     }];
