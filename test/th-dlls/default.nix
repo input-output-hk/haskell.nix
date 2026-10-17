@@ -24,6 +24,7 @@ let
         library-profiling: True
     '';
     modules = import ../modules.nix ++ [{
+      builderVersion = lib.mkIf (compiler-nix-name == "ghc914-sh") 2;
       # Components whose build runs splices (see `usesTemplateHaskell`).
       packages.th-dlls.components.library.usesTemplateHaskell = true;
       packages.th-dlls.components.exes.just-template-haskell.usesTemplateHaskell = true;
@@ -94,8 +95,10 @@ in lib.recurseIntoAttrs {
     # failure; key it off the platform instead.  No compiler has ever had this
     # job succeed on armv7a-android.  `exe-dlls` is unaffected and stays on.
     || (stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32)
-    # unhandled ELF relocation(Rel) type 10
-    || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_32)
+    # ghc914-sh's pinned RTS handles the i386 musl GOT relocations.
+    || ((stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isMusl
+        && stdenv.hostPlatform.isx86_32)
+        && !(compiler-nix-name == "ghc914-sh" && stdenv.buildPlatform.isLinux))
 
     ## Old GHC versions (TODO remove)
     # Failed to lookup symbol: __aarch64_swp8_acq_rel

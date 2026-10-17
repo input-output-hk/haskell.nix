@@ -9,6 +9,11 @@ let
     inherit (stdenv) buildPlatform hostPlatform;
     qemuVersion = pkgsBuildBuild.qemu.version;
   };
+  i386Musl = compiler-nix-name == "ghc914-sh"
+    && stdenv.buildPlatform.isLinux
+    && stdenv.hostPlatform.isLinux
+    && stdenv.hostPlatform.isMusl
+    && stdenv.hostPlatform.isx86_32;
   # Test the repaired emulator without changing the generic native-builder
   # policy: its base restriction also covers older cross-compiler stalls.
   testProject = if arm32Qemu then (pkgs.extend (_: prev: {
@@ -18,7 +23,9 @@ let
     inherit compiler-nix-name evalSystem;
     src = testSrc "annotations";
     modules = [{
+      builderVersion = lib.mkIf (compiler-nix-name == "ghc914-sh") 2;
       packages.test-annotations.components.library.usesTemplateHaskell = true;
+      packages.test-annotations.flags.i386-elf-got-relocations = i386Musl;
     }];
   } // lib.optionalAttrs profiled {
     cabalProjectLocal = ''
@@ -35,8 +42,9 @@ in lib.recurseIntoAttrs ({
     stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWasm
     # Failed to lookup symbol: __aarch64_swp8_acq_rel
     || (builtins.elem compiler-nix-name ["ghc947" "ghc948"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
-    # unhandled ELF relocation(Rel) type 10
-    || (stdenv.hostPlatform.isMusl && stdenv.hostPlatform.isx86_32)
+    # ghc914-sh's pinned RTS handles the i386 musl GOT relocations.
+    || ((stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isMusl
+        && stdenv.hostPlatform.isx86_32) && !i386Musl)
     # Keep the old ARM32 exclusion on routes without the Linux QEMU fix.
     || (stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32 && !arm32Qemu)
     # Rosetta error: invalid gdt selector index 5 (wine crashes under Rosetta with msvcrt)
@@ -46,9 +54,13 @@ in lib.recurseIntoAttrs ({
     inherit (project) plan-nix;
   } // lib.optionalAttrs arm32Qemu {
     plan-nix-profiled = profiledProject.plan-nix;
+  } // lib.optionalAttrs i386Musl {
+    plan-nix-profiled = profiledProject.plan-nix;
   };
 
   build = project.hsPkgs.test-annotations.components.library;
 } // lib.optionalAttrs arm32Qemu {
+  build-profiled = profiledProject.hsPkgs.test-annotations.components.library;
+} // lib.optionalAttrs i386Musl {
   build-profiled = profiledProject.hsPkgs.test-annotations.components.library;
 })

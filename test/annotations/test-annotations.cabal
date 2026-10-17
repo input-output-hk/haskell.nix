@@ -8,3 +8,14 @@ library
   hs-source-dirs: .
   build-depends: base
   default-language: Haskell2010
+  if flag(i386-elf-got-relocations) && os(linux) && arch(i386)
+    build-depends: template-haskell
+    other-modules: RelocProbe
+    c-sources: rel10-a.c rel10-b.c
+    cc-options: -fPIC
+    cpp-options: -DTEST_I386_ELF_GOT_RELOCS
+
+flag i386-elf-got-relocations
+  description: Exercise i386 ELF GOT relocations in the compile-time interpreter.
+  default: False
+  manual: True
