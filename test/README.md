@@ -65,3 +65,31 @@ A cached Hydra result also does not prove execution on the affected builder.
 
 For the verified crash and hang mechanism, see
 [the cross-compilation investigation](../docs/tutorials/cross-compilation.md#diagnosing-template-haskell-failures-on-rosetta-builders).
+
+#### ELF COMDAT function regression
+
+On native x86_64 Linux:
+
+```shell
+make test-elf-comdat-functions TIMEOUT=600
+```
+
+The test driver exposes `elf-comdat-functions.run` for `ghc914-sh` on this
+platform. It uses the selected compiler's configured RTS source and headers
+to compile only `Elf.c` and `Linker.c`, then links a small loader probe with
+these replacement objects. A linker-map check ensures the original archive
+members were not selected. It does not rebuild GHC or the other RTS objects;
+the compiler and its normal inputs must already be built or substituted.
+
+Both object orders must resolve one full-section COMDAT function, including
+GCC's zero-size PIC-thunk form. Baseline duplicate failures and negative cases
+retain strong duplicate rejection: ordinary groups, partial functions,
+additional definitions, differing signatures, and archive-owner changes.
+Every probe has a 15-second runtime bound. `make check` also exercises the
+actual project module's fixed point and its platform, compiler, builder,
+profiling, and patch-order conditions without building a compiler.
+
+The production patch applies only to the `ghc914-sh` v2 source-built RTS for
+i386 musl targets built on Linux, including auxiliary interpreters and all
+RTS ways. The native loader test checks symbol-selection behavior; it does
+not by itself qualify a profiled target interpreter or a final static CLI.

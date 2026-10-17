@@ -299,6 +299,19 @@ let
     c-ffi = callTest ./c-ffi { inherit util; };
     th-dlls = callTest ./th-dlls { inherit util; };
     th-dlls-minimal = callTest ./th-dlls-minimal { inherit util; };
+    elf-comdat-functions = lib.recurseIntoAttrs {
+      # Exercise the native ELF loader once. The production fix is scoped
+      # separately to the source-built i386 musl RTS in cross projects.
+      meta.disabled = compiler-nix-name != "ghc914-sh"
+        || !stdenv.hostPlatform.isLinux
+        || !stdenv.hostPlatform.isx86_64
+        || stdenv.hostPlatform.libc != "glibc"
+        || stdenv.buildPlatform.config != stdenv.hostPlatform.config;
+      run = import ./elf-comdat-functions.nix {
+        pkgs = pkgs.pkgsBuildBuild;
+        compiler = pkgs.pkgsBuildBuild.haskell-nix.compiler.${compiler-nix-name};
+      };
+    };
     qemu-linux-user = lib.recurseIntoAttrs {
       # Exercise the build-host emulator once, independent of the Haskell target.
       meta.disabled = !pkgs.pkgsBuildBuild.stdenv.hostPlatform.isLinux
