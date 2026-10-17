@@ -246,6 +246,14 @@ let
     c-ffi = callTest ./c-ffi { inherit util; };
     th-dlls = callTest ./th-dlls { inherit util; };
     th-dlls-minimal = callTest ./th-dlls-minimal { inherit util; };
+    qemu-linux-user = lib.recurseIntoAttrs {
+      # Exercise the build-host emulator once, independent of the Haskell target.
+      meta.disabled = !pkgs.pkgsBuildBuild.stdenv.hostPlatform.isLinux
+        || !pkgs.pkgsBuildBuild.stdenv.hostPlatform.isx86_64
+        || lib.versionOlder pkgs.pkgsBuildBuild.qemu.version "9.1"
+        || lib.versionAtLeast pkgs.pkgsBuildBuild.qemu.version "12";
+      run = import ./qemu-linux-user.nix { pkgs = pkgs.pkgsBuildBuild; };
+    };
     external-static-plugin = callTest ./external-static-plugin {};
     exe-dlls = callTest ./exe-dlls { inherit util; };
     exe-lib-dlls = callTest ./exe-lib-dlls { inherit util; };
