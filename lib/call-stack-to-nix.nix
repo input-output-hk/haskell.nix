@@ -10,6 +10,7 @@
 , stackYaml ? "stack.yaml"
 , ignorePackageYaml ? false
 , cache ? null
+, inputMap ? {}
 , stack-sha256 ? null
 , resolverSha256 ? null
 , materialized ? null # Location of a materialized copy of the nix files
@@ -81,7 +82,7 @@ let
       substituteInPlace ${stackYaml} --replace "${resolver}" "${fetchedResolver}"
     ''}
     ${evalPackages.lib.optionalString (cache != null) ''
-      cp ${mkCacheFile cache}/.stack-to-nix.cache* $out${subDir'}
+      cp ${mkCacheFile inputMap cache}/.stack-to-nix.cache* $out${subDir'}
     ''}
     (cd $out${subDir'} && stack-to-nix ${stackToNixArgs})
 

@@ -1,0 +1,10 @@
+resolver: lts-23.7
+
+packages:
+- .
+
+extra-deps:
+# The url is deliberately unfetchable and the commit does not exist: this test
+# passes only if `inputMap` supplies the source without either fetcher running.
+- git: https://github.com/input-output-hk/haskell.nix-does-not-exist.git
+  commit: 0123456789abcdef0123456789abcdef01234567

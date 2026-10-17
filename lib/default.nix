@@ -288,6 +288,19 @@ in {
     inherit (pkgs.buildPackages) pkgs;
   };
 
+  # Look a git dependency up in an `inputMap`, returning the already-fetched
+  # source or null. Keyed by "<url>/<rev>", or by "<url>" when the input's own
+  # rev matches. See `inputMap` in call-cabal-project-to-nix.nix.
+  lookupInputMap = inputMap: { url, rev, ... }:
+    if inputMap ? "${url}/${rev}"
+      then inputMap."${url}/${rev}"
+    else if inputMap ? ${url}
+      then
+        (if inputMap.${url}.rev or null != rev
+          then throw "${inputMap.${url}.rev or "input"} may not match ${rev} for ${url}; use \"${url}/${rev}\" as the inputMap key if ${rev} is a branch or tag."
+          else inputMap.${url})
+    else null;
+
   inherit (import ./cabal-project-parser.nix {
     inherit pkgs;
   }) parseIndexState parseSourceRepositoryPackages parseRepositories parseSourceRepositoryPackageBlock parseRepositoryBlock;
