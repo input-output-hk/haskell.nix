@@ -1,9 +1,9 @@
 # Test backpack
-{ stdenv, lib, haskellLib, cabalProject', testSrc, compiler-nix-name, evalPackages, testCabalProjectLocal, testInputMap }:
+{ stdenv, lib, haskellLib, cabalProject', testSrc, compiler-nix-name, evalPackages, evalSystem, testCabalProjectLocal, testInputMap }:
 
 let
   project = cabalProject' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "backpack";
     inputMap = testInputMap;
     cabalProjectLocal = testCabalProjectLocal

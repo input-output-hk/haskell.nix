@@ -72,6 +72,15 @@
       url = "github:stable-haskell/iserv-proxy?ref=iserv-syms";
       flake = false;
     };
+    # hyper-linux (`hl`, github:zw3rk/hyper-linux) runs Linux ELFs on Apple
+    # Silicon macOS via Hypervisor.framework.  It fills the qemu-user-mode slot
+    # (which doesn't exist on macOS) when cross-compiling darwin -> linux, so
+    # Template Haskell / tests can run the target binary.  This is a real flake
+    # (we want its `hl` package); keep its nixpkgs on ours.
+    hyper-linux = {
+      url = "github:zw3rk/hyper-linux";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # head.hackage's patches, plus the tool its CI uses to turn them into a
     # package repository.  We build the repository ourselves rather than
     # downloading the published one -- see overlays/head-hackage.nix.
@@ -81,6 +90,22 @@
     };
     hackage-overlay-repo-tool = {
       url = "github:bgamari/hackage-overlay-repo-tool";
+      flake = false;
+    };
+
+    # cabal-doctest 1.0.12 (the newest release on hackage) does not build
+    # against Cabal 3.17: that release split Verbosity into VerbosityFlags and
+    # VerbosityHandles, so `buildVerbosity`'s result no longer typechecks where
+    # the Simple.Utils helpers want a Verbosity.  haskell-gi's custom Setup.hs
+    # depends on it, so the gi-gtk test needs the fixed fork.
+    #
+    # Pinned to the rev rather than the branch on purpose: the same rev is
+    # named as the `tag:` of the source-repository-package in
+    # test/gi-gtk/default.nix, and lib/call-cabal-project-to-nix.nix checks
+    # `inputMap.<url>.rev` against that tag.  Pinning keeps `nix flake update`
+    # from moving one half of that pair.
+    cabal-doctest = {
+      url = "github:stable-haskell/cabal-doctest/641cda5a4590f2384568a9598713f3039b99258d";
       flake = false;
     };
   };
@@ -110,7 +135,13 @@
       # but leaves any evaluator without darwin builders unable to evaluate
       # *anything* -- including the linux jobs.  CI on GitHub-hosted runners
       # overrides this to "x86_64-linux" (see .github/workflows/pipeline.yml).
-      evalSystem = "aarch64-darwin";
+      #
+      # Keep the `or` fallback so an IMPURE evaluation (`nix build --impure`)
+      # picks the evaluator's own system: that makes the linux jobs buildable
+      # on a machine with no darwin builders, which is how they get tested
+      # outside CI.  Pure evaluation is unaffected -- `currentSystem` is not in
+      # scope there, so it still resolves to the "aarch64-darwin" literal.
+      evalSystem = builtins.currentSystem or "aarch64-darwin";
       defaultCompiler = "ghc967";
       config = import ./config.nix;
 
