@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-9be9712d.js";
+            window.path_to_searchindex_js = "../searchindex-3c0649bb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-8e5f1025.js"></script>
@@ -182,7 +182,7 @@ derivation per Cabal component by running <code>cabal v2-build</code> inside an
 isolated, pre-populated <strong>cabal store</strong> and capturing the new entries
 that invocation produced.</p>
 <p>The unit of output is a <em>slice</em> — a directory laid out exactly the
-way cabal’s <code>~/.cabal/store/ghc-X.Y.Z/</code> is, holding only the units
+way cabal’s store is (<code>host/&lt;platform&gt;/</code>), holding only the units
 this component caused cabal to install.  Composing a downstream
 slice’s starting store from upstream slices’ <code>$out/store/</code> (via
 <code>lndir</code>) lets cabal reuse those units instead of rebuilding.</p>
@@ -202,7 +202,7 @@ units) as already-installed and reuses them.</li>
 <li><strong>Match what users see in development.</strong>  <code>cabal v2-build</code> is the
 command users run interactively.  Producing a slice with the same
 command (and the same UnitId hash inputs) means the units we
-pre-populate in <code>~/.cabal/store/</code> <em>can</em> be reused by a plain
+pre-populate in the project’s cabal store <em>can</em> be reused by a plain
 <code>cabal v2-build</code> inside the shell.</li>
 </ul>
 <h2 id="what-v2-produces"><a class="header" href="#what-v2-produces">What v2 produces</a></h2>
@@ -276,6 +276,13 @@ the slice’s own <code>nix-support/transitive-deps</code> so downstream
 consumers can follow the closure the same way.  The
 <code>expectedUnitId</code> check at the end requires the captured set
 to equal <code>[expectedUnitId]</code> exactly.</p>
+<p>Cabal-file overrides are copied before package patches and hooks, matching
+V1. For patched or hooked sources, every slice index uses the resulting
+tarball’s Cabal file; it must not restore the unpatched override during
+Cabal’s revision update. Untouched Hackage sources retain their original
+tarball and separate revised Cabal file. Run the source-only regression with
+<code>make test-v2-cabal-overrides SYSTEM=aarch64-darwin TIMEOUT=300</code> (or your native
+system); it does not build a Haskell compiler or package.</p>
 </li>
 <li>
 <p><strong><code>builder/compose-store.nix</code></strong> is a tiny helper that lndirs
@@ -394,12 +401,14 @@ bash (with the closure recorded per-slice in
 and avoids the O(N²) heap blow-up the previous nix-side
 <code>passthru.transitiveStoreSlices</code> walk caused on big projects.</p>
 <h2 id="unitid-stability"><a class="header" href="#unitid-stability">UnitId stability</a></h2>
-<p><code>cabal v2-build</code> hashes a fixed set of inputs to compute each
-component’s UnitId (<code>pkgHashConfigInputs</code>):</p>
+<p><code>cabal v2-build</code> hashes <code>PackageHashInputs</code> to compute each
+component’s UnitId, including:</p>
 <ul>
+<li>Source archive hash (<code>pkgHashSourceHash</code>),</li>
+<li>Dependency component IDs,</li>
 <li><code>pkgHashCompilerId</code> (<code>with-compiler:</code> text in cabal.project),</li>
 <li><code>pkgHashFlagAssignment</code> (per-package <code>flags:</code>),</li>
-<li><code>pkgHashProgramArgs</code> (<code>--with-PROG=</code> flags + per-package
+<li><code>pkgHashProgramArgs</code> (program option arguments, including per-package
 <code>ghc-options:</code>),</li>
 <li><code>pkgHashConfigureScriptArgs</code> (per-package <code>configure-options:</code>),</li>
 <li><code>pkgHashExtra(Include|Lib)Dirs</code> (per-package
@@ -452,6 +461,14 @@ against <code>expectedPackage</code> and exits early if cabal is about to
 build any package other than the slice’s target — that almost
 always means a hash input has drifted.  After the build, the
 captured unit-ids must equal <code>[expectedUnitId]</code> exactly.</p>
+<p>Patching a Hackage archive after project planning can still violate this
+check: the slice uses a repacked archive while the project plan records the
+upstream archive’s hash. A native AArch64 Darwin/GHC 9.14 build of patched
+<code>crypton-x509-system-1.6.8</code> reproduces this failure both before and after the
+Cabal-override ordering fix, with identical direct dependency IDs. Keeping
+the effective Cabal file in the slice’s indexes does not resolve this
+planning/source consistency limit. Supply consistent sources before project
+planning; do not disable the unit-ID check to accept a different result.</p>
 <h2 id="checkagainstplan--diagnosing-divergence"><a class="header" href="#checkagainstplan--diagnosing-divergence"><code>checkAgainstPlan</code> — diagnosing divergence</a></h2>
 <p>Each slice has a sibling derivation at
 <code>hsPkgs.&lt;pkg&gt;.components.&lt;kind&gt;.&lt;n&gt;.checkAgainstPlan</code>.  It re-runs
@@ -486,27 +503,38 @@ implementation in <code>builder/shell-for-v2.nix</code> (see the dispatch in
 <code>builder/default.nix</code>).  Users opting into v2 wholesale don’t have
 to change their shell call site.</p>
 <p>Where the v1 shell wraps GHC with a pre-populated package db, the
-v2 shell pre-populates the user’s cabal store
-(<code>~/.cabal/store/&lt;ghcDir&gt;/</code>) so a plain <code>cabal v2-build</code> inside
-the shell reuses our slices instead of rebuilding from source —
-and so public sublibs that the v1 GHC-package-db approach can’t
-expose to cabal show up correctly.</p>
+v2 shell pre-populates the project’s cabal store so a plain
+<code>cabal v2-build</code> inside the shell reuses our slices instead of
+rebuilding from source — and so public sublibs that the v1
+GHC-package-db approach can’t expose to cabal show up correctly.</p>
+<p>The v2 builder’s cabal-install (<code>haskell-nix.v2-cabal-install</code>, the
+stable-haskell fork) keeps a project-local store under the build dir,
+<code>&lt;project root&gt;/dist-newstyle/store/</code>, with units under
+<code>host/&lt;platform&gt;/</code> (and a <code>build -&gt; host</code> link for build-stage
+units).  The project root is found the way cabal finds it: the
+nearest directory at or above <code>$PWD</code> with a <code>cabal.project</code>, else
+<code>$PWD</code>.  A project built with <code>--builddir DIR</code> re-runs
+<code>haskell-nix-cabal-store-sync DIR</code>.</p>
+<p>The shell’s <code>cabal</code> has to be that same cabal-install: a different
+one computes different UnitIds (and may not read the <code>host/</code>
+layout), misses every unit, and rebuilds the world.
+<code>tools.cabal = {}</code> or <code>"latest"</code> selects it; it is also available
+as <code>project.v2-cabal-install</code> for shells built without <code>shellFor</code>.</p>
 <p>The hook (<code>haskell-nix-cabal-store-sync</code>):</p>
 <ol>
 <li>Writes a <code>nix-store --add-root --indirect</code> gcroot for the
-composed dep store under <code>~/.cabal/store/.haskell-nix-gcroots/</code>
+composed dep store under <code>&lt;store&gt;/.haskell-nix-gcroots/</code>
 so <code>nix-collect-garbage</code> can’t drop the slices our links point
 at.</li>
 <li>Scans every <code>&lt;unit-id&gt;.conf</code> / unit-dir / lib file in the
-composed store against the user’s existing
-<code>~/.cabal/store/&lt;ghcDir&gt;/</code>, classifying each as new, same, or
-conflict.</li>
+composed store against the project’s existing store,
+classifying each as new, same, or conflict.</li>
 <li>If conflicts exist and <code>--force</code> wasn’t passed, errors out with
 a summary (and instructions to re-run with <code>--force</code>).</li>
 <li>Symlinks new (and, with <code>--force</code>, conflicting) entries from
-composedStore into the user’s store via <code>ln -s</code> (single files)
+composedStore into the project’s store via <code>ln -s</code> (single files)
 or <code>lndir</code> (unit dirs).</li>
-<li>Runs <code>ghc-pkg recache</code> on each touched <code>&lt;ghcDir&gt;/package.db</code>.</li>
+<li>Runs <code>ghc-pkg recache</code> on each touched package db.</li>
 </ol>
 <p>The script is exposed standalone as <code>haskell-nix-cabal-store-sync</code>,
 so a user can re-run it with <code>--force</code> from inside the shell.</p>
@@ -531,7 +559,7 @@ binaries so cabal v2-build’s “near compiler” lookup finds plain
 <code>ghc-pkg</code>.</li>
 <li>Merges <code>passthru.depSlices</code> from every <code>inputsFrom</code> shell into
 this shell’s <code>composedStore</code> so cross + native slices both seed
-<code>~/.cabal/store</code>.</li>
+the project’s cabal store.</li>
 </ul>
 <h2 id="how-configure-argsnix-integrates"><a class="header" href="#how-configure-argsnix-integrates">How configure-args.nix integrates</a></h2>
 <p>Cabal’s <code>plan.json</code> records the exact <code>Setup configure</code> command

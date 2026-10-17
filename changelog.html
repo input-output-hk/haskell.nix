@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-9be9712d.js";
+            window.path_to_searchindex_js = "searchindex-3c0649bb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-8e5f1025.js"></script>
@@ -176,6 +176,81 @@
                     <main>
                         <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="october-16-2026"><a class="header" href="#october-16-2026">October 16, 2026</a></h2>
+<p>New compiler: <code>ghc914-sh</code>, GHC 9.14 from the stable-haskell fork, built
+with the stable-haskell Makefile rather than hadrian, and its boot
+libraries built by haskell.nix’s v2 builder.  Projects using it get
+<code>builderVersion = 2</code> by default (v1 cannot build against the fork’s boot
+packages).  It ships no shared libraries (<code>enableShared = false</code>), no
+haddock for cross targets and no DWARF build, and the tests that need
+those are skipped for it.</p>
+<p>Breaking changes around the eval platform (the platform <code>cabal</code> /
+<code>nix-tools</code> run on during plan construction).  Everything that used to
+take a nixpkgs for this now takes a system string, <code>evalSystem</code>, and
+reuses one memoised nixpkgs per system:</p>
+<ul>
+<li>The project option <code>evalPackages</code> is deprecated: set
+<code>evalSystem = "&lt;system&gt;"</code> instead.  Setting <code>evalPackages</code> still works
+for now (its system becomes the eval system) but warns.</li>
+<li><code>haskell-nix.tool'</code> / <code>tools'</code> take an <code>evalSystem</code> string as their
+first argument.  A nixpkgs is still accepted, with a warning.</li>
+<li><code>haskell-nix.roots</code> takes <code>evalSystem</code>; its <code>evalPackages</code> argument is
+still accepted, with a warning.</li>
+<li>The compiler override argument <code>ghcEvalPackages</code> is gone.  Compilers
+now carry memoised per-eval-system variants: select
+<code>ghc.evalWith.${evalSystem}</code> (or <code>ghc.override { evalSystem = ...; }</code>).</li>
+<li><code>haskellLib.isNativeMusl</code> no longer classifies darwin → linux-musl
+(same CPU architecture) as <em>native</em> musl; it now additionally requires
+the build platform to be Linux, so those darwin-hosted builds take the
+cross-compilation path.</li>
+</ul>
+<p><code>haskell-nix.roots</code> (and <code>p.roots</code>) now also link the plan-nix
+derivations behind the compiler (hadrian, or stage1/stage2 for the
+stable-haskell GHCs; <code>hadrian-plan</code> is now <code>plan-hadrian</code>), the
+iserv-proxy projects, the v2 builder’s <code>cabal-install</code>, and the eval-time
+dummy ghc/ghc-pkg pair — each for the build system and, when
+<code>evalSystem</code> differs, an <code>-eval</code> twin.  Building <code>roots</code> in CI therefore
+caches everything a later evaluation needs to realise via IFD, so
+evaluators (e.g. hydra’s) substitute the plans instead of building them
+mid-eval.</p>
+<p><code>builderVersion = 2</code>:</p>
+<ul>
+<li>Slices are now built with the stable-haskell fork of cabal-install
+(3.17.0.1, <code>haskell-nix.v2-cabal-install</code>) for every compiler, not
+mainline 3.16.1.0, and v2 projects’ plans are made with the matching
+fork nix-tools (<code>nix-tools-unchecked-sh</code>), so the plan’s UnitIds are
+the ones the slices compute.  UnitIds change, so every slice rebuilds
+once.  v1 projects’ plans are unchanged.</li>
+<li>That cabal keeps a project-local store, <code>dist-newstyle/store</code>, and the
+v2 shell now seeds it there (under the project root, found as cabal
+finds it) rather than <code>~/.cabal/store</code>.  The shell’s generated
+<code>cabal.project.local</code> also goes to the project root, and names the
+build compiler, without which the fork cabal resolves its build stage
+(<code>base</code> and all) from hackage.</li>
+<li><code>shellFor</code>’s <code>tools.cabal = "latest"</code> now means the slice builder’s
+cabal-install, like <code>{}</code> already did: the newest one on hackage cannot
+reuse the slices.  The same derivation is <code>project.v2-cabal-install</code>,
+for shells not built with <code>shellFor</code>.</li>
+</ul>
+<p>Cross compilation:</p>
+<ul>
+<li>New component option <code>usesTemplateHaskell</code>, and new <code>haskell-nix</code>
+knobs <code>emulatorSystemFeatures</code>, <code>emulatorNativeBuilderPackages</code>,
+<code>emulatorNativeBuilderCheck</code> and <code>emulatorNativeBuilderTH</code> (plus
+<code>haskellLib.emulatorRunAttrs</code>), for build farms that need to keep
+emulator-run derivations (TH splices, test runs) off builders where
+the emulator is itself emulated.  <code>emulatorSystemFeatures</code> is empty
+by default, which turns the whole mechanism off.</li>
+<li>x86_64-linux cross builds use a user-mode-only qemu (9.1 – 11) with a
+patch for running under Rosetta, and the iserv-proxy input now
+follows <code>stable-haskell/iserv-proxy</code>.</li>
+<li>New <code>hyper-linux</code> flake input (<code>pkgs.hyper-linux</code>): on Apple Silicon
+it is the emulator for darwin → linux cross builds, running Template
+Haskell splices and cross-built test exes, where qemu-user does not
+exist.</li>
+<li>The linux-cross and mingw test wrappers now quote their arguments
+(<code>"$@"</code>), so arguments containing spaces reach the test exe intact.</li>
+</ul>
 <h2 id="august-17-2026"><a class="header" href="#august-17-2026">August 17, 2026</a></h2>
 <p><code>builderVersion = 2</code>: <code>shellFor</code>’s <code>tools.cabal</code> now defaults to the same
 cabal-install the slice builder uses, instead of solving for the newest one

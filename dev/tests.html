@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-9be9712d.js";
+            window.path_to_searchindex_js = "../searchindex-3c0649bb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-8e5f1025.js"></script>
@@ -186,6 +186,88 @@
 nix-tools, then see <code>regen.nix</code>. Run it like this:</p>
 <pre><code class="language-shell">$(nix-build --no-out-link regen.nix)
 </code></pre>
+<h4 id="cross-template-haskell-regression-checks"><a class="header" href="#cross-template-haskell-regression-checks">Cross-Template-Haskell regression checks</a></h4>
+<p>From the repository root:</p>
+<pre><code class="language-shell">make check test-linux-cross-wrapper
+make test-qemu-linux-user SYSTEM=x86_64-linux
+</code></pre>
+<p>The wrapper checks use a recording proxy and require Nix and Python.
+<code>make verify</code> runs the syntax, dependency, emulator-selection, and wrapper
+checks without building QEMU.</p>
+<p>The QEMU checks compile a static AArch64 guest with a cross C compiler.
+They check code-page updates, four concurrent writers over 256 rounds,
+and require real read-only and unmapped writes
+to terminate with signal status 139 within a deadline. <code>QEMU=/nix/store/…</code>
+selects an already-built emulator and records it as a Nix dependency.
+The default uses the same QEMU selection as the Linux cross-TH overlay:
+patched on x86_64 Linux with QEMU 9.1–11, unchanged on native ARM64.
+The test driver exposes <code>qemu-linux-user.run</code> on supported x86_64 Linux
+build hosts, so the checks enter the existing CI test matrix. The guest
+compile uses <code>buildPackages.coreutils</code> for build-host <code>timeout</code>.</p>
+<p>For host signal diagnostics in an ARM64 nix-linux-builder VM:</p>
+<pre><code class="language-shell">make probe-rosetta-signals SYSTEM=x86_64-linux
+make test-rosetta-signals SYSTEM=aarch64-linux
+</code></pre>
+<p>The first command records Rosetta behavior in <code>results.tsv</code> and per-case
+logs even when the host is nonconforming. A successful <strong>probe</strong> build only
+means the evidence was saved. <code>make test-rosetta-signals</code> enforces correct
+signal behavior and currently fails under the affected Rosetta runtime.
+The native ARM64 control should pass in the same VM. <code>preferLocalBuild</code>
+requests a local build and <code>allowSubstitutes = false</code> disables substitution;
+neither forces an output already present in the store to run again.
+To rerun an existing output, use <code>nix-build --check</code> or <code>nix build --rebuild</code>.
+Retain the logs and verify which physical builder executed the tests.
+A cached Hydra result also does not prove execution on the affected builder.</p>
+<p>Android ARM32 has a separate startup regression:</p>
+<pre><code class="language-shell">make test-qemu-arm32-personality SYSTEM=x86_64-linux TIMEOUT=1800
+make test-qemu-arm32-personality SYSTEM=aarch64-linux TIMEOUT=1800
+</code></pre>
+<p>The test compiles a static Bionic payload with the pinned API 26 NDK on an
+x86_64 Linux builder, then runs QEMU on <code>SYSTEM</code>. It checks startup,
+personality queries and setter return values, host-backed <code>UNAME26</code>, and
+thread/fork inheritance and isolation. A small retained TLS alignment input
+accommodates API 26’s older CRT without raising the minimum Android API.
+The Linux cross-TH overlay selects this personality patch only for Android
+ARM32, with QEMU 9.1–11. Bionic initializes the virtual execution domain again
+after an exec; this test does not establish general Linux exec persistence.
+Native ARM64 hosts receive the personality patch without the Rosetta signal
+patch. <code>QEMU=/nix/store/…</code> overrides the emulator for a control run.</p>
+<p>The fixed Android ARM32 route enables <code>annotations.build</code> and
+<code>annotations.build-profiled</code> for <code>ghc914-sh</code> in the existing compiler test
+matrix. Both compile a module annotation through the target interpreter. These
+test projects opt out of the native-builder marker in their own package set;
+the generic policy stays conservative because it also covers unrelated older
+cross-compiler stalls. Other routes retain their existing exclusions.
+Run both through the public CI attributes (choose an available evaluation system):</p>
+<pre><code class="language-sh">timeout -k 5 7200 nix-build ci.nix --arg ifdLevel 3 \
+  --argstr system x86_64-linux --argstr evalSystem x86_64-linux \
+  --no-out-link --max-jobs 1 --cores 1 \
+  -A unstable.ghc914-sh.armv7a-android-prebuilt.tests.annotations.build \
+  -A unstable.ghc914-sh.armv7a-android-prebuilt.tests.annotations.build-profiled
+</code></pre>
+<p>For the verified crash and hang mechanism, see
+<a href="../docs/tutorials/cross-compilation.html#diagnosing-template-haskell-failures-on-rosetta-builders">the cross-compilation investigation</a>.</p>
+<h4 id="elf-comdat-function-regression"><a class="header" href="#elf-comdat-function-regression">ELF COMDAT function regression</a></h4>
+<p>On native x86_64 Linux:</p>
+<pre><code class="language-shell">make test-elf-comdat-functions TIMEOUT=600
+</code></pre>
+<p>The test driver exposes <code>elf-comdat-functions.run</code> for <code>ghc914-sh</code> on this
+platform. It uses the selected compiler’s configured RTS source and headers
+to compile only <code>Elf.c</code> and <code>Linker.c</code>, then links a small loader probe with
+these replacement objects. A linker-map check ensures the original archive
+members were not selected. It does not rebuild GHC or the other RTS objects;
+the compiler and its normal inputs must already be built or substituted.</p>
+<p>Both object orders must resolve one full-section COMDAT function, including
+GCC’s zero-size PIC-thunk form. Baseline duplicate failures and negative cases
+retain strong duplicate rejection: ordinary groups, partial functions,
+additional definitions, differing signatures, and archive-owner changes.
+Every probe has a 15-second runtime bound. <code>make check</code> also exercises the
+actual project module’s fixed point and its platform, compiler, builder,
+profiling, and patch-order conditions without building a compiler.</p>
+<p>The production patch applies only to the <code>ghc914-sh</code> v2 source-built RTS for
+i386 musl targets built on Linux, including auxiliary interpreters and all
+RTS ways. The native loader test checks symbol-selection behavior; it does
+not by itself qualify a profiled target interpreter or a final static CLI.</p>
 
                     </main>
 
