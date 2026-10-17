@@ -467,6 +467,24 @@ in {
           package)
       { };
 
+  # Flake haddock documentation, keyed by component name like `mkFlakePackages`.
+  # Only library/test components with `doHaddock` enabled expose a `doc` output
+  # (see `builder/comp-builder.nix`), so guarding on `component ? doc` selects
+  # exactly those and skips exes, benchmarks and haddock-disabled components —
+  # no null or broken jobs (see #1932).
+  mkFlakeHaddock =
+    foldrAttrVals
+      (package: acc:
+        foldComponents
+          subComponentTypes
+          (component: a:
+            if component ? doc
+              then a // { ${component.passthru.identifier.component-id} = component.doc; }
+              else a)
+          acc
+          package)
+      { };
+
   # Flake package names that are flat and match the cabal component names.
   mkFlakeApps =
     foldrAttrVals
@@ -510,6 +528,7 @@ in {
         , coverage
         , devShells
         , checkedProject
+        , haddock ? {}
     }: {
       # Run all the tests and code coverage
       checks = removeRecurseForDerivations checks;
@@ -517,6 +536,8 @@ in {
         coverage
         # Make sure all the packages build
         packages
+        # Make sure the haddock documentation builds
+        haddock
         # Build and cache any tools in the `devShells`
         devShells;
       # Build tools and cache tools needed for the project
@@ -538,10 +559,14 @@ in {
         , apps ? mkFlakeApps haskellPackages
         , checks ? mkFlakeChecks (collectChecks' haskellPackages)
         , coverage ? {}
+        # Build the haddock documentation of the project components in CI so
+        # broken docs are caught. Set `doHaddock = false` to opt out (#1932).
+        , doHaddock ? true
+        , haddock ? lib.optionalAttrs doHaddock (mkFlakeHaddock haskellPackages)
         , devShell ? project.shell
         , devShells ? { default = devShell; }
         , checkedProject ? project.appendModule { checkMaterialization = true; }
-        , ciJobs ? mkFlakeCiJobs project { inherit checks coverage packages devShells checkedProject; }
+        , ciJobs ? mkFlakeCiJobs project { inherit checks coverage packages haddock devShells checkedProject; }
         , hydraJobs ? ciJobs
       }: {
       inherit
