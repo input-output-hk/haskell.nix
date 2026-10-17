@@ -7,6 +7,35 @@ let
     inherit (config) nonReinstallablePkgs hsPkgs compiler evalPackages builderVersion crossTemplateHaskellSupport cabalProjectLocal;
   };
 
+  # Packages listed in `nonReinstallablePkgs` are forced to the copy shipped
+  # with the compiler (see the `genAttrs ... (_: null)` shadow in `config.hsPkgs`
+  # below).  If the project's plan pins such a package to a *different* version
+  # (via a local package, source-repository-package or extra-hackage) that
+  # override is silently discarded and the build later fails with an opaque
+  # `installed package ... is broken due to missing package <pkg>-<ver>` error.
+  # Warn about that here rather than leaving the user to debug the broken
+  # package-db (see #1657).  The detection lives in `haskellLib` (and is unit
+  # tested); it only considers `nonReinstallablePkgs`, and only fires when the
+  # planned version differs from the compiler-shipped one, so a normal project
+  # (planned version == shipped version) never triggers this.
+  shadowedNonReinstallable = haskellLib.shadowedNonReinstallablePkgs {
+    inherit (config) nonReinstallablePkgs;
+    packages = config.packages;
+    compilerPackages = config.compiler.packages;
+  };
+
+  warnShadowedNonReinstallable = value: lib.foldr (name: acc:
+    lib.warn ''
+      haskell.nix: package '${name}' is listed in `nonReinstallablePkgs`, but this
+      project pins it to version ${config.packages.${name}.package.identifier.version} (the compiler ships ${config.compiler.packages.${name}}).
+      The pinned version will be ignored and the compiler's copy used instead, which
+      usually surfaces later as an opaque
+        `installed package ... is broken due to missing package ${name}-...`
+      error.  To use your version, remove '${name}' from `nonReinstallablePkgs`, e.g.
+        nonReinstallablePkgs = builtins.filter (n: n != "${name}") nonReinstallablePkgs;
+      Otherwise drop the override to keep using the compiler's copy.'' acc)
+    value shadowedNonReinstallable;
+
 in
 
 {
@@ -147,12 +176,12 @@ in
     type = lib.types.unspecified;
   };
 
-  config.hsPkgs =
+  config.hsPkgs = warnShadowedNonReinstallable (
     { inherit (builder) shellFor makeConfigFiles ghcWithPackages ghcWithHoogle;
       buildPackages = buildModules.config.hsPkgs; # TODO perhaps remove this
       pkgsBuildBuild = buildModules.config.hsPkgs;
     } //
     lib.mapAttrs
       (name: pkg: if !(options.packages.${name}.isDefined or true) || pkg == null then null else builder.build-package config pkg)
-      (config.packages // lib.genAttrs (config.nonReinstallablePkgs ++ config.bootPkgs) (_: null));
+      (config.packages // lib.genAttrs (config.nonReinstallablePkgs ++ config.bootPkgs) (_: null)));
 }
