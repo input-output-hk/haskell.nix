@@ -1,4 +1,4 @@
-{ stdenv, lib, haskell-nix, haskellLib, testSrc, compiler-nix-name, evalPackages, runCommand, gitReallyMinimal, buildPackages, testCabalProjectLocal, testInputMap }:
+{ stdenv, lib, haskell-nix, haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, runCommand, gitReallyMinimal, buildPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -58,8 +58,9 @@ let
     cabalProjectLocal = testCabalProjectLocal;
     modules = [{
       packages.githash-test.components.exes.githash-test.build-tools = mkForce [ git ];
+      packages.githash-test.components.exes.githash-test.usesTemplateHaskell = true;
     }];
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
   };
 
   packages = project.hsPkgs;

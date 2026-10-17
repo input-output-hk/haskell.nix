@@ -1,5 +1,5 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages, testCabalProjectLocal, testInputMap }:
+{ stdenv, lib, util, project', haskellLib, testSrc, compiler-nix-name, evalPackages, evalSystem, buildPackages, testCabalProjectLocal, testInputMap }:
 
 with lib;
 
@@ -12,7 +12,7 @@ let
     src = testSrc "th-dlls-minimal/test-clib";
   };
   project = { externalInterpreter, profiled ? false }: project' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalSystem;
     src = testSrc "th-dlls-minimal";
     # Spell test-clib's lib dirs out in `cabal.project` (not via
     # `components.library.libs` alone): that way plan-nix evaluates
@@ -38,6 +38,8 @@ let
         export PROSY_ARGS=-v
       '';
       packages.test-lib.components.library.libs = mkForce [ test-clib ];
+      packages.th-dlls-minimal.components.library.usesTemplateHaskell = true;
+      packages.th-dlls-minimal.components.exes.just-template-haskell.usesTemplateHaskell = true;
      })
      ({pkgs, ...}: lib.optionalAttrs externalInterpreter {
       packages.th-dlls-minimal.ghcOptions = [ "-fexternal-interpreter" ];
