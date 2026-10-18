@@ -1448,6 +1448,15 @@ final: prev: {
                     # Opt out so iserv-proxy's slices use the
                     # unwrapped ghc.
                     crossTemplateHaskellSupport = false;
+                    # MinGW-w64 14's libmingwex `_assert` member references
+                    # `__acrt_iob_func` directly, and base imports
+                    # `__p__environ` through an IAT slot not registered by the
+                    # GHC RTS. Add both aliases to iserv's Windows symbol table.
+                    packages.iserv-proxy.patches = pkgs.lib.optionals (
+                         pkgs.stdenv.hostPlatform.isWindows
+                      && builtins.compareVersions pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.6.1" >= 0
+                      && builtins.compareVersions pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.11" < 0
+                    ) [ ./patches/iserv-proxy-windows-crt-symbols.patch ];
                   };
                 }];
 

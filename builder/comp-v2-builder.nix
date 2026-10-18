@@ -2091,8 +2091,19 @@ let
   # host is one whose splices run through an emulator
   # (`haskell-nix.emulatorNativeBuilderTH`).  Whether a slice will evaluate
   # a splice cannot be told from the plan, so the project says so.
+  #
+  # The native stage2 GHC 9.14 library also stalls under Rosetta. It is
+  # not a cross slice, so select its narrowly scoped exception first.
+  nativeGhcNeedsNativeBuilder = import ./native-ghc-builder.nix {
+    inherit (haskellLib) isCrossHost;
+    inherit (stdenv) buildPlatform;
+    packageName = pkgName;
+    packageVersion = pkgVersion;
+    compilerName = ghc.name;
+  };
   sliceRequiredSystemFeatures =
-    if isBuildStageUnit
+    if nativeGhcNeedsNativeBuilder then emulatorSystemFeatures
+    else if isBuildStageUnit
     || !haskellLib.isCrossHost
     || !(lib.elem pkgName emulatorNativeBuilderPackages
          || ((component.usesTemplateHaskell or false)
@@ -2597,6 +2608,7 @@ let
     version = pkgVersion;
     inherit depSlices;
     inherit v2Fragment;
+    inherit buildToolSourceFrags metadataSourceFrags;
     ghc = sliceGhc;
     twoStage = sliceTwoStage;
     localRepo = null;
@@ -2677,6 +2689,9 @@ let
                      (d: (d.passthru.docEnabled or false))
                      depSlices);
     inherit v2Fragment;
+    # Haddock re-solves the package, including sibling components whose
+    # dependencies are staged as source metadata by the normal slice.
+    inherit buildToolSourceFrags metadataSourceFrags;
     ghc = sliceGhc;
     twoStage = sliceTwoStage;
     localRepo = null;

@@ -7,15 +7,17 @@ TEST_SUITE ?= unit-tests
 SYSTEM ?= x86_64-linux
 QEMU_ARG = $(if $(QEMU),--argstr qemu "$(QEMU)",)
 
-.PHONY: help check test test-linux-cross-wrapper test-v2-cabal-overrides test-qemu-linux-user test-qemu-arm32-personality test-elf-comdat-functions probe-rosetta-signals test-rosetta-signals verify
+.PHONY: help check test test-linux-cross-wrapper test-v2-cabal-overrides test-windows-basement-v1 test-windows-basement-v2 test-mingw-stdio test-qemu-linux-user test-qemu-arm32-personality test-elf-comdat-functions probe-rosetta-signals test-rosetta-signals verify
 
 ##@ Verification
 check: ## Check whitespace, Nix syntax, emulator selection, and dependencies
 	git diff --check
 	nix-instantiate --parse builder/comp-v2-builder.nix >/dev/null
+	nix-instantiate --eval --strict test/native-ghc-builder.nix
 	nix-instantiate --parse builder/build-cabal-slice.nix >/dev/null
 	nix-instantiate --parse builder/stage-cabal-file.nix >/dev/null
 	nix-instantiate --parse test/v2-cabal-overrides.nix >/dev/null
+	nix-instantiate --parse test/windows-basement.nix >/dev/null
 	nix-instantiate --parse overlays/linux-cross.nix >/dev/null
 	nix-instantiate --parse overlays/armv6l-linux.nix >/dev/null
 	nix-instantiate --parse overlays/qemu-linux-user.nix >/dev/null
@@ -31,8 +33,12 @@ check: ## Check whitespace, Nix syntax, emulator selection, and dependencies
 	nix-instantiate --eval --strict test/qemu-selection.nix
 	nix-instantiate --eval --strict test/annotations/selection.nix
 	nix-instantiate --eval --strict test/iserv-source-platform.nix -A passed
+	nix-instantiate --eval --strict test/windows-system-libraries.nix
 	nix-instantiate --eval --strict test/qemu-linux-user-inputs.nix -A passed
 	nix-instantiate --parse test/rosetta-signals.nix >/dev/null
+	nix-instantiate --parse overlays/mingw-stdio.nix >/dev/null
+	nix-instantiate --parse test/mingw-stdio/default.nix >/dev/null
+	nix-instantiate --eval --strict test/mingw-stdio/selection.nix
 
 test: ## Run the existing test driver (COMPILER, TEST_SUITE, TIMEOUT)
 	timeout -k 5 $(TIMEOUT) ./test/tests.sh $(COMPILER) $(TEST_SUITE)
@@ -42,6 +48,16 @@ test-linux-cross-wrapper: ## Test wrapper arguments, process ownership, and prof
 
 test-v2-cabal-overrides: ## Check revised metadata survives V2 source patches (SYSTEM, TIMEOUT)
 	timeout -k 5 $(TIMEOUT) nix-build --no-out-link test/v2-cabal-overrides.nix --argstr system $(SYSTEM)
+
+test-windows-basement-v1: ## Compile Windows Basement 0.0.16 through hsc2hs with builder V1 (SYSTEM, TIMEOUT)
+	timeout -k 5 $(TIMEOUT) nix-build --no-out-link test/windows-basement.nix --argstr system $(SYSTEM) --arg builderVersion 1
+
+test-windows-basement-v2: ## Compile Windows Basement 0.0.16 through hsc2hs with builder V2 (SYSTEM, TIMEOUT)
+	timeout -k 5 $(TIMEOUT) nix-build --no-out-link test/windows-basement.nix --argstr system $(SYSTEM) --arg builderVersion 2
+
+test-mingw-stdio: ## Test MinGW ISO swprintf under Wine (Linux SYSTEM, TIMEOUT)
+	timeout -k 5 $(TIMEOUT) nix-build --no-out-link test/mingw-stdio --arg pkgs \
+	  'let hn = import ./default.nix { system = "$(SYSTEM)"; }; in (import hn.sources.nixpkgs-unstable (hn.nixpkgsArgs // { system = "$(SYSTEM)"; })).pkgsCross.ucrt64'
 
 verify: check test-linux-cross-wrapper ## Run syntax, dependency, and wrapper regressions
 

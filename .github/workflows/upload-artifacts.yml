@@ -18,6 +18,14 @@ on:
       - "!nix-tools-sh-*"
   pull_request:
 
+# Hydra can skip intermediate revisions when a branch advances during an
+# evaluation. Only the latest branch/PR waiter can still qualify that head.
+# Isolate tags and explicit reruns: retrying an older commit must not cancel
+# the current head's waiter, and tagged release execution stays unchanged.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ (startsWith(github.ref, 'refs/tags/') || github.run_attempt > 1) && github.run_id || 'latest' }}
+  cancel-in-progress: true
+
 env:
   GH_TOKEN: ${{ github.token }}
 
