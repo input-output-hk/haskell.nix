@@ -110,6 +110,12 @@ final: prev:
           streaming-commons.patches  = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version }: if builtins.compareVersions version "0.2.3.1" < 0 then ./patches/streaming-commons-0.2.0.0.patch else null) ];
           x509-system.patches        = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/x509-system-1.6.6.patch ];
           crypton-x509-system.patches = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version }: if builtins.compareVersions version "1.6.8" < 0 then ./patches/crypton-x509-system-1.6.patch else ./patches/crypton-x509-system.patch) ];
+          # hsc2hs cannot represent Windows' pointer-valued INVALID_HANDLE_VALUE
+          # directly in Basement's RebindableSyntax module. Convert the
+          # signed pointer-sized C value through Int before constructing IntPtr.
+          basement.patches = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [
+            ({ version }: if version == "0.0.16" then ./patches/basement-0.0.16-invalid-handle.patch else null)
+          ];
 
           # Set all of these to [], as these form the
           # dependency graph of the libiserv, iserv-proxy, and iserv-remote
