@@ -27,8 +27,11 @@ let
       packages.test-annotations.components.library.usesTemplateHaskell = true;
       packages.test-annotations.flags.i386-elf-got-relocations = i386Musl;
     }];
-  } // lib.optionalAttrs profiled {
-    cabalProjectLocal = ''
+  } // lib.optionalAttrs (i386Musl || profiled) {
+    cabalProjectLocal = lib.optionalString i386Musl ''
+      package test-annotations
+        flags: +i386-elf-got-relocations
+    '' + lib.optionalString profiled ''
       package *
         library-profiling: True
     '';
