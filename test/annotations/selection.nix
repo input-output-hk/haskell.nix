@@ -80,6 +80,33 @@ let
       isLinux = true; isMusl = true; isAarch64 = true; libc = "musl";
     };
   };
+  windows967 = select "ghc967" false false false "11.0.1" {
+    buildPlatform = { isLinux = true; isx86_64 = true; };
+    hostPlatform = { isWindows = true; isx86_64 = true; libc = "msvcrt"; };
+  };
+  windowsOtherCompiler = select "ghc984" false false false "11.0.1" {
+    buildPlatform = { isLinux = true; isx86_64 = true; };
+    hostPlatform = { isWindows = true; isx86_64 = true; libc = "msvcrt"; };
+  };
+  windowsOtherArch = select "ghc967" false false false "11.0.1" {
+    buildPlatform = { isLinux = true; isx86_64 = true; };
+    hostPlatform = {
+      isWindows = true; isAarch64 = false; isx86_64 = false; isx86_32 = true;
+      libc = "msvcrt";
+    };
+  };
+  windowsUcrt = select "ghc984" false false false "11.0.1" {
+    buildPlatform = { isLinux = true; isx86_64 = true; };
+    hostPlatform = { isWindows = true; isx86_64 = true; libc = "ucrt"; };
+  };
+  windowsDarwinBuilder = select "ghc967" false false false "11.0.1" {
+    buildPlatform = { isLinux = false; isDarwin = true; isAarch64 = true; isx86_64 = false; };
+    hostPlatform = { isWindows = true; isx86_64 = true; libc = "msvcrt"; };
+  };
+  windowsAarch64LinuxBuilder = select "ghc967" false false false "11.0.1" {
+    buildPlatform = { isLinux = true; isAarch64 = true; isx86_64 = false; };
+    hostPlatform = { isWindows = true; isx86_64 = true; libc = "msvcrt"; };
+  };
 in
 assert !fixed.meta.disabled && fixed ? build-profiled;
 assert otherCompiler.meta.disabled && !(otherCompiler ? build-profiled);
@@ -91,4 +118,10 @@ assert !i386.meta.disabled && i386 ? build-profiled;
 assert i386OtherCompiler.meta.disabled && !(i386OtherCompiler ? build-profiled);
 assert i386NonLinuxBuilder.meta.disabled && !(i386NonLinuxBuilder ? build-profiled);
 assert !darwinAarch64Musl.meta.disabled && darwinAarch64Musl ? build-profiled;
+assert !windows967.meta.disabled;
+assert windowsOtherCompiler.meta.disabled;
+assert windowsOtherArch.meta.disabled;
+assert !windowsUcrt.meta.disabled;
+assert windowsDarwinBuilder.meta.disabled;
+assert windowsAarch64LinuxBuilder.meta.disabled;
 true
