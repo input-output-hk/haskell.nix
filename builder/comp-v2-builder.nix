@@ -2597,6 +2597,7 @@ let
     version = pkgVersion;
     inherit depSlices;
     inherit v2Fragment;
+    inherit buildToolSourceFrags metadataSourceFrags;
     ghc = sliceGhc;
     twoStage = sliceTwoStage;
     localRepo = null;
@@ -2677,6 +2678,9 @@ let
                      (d: (d.passthru.docEnabled or false))
                      depSlices);
     inherit v2Fragment;
+    # Haddock re-solves the package, including sibling components whose
+    # dependencies are staged as source metadata by the normal slice.
+    inherit buildToolSourceFrags metadataSourceFrags;
     ghc = sliceGhc;
     twoStage = sliceTwoStage;
     localRepo = null;
