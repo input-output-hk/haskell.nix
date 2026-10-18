@@ -1,0 +1,15 @@
+diff --git a/cbits/symbols.x86_64-windows.c b/cbits/symbols.x86_64-windows.c
+--- a/cbits/symbols.x86_64-windows.c
++++ b/cbits/symbols.x86_64-windows.c
+@@ -4,0 +5,5 @@
++
++/* `__imp___p__environ` is the MSVCRT import slot used by base.
++   The iserv linker needs a slot containing the accessor function. */
++extern char *** __cdecl __p__environ(void);
++static const void *iserv_imp_p_environ = (const void *)&__p__environ;
+@@ -105,0 +111,2 @@
++    /* MinGW-w64 14 libmingwex `_assert` references this directly. */
++    SYM(__acrt_iob_func),
+@@ -106,0 +114,2 @@
++    { "__imp___p__environ", (void *)&iserv_imp_p_environ,
++      STRENGTH_NORMAL, SYM_TYPE_INDIRECT_DATA },
