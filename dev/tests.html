@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3c0649bb.js";
+            window.path_to_searchindex_js = "../searchindex-ce363c2b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-8e5f1025.js"></script>
@@ -268,6 +268,19 @@ profiling, and patch-order conditions without building a compiler.</p>
 i386 musl targets built on Linux, including auxiliary interpreters and all
 RTS ways. The native loader test checks symbol-selection behavior; it does
 not by itself qualify a profiled target interpreter or a final static CLI.</p>
+<h4 id="mingw-wide-formatting"><a class="header" href="#mingw-wide-formatting">MinGW wide formatting</a></h4>
+<p><code>mingw-stdio.run</code> in the Windows x86_64 test matrix compiles a static C probe
+with the selected cross compiler and runs it under the existing Linux x86_64
+Wine provider. It checks ISO <code>swprintf</code> at exact, spare, and insufficient
+capacity, including bounds and successful termination. The output includes
+the linker map and runtime results. It does not test GHC or Template Haskell.</p>
+<p>Run the UCRT regression against the unstable Nixpkgs pin with
+<code>make test-mingw-stdio SYSTEM=x86_64-linux TIMEOUT=10800</code>. The first build can
+rebuild the patched CRT and cross compiler; later runs reuse those outputs.</p>
+<p><code>make check</code> also checks backport selection and excluded-platform laziness
+without building a compiler, CRT, or Wine. The MinGW 13/14 backport can be
+removed when all supported Nixpkgs pins contain upstream fix
+<a href="https://github.com/mingw-w64/mingw-w64/commit/e7e21db45eaae989b04f3c24964dead5b53310de"><code>e7e21db</code></a>.</p>
 
                     </main>
 
