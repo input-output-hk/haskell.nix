@@ -40,9 +40,13 @@ in lib.recurseIntoAttrs ({
     # Keep the old ARM32 exclusion on routes without the Linux QEMU fix.
     || (stdenv.hostPlatform.isAndroid && stdenv.hostPlatform.isAarch32 && !arm32Qemu)
     # The x86_64 non-UCRT annotation route is qualified with GHC 9.6.7.
-    # Keep other non-UCRT Windows compiler/architecture combinations disabled.
+    # It is qualified only for the x86_64 Linux build platform. Keep other
+    # build-platform, compiler, and Windows target combinations disabled.
     || (stdenv.hostPlatform.isWindows && stdenv.hostPlatform.libc != "ucrt"
-        && !(compiler-nix-name == "ghc967" && stdenv.hostPlatform.isx86_64))
+        && !(compiler-nix-name == "ghc967"
+          && stdenv.hostPlatform.isx86_64
+          && stdenv.buildPlatform.isLinux
+          && stdenv.buildPlatform.isx86_64))
     ;
   ifdInputs = {
     inherit (project) plan-nix;

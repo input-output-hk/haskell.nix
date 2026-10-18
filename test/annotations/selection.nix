@@ -7,20 +7,31 @@ let
     recurseIntoAttrs = attrs: attrs;
   };
   select = compiler-nix-name: isLinux: isAndroid: isAarch32: version:
-    { isWindows ? false, isx86_64 ? false, isAarch64 ? (!isAarch32)
-    , isx86_32 ? false, libc ? "glibc"
-    }:
+    { buildPlatform ? {}, hostPlatform ? {} }:
     import ./default.nix {
       inherit lib compiler-nix-name;
       pkgs = throw "selection must not extend a package set";
       stdenv = {
-        buildPlatform = { inherit isLinux; };
+        buildPlatform = {
+          inherit isLinux;
+          isDarwin = !isLinux;
+          isAarch64 = false;
+          isx86_64 = true;
+        } // buildPlatform;
         hostPlatform = {
-          inherit isAndroid isAarch32;
-          inherit isWindows isx86_64 libc;
-          isGhcjs = false; isWasm = false; isMusl = false;
-          inherit isAarch64 isx86_32;
-        };
+          isAndroid = isAndroid;
+          isAarch32 = isAarch32;
+          isAarch64 = !isAarch32;
+          isx86_64 = false;
+          isx86_32 = false;
+          isLinux = false;
+          isDarwin = false;
+          isWindows = false;
+          libc = "glibc";
+          isGhcjs = false;
+          isWasm = false;
+          isMusl = false;
+        } // hostPlatform;
       };
       util = {};
       project' = _: throw "selection must not force a compiler project";
@@ -37,16 +48,28 @@ let
   future = select "ghc914-sh" true true true "12.0" {};
   arm64 = select "ghc914-sh" true true false "11.0.1" {};
   windows967 = select "ghc967" false false false "11.0.1" {
-    isWindows = true; isx86_64 = true; libc = "msvcrt";
+    buildPlatform = { isLinux = true; isx86_64 = true; };
+    hostPlatform = { isWindows = true; isx86_64 = true; libc = "msvcrt"; };
   };
   windowsOtherCompiler = select "ghc984" false false false "11.0.1" {
-    isWindows = true; isx86_64 = true; libc = "msvcrt";
+    buildPlatform = { isLinux = true; isx86_64 = true; };
+    hostPlatform = { isWindows = true; isx86_64 = true; libc = "msvcrt"; };
   };
   windowsOtherArch = select "ghc967" false false false "11.0.1" {
-    isWindows = true; isAarch64 = false; isx86_32 = true; libc = "msvcrt";
+    buildPlatform = { isLinux = true; isx86_64 = true; };
+    hostPlatform = { isWindows = true; isAarch64 = false; isx86_64 = false; isx86_32 = true; libc = "msvcrt"; };
   };
   windowsUcrt = select "ghc984" false false false "11.0.1" {
-    isWindows = true; isx86_64 = true; libc = "ucrt";
+    buildPlatform = { isLinux = true; isx86_64 = true; };
+    hostPlatform = { isWindows = true; isx86_64 = true; libc = "ucrt"; };
+  };
+  windowsDarwinBuilder = select "ghc967" false false false "11.0.1" {
+    buildPlatform = { isLinux = false; isDarwin = true; isx86_64 = true; };
+    hostPlatform = { isWindows = true; isx86_64 = true; libc = "msvcrt"; };
+  };
+  windowsAarch64LinuxBuilder = select "ghc967" false false false "11.0.1" {
+    buildPlatform = { isLinux = true; isDarwin = false; isAarch64 = true; isx86_64 = false; };
+    hostPlatform = { isWindows = true; isx86_64 = true; libc = "msvcrt"; };
   };
 in
 assert !fixed.meta.disabled && fixed ? build-profiled;
@@ -59,4 +82,6 @@ assert !windows967.meta.disabled;
 assert windowsOtherCompiler.meta.disabled;
 assert windowsOtherArch.meta.disabled;
 assert !windowsUcrt.meta.disabled;
+assert windowsDarwinBuilder.meta.disabled;
+assert windowsAarch64LinuxBuilder.meta.disabled;
 true
