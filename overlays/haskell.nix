@@ -1410,10 +1410,11 @@ final: prev: {
                 name = "iserv-proxy";
                 inherit compiler-nix-name evalSystem;
 
-                # The ARM32 symbol table includes missing-function stubs for
-                # real static Bionic routines. One shadows libc startup before
-                # TLS exists. Patch before planning so v2 hashes and source
-                # archives describe the same implementation.
+                # Patch platform-specific iserv-proxy symbol tables before
+                # planning so v2 hashes and source archives describe the same
+                # implementation. The ARM32 Bionic patch removes stubs that
+                # shadow real static libc routines; the i386 musl patch drops
+                # a hidden libc symbol that prevents dynamic linking.
                 src = if compiler-nix-name == "ghc914-sh"
                   && pkgs.stdenv.hostPlatform.isLinux
                   && pkgs.stdenv.hostPlatform.isMusl
