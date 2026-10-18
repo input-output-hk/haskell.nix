@@ -1,4 +1,4 @@
-cabal-version: 3.0
+cabal-version: 2.2
 name: test-annotations
 version: 1
 build-type: Simple
@@ -9,7 +9,7 @@ library
   build-depends: base
   default-language: Haskell2010
   if flag(i386-elf-got-relocations) && os(linux) && arch(i386)
-    build-depends: template-haskell, test-annotations:reloc-fixture
+    build-depends: template-haskell, reloc-fixture
     cpp-options: -DTEST_I386_ELF_GOT_RELOCS
 
 library reloc-fixture
