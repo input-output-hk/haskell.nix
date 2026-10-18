@@ -17,6 +17,8 @@ let
     buildPhase = ''
       $CC -std=c11 -Werror=vla -pedantic -Wall -Wextra -O1 -static \
         -Wl,-Map,probe.map ${./Probe.c} -o probe.exe
+      # A UCRT default can pass without calling the patched ISO formatter.
+      grep -F '__mingw_vswprintf' probe.map >/dev/null
     '';
     installPhase = ''
       mkdir -p "$out/bin" "$out/share"

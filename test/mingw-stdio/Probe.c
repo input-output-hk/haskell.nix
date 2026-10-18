@@ -1,3 +1,5 @@
+#define __USE_MINGW_ANSI_STDIO 1
+/* Exercise MinGW's ISO formatter even when the target defaults to UCRT. */
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
