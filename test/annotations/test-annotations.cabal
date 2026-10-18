@@ -19,6 +19,8 @@ library reloc-fixture
   cc-options: -fPIC
   build-depends: base
   default-language: Haskell2010
+  if !flag(i386-elf-got-relocations) || !os(linux) || !arch(i386)
+    buildable: False
 
 flag i386-elf-got-relocations
   description: Exercise i386 ELF GOT relocations in the compile-time interpreter.
