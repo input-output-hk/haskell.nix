@@ -1,0 +1,12 @@
+cabal-version: 2.0
+name: reloc-fixture
+version: 0.1.0.0
+build-type: Simple
+
+library
+  exposed-modules: RelocProbe
+  hs-source-dirs: src
+  c-sources: cbits/rel10-a.c cbits/rel10-b.c
+  cc-options: -fPIC
+  build-depends: base
+  default-language: Haskell2010
