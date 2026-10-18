@@ -196,14 +196,28 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
                 else crossSystem (import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; }));
             build = import ./build.nix { inherit pkgs evalSystem ifdLevel compiler-nix-name haskellNix; };
             # darwin -> linux cross runs target binaries under hyper-linux
-            # (`hl`).  Building the cross tests would need `hl` to run the
-            # target's Template Haskell iserv interpreter inside the nix build,
-            # which currently hits an `hl` SIGBUS under the nix-daemon — so
-            # build only the compile side (roots + ghc + iserv-proxy-exes +
-            # hello) here and leave the test run to `nix develop`/manual until
-            # that upstream `hl` bug is fixed.
+            # (`hl`).  Keep the tests suppressed on unqualified routes because
+            # running the target's Template Haskell iserv interpreter has hit
+            # an `hl` SIGBUS under the nix-daemon.  The ghc914-sh AArch64-musl
+            # route below has a focused runtime qualification for annotations
+            # and th-dlls; all other Darwin -> Linux routes still build only
+            # the compile side here.
             isDarwinLinuxCross =
               pkgs.stdenv.buildPlatform.isDarwin && pkgs.stdenv.hostPlatform.isLinux;
+            qualifiedDarwinLinuxCross =
+              compiler-nix-name == "ghc914-sh"
+              && pkgs.stdenv.buildPlatform.isDarwin
+              && pkgs.stdenv.buildPlatform.isAarch64
+              && pkgs.stdenv.hostPlatform.isAarch64
+              && pkgs.stdenv.hostPlatform.isMusl;
+            qualifiedDarwinLinuxTests = {
+              annotations = pkgs.lib.filterAttrs
+                (name: _: builtins.elem name [ "meta" "ifdInputs" "build" "build-profiled" ])
+                build.tests.annotations;
+              th-dlls = pkgs.lib.filterAttrs
+                (name: _: builtins.elem name [ "meta" "ifdInputs" "build" ])
+                build.tests.th-dlls;
+            };
         in pkgs.lib.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
             roots = pkgs.haskell-nix.roots' { inherit compiler-nix-name evalSystem; } ifdLevel // {
               ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.evalWith.${evalSystem}
@@ -213,8 +227,10 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
             # ghc = pkgs.haskell-nix.compiler.${compiler-nix-name};
             # TODO: look into making tools work when cross compiling
             # inherit (build) tools;
-          } // pkgs.lib.optionalAttrs (runTests && !isDarwinLinuxCross) {
-            inherit (build) tests;
+          } // pkgs.lib.optionalAttrs (runTests && (!isDarwinLinuxCross || qualifiedDarwinLinuxCross)) {
+            tests = if isDarwinLinuxCross
+              then qualifiedDarwinLinuxTests
+              else build.tests;
         })
         # GHCJS builds its own template haskell runner.
         // pkgs.lib.optionalAttrs (ifdLevel >= 2 && !builtins.elem crossSystemName ["ghcjs" "wasi32"])

@@ -14,6 +14,11 @@ let
     && stdenv.hostPlatform.isLinux
     && stdenv.hostPlatform.isMusl
     && stdenv.hostPlatform.isx86_32;
+  darwinAarch64Musl = compiler-nix-name == "ghc914-sh"
+    && stdenv.buildPlatform.isDarwin
+    && stdenv.buildPlatform.isAarch64
+    && stdenv.hostPlatform.isAarch64
+    && stdenv.hostPlatform.isMusl;
   # Test the repaired emulator without changing the generic native-builder
   # policy: its base restriction also covers older cross-compiler stalls.
   testProject = if arm32Qemu then (pkgs.extend (_: prev: {
@@ -55,15 +60,11 @@ in lib.recurseIntoAttrs ({
     ;
   ifdInputs = {
     inherit (project) plan-nix;
-  } // lib.optionalAttrs arm32Qemu {
-    plan-nix-profiled = profiledProject.plan-nix;
-  } // lib.optionalAttrs i386Musl {
+  } // lib.optionalAttrs (arm32Qemu || darwinAarch64Musl || i386Musl) {
     plan-nix-profiled = profiledProject.plan-nix;
   };
 
   build = project.hsPkgs.test-annotations.components.library;
-} // lib.optionalAttrs arm32Qemu {
-  build-profiled = profiledProject.hsPkgs.test-annotations.components.library;
-} // lib.optionalAttrs i386Musl {
+} // lib.optionalAttrs (arm32Qemu || darwinAarch64Musl || i386Musl) {
   build-profiled = profiledProject.hsPkgs.test-annotations.components.library;
 })
