@@ -4,9 +4,9 @@
 #
 # haskell.nix cannot tell how it was itself fetched (`sourceInfo` has no
 # owner, and GitHub's redirect serves identical content), but the
-# project's own pins are usually in `src` or the flake it lives in.
-# Reading them is a plain readFile of a source path, so it is not IFD.
-# We stay silent whenever the pins cannot be read cheaply.
+# project's own pins are usually inside `src`.  Reading them is a plain
+# readFile of a source path, so it is not IFD.  We stay silent whenever
+# the pins cannot be read cheaply.
 let
   oldOwner = "input-output-hk";
   newOwner = "ican-group";
@@ -59,20 +59,9 @@ in { src, silence ? false }: project:
     readable = builtins.isPath root
       || ((builtins.isString root || root ? outPath)
           && !lib.any (c: c ? outputs) (lib.attrValues (builtins.getContext (toString root))));
-    sub = dir: p: if builtins.isPath dir then dir + "/${p}" else "${dir}/${p}";
-    pinFiles = [ "flake.lock" "nix/sources.json" "npins/sources.json" ];
-    # `src` is often a subdirectory of the flake (eg. `src = ./backend;`),
-    # so look for the pins in the nearest directory that has some (or a
-    # flake.nix).  Stop at the repo boundary (.git) or the top of a store
-    # path, so we never look outside the flake (which pure eval forbids).
-    pinRoot = dir:
-      let parent = dirOf dir;
-      in if lib.any (p: builtins.pathExists (sub dir p)) ([ "flake.nix" ".git" ] ++ pinFiles)
-            || toString parent == builtins.storeDir || toString parent == toString dir
-        then dir
-        else pinRoot parent;
-    pinDir = pinRoot (if builtins.isPath root then root else toString root);
-    pinFile = sub pinDir;
+    # Only the source root itself: a parent directory (eg. of `src = ./backend;`)
+    # may hold pins that do not belong to this project.
+    pinFile = p: if builtins.isPath root then root + "/${p}" else "${toString root}/${p}";
     read = p: f:
       lib.optionals (builtins.pathExists (pinFile p))
         (f (builtins.fromJSON (builtins.readFile (pinFile p))));
