@@ -585,6 +585,22 @@ let
     "\nsource ${pkgsBuildBuild.writeText "hsnix-stage-frags"
       (lib.concatMapStrings stageFrag buildToolSourceFrags
        + lib.concatMapStrings stageMetadataFrag metadataSourceFrags)}";
+  # The same metadata sources, staged into this slice's OUTPUT as
+  # `repo-frag-meta/` so downstream slices see them too.  A consumer that
+  # solves this package from source under a build-tool qualifier
+  # (`build:pkgb:pkga:exe.vector` in a single-stage cross plan, where the
+  # installed host units do not count) opens the same sibling goals this
+  # slice did -- vector's `benchmarks-O2` wants tasty -- and those
+  # siblings are no longer built slices with their own `repo-frag`.
+  metadataFragExport = lib.optionalString (metadataSourceFrags != []) ''
+    (
+      v2repo=$out/repo-frag-meta
+      v2idx=$out/repo-frag-meta/index
+      mkdir -p $v2repo/package $v2idx
+      source ${pkgsBuildBuild.writeText "hsnix-export-meta-frags"
+        (lib.concatMapStrings stageMetadataFrag metadataSourceFrags)}
+    )
+  '';
 
   # The pkg-config with-flag is deliberately INDEPENDENT of
   # `ghc.targetPrefix`: two-stage host slices get a WRAPPED ghc whose
@@ -1351,10 +1367,12 @@ stdenv.mkDerivation ({
       v2idx=$(mktemp -d)
       mkdir -p $v2repo/package
       declare -A seenRepoFrag
+      repoFragMetas=()
       addRepoFrag() {
         local f=$1
         if [ -n "$f" ] && [ -d "$f/repo-frag" ] && [ -z "''${seenRepoFrag[$f]:-}" ]; then
           seenRepoFrag[$f]=1
+          [ -d "$f/repo-frag-meta" ] && repoFragMetas+=("$f/repo-frag-meta")
           for t in "$f"/repo-frag/package/*; do
             [ -e "$t" ] && ln -sf "$t" "$v2repo/package/$(basename "$t")"
           done
@@ -1381,6 +1399,16 @@ stdenv.mkDerivation ({
         if [ -f "$dep/nix-support/transitive-deps" ]; then
           while IFS= read -r tdep; do addRepoFrag "$tdep"; done < "$dep/nix-support/transitive-deps"
         fi
+      done
+      # Deps' metadata-only sibling sources (see `metadataFragExport`),
+      # after every real fragment and without clobbering: a package that
+      # is a built slice anywhere in the closure keeps its own entry.
+      for m in "''${repoFragMetas[@]}"; do
+        for t in "$m"/package/*; do
+          [ -e "$t" ] && [ ! -e "$v2repo/package/$(basename "$t")" ] \
+            && ln -s "$t" "$v2repo/package/$(basename "$t")"
+        done
+        cp -rL --no-preserve=mode -n "$m"/index/. "$v2idx"/
       done
       # Hackage index tarball (sorted, fixed mtime — as the Nix repo did).
       tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
@@ -2389,6 +2417,7 @@ ${lib.optionalString (metadataSourceFrags != []) ''
         fragment = v2Fragment;
         target = "$out/repo-frag/index/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal";
       }}
+      ${metadataFragExport}
       # Per-package cabal.project blocks (emitted as separate files so a
       # consumer can group by block-type across the closure, matching the
       # current cabal.project byte-layout).  Written via `toFile` so the
