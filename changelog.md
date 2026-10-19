@@ -1,6 +1,15 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## October 19, 2026
+
+haskell.nix has moved from `github:input-output-hk` to `github:ican-group`.
+The old URLs keep working through GitHub's redirect, but projects whose
+`flake.lock`, `nix/sources.json` (niv) or `npins/sources.json` still name
+the old owner for `haskell.nix`, `hackage.nix` or `stackage.nix` now get an
+evaluation warning listing those pins and how to fix each one.  Set
+`silenceOrgMoveWarning = true;` in the project to hide it.
+
 ## October 16, 2026
 
 New compiler: `ghc914-sh`, GHC 9.14 from the stable-haskell fork, built
