@@ -3,12 +3,23 @@ that will impact users.
 
 ## October 19, 2026
 
-haskell.nix has moved from `github:input-output-hk` to `github:ican-group`.
-The old URLs keep working through GitHub's redirect, but projects whose
-`flake.lock`, `nix/sources.json` (niv) or `npins/sources.json` still name
-the old owner for `haskell.nix`, `hackage.nix` or `stackage.nix` now get an
-evaluation warning listing those pins and how to fix each one.  Set
+haskell.nix, hackage.nix and stackage.nix have moved from
+`github:input-output-hk` to `github:ican-group`.  The old URLs keep
+working through GitHub's redirect, but projects whose `flake.lock`,
+`nix/sources.json` (niv) or `npins/sources.json` still name the old owner
+for `haskell.nix`, `hackage.nix` or `stackage.nix` now get an evaluation
+warning listing those pins and how to fix each one.  Set
 `silenceOrgMoveWarning = true;` in the project to hide it.
+
+To move a project, change `input-output-hk` to `ican-group` in its pins
+(eg. `inputs.haskellNix.url = "github:ican-group/haskell.nix";`) and
+update the lock.
+
+haskell.nix's own references use the new owner too, including the ones
+it hands to users: the `hix init` and `haskell-nix` flake templates, the
+`hix` project boilerplate, the `fetchTarball` default in nix-tools'
+generated `default.nix` (from the next nix-tools release), and the
+documentation, now at <https://ican-group.github.io/haskell.nix/>.
 
 ## October 16, 2026
 
