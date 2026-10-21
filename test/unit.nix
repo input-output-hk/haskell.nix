@@ -28,7 +28,7 @@ let
   };
 
   testRepoData = {
-    url = "https://github.com/input-output-hk/haskell.nix.git";
+    url = "https://github.com/ican-group/haskell.nix.git";
     rev = "487eea1c249537d34c27f6143dff2b9d5586c657";
     sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
   };
@@ -60,7 +60,7 @@ lib.runTests {
   testParseBlock1 = {
     expr = __toJSON (haskellLib.parseSourceRepositoryPackageBlock "cabal.project" {} {} "" ''
         type: git
-        location: https://github.com/input-output-hk/haskell.nix.git
+        location: https://github.com/ican-group/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
         --sha256: 077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123
       -- end of block
@@ -75,7 +75,7 @@ lib.runTests {
   testParseBlock2 = {
     expr = __toJSON (haskellLib.parseSourceRepositoryPackageBlock "cabal.project" {} {} "" ''
         type: git
-        location: https://github.com/input-output-hk/haskell.nix.git
+        location: https://github.com/ican-group/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
         --sha256: 077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123
         subdir: dir
@@ -91,7 +91,7 @@ lib.runTests {
   testParseBlock3 = {
     expr = __toJSON (haskellLib.parseSourceRepositoryPackageBlock "cabal.project" {} {} "" ''
         type: git
-        location: https://github.com/input-output-hk/haskell.nix.git
+        location: https://github.com/ican-group/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
         --sha256: 077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123
         subdir: dir1 dir2
@@ -107,7 +107,7 @@ lib.runTests {
   testParseBlock4 = {
     expr = __toJSON (haskellLib.parseSourceRepositoryPackageBlock "cabal.project" {} {} "" ''
         type: git
-        location: https://github.com/input-output-hk/haskell.nix.git
+        location: https://github.com/ican-group/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
         --sha256: 077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123
         subdir:
@@ -184,7 +184,7 @@ lib.runTests {
 
         source-repository-package
           type: git
-          location: https://github.com/input-output-hk/haskell.nix.git
+          location: https://github.com/ican-group/haskell.nix.git
           tag: 487eea1c249537d34c27f6143dff2b9d5586c657
           --sha256: 077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123
       '';
