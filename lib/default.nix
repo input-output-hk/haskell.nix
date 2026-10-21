@@ -370,6 +370,22 @@ in {
        else if fromDist != null then fromDist
        else "host";
 
+  # A plan.json entry without its install paths, for embedding in a v2
+  # slice (builder/comp-v2-builder.nix `expectedPlanEntries`).  The same
+  # unit is planned identically by every project that depends on it, but
+  # its paths say where plan-to-nix ran and in which stage — the
+  # `./test/cabal-simple/dist-newstyle/store/host/...` of `planUnitStage`
+  # above, `store/build/...` when the unit is also a setup dependency — so
+  # left in they would give each project (and stage) its own copy of the
+  # slice.  cabal does not hash them into the unit-id.  Drops the
+  # `--<dir>=<relative path>` configure-args, the `dist-dir` and an exe's
+  # `bin-file`.
+  v2PlanEntryForSlice = p:
+    removeAttrs p [ "dist-dir" "bin-file" ]
+      // lib.optionalAttrs (p ? configure-args) {
+           configure-args = lib.filter (a: !isV2PlanPathArg a) p.configure-args; };
+  isV2PlanPathArg = a: builtins.match "--[a-z-]+=\\./.*" (toString a) != null;
+
   # This function is like
   #   `src + (if subDir == "" then "" else "/" + subDir)`
   # however when `includeSiblings` is set it maintains

@@ -55,7 +55,8 @@
                          # build-stage under the fork).  Defaults to
                          # `planJsonByPlanId` when the project doesn't
                          # provide it.
-, planV2Globals ? {}     # { projectConfigPragmas; docEnabledNames; flagsByName; }
+, planV2Globals ? {}     # { projectConfigPragmas; perPkgConfigBlocks;
+                         #   docEnabledNames; flagsByName; }
                          # derived once from the plan (see
                          # `builder/v2-project-globals.nix`), shared across slices.
 , homeDependIds    ? []  # [{ name; version; }] — sibling-component LIB deps from plan-json
@@ -77,6 +78,7 @@ let
   docEnabledNames      = planV2Globals.docEnabledNames or {};
   planFlagsByName      = planV2Globals.flagsByName or {};
   projectConfigPragmas = planV2Globals.projectConfigPragmas or "";
+  perPkgConfigBlocks   = planV2Globals.perPkgConfigBlocks or {};
 
   # Resolve a dependency package record in `hsp` (`hsPkgs` or
   # `hsPkgs.pkgsBuildBuild`) by name, disambiguating by version.
@@ -2236,6 +2238,9 @@ let
     programOptionsBlock   = programOptionsBlockFor   pkgName;
     docBlock              = documentationBlockFor    pkgName;
     extraLibDirsBlock     = extraLibDirsBlockFor     pkgName;
+    # This package's `package <name>` configuration-pragma delta against
+    # the `package *` baseline in `projectConfigPragmas`.
+    configBlock           = perPkgConfigBlocks.${pkgName} or "";
     # Consumer-side constraint pin.  Slices are never `pre-existing`,
     # so normally `source` — it forces cabal off a GHC-bundled unit when
     # a boot library is reinstalled at the same version.  A local-mode
@@ -2389,11 +2394,22 @@ let
     # said this component should look like against what cabal actually
     # built (the matching entry in the slice's
     # `dist-newstyle/cache/plan.json`).
+    #
+    # The entry is a build input of the slice, so it must not carry
+    # anything specific to the project that produced the plan: its
+    # `configure-args` hold the plan's store/install paths
+    # (`--prefix=./<project-subdir>/dist-newstyle/store/...`,
+    # `--package-db=./...`, under `store/build/` instead of `store/host/`
+    # for a setup dependency), which differ for every project sharing a
+    # unit and would give each project its own copy of every slice.
+    # Those paths never reach the unit-id, so drop them here; the
+    # diagnostic strips the same args from cabal's side before diffing.
     expectedPlanEntries =
       let uid = package.identifier.unit-id or null;
-      in if uid == null || (planJsonByPlanId.${uid} or null) == null
+          entry = planJsonByPlanId.${uid} or null;
+      in if uid == null || entry == null
          then null
-         else { ${uid} = planJsonByPlanId.${uid}; };
+         else { ${uid} = haskellLib.v2PlanEntryForSlice entry; };
     passthru = {
       inherit pkgTarball;
       # Source-only frag (tarball + revised .cabal + name/version).  A

@@ -195,6 +195,70 @@ lib.runTests {
       expected = sourceRepos lf;
     };
 
+  # A v2 slice embeds its plan entry (`expectedPlanEntries`); a unit
+  # planned by projects in different directories (or in a different stage:
+  # a setup dependency's paths are under `store/build/`) must embed the
+  # same entry, or every project gets its own copy of the slice.
+  testV2PlanEntryForSliceIgnoresProjectDir =
+    let
+      entry = dir: stage: {
+        id = "primitive-0.9.1.0-abc";
+        pkg-name = "primitive";
+        bin-file = "${dir}dist-newstyle/store/${stage}/x86_64-unknown-linux/bin/primitive";
+        configure-args = [
+          "configure"
+          "--prefix=${dir}dist-newstyle/store/${stage}/x86_64-unknown-linux"
+          "--package-db=${dir}dist-newstyle/store/${stage}/x86_64-unknown-linux/package.conf.d"
+          "--with-ghc=/nix/store/00000000000000000000000000000000-ghc/bin/ghc"
+          "lib:primitive"
+        ];
+      };
+    in {
+      expr = map haskellLib.v2PlanEntryForSlice
+        [ (entry "./" "host") (entry "./test/cabal-simple/" "host") (entry "./test/setup-deps/" "build") ];
+      expected = let e = {
+        id = "primitive-0.9.1.0-abc";
+        pkg-name = "primitive";
+        configure-args = [
+          "configure"
+          "--with-ghc=/nix/store/00000000000000000000000000000000-ghc/bin/ghc"
+          "lib:primitive"
+        ];
+      }; in [ e e e ];
+    };
+
+  # The `package *` baseline is in every v2 slice's cabal.project, so a
+  # local package configured differently (here `coverage: True`) must not
+  # change it, nor add blocks for the other packages.
+  testV2ProjectGlobalsOutlierStaysLocal =
+    let
+      unit = name: args: {
+        type = "configured";
+        pkg-name = name;
+        configure-args = [ "--prefix=./dist-newstyle/store/host/x86_64-unknown-linux"
+                           "--disable-shared" "--enable-optimization" ] ++ args;
+      };
+      deps = [ (unit "primitive" [ "--disable-coverage" ])
+               (unit "deepseq-extra" [ "--disable-coverage" ]) ];
+      globals = planJson: import ../builder/v2-project-globals.nix { inherit lib; } {
+        inherit planJson;
+        inherit (haskellLib) planUnitStage;
+      };
+      plain = globals (deps ++ [ (unit "local-a" [ "--disable-coverage" ]) ]);
+      cov   = globals (deps ++ [ (unit "local-b" [ "--enable-coverage" ]) ]);
+    in {
+      expr = {
+        sameBaseline = plain.projectConfigPragmas == cov.projectConfigPragmas;
+        plainBlocks = plain.perPkgConfigBlocks;
+        covBlocks = cov.perPkgConfigBlocks;
+      };
+      expected = {
+        sameBaseline = true;
+        plainBlocks = {};
+        covBlocks = { local-b = "package local-b\n  coverage: True\n"; };
+      };
+    };
+
   testParseRepositoryBlock =
     let
       # The Cabal2Nix output in hackage-to-nix is imported into a lambda

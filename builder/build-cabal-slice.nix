@@ -1447,6 +1447,7 @@ stdenv.mkDerivation ({
       cp ${builtins.toFile "program-options"   v2Fragment.programOptionsBlock}   $selfFrag/nix-support/v2-frag/program-options
       cp ${builtins.toFile "doc"               v2Fragment.docBlock}              $selfFrag/nix-support/v2-frag/doc
       cp ${builtins.toFile "extra-lib-dirs"    v2Fragment.extraLibDirsBlock}     $selfFrag/nix-support/v2-frag/extra-lib-dirs
+      cp ${builtins.toFile "config"            v2Fragment.configBlock}           $selfFrag/nix-support/v2-frag/config
       cp ${builtins.toFile "setup-constraints" (lib.concatMapStrings (s: s + "\n") v2Fragment.setupConstraints)} \
         $selfFrag/nix-support/v2-frag/setup-constraints
       cp ${pkgs.writeText "source-repo-block" v2Fragment.sourceRepoBlock} \
@@ -1527,8 +1528,10 @@ stdenv.mkDerivation ({
         done < <(sortedByName "''${libFrags[@]}")
         [ -n "$epline" ] && echo "extra-packages: $epline"
 
-        # Six block groups, grouped by type, name-sorted across the closure.
-        for blk in flags ghc-options configure-options program-options doc extra-lib-dirs; do
+        # Seven block groups, grouped by type, name-sorted across the closure.
+        # `config` is the configuration-pragma delta against the skeleton's
+        # `package *` baseline (v2-project-globals.nix `perPkgConfigBlocks`).
+        for blk in config flags ghc-options configure-options program-options doc extra-lib-dirs; do
           while IFS=$'\t' read -r name f; do cat "$f/nix-support/v2-frag/$blk"; done < <(sortedByName "''${blkFrags[@]}")
         done
 ${lib.optionalString (metadataSourceFrags != []) ''
@@ -2400,6 +2403,7 @@ ${lib.optionalString (metadataSourceFrags != []) ''
       cp ${builtins.toFile "program-options"   v2Fragment.programOptionsBlock}   $out/nix-support/v2-frag/program-options
       cp ${builtins.toFile "doc"               v2Fragment.docBlock}              $out/nix-support/v2-frag/doc
       cp ${builtins.toFile "extra-lib-dirs"    v2Fragment.extraLibDirsBlock}     $out/nix-support/v2-frag/extra-lib-dirs
+      cp ${builtins.toFile "config"            v2Fragment.configBlock}           $out/nix-support/v2-frag/config
       printf '%s' ${lib.escapeShellArg v2Fragment.constraintLine} > $out/nix-support/v2-frag/constraint
       cp ${builtins.toFile "setup-constraints" (lib.concatMapStrings (s: s + "\n") v2Fragment.setupConstraints)} \
         $out/nix-support/v2-frag/setup-constraints
@@ -2970,8 +2974,17 @@ ${lib.optionalString (metadataSourceFrags != []) ''
               echo "" >&2
               echo "  ---- expected $expected_uid  vs  actual $actualId ----" >&2
               expectedJson=$(jq --arg id "$expected_uid" '.[$id]' $expectedPlanFile)
-              actualJson=$(jq --arg id "$actualId" \
-                '.["install-plan"] | map(select(.id == $id)) | .[0]' $actualPlan)
+              # The plan-nix entry has no install paths
+              # (haskellLib.v2PlanEntryForSlice); drop them here too so
+              # only real divergences show in the diff.
+              actualJson=$(jq --arg id "$actualId" '
+                .["install-plan"] | map(select(.id == $id)) | .[0]
+                | if . == null then . else
+                    del(.["dist-dir"], .["bin-file"])
+                    | (if has("configure-args")
+                       then .["configure-args"] |= map(select(test("^--[a-z-]+=\\./") | not))
+                       else . end)
+                  end' $actualPlan)
               if [ "$expectedJson" = "null" ]; then
                 echo "    (no plan-nix entry for $expected_uid)" >&2
                 continue
