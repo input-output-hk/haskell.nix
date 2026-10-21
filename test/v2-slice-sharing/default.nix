@@ -1,15 +1,16 @@
 # v2 slices of a dependency must be shared by every project that plans
 # the same unit for it.  Two projects in different subdirectories, one of
 # them with a local package configured differently (`coverage: True`),
-# both depend on `primitive` and use `hsc2hs`; their library and exe
-# slices (same plan unit-ids in both) must be the same derivations.
+# both depend on `primitive`; its library slice (same plan unit-id in
+# both) must be the same derivation.
 #
 # Each of these once gave every project its own copy of every slice,
 # multiplying the work on Hydra (eval 2969: 1159 native slice drvs for
 # 478 unit-ids):
-#   * the plan entry embedded in the slice (`expectedPlanEntries`) kept
-#     the project's directory in its `--prefix=./<subdir>/dist-newstyle`
-#     configure-args (and an exe's `bin-file`);
+#   * each slice embedded its plan.json entry (for a diagnostic), which
+#     holds the project's directory (`--prefix=./<subdir>/dist-newstyle`,
+#     an exe's `bin-file`) and the eval-time tools' store paths
+#     (`--with-ghc=`, `--with-gcc=`);
 #   * the `package *` baseline was the intersection over the whole plan,
 #     so one outlier added a block for every package to every slice's
 #     cabal.project (builder/v2-project-globals.nix).
@@ -42,11 +43,6 @@ let
   # The slices that must be shared, by a name for the messages.
   sharedSlices = localLib: {
     primitive-lib = localLib.project.hsPkgs.primitive.components.library;
-    # A build tool (planned for the build platform), as the local library
-    # gets it.
-    hsc2hs-exe = lib.findFirst (d: lib.hasPrefix "hsc2hs-exe-hsc2hs-" d.name)
-      (throw "v2-slice-sharing: no hsc2hs in ${localLib.name}'s build-tools")
-      localLib.config.build-tools;
   };
   drvPaths = localLib: lib.mapAttrs
     (_: d: builtins.unsafeDiscardStringContext d.drvPath) (sharedSlices localLib);

@@ -2389,27 +2389,6 @@ let
     allowedSiblingUnitPrefix =
       if isLocalPackageSlice then "${pkgName}-${pkgVersion}" else null;
     inherit solverIncludesGlobalDb;
-    # Plan-json entry for this slice's expected unit-id, written to
-    # disk so the unit-id-mismatch diagnostic can diff what plan-nix
-    # said this component should look like against what cabal actually
-    # built (the matching entry in the slice's
-    # `dist-newstyle/cache/plan.json`).
-    #
-    # The entry is a build input of the slice, so it must not carry
-    # anything specific to the project that produced the plan: its
-    # `configure-args` hold the plan's store/install paths
-    # (`--prefix=./<project-subdir>/dist-newstyle/store/...`,
-    # `--package-db=./...`, under `store/build/` instead of `store/host/`
-    # for a setup dependency), which differ for every project sharing a
-    # unit and would give each project its own copy of every slice.
-    # Those paths never reach the unit-id, so drop them here; the
-    # diagnostic strips the same args from cabal's side before diffing.
-    expectedPlanEntries =
-      let uid = package.identifier.unit-id or null;
-          entry = planJsonByPlanId.${uid} or null;
-      in if uid == null || entry == null
-         then null
-         else { ${uid} = haskellLib.v2PlanEntryForSlice entry; };
     passthru = {
       inherit pkgTarball;
       # Source-only frag (tarball + revised .cabal + name/version).  A

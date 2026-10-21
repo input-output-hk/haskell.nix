@@ -164,17 +164,6 @@ let outerGhc = ghc; in
                              # are necessarily built in-slice — under
                              # the fork's deterministic local ids they
                              # can't fork dep hashes.
-, expectedPlanEntries ? null # if non-null, an attr set { <unit-id> =
-                             # <plan-json entry>; } restricted to the
-                             # entries this slice expects to produce
-                             # (typically just one).  When the unit-id
-                             # check fails, the diagnostic diffs the
-                             # corresponding plan-nix entry against
-                             # the entry cabal actually produced
-                             # (looked up by unit-id in the slice's
-                             # `dist-newstyle/cache/plan.json`).  For
-                             # deeper diagnostics across all packages
-                             # see the slice's `.checkAgainstPlan`.
 , dryRunOnly ? false         # if true, run only `cabal v2-build
                              # --dry-run` (no actual build), skip the
                              # unit-id check, and always succeed.
@@ -2956,53 +2945,20 @@ ${lib.optionalString (metadataSourceFrags != []) ''
           printf '%s\n' "$unexpected" | sed 's/^/    /' >&2
         fi
 
-        ${lib.optionalString (expectedPlanEntries != null) ''
-          # For each `unexpected` unit-id, diff the plan-nix entry
-          # (passed in via `expectedPlanEntries`) against the entry
-          # cabal-install just produced (in
-          # `dist-newstyle/cache/plan.json`).  Both are pretty-printed
-          # with `jq -S` and diffed with full-file context so the
-          # diverging field (compiler-id, flags, dep unit-ids, ...) is
-          # visible against the rest of the entry.
-          actualPlan=$distDir/cache/plan.json
-          expectedPlanFile=${pkgsBuildBuild.writeText "expected-plan-entries.json"
-                              (builtins.toJSON expectedPlanEntries)}
-          if [ -n "$unexpected" ] && [ -f "$actualPlan" ]; then
-            echo "" >&2
-            echo "==== plan-entry diff: plan-nix vs slice's plan.json ====" >&2
-            for actualId in $unexpected; do
-              echo "" >&2
-              echo "  ---- expected $expected_uid  vs  actual $actualId ----" >&2
-              expectedJson=$(jq --arg id "$expected_uid" '.[$id]' $expectedPlanFile)
-              # The plan-nix entry has no install paths
-              # (haskellLib.v2PlanEntryForSlice); drop them here too so
-              # only real divergences show in the diff.
-              actualJson=$(jq --arg id "$actualId" '
-                .["install-plan"] | map(select(.id == $id)) | .[0]
-                | if . == null then . else
-                    del(.["dist-dir"], .["bin-file"])
-                    | (if has("configure-args")
-                       then .["configure-args"] |= map(select(test("^--[a-z-]+=\\./") | not))
-                       else . end)
-                  end' $actualPlan)
-              if [ "$expectedJson" = "null" ]; then
-                echo "    (no plan-nix entry for $expected_uid)" >&2
-                continue
-              fi
-              if [ "$actualJson" = "null" ]; then
-                echo "    (no entry for $actualId in dist-newstyle/cache/plan.json)" >&2
-                continue
-              fi
-              # `--sort-keys` (-S) recursively sorts object keys so a
-              # field that's emitted in a different position in
-              # plan-nix vs. cabal-install's plan.json doesn't show
-              # up as a "difference" in the diff.
-              diff -U 1000000 \
-                <(echo "$expectedJson" | jq -S .) \
-                <(echo "$actualJson"   | jq -S .) >&2 || true
-            done
-          fi
-        ''}
+        # The entry cabal produced for each `unexpected` unit-id.  The
+        # plan-nix side is not available here on purpose: anything taken
+        # from the project's plan would be a build input of the slice and
+        # give every project its own copy of it.  `.checkAgainstPlan`
+        # (below) diffs the two field by field.
+        actualPlan=$distDir/cache/plan.json
+        if [ -n "$unexpected" ] && [ -f "$actualPlan" ]; then
+          echo "" >&2
+          echo "==== slice's plan.json entries for the unexpected unit-ids ====" >&2
+          for actualId in $unexpected; do
+            jq -S --arg id "$actualId" \
+              '.["install-plan"] | map(select(.id == $id)) | .[0]' $actualPlan >&2 || true
+          done
+        fi
 
         # The actual `cabal v2-build` was run with `-v` and its output
         # captured to `$buildRoot/build.log`.  The Setup configure call
@@ -3021,6 +2977,10 @@ ${lib.optionalString (metadataSourceFrags != []) ''
         echo "version (e.g. \`-inplace\` vs reinstalled).  Pin the" >&2
         echo "transitive closure via cabal.project \`constraints:\` lines" >&2
         echo "so the slice solver matches the project plan." >&2
+        echo "" >&2
+        echo "For a field-by-field diff of every unit against plan-nix, build" >&2
+        echo "this component's \`checkAgainstPlan\` attribute, e.g." >&2
+        echo "  nix-build -A <project>.hsPkgs.<pkg>.components.library.checkAgainstPlan" >&2
         exit 1
       fi
     ''}
