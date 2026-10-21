@@ -1,7 +1,7 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
-## October 19, 2026
+## October 22, 2026
 
 haskell.nix, hackage.nix and stackage.nix have moved from
 `github:input-output-hk` to `github:ican-group`.  The old URLs keep
