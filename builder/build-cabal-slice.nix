@@ -164,17 +164,6 @@ let outerGhc = ghc; in
                              # are necessarily built in-slice — under
                              # the fork's deterministic local ids they
                              # can't fork dep hashes.
-, expectedPlanEntries ? null # if non-null, an attr set { <unit-id> =
-                             # <plan-json entry>; } restricted to the
-                             # entries this slice expects to produce
-                             # (typically just one).  When the unit-id
-                             # check fails, the diagnostic diffs the
-                             # corresponding plan-nix entry against
-                             # the entry cabal actually produced
-                             # (looked up by unit-id in the slice's
-                             # `dist-newstyle/cache/plan.json`).  For
-                             # deeper diagnostics across all packages
-                             # see the slice's `.checkAgainstPlan`.
 , dryRunOnly ? false         # if true, run only `cabal v2-build
                              # --dry-run` (no actual build), skip the
                              # unit-id check, and always succeed.
@@ -527,7 +516,10 @@ let
         flags: ${flagsLine}
     '') metadataSourceFrags;
 
-  stageFrag = f: ''
+  stageFrag = stageFragWith {};
+  # `viaRedirect`: for staging into `$out` (`metadataFragExport`); see
+  # builder/stage-cabal-file.nix.
+  stageFragWith = { viaRedirect ? false }: f: ''
 
       ln -sf ${f.tarball} $v2repo/package/${f.pkgName}-${f.pkgVersion}.tar.gz
       mkdir -p $v2idx/${f.pkgName}/${f.pkgVersion}
@@ -535,6 +527,7 @@ let
         fragment = f;
         copyOptions = " -f --no-preserve=mode";
         singleLine = true;
+        inherit viaRedirect;
         target = "$v2idx/${f.pkgName}/${f.pkgVersion}/${f.pkgName}.cabal";
       }}'';
   # Metadata (solver-only) sources additionally get stripped down to
@@ -559,9 +552,10 @@ let
   # These units are never build targets and nothing hashes their package
   # descriptions; the main library, kept sublibs, `common` blocks and
   # `flag` definitions make library solving behave exactly as plan-nix's.
-  stageMetadataFrag = f:
+  stageMetadataFrag = stageMetadataFragWith {};
+  stageMetadataFragWith = opts: f:
     let cab = "$v2idx/${f.pkgName}/${f.pkgVersion}/${f.pkgName}.cabal"; in
-    stageFrag f + ''
+    stageFragWith opts f + ''
 
       awk 'BEGIN{s=0} /^(test-suite|benchmark${if f.keepExes or false then "" else "|executable"}|foreign-library)[ \t]/{s=1;next} /^[^ \t\r]/{s=0} s==1{next} {print}' \
         ${cab} > ${cab}.x && mv ${cab}.x ${cab}
@@ -585,6 +579,23 @@ let
     "\nsource ${pkgsBuildBuild.writeText "hsnix-stage-frags"
       (lib.concatMapStrings stageFrag buildToolSourceFrags
        + lib.concatMapStrings stageMetadataFrag metadataSourceFrags)}";
+  # The same metadata sources, staged into this slice's OUTPUT as
+  # `repo-frag-meta/` so downstream slices see them too.  A consumer that
+  # solves this package from source under a build-tool qualifier
+  # (`build:pkgb:pkga:exe.vector` in a single-stage cross plan, where the
+  # installed host units do not count) opens the same sibling goals this
+  # slice did -- vector's `benchmarks-O2` wants tasty -- and those
+  # siblings are no longer built slices with their own `repo-frag`.
+  metadataFragExport = lib.optionalString (metadataSourceFrags != []) ''
+    (
+      v2repo=$out/repo-frag-meta
+      v2idx=$out/repo-frag-meta/index
+      mkdir -p $v2repo/package $v2idx
+      source ${pkgsBuildBuild.writeText "hsnix-export-meta-frags"
+        (lib.concatMapStrings (stageMetadataFragWith { viaRedirect = true; })
+           metadataSourceFrags)}
+    )
+  '';
 
   # The pkg-config with-flag is deliberately INDEPENDENT of
   # `ghc.targetPrefix`: two-stage host slices get a WRAPPED ghc whose
@@ -1351,10 +1362,12 @@ stdenv.mkDerivation ({
       v2idx=$(mktemp -d)
       mkdir -p $v2repo/package
       declare -A seenRepoFrag
+      repoFragMetas=()
       addRepoFrag() {
         local f=$1
         if [ -n "$f" ] && [ -d "$f/repo-frag" ] && [ -z "''${seenRepoFrag[$f]:-}" ]; then
           seenRepoFrag[$f]=1
+          [ -d "$f/repo-frag-meta" ] && repoFragMetas+=("$f/repo-frag-meta")
           for t in "$f"/repo-frag/package/*; do
             [ -e "$t" ] && ln -sf "$t" "$v2repo/package/$(basename "$t")"
           done
@@ -1381,6 +1394,16 @@ stdenv.mkDerivation ({
         if [ -f "$dep/nix-support/transitive-deps" ]; then
           while IFS= read -r tdep; do addRepoFrag "$tdep"; done < "$dep/nix-support/transitive-deps"
         fi
+      done
+      # Deps' metadata-only sibling sources (see `metadataFragExport`),
+      # after every real fragment and without clobbering: a package that
+      # is a built slice anywhere in the closure keeps its own entry.
+      for m in "''${repoFragMetas[@]}"; do
+        for t in "$m"/package/*; do
+          [ -e "$t" ] && [ ! -e "$v2repo/package/$(basename "$t")" ] \
+            && ln -s "$t" "$v2repo/package/$(basename "$t")"
+        done
+        cp -rL --no-preserve=mode -n "$m"/index/. "$v2idx"/
       done
       # Hackage index tarball (sorted, fixed mtime — as the Nix repo did).
       tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
@@ -1447,6 +1470,7 @@ stdenv.mkDerivation ({
       cp ${builtins.toFile "program-options"   v2Fragment.programOptionsBlock}   $selfFrag/nix-support/v2-frag/program-options
       cp ${builtins.toFile "doc"               v2Fragment.docBlock}              $selfFrag/nix-support/v2-frag/doc
       cp ${builtins.toFile "extra-lib-dirs"    v2Fragment.extraLibDirsBlock}     $selfFrag/nix-support/v2-frag/extra-lib-dirs
+      cp ${builtins.toFile "config"            v2Fragment.configBlock}           $selfFrag/nix-support/v2-frag/config
       cp ${builtins.toFile "setup-constraints" (lib.concatMapStrings (s: s + "\n") v2Fragment.setupConstraints)} \
         $selfFrag/nix-support/v2-frag/setup-constraints
       cp ${pkgs.writeText "source-repo-block" v2Fragment.sourceRepoBlock} \
@@ -1527,8 +1551,10 @@ stdenv.mkDerivation ({
         done < <(sortedByName "''${libFrags[@]}")
         [ -n "$epline" ] && echo "extra-packages: $epline"
 
-        # Six block groups, grouped by type, name-sorted across the closure.
-        for blk in flags ghc-options configure-options program-options doc extra-lib-dirs; do
+        # Seven block groups, grouped by type, name-sorted across the closure.
+        # `config` is the configuration-pragma delta against the skeleton's
+        # `package *` baseline (v2-project-globals.nix `perPkgConfigBlocks`).
+        for blk in config flags ghc-options configure-options program-options doc extra-lib-dirs; do
           while IFS=$'\t' read -r name f; do cat "$f/nix-support/v2-frag/$blk"; done < <(sortedByName "''${blkFrags[@]}")
         done
 ${lib.optionalString (metadataSourceFrags != []) ''
@@ -2389,6 +2415,7 @@ ${lib.optionalString (metadataSourceFrags != []) ''
         fragment = v2Fragment;
         target = "$out/repo-frag/index/${v2Fragment.pkgName}/${v2Fragment.pkgVersion}/${v2Fragment.pkgName}.cabal";
       }}
+      ${metadataFragExport}
       # Per-package cabal.project blocks (emitted as separate files so a
       # consumer can group by block-type across the closure, matching the
       # current cabal.project byte-layout).  Written via `toFile` so the
@@ -2400,6 +2427,7 @@ ${lib.optionalString (metadataSourceFrags != []) ''
       cp ${builtins.toFile "program-options"   v2Fragment.programOptionsBlock}   $out/nix-support/v2-frag/program-options
       cp ${builtins.toFile "doc"               v2Fragment.docBlock}              $out/nix-support/v2-frag/doc
       cp ${builtins.toFile "extra-lib-dirs"    v2Fragment.extraLibDirsBlock}     $out/nix-support/v2-frag/extra-lib-dirs
+      cp ${builtins.toFile "config"            v2Fragment.configBlock}           $out/nix-support/v2-frag/config
       printf '%s' ${lib.escapeShellArg v2Fragment.constraintLine} > $out/nix-support/v2-frag/constraint
       cp ${builtins.toFile "setup-constraints" (lib.concatMapStrings (s: s + "\n") v2Fragment.setupConstraints)} \
         $out/nix-support/v2-frag/setup-constraints
@@ -2952,44 +2980,20 @@ ${lib.optionalString (metadataSourceFrags != []) ''
           printf '%s\n' "$unexpected" | sed 's/^/    /' >&2
         fi
 
-        ${lib.optionalString (expectedPlanEntries != null) ''
-          # For each `unexpected` unit-id, diff the plan-nix entry
-          # (passed in via `expectedPlanEntries`) against the entry
-          # cabal-install just produced (in
-          # `dist-newstyle/cache/plan.json`).  Both are pretty-printed
-          # with `jq -S` and diffed with full-file context so the
-          # diverging field (compiler-id, flags, dep unit-ids, ...) is
-          # visible against the rest of the entry.
-          actualPlan=$distDir/cache/plan.json
-          expectedPlanFile=${pkgsBuildBuild.writeText "expected-plan-entries.json"
-                              (builtins.toJSON expectedPlanEntries)}
-          if [ -n "$unexpected" ] && [ -f "$actualPlan" ]; then
-            echo "" >&2
-            echo "==== plan-entry diff: plan-nix vs slice's plan.json ====" >&2
-            for actualId in $unexpected; do
-              echo "" >&2
-              echo "  ---- expected $expected_uid  vs  actual $actualId ----" >&2
-              expectedJson=$(jq --arg id "$expected_uid" '.[$id]' $expectedPlanFile)
-              actualJson=$(jq --arg id "$actualId" \
-                '.["install-plan"] | map(select(.id == $id)) | .[0]' $actualPlan)
-              if [ "$expectedJson" = "null" ]; then
-                echo "    (no plan-nix entry for $expected_uid)" >&2
-                continue
-              fi
-              if [ "$actualJson" = "null" ]; then
-                echo "    (no entry for $actualId in dist-newstyle/cache/plan.json)" >&2
-                continue
-              fi
-              # `--sort-keys` (-S) recursively sorts object keys so a
-              # field that's emitted in a different position in
-              # plan-nix vs. cabal-install's plan.json doesn't show
-              # up as a "difference" in the diff.
-              diff -U 1000000 \
-                <(echo "$expectedJson" | jq -S .) \
-                <(echo "$actualJson"   | jq -S .) >&2 || true
-            done
-          fi
-        ''}
+        # The entry cabal produced for each `unexpected` unit-id.  The
+        # plan-nix side is not available here on purpose: anything taken
+        # from the project's plan would be a build input of the slice and
+        # give every project its own copy of it.  `.checkAgainstPlan`
+        # (below) diffs the two field by field.
+        actualPlan=$distDir/cache/plan.json
+        if [ -n "$unexpected" ] && [ -f "$actualPlan" ]; then
+          echo "" >&2
+          echo "==== slice's plan.json entries for the unexpected unit-ids ====" >&2
+          for actualId in $unexpected; do
+            jq -S --arg id "$actualId" \
+              '.["install-plan"] | map(select(.id == $id)) | .[0]' $actualPlan >&2 || true
+          done
+        fi
 
         # The actual `cabal v2-build` was run with `-v` and its output
         # captured to `$buildRoot/build.log`.  The Setup configure call
@@ -3008,6 +3012,10 @@ ${lib.optionalString (metadataSourceFrags != []) ''
         echo "version (e.g. \`-inplace\` vs reinstalled).  Pin the" >&2
         echo "transitive closure via cabal.project \`constraints:\` lines" >&2
         echo "so the slice solver matches the project plan." >&2
+        echo "" >&2
+        echo "For a field-by-field diff of every unit against plan-nix, build" >&2
+        echo "this component's \`checkAgainstPlan\` attribute, e.g." >&2
+        echo "  nix-build -A <project>.hsPkgs.<pkg>.components.library.checkAgainstPlan" >&2
         exit 1
       fi
     ''}

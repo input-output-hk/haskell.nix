@@ -293,6 +293,7 @@ let
     coverage = callTest ./coverage {};
     coverage-golden = callTest ./coverage-golden {};
     coverage-no-libs = callTest ./coverage-no-libs {};
+    v2-slice-sharing = callTest ./v2-slice-sharing {};
     snapshots = callTest ./snapshots {};
     sublib-docs = callTest ./sublib-docs { inherit util; };
     githash = callTest ./githash { inherit compiler-nix-name evalPackages; };

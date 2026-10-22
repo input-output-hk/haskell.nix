@@ -172,14 +172,42 @@ let
   ) pragmasByNameStage;
   allPkgNames = builtins.attrNames pragmasByName;
 
-  # Baseline: pragmas present in *every* pkg-name's union.
+  # Baseline: for each field that *every* pkg-name sets, the value most
+  # pkg-names agree on (ties go to the first in sort order).
+  #
+  # The baseline (in the `package *` block) is part of every slice's
+  # cabal.project skeleton, so it must not change just because some
+  # package elsewhere in the plan is configured differently.  An
+  # intersection would: one local package with `coverage: True` (or
+  # `profiling: True`) drops `coverage` from it, and with it every
+  # package's slice gets a different skeleton from the same slice in a
+  # project without that package.  The majority value keeps such
+  # outliers in their own per-package blocks (`perPkgConfigBlocks`),
+  # which reach only the slices whose closure contains that package.
+  #
+  # Restricting to fields every package sets keeps each package's
+  # effective configuration exactly its own pragmas: its block overrides
+  # every baseline value it disagrees with, and the baseline never
+  # supplies a field the package itself left unset (a stage-differing
+  # field dropped by `pragmasByName`, say).
   baseline =
     if allPkgNames == [] then []
     else
-      let firstPkg = builtins.head allPkgNames;
-      in lib.filter
-           (p: lib.all (n: lib.elem p pragmasByName.${n}) allPkgNames)
-           pragmasByName.${firstPkg};
+      let
+        firstPkg = builtins.head allPkgNames;
+        commonFields = lib.filter
+          (f: lib.all (n: lib.any (p: fieldOf p == f) pragmasByName.${n}) allPkgNames)
+          (lib.unique (map fieldOf pragmasByName.${firstPkg}));
+        valueCounts = f: lib.foldl' (acc: n:
+          lib.foldl' (acc': p: acc' // { ${p} = (acc'.${p} or 0) + 1; }) acc
+            (lib.filter (p: fieldOf p == f) pragmasByName.${n})
+        ) {} allPkgNames;
+        majority = f:
+          let counts = valueCounts f;
+          in lib.foldl' (best: p: if counts.${p} > counts.${best} then p else best)
+               (builtins.head (builtins.attrNames counts))
+               (builtins.attrNames counts);
+      in map majority commonFields;
   baselineSet = lib.listToAttrs (map (p: { name = p; value = true; }) baseline);
 
   baselineBlock =
@@ -233,14 +261,19 @@ let
           + lib.concatMapStrings (p: "  " + p + "\n") ps
   ) stageNames;
 
-  perPkgBlocks = lib.concatMapStrings (name:
+  # pkg-name → its delta block.  Not part of `projectConfigPragmas`: each
+  # slice carries its own package's block in its fragment
+  # (comp-v2-builder `configBlock`) and composes those of its dependency
+  # closure at build time, like the flags / ghc-options blocks.  Emitting
+  # every package's block in every slice made each slice depend on the
+  # whole plan.
+  perPkgConfigBlocks = lib.filterAttrs (_: b: b != "") (lib.genAttrs allPkgNames (name:
     let delta = lib.filter (p: !(baselineSet ? ${p})) pragmasByName.${name};
     in if delta == [] then ""
        else "package ${name}\n"
-          + lib.concatMapStrings (p: "  " + p + "\n") delta
-  ) allPkgNames;
+          + lib.concatMapStrings (p: "  " + p + "\n") delta));
 
-  projectConfigPragmas = baselineBlock + stageBlocks + perPkgBlocks;
+  projectConfigPragmas = baselineBlock + stageBlocks;
 in {
-  inherit projectConfigPragmas docEnabledNames flagsByName;
+  inherit projectConfigPragmas perPkgConfigBlocks docEnabledNames flagsByName;
 }
