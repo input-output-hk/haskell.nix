@@ -516,7 +516,10 @@ let
         flags: ${flagsLine}
     '') metadataSourceFrags;
 
-  stageFrag = f: ''
+  stageFrag = stageFragWith {};
+  # `viaRedirect`: for staging into `$out` (`metadataFragExport`); see
+  # builder/stage-cabal-file.nix.
+  stageFragWith = { viaRedirect ? false }: f: ''
 
       ln -sf ${f.tarball} $v2repo/package/${f.pkgName}-${f.pkgVersion}.tar.gz
       mkdir -p $v2idx/${f.pkgName}/${f.pkgVersion}
@@ -524,6 +527,7 @@ let
         fragment = f;
         copyOptions = " -f --no-preserve=mode";
         singleLine = true;
+        inherit viaRedirect;
         target = "$v2idx/${f.pkgName}/${f.pkgVersion}/${f.pkgName}.cabal";
       }}'';
   # Metadata (solver-only) sources additionally get stripped down to
@@ -548,9 +552,10 @@ let
   # These units are never build targets and nothing hashes their package
   # descriptions; the main library, kept sublibs, `common` blocks and
   # `flag` definitions make library solving behave exactly as plan-nix's.
-  stageMetadataFrag = f:
+  stageMetadataFrag = stageMetadataFragWith {};
+  stageMetadataFragWith = opts: f:
     let cab = "$v2idx/${f.pkgName}/${f.pkgVersion}/${f.pkgName}.cabal"; in
-    stageFrag f + ''
+    stageFragWith opts f + ''
 
       awk 'BEGIN{s=0} /^(test-suite|benchmark${if f.keepExes or false then "" else "|executable"}|foreign-library)[ \t]/{s=1;next} /^[^ \t\r]/{s=0} s==1{next} {print}' \
         ${cab} > ${cab}.x && mv ${cab}.x ${cab}
@@ -587,7 +592,8 @@ let
       v2idx=$out/repo-frag-meta/index
       mkdir -p $v2repo/package $v2idx
       source ${pkgsBuildBuild.writeText "hsnix-export-meta-frags"
-        (lib.concatMapStrings stageMetadataFrag metadataSourceFrags)}
+        (lib.concatMapStrings (stageMetadataFragWith { viaRedirect = true; })
+           metadataSourceFrags)}
     )
   '';
 
