@@ -180,6 +180,29 @@ in {
       '';
     };
 
+    usePatchedHsc2hs = mkOption {
+      type = bool;
+      default = true;
+      description = ''
+        Offer cabal's solver haskell.nix's patched hsc2hs as
+        `hsc2hs-''${pkgs.haskell-nix.hsc2hs-patched-version}`, from a small
+        package repository added to the project (`haskell-nix-hsc2hs`).
+        It is stable-haskell's batch cross-compilation fork of hsc2hs with
+        haskell.nix's fix to it (see overlays/hsc2hs.nix), which makes
+        cross-compiled `.hsc` files much faster to process -- around 15x
+        for the GHC JavaScript backend and 20x for wasm.
+
+        It is only a candidate.  It is chosen when a plan needs hsc2hs as a
+        build tool (`build-tool-depends` or the legacy `build-tools`) and
+        the version satisfies the constraints on it; otherwise cabal picks
+        another version as usual.  Packages that do not ask for hsc2hs keep
+        using the compiler's.
+
+        A project that sets `active-repositories` has to list
+        `haskell-nix-hsc2hs` itself for the repository to be used.
+      '';
+    };
+
     # Used by mkCabalProjectPkgSet
     pkg-def-extras = mkOption {
       type = nullOr (listOf unspecified);
@@ -204,6 +227,20 @@ in {
     };
   };
   config = lib.mkMerge [
+    # The patched hsc2hs (see `usePatchedHsc2hs` and overlays/hsc2hs.nix).
+    # The repository is a store path, as head.hackage's is in
+    # test/head-hackage.nix: plan.json records it as the package's
+    # `repo.uri`, which lib/load-cabal-plan.nix fetches the tarball from.
+    # Unsigned, hence no root keys and a zero threshold.
+    (lib.mkIf config.usePatchedHsc2hs {
+      cabalProjectLocal = lib.mkBefore ''
+        repository haskell-nix-hsc2hs
+          url: file:${config.evalPackages.haskell-nix.hsc2hs-patched-repo}
+          secure: True
+          root-keys:
+          key-threshold: 0
+      '';
+    })
     # Musl host: every executable should be statically linked.
     # comp-builder achieves this at build time by adding
     # `--ghc-option=-optl=-static` to the per-component
@@ -941,8 +978,9 @@ in {
       inputMap = {
         "https://github.com/stable-haskell/Cabal.git/f2e0a89e15cf6604cec9d93e26a4b3caf459b076" =
           pkgs.haskell-nix.sources.ghc914-sh-cabal;
+        # Patched, as the compiler's own hsc2hs is (overlays/hsc2hs.nix).
         "https://github.com/stable-haskell/hsc2hs.git/d07eea1260894ce5fe456f881fbc62366c9eb1b7" =
-          pkgs.haskell-nix.sources.ghc914-sh-hsc2hs;
+          pkgs.haskell-nix.hsc2hs-patched-src;
       };
       # rts/configure AC_PATH_PROGs programs that are not cabal-level
       # dependencies (DERIVE_CONSTANTS, GENAPPLY, NM, OBJDUMP, PYTHON).

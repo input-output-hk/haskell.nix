@@ -136,6 +136,7 @@ let
     rcodesign = import ./rcodesign.nix;
     wasm = import ./wasm.nix;
     stable-haskell = import ./stable-haskell.nix;
+    hsc2hs = import ./hsc2hs.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -177,6 +178,8 @@ let
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
     lazy-inputs
+    # After lazy-inputs (its source), before stable-haskell (a user of it).
+    hsc2hs
     stable-haskell
     cacheCompilerDeps
     rcodesign
