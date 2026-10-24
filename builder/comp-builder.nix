@@ -343,7 +343,7 @@ let
       # GHC
       "--with-ghc=${ghc.targetPrefix}ghc"
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
-      "--with-hsc2hs=${ghc.targetPrefix}hsc2hs"
+      "--with-hsc2hs=${hsc2hsCommand}"
     ] ++ lib.optional (pkgconfig != [])
       "--with-pkg-config=${buildPackages.cabalPkgConfigWrapper.targetPrefix}pkg-config"
       ++ lib.optionals (stdenv.hasCC or (stdenv.cc != null))
@@ -419,7 +419,33 @@ let
           && builtins.compareVersions defaults.ghc.version "9.3" < 0)
         "--ghc-options=-j1";
 
-  # the build-tools version might be depending on the version of the package, similarly to patches
+  # The build-tools, with any version-dependent ones resolved for this
+  # package's version (similarly to patches).
+  resolvedBuildTools = map
+    (p: if builtins.isFunction p
+      then p { inherit (package.identifier) version; }
+      else p) build-tools;
+
+  # The hsc2hs to run.  Normally the compiler's, which is first in PATH
+  # anyway (so hsc2hs is never wanted from build-tools, see below).  The
+  # exception is a cross build whose plan chose haskell.nix's patched hsc2hs
+  # (overlays/hsc2hs.nix, `usePatchedHsc2hs`): that one computes all of a
+  # file's constants in a single C compilation instead of several per
+  # constant.  Not for native builds, where hsc2hs runs a test program
+  # directly and the patched one has nothing to add, so they need not
+  # build it.
+  planHsc2hs = lib.findFirst (x: x != null
+      && x.identifier.name or "" == "hsc2hs"
+      && x.identifier.version or "" == buildPackages.haskell-nix.hsc2hs-patched-version)
+    null resolvedBuildTools;
+  hsc2hsCommand =
+    if haskellLib.isCrossHost && planHsc2hs != null
+      # A build tool is either the package or the exe component itself.
+      then "${if planHsc2hs.isHaskell or false
+                then planHsc2hs.components.exes.hsc2hs
+                else planHsc2hs}/bin/hsc2hs"
+      else "${ghc.targetPrefix}hsc2hs";
+
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
@@ -427,11 +453,9 @@ let
       (builtins.filter (x: x != null
         # We always exclude hsc2hs from build-tools because it is unecessary as it is provided by ghc
         # and hsc2hs from ghc is first in PATH so the one from build-tools is never used.
+        # (The patched one, when used, is passed by path as `--with-hsc2hs`.)
         && x.identifier.name or "" != "hsc2hs")
-      (map
-        (p: if builtins.isFunction p
-          then p { inherit  (package.identifier) version; }
-          else p) build-tools))) ++
+      resolvedBuildTools)) ++
     lib.optional (pkgconfig != []) buildPackages.cabalPkgConfigWrapper;
 
   # Unfortunately, we need to wrap ghc commands for cabal builds to
