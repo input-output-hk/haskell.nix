@@ -698,8 +698,9 @@ let
   # (subdirs like Cabal/Cabal-syntax are appended by haskell.nix itself).
   # hsc2hs is no longer an in-tree submodule (upstream dropped submodules);
   # its source — including data/template-hsc.h, which the compiler packaging
-  # steps install into lib/ghc-*/ — comes from the ghc914-sh-hsc2hs lazy-input.
-  hsc2hsSrc = pkgs.haskell-nix.sources.ghc914-sh-hsc2hs;
+  # steps install into lib/ghc-*/ — comes from the ghc914-sh-hsc2hs lazy-input,
+  # with haskell.nix's fix to its batch cross-compilation (overlays/hsc2hs.nix).
+  hsc2hsSrc = pkgs.haskell-nix.hsc2hs-patched-src;
 
   srpInputMap = {
     "https://github.com/stable-haskell/Cabal.git/f2e0a89e15cf6604cec9d93e26a4b3caf459b076" =
@@ -707,7 +708,7 @@ let
     "https://github.com/stable-haskell/hpc-bin.git/5923da3fe77993b7afc15b5163cffcaa7da6ecf5" =
       pkgs.haskell-nix.sources.ghc914-sh-hpc-bin;
     "https://github.com/stable-haskell/hsc2hs.git/d07eea1260894ce5fe456f881fbc62366c9eb1b7" =
-      pkgs.haskell-nix.sources.ghc914-sh-hsc2hs;
+      pkgs.haskell-nix.hsc2hs-patched-src;
   };
 
   # ── External tools (built with boot GHC) ──────────────────────────────────
