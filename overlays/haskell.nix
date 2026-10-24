@@ -62,8 +62,9 @@ final: prev: {
         #
         # The three knobs below choose WHICH derivations get these
         # features; with this list empty they have no effect.
-        # The Android ARM32 personality fix removes one emulator failure,
-        # but does not fix the cross-compiler stalls described below.
+        # The Android ARM32 personality fix (#2585) removes the reason to
+        # pin ARM32 Android checks and splices, but not the cross-compiler
+        # stalls described below, so `base` stays on the deny-list.
         emulatorSystemFeatures = prev.haskell-nix.emulatorSystemFeatures or [];
 
         # ...but ONLY for these packages.  There is exactly one native
@@ -113,6 +114,8 @@ final: prev: {
         #   qemu: uncaught target signal 6 (Aborted) - core dumped
         # The A/B holds: the cabal-simple check that aborted on
         # aarch64-darwin-b prints `Hello, Haskell!` forced native.
+        # Android ARM32 is therefore pinned only when the qemu that would
+        # run it lacks that patch (`emulatorArm32PersonalityUnpatched`).
         #
         # 32-bit x86 Linux (musl32) is the other: its exes need no emulator
         # on a real x86_64 host, but under Rosetta in a `nix-linux-builder`
@@ -123,8 +126,24 @@ final: prev: {
         # checks are pinned -- they are small, and they are what fails.
         emulatorNativeBuilderCheck =
           prev.haskell-nix.emulatorNativeBuilderCheck
-            or (platform: (platform.isAndroid && platform.isAarch32)
+            or (platform: final.haskell-nix.emulatorArm32PersonalityUnpatched platform
                        || (platform.isLinux && platform.isx86_32));
+
+        # Whether `platform` is Android ARM32 and its exes would run under a
+        # qemu-arm WITHOUT `patches/qemu-arm32-personality.patch` (selected
+        # by `qemu-arm32-personality-supported.nix`, as in
+        # `overlays/armv6l-linux.nix`).  With the patch, qemu retries the
+        # rejected `PER_LINUX32` as `PER_LINUX`, so neither test exes nor the
+        # iserv-proxy interpreter need a host with AArch32 EL0 any more.
+        emulatorArm32PersonalityUnpatched = platform:
+          platform.isAndroid && platform.isAarch32
+          && !(import ./qemu-arm32-personality-supported.nix {
+                 inherit (final) lib;
+                 buildPlatform = final.pkgsBuildBuild.stdenv.hostPlatform;
+                 hostPlatform = platform;
+                 qemuVersion = final.pkgsBuildBuild.qemu.version;
+                 qemuSuffix = final.haskell-nix.haskellLib.qemuByHostPlatform platform;
+               });
 
         # ...and every slice of a component that declares
         # `usesTemplateHaskell` (modules/component-options.nix), for a
@@ -139,13 +158,17 @@ final: prev: {
         # glibc is the opposite: on a VM ghc914-sh's th-dlls splice segfaulted
         # in qemu and sat out the 7200s timeout, while every th-dlls variant
         # (ghc914-sh and ghc9141, with and without -fexternal-interpreter)
-        # builds forced native on an x86_64 host.
+        # builds forced native on an x86_64 host.  ARM32 Android splices hit
+        # the same `PER_LINUX32` abort as its test exes (the interpreter is a
+        # bionic exe too), so it is left out whenever qemu carries the fix.
         emulatorNativeBuilderTH =
           prev.haskell-nix.emulatorNativeBuilderTH
             or (platform: !platform.isGhcjs && !platform.isWasm
                        && (platform.isWindows
                            || (platform.isLinux && !platform.isx86_64
-                               && !(platform.isAarch64 && platform.isAndroid))));
+                               && !(platform.isAarch64 && platform.isAndroid)
+                               && !(platform.isAarch32 && platform.isAndroid
+                                    && !final.haskell-nix.emulatorArm32PersonalityUnpatched platform))));
 
         # nixpkgs used to run `cabal` / `nix-tools`, keyed by eval system
         # and memoised at the fixpoint level.  Non-native systems are

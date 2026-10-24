@@ -33,9 +33,19 @@
       (final: prev: {
         haskell-nix = prev.haskell-nix // {
           inherit checkMaterialization;
-          # Pin emulator-sensitive derivations to the zw3rk farm's one real
-          # linux host -- see `emulatorSystemFeatures` in overlays/haskell.nix.
-          emulatorSystemFeatures = [ "recursive-nix" ];
+          # Pinning emulator-sensitive derivations to the zw3rk farm's one real
+          # linux host (`[ "recursive-nix" ]`, see `emulatorSystemFeatures` in
+          # overlays/haskell.nix) is switched off for now.  Built unpinned on
+          # the `nix-linux-builder` VMs on 2026-10-24, every pinned splice and
+          # check passed: th-dlls, js-template-haskell and with-packages for
+          # aarch64 glibc/musl, i686, mingw/ucrt and armv7a, and the i686 and
+          # armv7a test exes.  What still fails there is a transient deadlock
+          # of the x86_64 cross ghc under Rosetta (threads parked in
+          # futex_lock_pi); it hits ghc-internal and unix as well as base, so
+          # pinning base alone never avoided it, and a retry builds.  The VMs
+          # now fail such a hang after 55 min with a verdict.  Restore the
+          # feature to bring every pin back if splices or checks regress.
+          emulatorSystemFeatures = [];
         };
       })
       (import ./test/overlay.nix)
